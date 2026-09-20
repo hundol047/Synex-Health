@@ -29,7 +29,7 @@ def resolve_cors_config(cors_origins_env=None, allow_credentials_env=None):
 
 @asynccontextmanager
 async def lifespan(app):
-    if os.getenv('SYNEX_HEALTH_DEMO_SEED', 'true').lower() != 'false':
+    if os.getenv('AUTH_MODE', 'demo').lower() == 'demo' and os.getenv('SYNEX_HEALTH_DEMO_SEED', 'true').lower() != 'false':
         seed_demo_data(health_store)
     yield
 
@@ -48,7 +48,7 @@ async def provider_not_configured_handler(request, exc):
 @app.get('/api/health/status')
 def health_status():
     return {
-        'status': 'ok', 'demo': True, 'service': 'synex-health',
+        'status': 'ok', 'demo': os.getenv('AUTH_MODE', 'demo').lower() == 'demo', 'service': 'synex-health',
         'agent': {'status': 'ok', 'mode': health_agent.agent_mode()},
         'auth': {'status': 'ok', 'mode': os.getenv('AUTH_MODE', 'demo').lower()},
         'providers': {'mock': 'ok', 'manual': 'ok', 'csv': 'ok', 'inbody': 'not_configured', 'biogram': 'not_configured'},
@@ -66,7 +66,9 @@ if DIST.exists():
 
     @app.get('/{full_path:path}', include_in_schema=False)
     def spa(full_path: str):
-        candidate = DIST / full_path
+        candidate = (DIST / full_path).resolve()
+        if not candidate.is_relative_to(DIST.resolve()):
+            raise HTTPException(404, 'Not found')
         if full_path and candidate.is_file():
             return FileResponse(candidate)
         return FileResponse(DIST / 'index.html')

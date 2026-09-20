@@ -73,6 +73,7 @@ export function loftTube(curvePoints, radiusFn, { radialSegments = 14, heightSeg
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
   geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
   geometry.setIndex(indices);
+  geometry.computeVertexNormals();
   return geometry;
 }
 
@@ -96,7 +97,7 @@ export function loftEllipticalTube(curvePoints, rxFn, rzFn, { radialSegments = 2
       const theta = (j / radialSegments) * Math.PI * 2;
       const cx = Math.cos(theta) * rx;
       const cy = Math.sin(theta) * rz;
-      const offset = new THREE.Vector3().addScaledVector(normal, cx).addScaledVector(binormal, cy);
+      const offset = new THREE.Vector3(cx, 0, cy);
       const vertex = center.clone().add(offset);
       positions.push(vertex.x, vertex.y, vertex.z);
       const n = offset.clone().normalize();
@@ -130,6 +131,7 @@ export function loftEllipticalTube(curvePoints, rxFn, rzFn, { radialSegments = 2
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
   geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
   geometry.setIndex(indices);
+  geometry.computeVertexNormals();
   return geometry;
 }
 

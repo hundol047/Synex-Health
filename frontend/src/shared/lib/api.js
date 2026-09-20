@@ -33,6 +33,9 @@ export async function api(path, body, { method, signal, headers } = {}) {
 }
 
 export const HealthAPI = {
+  schools: () => api('/api/schools'),
+  selectSchool: (selection) => api('/api/health/school', selection, {method:'PUT'}),
+  requestSchool: (name) => api('/api/schools/request', {name}),
   getProfile: () => api('/api/health/profile'),
   updateProfile: (patch) => api('/api/health/profile', patch, { method: 'PUT' }),
 

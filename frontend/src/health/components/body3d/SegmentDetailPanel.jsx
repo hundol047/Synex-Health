@@ -19,10 +19,10 @@ export default function SegmentDetailPanel({ segment, comparisonData, onClose, a
 
   return (
     <Modal open={!!segment} onClose={onClose} title={label}>
-      <Row label="현재 근육량(제지방)" value={segDelta?.current_lean_kg != null ? `${segDelta.current_lean_kg} kg` : '측정 없음'} />
+      <Row label="현재 부위 제지방량" value={segDelta?.current_lean_kg != null ? `${segDelta.current_lean_kg} kg` : '측정 없음'} />
       <Row label="현재 체지방량" value={segDelta?.current_fat_kg != null ? `${segDelta.current_fat_kg} kg` : '측정 없음'} />
       <Row label="기준 대비" value={ref?.reference_percent != null ? `${ref.reference_percent}%` : '기준 데이터 없음'} />
-      <Row label="지난 측정 대비 변화(근육)" value={segDelta?.lean_mass_delta_kg != null ? `${segDelta.lean_mass_delta_kg > 0 ? '+' : ''}${segDelta.lean_mass_delta_kg} kg` : '이전 측정 없음'} />
+      <Row label="지난 측정 대비 변화(제지방)" value={segDelta?.lean_mass_delta_kg != null ? `${segDelta.lean_mass_delta_kg > 0 ? '+' : ''}${segDelta.lean_mass_delta_kg} kg` : '이전 측정 없음'} />
       <Row label="지난 측정 대비 변화(체지방)" value={segDelta?.fat_mass_delta_kg != null ? `${segDelta.fat_mass_delta_kg > 0 ? '+' : ''}${segDelta.fat_mass_delta_kg} kg` : '이전 측정 없음'} />
       <div style={{ marginTop: 14 }}>
         <h3 style={{ marginBottom: 6 }}>AI 분석</h3>

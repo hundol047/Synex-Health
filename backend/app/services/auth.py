@@ -144,7 +144,9 @@ def get_current_user(authorization: Optional[str] = Header(None),
     login flow -- this header is only honored when AUTH_MODE=demo; in AUTH_MODE=oidc it is
     ignored entirely and identity comes only from a verified token/session."""
     mode = os.getenv('AUTH_MODE', 'demo').lower()
-    if mode != 'oidc':
+    if mode not in ('demo', 'oidc'):
+        raise HTTPException(503, 'Invalid authentication configuration')
+    if mode == 'demo':
         demo_id = x_synex_demo_user or os.getenv('SYNEX_DEMO_USER_ID', 'student-jimin')
         info = DEMO_USERS.get(demo_id, DEMO_USERS['student-jimin'])
         return User(id=demo_id, role=os.getenv('SYNEX_DEMO_ROLE', info['role']))

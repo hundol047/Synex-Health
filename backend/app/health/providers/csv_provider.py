@@ -44,4 +44,9 @@ class CSVProvider(HealthDataProvider):
 
     def import_csv(self, user_id: str, csv_text: str) -> list[BodyCompositionMeasurement]:
         reader = csv.DictReader(io.StringIO(csv_text))
-        return [self.import_measurement(user_id, row) for row in reader if row.get('measurement_date')]
+        rows = list(reader)
+        if not rows or any(not row.get('measurement_date') for row in rows):
+            raise ValueError('measurement_date required')
+        measurements = [self.normalize_measurement(user_id, row) for row in rows]
+        # Parse and validate the complete batch before any writes.
+        return [self.store.add_measurement(m) for m in measurements]

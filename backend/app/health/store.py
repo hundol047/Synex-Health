@@ -36,6 +36,14 @@ class HealthStore:
             db.execute('''CREATE TABLE IF NOT EXISTS users (
                 id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT, role TEXT NOT NULL,
                 gender TEXT, birth_date TEXT, height REAL, created_at TEXT NOT NULL)''')
+            columns = {row[1] for row in db.execute('PRAGMA table_info(users)')}
+            if 'school_id' not in columns:
+                db.execute('ALTER TABLE users ADD COLUMN school_id TEXT')
+            if 'share_with_center' not in columns:
+                db.execute('ALTER TABLE users ADD COLUMN share_with_center INTEGER NOT NULL DEFAULT 0')
+            db.execute('CREATE TABLE IF NOT EXISTS schools (id TEXT PRIMARY KEY, payload TEXT NOT NULL)')
+            db.execute('''CREATE TABLE IF NOT EXISTS school_requests (
+                user_id TEXT PRIMARY KEY, name TEXT NOT NULL, created_at TEXT NOT NULL)''')
             db.execute('''CREATE TABLE IF NOT EXISTS measurements (
                 id TEXT PRIMARY KEY, user_id TEXT NOT NULL, measurement_date TEXT NOT NULL,
                 payload TEXT NOT NULL, created_at TEXT NOT NULL)''')
@@ -68,24 +76,24 @@ class HealthStore:
     # --- Users -----------------------------------------------------------------------------
     def upsert_user(self, u: HealthUser) -> HealthUser:
         with self.connect() as db:
-            db.execute('INSERT OR REPLACE INTO users VALUES (?,?,?,?,?,?,?,?)',
+            db.execute('INSERT OR REPLACE INTO users (id,name,email,role,gender,birth_date,height,created_at,school_id,share_with_center) VALUES (?,?,?,?,?,?,?,?,?,?)',
                        (u.id, u.name, u.email, u.role.value if hasattr(u.role, 'value') else u.role,
-                        u.gender, u.birth_date, u.height, u.created_at))
+                        u.gender, u.birth_date, u.height, u.created_at, u.school_id, int(u.share_with_center)))
         return u
 
     def get_user(self, user_id: str) -> HealthUser | None:
         with self.connect() as db:
-            row = db.execute('SELECT id,name,email,role,gender,birth_date,height,created_at FROM users WHERE id=?', (user_id,)).fetchone()
+            row = db.execute('SELECT id,name,email,role,gender,birth_date,height,created_at,school_id,share_with_center FROM users WHERE id=?', (user_id,)).fetchone()
         if row is None:
             return None
         return HealthUser(id=row[0], name=row[1], email=row[2] or '', role=row[3], gender=row[4] or 'unspecified',
-                           birth_date=row[5], height=row[6], created_at=row[7])
+                           birth_date=row[5], height=row[6], created_at=row[7], school_id=row[8], share_with_center=bool(row[9]))
 
     def list_students(self) -> list[HealthUser]:
         with self.connect() as db:
-            rows = db.execute("SELECT id,name,email,role,gender,birth_date,height,created_at FROM users WHERE role='student'").fetchall()
+            rows = db.execute("SELECT id,name,email,role,gender,birth_date,height,created_at,school_id,share_with_center FROM users WHERE role='student'").fetchall()
         return [HealthUser(id=r[0], name=r[1], email=r[2] or '', role=r[3], gender=r[4] or 'unspecified',
-                            birth_date=r[5], height=r[6], created_at=r[7]) for r in rows]
+                            birth_date=r[5], height=r[6], created_at=r[7], school_id=r[8], share_with_center=bool(r[9])) for r in rows]
 
     # --- Measurements ------------------------------------------------------------------------
     def add_measurement(self, m: BodyCompositionMeasurement) -> BodyCompositionMeasurement:
@@ -96,7 +104,7 @@ class HealthStore:
 
     def list_measurements(self, user_id: str) -> list[BodyCompositionMeasurement]:
         with self.connect() as db:
-            rows = db.execute('SELECT payload FROM measurements WHERE user_id=? ORDER BY measurement_date ASC', (user_id,)).fetchall()
+            rows = db.execute('SELECT payload FROM measurements WHERE user_id=? ORDER BY measurement_date ASC, created_at ASC, id ASC', (user_id,)).fetchall()
         return [BodyCompositionMeasurement.model_validate_json(r[0]) for r in rows]
 
     def get_measurement(self, measurement_id: str) -> BodyCompositionMeasurement | None:
@@ -129,11 +137,11 @@ class HealthStore:
     def find_reference(self, *, gender: str, age: int | None, height: float | None, segment: Segment) -> ReferenceRange | None:
         candidates = [r for r in self.list_reference_ranges() if r.segment == segment and (r.gender == 'any' or r.gender == gender)]
         if age is not None:
-            candidates = [r for r in candidates if r.age_min <= age <= r.age_max] or candidates
+            candidates = [r for r in candidates if r.age_min <= age <= r.age_max]
         if height is not None:
             in_height = [r for r in candidates if (r.height_min is None or height >= r.height_min) and (r.height_max is None or height <= r.height_max)]
-            if in_height:
-                candidates = in_height
+            candidates = in_height
+        candidates.sort(key=lambda r: (r.source == 'demo', r.gender == 'any'))
         return candidates[0] if candidates else None
 
     # --- Exercise profile ----------------------------------------------------------------------
@@ -200,3 +208,20 @@ class HealthStore:
         with self.connect() as db:
             rows = db.execute('SELECT payload FROM counselor_notes WHERE student_id=? ORDER BY created_at DESC', (student_id,)).fetchall()
         return [CounselorNote.model_validate_json(r[0]) for r in rows]
+
+    def request_school(self, user_id, name):
+        with self.connect() as db:
+            db.execute('INSERT OR REPLACE INTO school_requests VALUES (?,?,?)', (user_id, name, now()))
+
+    def list_school_requests(self):
+        with self.connect() as db:
+            return [{'user_id': r[0], 'name': r[1], 'created_at': r[2]} for r in db.execute('SELECT * FROM school_requests')]
+
+    def register_school(self, school):
+        with self.connect() as db:
+            db.execute('INSERT OR REPLACE INTO schools VALUES (?,?)', (school['id'], json.dumps(school, ensure_ascii=False)))
+        return school
+
+    def list_schools(self):
+        with self.connect() as db:
+            return [json.loads(r[0]) for r in db.execute('SELECT payload FROM schools')]

@@ -105,7 +105,7 @@ export default function CounselorDashboardPage() {
     <>
       <Card title="학생 관리">
         <Disclaimer>
-          아래 지표는 AI가 정리한 참고용 요약입니다. 의학적 진단이 아니며, 필요 시 학생과의 상담 및 재측정을 안내해 주세요.
+          본인에게 배정된 학교에서 공유에 동의한 학생만 표시됩니다. 아래 지표는 참고용 요약입니다. 의학적 진단이 아니며, 필요 시 학생과의 상담 및 재측정을 안내해 주세요.
         </Disclaimer>
         {list.length === 0 ? (
           <EmptyState title="등록된 학생 데이터가 없어요" />
@@ -118,7 +118,7 @@ export default function CounselorDashboardPage() {
                   <th style={{ padding: '6px 8px' }}>최근 측정일</th>
                   <th style={{ padding: '6px 8px' }}>골격근량</th>
                   <th style={{ padding: '6px 8px' }}>체지방률</th>
-                  <th style={{ padding: '6px 8px' }}>루틴 완료율</th>
+                  <th style={{ padding: '6px 8px' }}>이번 주 완료율</th>
                   <th style={{ padding: '6px 8px' }}></th>
                 </tr>
               </thead>

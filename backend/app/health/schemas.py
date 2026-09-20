@@ -9,7 +9,8 @@ from __future__ import annotations
 from datetime import date, datetime, timezone
 from enum import Enum
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator
+from typing import Literal
 
 
 def _now() -> str:
@@ -53,26 +54,64 @@ class ExperienceLevel(str, Enum):
 
 # --- User -----------------------------------------------------------------------------------
 class HealthUser(BaseModel):
+    model_config = ConfigDict(allow_inf_nan=False)
     id: str
     name: str
     email: str = ''
     role: Role = Role.student
-    gender: str = 'unspecified'  # 'male' | 'female' | 'unspecified' -- only used for reference-range lookup
+    school_id: Optional[str] = None
+    share_with_center: bool = False
+    gender: Literal['male', 'female', 'unspecified'] = 'unspecified'  # body model and reference-range lookup
     birth_date: Optional[str] = None
-    height: Optional[float] = None  # cm
+    height: Optional[float] = Field(default=None, ge=50, le=250)  # cm
     created_at: str = Field(default_factory=_now)
 
 
 # --- Body composition -------------------------------------------------------------------------
 class SegmentMeasurement(BaseModel):
+    model_config = ConfigDict(allow_inf_nan=False)
     segment: Segment
-    lean_mass_kg: Optional[float] = None
-    lean_reference_percent: Optional[float] = None
-    fat_mass_kg: Optional[float] = None
-    fat_reference_percent: Optional[float] = None
+    lean_mass_kg: Optional[float] = Field(default=None, ge=0)
+    lean_reference_percent: Optional[float] = Field(default=None, ge=0)
+    fat_mass_kg: Optional[float] = Field(default=None, ge=0)
+    fat_reference_percent: Optional[float] = Field(default=None, ge=0)
 
 
-class BodyCompositionMeasurement(BaseModel):
+class MeasurementValidation(BaseModel):
+    model_config = ConfigDict(allow_inf_nan=False)
+
+    @field_validator('measurement_date', check_fields=False)
+    @classmethod
+    def valid_measurement_date(cls, value):
+        parsed = date.fromisoformat(value)
+        if parsed > date.today():
+            raise ValueError('미래 날짜의 측정값은 입력할 수 없습니다.')
+        return parsed.isoformat()
+
+    @model_validator(mode='after')
+    def coherent_measurement(self):
+        for name in ('weight', 'height', 'skeletal_muscle_mass', 'body_fat_mass', 'fat_free_mass',
+                     'total_body_water', 'bmi', 'basal_metabolic_rate', 'visceral_fat_level', 'smi'):
+            value = getattr(self, name, None)
+            if value is not None and value < 0:
+                raise ValueError(f'{name}: 음수는 허용되지 않습니다.')
+        if self.weight is not None and self.weight == 0:
+            raise ValueError('체중은 0보다 커야 합니다.')
+        if self.height is not None and not 50 <= self.height <= 250:
+            raise ValueError('키는 cm 단위로 입력하세요 (50–250).')
+        if self.body_fat_percentage is not None and not 0 <= self.body_fat_percentage <= 100:
+            raise ValueError('체지방률은 0–100% 범위입니다.')
+        if self.weight is not None:
+            for name in ('skeletal_muscle_mass', 'body_fat_mass', 'fat_free_mass', 'total_body_water'):
+                value = getattr(self, name, None)
+                if value is not None and value > self.weight:
+                    raise ValueError(f'{name}: 체중보다 클 수 없습니다.')
+        if len({s.segment for s in self.segments}) != len(self.segments):
+            raise ValueError('측정 부위가 중복되었습니다.')
+        return self
+
+
+class BodyCompositionMeasurement(MeasurementValidation):
     id: str
     user_id: str
     measurement_date: str  # ISO date
@@ -93,7 +132,7 @@ class BodyCompositionMeasurement(BaseModel):
     created_at: str = Field(default_factory=_now)
 
 
-class BodyCompositionCreateRequest(BaseModel):
+class BodyCompositionCreateRequest(MeasurementValidation):
     measurement_date: str
     weight: Optional[float] = None
     height: Optional[float] = None
@@ -134,9 +173,9 @@ class ExerciseProfile(BaseModel):
     user_id: str
     experience_level: ExperienceLevel = ExperienceLevel.BEGINNER
     goal: Goal = Goal.GENERAL_HEALTH
-    days_per_week: int = 3
-    minutes_per_session: int = 40
-    exercise_location: str = 'gym'  # 'gym' | 'home' | 'outdoor'
+    days_per_week: int = Field(default=3, ge=1, le=7)
+    minutes_per_session: int = Field(default=40, ge=10, le=180)
+    exercise_location: Literal['gym', 'home', 'outdoor'] = 'gym'  # 'gym' | 'home' | 'outdoor'
     available_equipment: list[str] = Field(default_factory=list)
     limitations: list[str] = Field(default_factory=list)
     preferences: list[str] = Field(default_factory=list)
@@ -149,6 +188,13 @@ class ExerciseProfile(BaseModel):
 
 
 class RoutineExercise(BaseModel):
+    exercise_id: Optional[str] = None
+    motion_id: Optional[str] = None
+    instructions: list[str] = Field(default_factory=list)
+    cautions: list[str] = Field(default_factory=list)
+    target_regions: list[str] = Field(default_factory=list)
+    intensity: str = ''
+    estimated_minutes: float = 0
     day_number: int
     exercise_name: str
     sets: Optional[int] = None
@@ -166,13 +212,23 @@ class ExerciseRoutine(BaseModel):
     goal: str = ''
     summary: str = ''
     duration_weeks: int = 6
-    days_per_week: int = 3
+    days_per_week: int = Field(default=3, ge=1, le=7)
     exercises: list[RoutineExercise] = Field(default_factory=list)
     generated_by: str = 'deterministic'  # 'deterministic' | 'llm'
+    algorithm_version: str = 'legacy'
+    rationale: list[str] = Field(default_factory=list)
+    notices: list[str] = Field(default_factory=list)
+    input_snapshot: dict = Field(default_factory=dict)
+    day_minutes: dict[str, float] = Field(default_factory=dict)
+    progression: str = ''
+    sources: list[dict[str, str]] = Field(default_factory=list)
+    schedule: list[str] = Field(default_factory=list)
 
 
 # --- Workout log -------------------------------------------------------------------------------
 class WorkoutLog(BaseModel):
+    routine_exercise_id: Optional[str] = None
+    day_number: Optional[int] = None
     id: str
     user_id: str
     routine_id: Optional[str] = None
@@ -181,20 +237,22 @@ class WorkoutLog(BaseModel):
     sets_completed: Optional[int] = None
     reps_completed: Optional[str] = None
     duration: Optional[str] = None
-    difficulty: Optional[str] = None  # 'easy' | 'moderate' | 'hard'
+    difficulty: Optional[Literal['easy', 'moderate', 'hard', 'pain']] = None  # 'easy' | 'moderate' | 'hard'
     completed: bool = True
     memo: str = ''
     created_at: str = Field(default_factory=_now)
 
 
 class WorkoutLogCreateRequest(BaseModel):
+    routine_exercise_id: Optional[str] = None
+    day_number: Optional[int] = Field(default=None, ge=1, le=7)
     routine_id: Optional[str] = None
     date: str
     exercise_name: str
     sets_completed: Optional[int] = None
     reps_completed: Optional[str] = None
     duration: Optional[str] = None
-    difficulty: Optional[str] = None
+    difficulty: Optional[Literal['easy', 'moderate', 'hard', 'pain']] = None
     completed: bool = True
     memo: str = ''
 
@@ -221,6 +279,7 @@ class HealthAgentChatRequest(BaseModel):
 
 
 class CounselorNote(BaseModel):
+    school_id: Optional[str] = None
     id: str
     student_id: str
     counselor_id: str

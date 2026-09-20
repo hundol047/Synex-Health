@@ -113,3 +113,40 @@ small{font-size:.8125rem}
   font-size:.8rem;color:var(--muted);cursor:pointer}
 .chip-checkbox.checked{background:var(--blue-light);color:var(--blue-dark);border-color:var(--blue-light);font-weight:700}
 .chip-checkbox input{margin:0}
+
+/* Guided movement and explainable workout planning */
+.exercise-card { padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: #fff; }
+.exercise-card-open { border-color: #b2cef1; box-shadow: 0 8px 28px #225ca609; }
+.exercise-card-top { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.exercise-card-top strong { font-size: 1.04rem; }
+.exercise-card-top p { margin: 7px 0 0; }
+.exercise-regions { font-size: .7rem; color: #3777b9; font-weight: 700; margin-bottom: 5px; }
+.exercise-reason { font-size: .81rem; margin: 10px 0 0; line-height: 1.65; }
+.motion-layout { display: grid; grid-template-columns: minmax(240px,1fr) minmax(240px,1fr); gap: 24px; margin-top: 18px; border-top: 1px solid var(--line); padding-top: 18px; }
+.motion-viewer { background: #f2f7fc; border-radius: 14px; padding: 14px; }
+.motion-caption { display: flex; justify-content: space-between; font-size: .73rem; color: #5c718b; }
+.motion-svg { display: block; width: 100%; max-height: 280px; }
+.motion-phase { text-align: center; font-size: .8rem; font-weight: 600; margin: 0 0 8px; }
+.motion-viewer input[type=range] { width: 100%; accent-color: #2563eb; }
+.motion-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.motion-controls .btn { font-size: .73rem; padding: 8px; }
+.motion-controls select { background: white; border: 1px solid #d4e0ef; border-radius: 6px; padding: 6px; font: inherit; font-size: .75rem; }
+.motion-note { font-size: .69rem; color: #66778e; line-height: 1.5; margin: 12px 0 0; }
+.motion-instructions h4 { margin: 4px 0 14px; }
+.motion-instructions ol { padding-left: 22px; line-height: 1.8; font-size: .86rem; }
+.motion-instructions li { padding: 3px 0 9px; }
+.motion-intensity { background: #eef5ff; padding: 12px; border-radius: 10px; font-size: .8rem; }
+.motion-intensity p { margin: 5px 0 0; }
+.motion-cautions { font-size: .76rem; color: #835722; line-height: 1.6; padding-left: 19px; }
+.plan-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin: 18px 0; }
+.plan-stat { padding: 13px; border-radius: 12px; background: #f4f8fd; }
+.plan-stat span { display: block; font-size: .72rem; color: #677a93; }
+.plan-stat strong { display: block; margin-top: 5px; font-size: 1.18rem; }
+.plan-rationale { font-size: .83rem; line-height: 1.75; padding-left: 21px; }
+.plan-notices { font-size: .78rem; color: #62728a; line-height: 1.7; padding-left: 20px; }
+.plan-sources { display: flex; gap: 14px; flex-wrap: wrap; font-size: .76rem; margin-top: 12px; }
+.workout-feedback { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 14px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.workout-feedback select { max-width: 180px; }
+.measurement-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+.measurement-segment { display: grid; grid-template-columns: 70px repeat(3,minmax(0,1fr)); gap: 8px; align-items: center; margin: 10px 0; font-size: .78rem; }
+@media(max-width:720px) { .motion-layout { grid-template-columns: 1fr; } .plan-stats { grid-template-columns:repeat(2,1fr); } .measurement-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .exercise-card { padding:12px; } .exercise-card-top { align-items:flex-start; } .exercise-card-top .btn { white-space:nowrap; font-size:.75rem; } }

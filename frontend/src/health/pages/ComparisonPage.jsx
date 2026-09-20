@@ -58,7 +58,7 @@ export default function ComparisonPage() {
       </Card>
 
       {tab === 'reference' && (
-        <Card title="기준 비교 (부위별 근육 기준 대비)">
+        <Card title="기준 비교 (부위별 제지방 기준 대비)">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {Object.entries(data.reference_comparison || {}).map(([seg, ref]) => (
               <div key={seg} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--line)' }}>
@@ -113,7 +113,7 @@ export default function ComparisonPage() {
                 {(data.segment_deltas || []).map((s) => (
                   <div key={s.segment} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--line)' }}>
                     <span>{SEGMENT_LABEL_KO[s.segment] || s.segment}</span>
-                    <span className="muted">근육 {fmtDelta(s.lean_mass_delta_kg)} · 지방 {fmtDelta(s.fat_mass_delta_kg)}</span>
+                    <span className="muted">제지방 {fmtDelta(s.lean_mass_delta_kg)} · 지방 {fmtDelta(s.fat_mass_delta_kg)}</span>
                   </div>
                 ))}
               </div>

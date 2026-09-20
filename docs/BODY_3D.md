@@ -1,38 +1,12 @@
-# 3D Body Map implementation notes
+# 3D 인체 모형
 
-## What's here now
+남성·여성·미지정(중립)별로 다른 어깨·가슴·허리·골반·팔·다리 비율을 가진 자체 제작 절차형 인체 모형이다. 손바닥·손가락·발·목·머리·얼굴 방향을 추가하여 신체 부위를 구분할 수 있다. 단순 색상 변경으로 성별을 표시하지 않는다.
 
-`frontend/src/health/components/body3d/geometry.js` + `HumanBody.jsx` generate a **procedural,
-lofted human silhouette** at runtime (Three.js `BufferGeometry`, built via
-`react-three-fiber`/`drei`): each of the five data segments (`LEFT_ARM`, `RIGHT_ARM`, `TRUNK`,
-`LEFT_LEG`, `RIGHT_LEG`) is its own smoothly-tapered mesh lofted along a curved spine (Frenet-frame
-tube/elliptical-tube generation), not a sphere/cylinder/capsule bolted onto a rig. This keeps
-adult-human proportions (A-pose, tapered limbs, an elliptical torso silhouette wider than it is
-deep) while staying entirely self-authored code with no external asset licensing risk.
-
-## Why not a pre-made GLB/GLTF human model
-
-The product brief asks for a licensed, adult-proportioned GLB/GLTF asset rather than this
-procedural mesh. This environment does not have a verified, redistributable-license human body
-asset available to fetch and ship (Mixamo characters carry Adobe's own redistribution terms;
-generic "free" marketplace assets often have unclear or non-commercial licenses) — shipping one
-without checking its license would violate the brief's own "라이선스가 불명확한 에셋은 사용하지
-않는다" rule. Rather than guess, this build ships the procedural mesh, which is honest about what
-it is and fully licensed (self-generated code).
-
-## How to swap in a real GLB later
-
-The segment-group contract downstream components rely on is: **a `<group name="LEFT_ARM">` (etc.
-for the other four) somewhere in the scene graph, each containing the mesh(es) that make up that
-region**, so `HumanBody.jsx`'s click/hover handlers and `BodyMapWorkspace`'s color-by-segment logic
-keep working unchanged. To swap in a licensed GLB:
-
-1. Verify the license explicitly permits this use (including redistribution inside a built web app).
-2. Load it with `useGLTF` (`@react-three/drei`, already a dependency) instead of `HumanBody.jsx`'s
-   procedural geometry.
-3. In the source GLB/rig, group or tag the meshes covering each of the five regions so they can be
-   selected by name (e.g. rename mesh nodes in Blender before export, or map bone influences to the
-   five regions) and wrap each region's meshes in a `<group name="LEFT_ARM">` etc. wrapper the same
-   way `HumanBody.jsx` does now.
-4. `BodyScene.jsx`, `BodyMapWorkspace.jsx`, `bodyMapColors.js`, and `SegmentDetailPanel.jsx` need no
-   changes — they only depend on the five group names and the click/hover callback contract.
+- `bodyProfiles.js`: 성별 비율. 통계 기준이나 개인 체형 추정치가 아닌 설명용 디자인 값.
+- `HumanBody.jsx`: 곡선 단면 인체 메시, 해부학적 좌우(정면에서 사용자의 왼쪽은 화면 오른쪽).
+- 프로필의 gender → API body_profile → 학생/이전비교/상담사 3D 화면으로 전달.
+- 성별 미지정은 임의 추론 없이 중립 모형. 성별 변경 후 프로필 저장 → 3D 재진입 시 반영.
+- 정면·후면·좌우 버튼, 드래그 회전, 확대/축소, 측정 부위 클릭.
+- 5개 부위 색상은 실제 입력/예시 측정의 비교값. 얼굴·손발의 형태는 측정값이 아니다.
+- 개인 3D 스캔, 실제 체형 복원, 개별 근육 모델, 내부 장기·단면·임상 해부학 모델이 아니다. 체중·골격근량은 운동 추천에 사용하며 신체 표면을 정밀 추정하지 않는다.
+- 외부 3D 자산이나 라이선스 불명 GLB 다운로드 없이 동작한다. 정밀 해부학이 필요하면 검증된 라이선스 자산과 데이터 매핑을 별도로 도입해야 한다.

@@ -2,7 +2,7 @@
 // per-segment color for each of the five view modes (section 10-12 of the product brief). Colors
 // are configurable constants here, not hardcoded per-component, so they're easy to re-theme.
 export const MODES = [
-  { id: 'muscle', label: '근육' },
+  { id: 'muscle', label: '부위 제지방' },
   { id: 'fat', label: '체지방' },
   { id: 'balance', label: '좌우 균형' },
   { id: 'reference', label: '기준 비교' },

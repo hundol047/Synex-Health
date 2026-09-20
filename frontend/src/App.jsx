@@ -1,22 +1,22 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './shared/components/Layout.jsx';
 
-import HomePage from './health/pages/HomePage.jsx';
-import BodyMapPage from './health/pages/BodyMapPage.jsx';
-import ComparisonPage from './health/pages/ComparisonPage.jsx';
-import RoutinePage from './health/pages/RoutinePage.jsx';
-import WorkoutPage from './health/pages/WorkoutPage.jsx';
-import ProgressPage from './health/pages/ProgressPage.jsx';
-import AgentChatPage from './health/pages/AgentChatPage.jsx';
-import ProfilePage from './health/pages/ProfilePage.jsx';
-import CounselorDashboardPage from './health/pages/CounselorDashboardPage.jsx';
+const HomePage = lazy(() => import('./health/pages/HomePage.jsx'));
+const BodyMapPage = lazy(() => import('./health/pages/BodyMapPage.jsx'));
+const ComparisonPage = lazy(() => import('./health/pages/ComparisonPage.jsx'));
+const RoutinePage = lazy(() => import('./health/pages/RoutinePage.jsx'));
+const WorkoutPage = lazy(() => import('./health/pages/WorkoutPage.jsx'));
+const ProgressPage = lazy(() => import('./health/pages/ProgressPage.jsx'));
+const AgentChatPage = lazy(() => import('./health/pages/AgentChatPage.jsx'));
+const ProfilePage = lazy(() => import('./health/pages/ProfilePage.jsx'));
+const CounselorDashboardPage = lazy(() => import('./health/pages/CounselorDashboardPage.jsx'));
 
 export default function App() {
   return (
     <BrowserRouter>
       <Layout>
-        <Routes>
+        <Suspense fallback={<p role="status">화면을 불러오는 중입니다.</p>}><Routes>
           <Route path="/" element={<Navigate to="/health" replace />} />
           <Route path="/health" element={<HomePage />} />
           <Route path="/health/body" element={<BodyMapPage />} />
@@ -28,7 +28,7 @@ export default function App() {
           <Route path="/health/profile" element={<ProfilePage />} />
           <Route path="/health-center" element={<CounselorDashboardPage />} />
           <Route path="*" element={<Navigate to="/health" replace />} />
-        </Routes>
+        </Routes></Suspense>
       </Layout>
     </BrowserRouter>
   );

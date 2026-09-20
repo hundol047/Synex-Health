@@ -1,12 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import BodyScene from './BodyScene.jsx';
+import { resolveBodyProfile } from './bodyProfiles.js';
 import SegmentDetailPanel from './SegmentDetailPanel.jsx';
 import { MODES, STATUS_COLORS, colorsForMode, SEGMENT_LABEL_KO } from '../../lib/bodyMapColors.js';
 import { Disclaimer } from '../../../shared/components/ui.jsx';
 
 const LEGEND_BY_MODE = {
   muscle: [['within', '기준 범위'], ['above', '기준보다 높음'], ['below', '기준보다 낮음'], ['far_below', '큰 차이']],
-  fat: [['above', '감소(개선)'], ['within', '변화 적음'], ['below', '증가'], ['far_below', '큰 폭 증가']],
+  fat: [['above', '감소'], ['within', '변화 적음'], ['below', '증가'], ['far_below', '큰 폭 증가']],
   balance: [['above', '균형/높은 쪽'], ['within', '균형'], ['below', '낮은 쪽'], ['far_below', '큰 차이']],
   reference: [['within', '기준 범위'], ['above', '기준보다 높음'], ['below', '기준보다 낮음'], ['far_below', '큰 차이']],
   previous: [['above', '증가'], ['within', '변화 적음'], ['below', '감소'], ['far_below', '큰 폭 감소']],
@@ -30,7 +31,10 @@ export default function BodyMapWorkspace({ comparisonData, height = 440, default
         ))}
       </div>
 
+      <p className="muted" style={{fontSize:'.8rem'}}>{resolveBodyProfile(comparisonData?.body_profile?.gender).label} · 프로필 기준 · 실제 체형 스캔이 아닌 표준 설명 모형</p>
+      {Object.values(comparisonData?.reference_comparison||{}).some(r=>r.source==='demo') && <p className="motion-cautions">현재 기준 비교에는 예시 기준값이 포함되어 있습니다. 실제 건강 상태 판정에 사용하지 마세요.</p>}
       <BodyScene
+        gender={comparisonData?.body_profile?.gender || 'unspecified'}
         height={height}
         segmentColors={segmentColors}
         selectedSegment={hovered || selectedSegment}

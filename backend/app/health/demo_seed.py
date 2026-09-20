@@ -13,11 +13,15 @@ DEMO_ADMIN_ID = 'admin-demo'
 
 
 def seed_demo_data(store: HealthStore) -> None:
-    store.upsert_user(HealthUser(id=DEMO_STUDENT_ID, name='김지민', email='jimin.demo@university.ac.kr',
-                                   role='student', gender='female', birth_date='2005-04-02', height=165))
-    store.upsert_user(HealthUser(id=DEMO_COUNSELOR_ID, name='건강센터 상담사', email='counselor.demo@university.ac.kr',
-                                   role='counselor'))
-    store.upsert_user(HealthUser(id=DEMO_ADMIN_ID, name='관리자', email='admin.demo@university.ac.kr', role='admin'))
+    accounts = [
+        HealthUser(id=DEMO_STUDENT_ID, name='김지민', email='jimin.demo@university.ac.kr', role='student', gender='female',
+                   birth_date='2005-04-02', height=165, school_id='yonsei-mirae', share_with_center=True),
+        HealthUser(id=DEMO_COUNSELOR_ID, name='건강센터 상담사', role='counselor', school_id='yonsei-mirae'),
+        HealthUser(id=DEMO_ADMIN_ID, name='관리자', role='admin'),
+    ]
+    for account in accounts:
+        if store.get_user(account.id) is None:
+            store.upsert_user(account)
 
     if not store.list_measurements(DEMO_STUDENT_ID):
         MockProvider(store).seed_demo_readings(DEMO_STUDENT_ID)

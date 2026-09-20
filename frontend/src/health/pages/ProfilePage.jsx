@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import MeasurementEntry from '../components/MeasurementEntry.jsx';
+import SchoolSelector from '../components/SchoolSelector.jsx';
 import { HealthAPI } from '../../shared/lib/api.js';
 import { Card, Skeleton, ErrorState, Disclaimer } from '../../shared/components/ui.jsx';
 import { useApiData } from '../lib/useApiData.js';
@@ -51,6 +53,7 @@ export default function ProfilePage() {
   const exercise = useApiData(() => HealthAPI.getExerciseProfile(), []);
 
   const [heightInput, setHeightInput] = useState('');
+  const [gender,setGender]=useState('unspecified');
   const [form, setForm] = useState(null);
   const [equipmentSet, setEquipmentSet] = useState(new Set());
   const [limitationsText, setLimitationsText] = useState('');
@@ -62,6 +65,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (profile.data?.height != null) setHeightInput(String(profile.data.height));
+    setGender(profile.data?.gender||'unspecified');
   }, [profile.data]);
 
   useEffect(() => {
@@ -87,8 +91,8 @@ export default function ProfilePage() {
     setSaved(false);
     try {
       const heightNum = heightInput === '' ? null : Number(heightInput);
-      if (profile.data && heightNum !== profile.data.height) {
-        await HealthAPI.updateProfile({ height: heightNum });
+      if (profile.data && (heightNum !== profile.data.height || gender !== profile.data.gender)) {
+        await HealthAPI.updateProfile({ height: heightNum, gender });
       }
       await HealthAPI.updateExerciseProfile({
         experience_level: form.experience_level,
@@ -115,13 +119,15 @@ export default function ProfilePage() {
     }
   }
 
-  if (profile.loading || exercise.loading) return <Card><Skeleton height={300} /></Card>;
+  if ((profile.loading && !profile.data) || (exercise.loading && !exercise.data)) return <Card><Skeleton height={300} /></Card>;
   if (profile.error) return <ErrorState message={profile.error.message} onRetry={profile.reload} />;
   if (exercise.error) return <ErrorState message={exercise.error.message} onRetry={exercise.reload} />;
   if (!form) return null;
 
   return (
     <>
+      <SchoolSelector profile={profile.data} onSaved={profile.reload}/>
+      <MeasurementEntry />
       <Card title="내 정보">
         <div className="profile-grid">
           <div>
@@ -130,7 +136,7 @@ export default function ProfilePage() {
           </div>
           <div>
             <label className="field-label">성별</label>
-            <p>{profile.data.gender === 'male' ? '남성' : profile.data.gender === 'female' ? '여성' : '미지정'}</p>
+            <select aria-label="인체 모형 성별" className="text-input" value={gender} onChange={e=>setGender(e.target.value)}><option value="unspecified">미지정 (중립 모형)</option><option value="male">남성</option><option value="female">여성</option></select><p className="muted">3D 모형과 기준값 조회에 반영됩니다.</p>
           </div>
           <div>
             <label className="field-label">생년월일</label>

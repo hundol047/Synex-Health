@@ -28,7 +28,7 @@ def _load_prompt(name: str) -> str:
 
 def agent_mode() -> str:
     mode = os.getenv('HEALTH_AGENT_MODE', 'deterministic').lower()
-    if mode == 'llm' and not os.getenv('ANTHROPIC_API_KEY'):
+    if mode == 'llm' and not (os.getenv('ANTHROPIC_API_KEY') and os.getenv('ANTHROPIC_MODEL')):
         return 'deterministic'  # fail closed to the always-working path rather than pretending to be connected
     return mode
 
@@ -39,7 +39,7 @@ def _call_anthropic(system_prompt: str, user_content: str) -> str | None:
     try:
         resp = httpx.post('https://api.anthropic.com/v1/messages', timeout=30,
                            headers={'x-api-key': api_key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json'},
-                           json={'model': os.getenv('ANTHROPIC_MODEL', 'claude-sonnet-5'), 'max_tokens': 2000,
+                           json={'model': os.environ['ANTHROPIC_MODEL'], 'max_tokens': 2000,
                                  'system': system_prompt, 'messages': [{'role': 'user', 'content': user_content}]})
         resp.raise_for_status()
         blocks = resp.json().get('content', [])
@@ -103,7 +103,7 @@ def _deterministic_analysis(user: HealthUser, measurement: BodyCompositionMeasur
     if deltas.get('body_fat_percentage_delta') and deltas['body_fat_percentage_delta'] > 0:
         recommendations.append('체지방 관리를 위한 유산소 활동을 주간 루틴에 포함하는 것을 고려해 보세요.')
     if not recommendations:
-        recommendations.append('현재 균형 잡힌 상태입니다. 꾸준한 운동 습관 유지를 권장합니다.')
+        recommendations.append('현재 자료만으로 추가 우선순위를 정하기 어렵습니다. 측정 누락과 운동 가능 여부를 확인하고 꾸준한 활동을 이어가세요.')
 
     counselor_questions = ['최근 측정값이 기준 범위를 벗어난 부위가 있는지 확인하고 싶습니다.' if out_of_range else '현재 운동 루틴이 적절한지 확인받고 싶습니다.',
                             '재측정 주기를 어떻게 잡는 것이 좋을지 상담하고 싶습니다.']

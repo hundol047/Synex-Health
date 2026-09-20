@@ -62,11 +62,13 @@ def balance_delta_vs(previous: BodyCompositionMeasurement | None, current: BodyC
         return None
     cur_bal = left_right_balance(current)
     prev_bal = left_right_balance(previous)
-    cur_total = sum(abs(cur_bal[k]['diff_percent']) for k in cur_bal if cur_bal[k]['diff_percent'] is not None)
-    prev_total = sum(abs(prev_bal[k]['diff_percent']) for k in prev_bal if prev_bal[k]['diff_percent'] is not None)
-    if not cur_bal or not prev_bal:
+    common = [k for k in cur_bal if cur_bal[k]['diff_percent'] is not None
+              and prev_bal[k]['diff_percent'] is not None]
+    if not common:
         return None
-    return round(cur_total - prev_total, 1)
+    return round(sum(abs(cur_bal[k]['diff_percent']) - abs(prev_bal[k]['diff_percent'])
+                     for k in common), 1)
+
 
 
 def reference_comparison(current: BodyCompositionMeasurement, ranges: dict[Segment, ReferenceRange]) -> dict:
@@ -95,7 +97,7 @@ def reference_comparison(current: BodyCompositionMeasurement, ranges: dict[Segme
             status = 'below'
         else:
             status = 'far_below'
-        out[s.value] = {'status': status, 'reference_percent': pct, 'source': r.source if r else None}
+        out[s.value] = {'status': status, 'reference_percent': pct, 'source': ('demo' if current.source == 'mock' else 'device') if m.lean_reference_percent is not None else (r.source if r else None)}
     return out
 
 
