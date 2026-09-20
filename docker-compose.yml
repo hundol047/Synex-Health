@@ -1,0 +1,18 @@
+services:
+  synex-health:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      AUTH_MODE: demo
+      HEALTH_AGENT_MODE: deterministic
+      SYNEX_HEALTH_DEMO_SEED: "true"
+      SYNEX_HEALTH_DB_PATH: /app/runtime/health.sqlite3
+      SYNEX_HEALTH_AUTH_SESSION_PATH: /app/runtime/auth.sqlite3
+    volumes:
+      - synex-health-data:/app/runtime
+    restart: unless-stopped
+volumes:
+  synex-health-data:
