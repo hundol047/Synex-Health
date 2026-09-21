@@ -79,7 +79,7 @@ def verify_oidc_token(token: str, issuer: str, audience: str, role_claim: str = 
     signing_key = next((k for k in key_set.keys if k.key_id == header.get('kid')), None)
     if signing_key is None:
         raise HTTPException(401, 'No matching JWKS key for token')
-    claims = jwt.decode(token, key=signing_key.key, algorithms=[header.get('alg', 'RS256')],
+    claims = jwt.decode(token, key=signing_key.key, algorithms=['RS256', 'ES256'], options={'require': ['sub', 'exp', 'iss', 'aud']},
                          audience=audience, issuer=issuer)
     role = claims.get(role_claim)
     if isinstance(role, list):

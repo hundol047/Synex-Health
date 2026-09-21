@@ -150,3 +150,28 @@ small{font-size:.8125rem}
 .measurement-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
 .measurement-segment { display: grid; grid-template-columns: 70px repeat(3,minmax(0,1fr)); gap: 8px; align-items: center; margin: 10px 0; font-size: .78rem; }
 @media(max-width:720px) { .motion-layout { grid-template-columns: 1fr; } .plan-stats { grid-template-columns:repeat(2,1fr); } .measurement-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .exercise-card { padding:12px; } .exercise-card-top { align-items:flex-start; } .exercise-card-top .btn { white-space:nowrap; font-size:.75rem; } }
+/* Mobile applications and membership */
+.health-topbar{padding-top:calc(14px + env(safe-area-inset-top));gap:12px}
+.health-main{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
+.health-desktop-nav{flex-wrap:wrap;justify-content:center}
+.health-desktop-nav a{padding:8px 10px}
+.membership-hero{padding:40px 32px;border-radius:24px;background:linear-gradient(125deg,#172e60,#285fc9);color:#fff;display:grid;gap:18px}
+.membership-hero h1{font-size:clamp(1.7rem,4vw,2.5rem)}
+.membership-hero p{line-height:1.8;color:#dae7ff}
+.eyebrow{font-size:.73rem;font-weight:800;letter-spacing:.14em;display:flex;align-items:center;gap:8px}
+.membership-badge{display:flex;align-items:center;gap:8px;font-size:.8rem;color:#d8e6ff}
+.membership-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.membership-plan{padding:28px;display:flex;flex-direction:column;align-items:stretch;gap:18px}
+.membership-plan.featured{border:2px solid #3972e2;background:linear-gradient(150deg,#fff,#eff5ff)}
+.membership-plan .eyebrow{color:#2353b3}
+.membership-plan h2{font-size:1.8rem}
+.membership-price{font-size:1.15rem;font-weight:700}
+.membership-plan ul{list-style:none;padding:0;margin:0 0 12px;display:grid;gap:16px;flex:1}
+.membership-plan li{display:flex;gap:10px;align-items:center;font-size:.9rem}
+.membership-plan li svg{color:#238766;flex-shrink:0}
+.membership-status{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.membership-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:18px 0}
+.monthly-report{display:grid;gap:24px}
+@media(max-width:600px){.membership-grid{grid-template-columns:1fr}.membership-hero{padding:28px 22px}.health-bottom-nav a{min-width:0;flex:1;padding:4px 2px}.health-brand{font-size:.95rem}.membership-badge{align-items:flex-start}.membership-plan{padding:22px}}
+@media print{.health-topbar,.health-bottom-nav,.no-print{display:none!important}.health-main{padding:0}.monthly-report{box-shadow:none;border:0}.monthly-report .stat-grid{grid-template-columns:repeat(3,1fr)}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}

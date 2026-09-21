@@ -32,7 +32,7 @@ export default function ProgressPage() {
 
   const { chartData, segmentData } = useMemo(() => {
     const filtered = filterByPeriod(all, period);
-    const base = filtered.length ? filtered : all;
+    const base = filtered;
     return {
       chartData: base.map((m) => ({
         date: m.measurement_date,
@@ -93,7 +93,7 @@ export default function ProgressPage() {
         </div>
       </Card>
 
-      <Card title="부위별 근육량 변화">
+      <Card title="부위별 제지방량 변화">
         <div style={{ width: '100%', height: 260 }}>
           <ResponsiveContainer>
             <LineChart data={segmentData}>

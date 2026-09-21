@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import React, { useEffect, useState } from 'react';
 import MeasurementEntry from '../components/MeasurementEntry.jsx';
 import SchoolSelector from '../components/SchoolSelector.jsx';
@@ -126,6 +127,7 @@ export default function ProfilePage() {
 
   return (
     <>
+      <section className="card"><h2>나의 건강 메뉴</h2><div className="membership-actions"><Link className="btn btn-ghost" to="/health/workout">운동 기록</Link><Link className="btn btn-ghost" to="/health/progress">변화 추적</Link><Link className="btn btn-ghost" to="/health/comparison">측정 비교</Link><Link className="btn btn-ghost" to="/health/agent">AI 코치</Link><Link className="btn btn-ghost" to="/health/report">월별 리포트</Link></div></section>
       <SchoolSelector profile={profile.data} onSaved={profile.reload}/>
       <MeasurementEntry />
       <Card title="내 정보">

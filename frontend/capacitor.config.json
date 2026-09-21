@@ -1,0 +1,7 @@
+{
+  "appId": "com.synex.health",
+  "appName": "Synex Health",
+  "webDir": "dist",
+  "server": {"androidScheme": "https"},
+  "ios": {"contentInset": "automatic"}
+}

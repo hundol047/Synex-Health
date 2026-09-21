@@ -139,3 +139,11 @@ cd frontend && npm test
 - **3D Body Map 에셋**: 라이선스가 확인되지 않은 GLB를 사용하지 않기 위해, 현재는 5개 측정 부위를
   매끄럽게 lofting하여 절차적으로 생성한 인체 실루엣 메시를 사용합니다(로봇/마네킹 조립 방식 아님).
   남성·여성·중립 인체 비율과 손·발·얼굴 방향을 구현했습니다. 개인 스캔·임상 해부학 모델은 아닙니다.
+
+## Android · iOS 앱 / 멤버십
+
+`frontend/android`와 `frontend/ios`에 Capacitor 기반 Android Studio·Xcode 프로젝트를 추가했습니다. `frontend`에서 `npm ci`, 운영 HTTPS API 설정 후 `npm run mobile:sync`로 앱 번들을 동기화합니다. `npm run android` / `npm run ios`로 각 IDE에서 실행합니다. 서명·실기기 검증·스토어 등록은 별도입니다.
+
+`/health/subscription`에서 Free/Plus와 구독 상태를 확인합니다. Free 기능은 유지되며 Plus는 서버에서 구독 권한을 확인한 월별 리포트를 제공합니다. 결제 미연결 상태가 기본입니다. 개발 시 `AUTH_MODE=demo BILLING_MODE=demo`로 무과금 시연을 사용할 수 있습니다. 실제 구매/복원은 RevenueCat·스토어 연결 후 앱에서 제공합니다.
+
+설정, 인증, 구독 검증 구조, 아직 검증하지 않은 항목은 [모바일·구독 가이드](docs/MOBILE_AND_SUBSCRIPTIONS.md)에 정리했습니다.

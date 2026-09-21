@@ -22,7 +22,7 @@ describe('ProgressPage', () => {
     mockFetch({ '/api/progress': { measurements: [measurement('2026-06-14')], workout_count: 1, completed_workout_count: 1 } });
     render(<MemoryRouter><ProgressPage /></MemoryRouter>);
     expect(await screen.findByText('체중 · 골격근량 · 체지방률 변화')).toBeTruthy();
-    expect(screen.getByText('부위별 근육량 변화')).toBeTruthy();
+    expect(screen.getByText('부위별 제지방량 변화')).toBeTruthy();
   });
 
   it('renders without crashing given multiple measurements and supports period filtering', async () => {

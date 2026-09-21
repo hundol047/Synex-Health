@@ -56,6 +56,8 @@ def health_status():
 
 
 app.include_router(health_router)
+from .health.billing import router as billing_router
+app.include_router(billing_router)
 
 DIST = Path(__file__).resolve().parents[2] / 'frontend' / 'dist'
 if DIST.exists():

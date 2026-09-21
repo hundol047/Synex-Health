@@ -1,3 +1,4 @@
+import { getAccessToken } from './session.js';
 export const BASE = import.meta.env.VITE_API_BASE || '';
 
 // Demo-mode identity switch (see backend/app/services/auth.py's get_current_user docstring):
@@ -17,11 +18,12 @@ export async function api(path, body, { method, signal, headers } = {}) {
   const m = method || (body === undefined ? 'GET' : 'POST');
   const response = await fetch(BASE + path, {
     method: m,
-    headers: { 'Content-Type': 'application/json', 'X-Synex-Demo-User': getDemoUser(), ...headers },
+    headers: { 'Content-Type': 'application/json', 'X-Synex-Demo-User': getDemoUser(), ...(getAccessToken() ? {Authorization: `Bearer ${getAccessToken()}`} : {}), ...headers },
     body: body === undefined ? undefined : JSON.stringify(body),
     signal, credentials: 'include',
   });
   if (!response.ok) {
+    if (response.status === 401) window.dispatchEvent(new Event('synex-session-expired'));
     let data;
     try { data = await response.json(); } catch {}
     const err = new Error(typeof data?.detail === 'string' ? data.detail : `요청 실패 (${response.status}). 서버 연결을 확인하십시오.`);

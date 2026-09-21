@@ -1,6 +1,8 @@
-import React from 'react';
+import { useAuth } from './AuthBoundary.jsx';
+import React, { useEffect, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, PersonStanding, GitCompare, Dumbbell, ClipboardList, TrendingUp, MessageCircle, User, Users } from 'lucide-react';
+import { Home, PersonStanding, GitCompare, Dumbbell, ClipboardList, TrendingUp, MessageCircle, User, Users, Crown } from 'lucide-react';
 import { getDemoUser, setDemoUser } from '../lib/api.js';
 
 const STUDENT_NAV = [
@@ -11,13 +13,23 @@ const STUDENT_NAV = [
   { to: '/health/workout', label: '운동기록', icon: ClipboardList },
   { to: '/health/progress', label: '변화 추적', icon: TrendingUp },
   { to: '/health/agent', label: 'AI 코치', icon: MessageCircle },
+  { to: '/health/subscription', label: '멤버십', icon: Crown },
   { to: '/health/profile', label: '프로필', icon: User },
 ];
 
 export default function Layout({ children }) {
   const navigate = useNavigate();
+  const [online,setOnline] = useState(navigator.onLine);
+  useEffect(()=>{
+    const update = () => setOnline(navigator.onLine);
+    window.addEventListener('online',update);window.addEventListener('offline',update);
+    let back;
+    const ready=Capacitor.getPlatform()==='android' ? import('@capacitor/app').then(({App})=>App.addListener('backButton',({canGoBack})=>{if(canGoBack)history.back();else App.minimizeApp();})).then(h=>{back=h;}) : Promise.resolve();
+    return()=>{window.removeEventListener('online',update);window.removeEventListener('offline',update);ready.then(()=>back?.remove());};
+  },[]);
+  const auth = useAuth();
   const demoUser = getDemoUser();
-  const isCounselor = demoUser === 'counselor-demo';
+  const isCounselor = auth.demo ? demoUser === 'counselor-demo' : ['counselor','admin'].includes(auth.role);
 
   function switchRole(id) {
     setDemoUser(id);
@@ -39,14 +51,14 @@ export default function Layout({ children }) {
             <NavLink key={to} to={to} end={end}>{label}</NavLink>
           ))}
         </nav>
-        <div className="health-role-switch" role="tablist" aria-label="데모 역할 전환">
+        {auth.demo ? <div className="health-role-switch" role="tablist" aria-label="데모 역할 전환">
           <button className={!isCounselor ? 'active' : ''} onClick={() => switchRole('student-jimin')}>학생</button>
           <button className={isCounselor ? 'active' : ''} onClick={() => switchRole('counselor-demo')}>상담사</button>
-        </div>
+        </div> : <button className="btn btn-ghost" onClick={auth.logout}>로그아웃</button>}
       </header>
-      <main className="health-main">{children}</main>
-      <nav className="health-bottom-nav">
-        {nav.map(({ to, label, icon: Icon, end }) => (
+      <main className="health-main">{!online && <div className="card" role="status">인터넷 연결이 끊겼습니다. 기록 저장·구독 확인은 연결 후 다시 시도해 주세요.</div>}{children}</main>
+      <nav className="health-bottom-nav" aria-label="모바일 메뉴">
+        {(isCounselor ? nav : nav.filter(item => ['/health','/health/body','/health/routine','/health/subscription','/health/profile'].includes(item.to))).map(({ to, label, icon: Icon, end }) => (
           <NavLink key={to} to={to} end={end}>
             <Icon size={20} strokeWidth={2.2} />
             {label}

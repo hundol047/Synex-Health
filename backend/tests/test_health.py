@@ -391,3 +391,100 @@ def test_low_weight_does_not_get_fat_loss_plan():
     result=build_deterministic_routine('u',m,p)
     assert '상담 우선' in result.goal
     assert any('감량 중심 구성을 적용하지 않습니다' in n for n in result.notices)
+
+# --- Subscription trust boundary and lifecycle ---------------------------------------------
+def test_billing_disabled_by_default(client, monkeypatch):
+    monkeypatch.delenv('BILLING_MODE', raising=False)
+    assert client.get('/api/billing/subscription').json()['plan'] == 'free'
+    assert client.post('/api/billing/demo', json={'action':'activate'}).status_code == 404
+    assert client.get('/api/billing/report?month=2026-06').status_code == 403
+
+
+def test_billing_demo_lifecycle_and_isolation(client, monkeypatch):
+    monkeypatch.setenv('BILLING_MODE', 'demo')
+    active = client.post('/api/billing/demo', json={'action':'activate'}).json()
+    assert active['active'] and active['will_renew']
+    assert not client.get('/api/billing/subscription', headers=student_headers('other')).json()['active']
+    cancelled = client.post('/api/billing/demo', json={'action':'cancel'}).json()
+    assert cancelled['active'] and not cancelled['will_renew']
+    assert client.get('/api/billing/report?month=2026-06').status_code == 200
+    assert client.post('/api/billing/demo', json={'action':'expire'}).json()['plan'] == 'free'
+    assert client.get('/api/billing/report?month=2026-06').status_code == 403
+
+
+def test_demo_cannot_enable_real_paid_access(client, monkeypatch):
+    monkeypatch.setenv('BILLING_MODE','demo')
+    client.post('/api/billing/demo',json={'action':'activate'})
+    monkeypatch.setenv('AUTH_MODE','oidc')
+    from app.health.billing import status, mode
+    assert mode() == 'disabled'
+    assert not status('student-jimin')['active']
+    monkeypatch.setenv('BILLING_MODE','revenuecat')
+    monkeypatch.setenv('AUTH_MODE','demo')
+    monkeypatch.setenv('REVENUECAT_SECRET_KEY','test-secret')
+    assert mode() == 'disabled'
+
+
+def test_report_validation_and_missing_comparison(client, monkeypatch):
+    monkeypatch.setenv('BILLING_MODE','demo')
+    client.post('/api/billing/demo',json={'action':'activate'})
+    for month in ['2026-13','bad','2999-01']:
+        assert client.get('/api/billing/report',params={'month':month}).status_code == 422
+    empty = client.get('/api/billing/report?month=2000-01').json()
+    assert empty['measurement_count'] == 0 and empty['active_days'] == 0
+    assert all(value is None for value in empty['changes'].values())
+
+
+def test_verified_subscription_cancellation_expiry_and_refund(client, monkeypatch):
+    from app.health import billing
+    monkeypatch.setenv('AUTH_MODE','oidc')
+    monkeypatch.setenv('BILLING_MODE','revenuecat')
+    monkeypatch.setenv('REVENUECAT_SECRET_KEY','secret')
+    payload={'subscriber': {'entitlements': {'plus': {'product_identifier':'synex_plus_monthly','expires_date':'2099-01-01T00:00:00Z'}},'subscriptions':{'synex_plus_monthly':{'store':'app_store','is_sandbox':False}}}}
+    class Reply:
+        def raise_for_status(self): pass
+        def json(self): return payload
+    monkeypatch.setattr(billing.httpx, 'get', lambda *a, **kw: Reply())
+    assert billing.status('student-jimin',verify=True)['active']
+    sub=payload['subscriber']['subscriptions']['synex_plus_monthly']
+    sub['unsubscribe_detected_at']='2026-01-01T00:00:00Z'
+    s=billing.status('student-jimin',verify=True)
+    assert s['active'] and not s['will_renew']
+    sub['refunded_at']='2026-01-01T00:00:00Z'
+    assert not billing.status('student-jimin',verify=True)['active']
+    sub.pop('refunded_at')
+    sub['is_sandbox']=True
+    assert not billing.status('student-jimin',verify=True)['active']
+    monkeypatch.setenv('REVENUECAT_ALLOW_SANDBOX','true')
+    assert billing.status('student-jimin',verify=True)['active']
+    payload['subscriber']['entitlements']['plus']['expires_date']='2020-01-01T00:00:00Z'
+    assert not billing.status('student-jimin',verify=True)['active']
+
+
+def test_webhook_auth_and_reordered_events(client, monkeypatch):
+    from app.health import billing
+    monkeypatch.setenv('AUTH_MODE','oidc')
+    monkeypatch.setenv('BILLING_MODE','revenuecat')
+    monkeypatch.setenv('REVENUECAT_SECRET_KEY','secret')
+    monkeypatch.setenv('REVENUECAT_WEBHOOK_AUTH','Bearer hook-secret')
+    cid,_=billing.account('student-jimin')
+    event={'event':{'id':'same','type':'RENEWAL','app_user_id':cid}}
+    assert client.post('/api/billing/webhook/revenuecat',json=event).status_code == 401
+    called=[]
+    monkeypatch.setattr(billing,'refresh',lambda uid:called.append(uid))
+    for kind in ['RENEWAL','EXPIRATION','RENEWAL']:
+        event['event']['type']=kind
+        assert client.post('/api/billing/webhook/revenuecat',json=event,headers={'Authorization':'Bearer hook-secret'}).status_code == 200
+    assert called == ['student-jimin']*3
+
+
+def test_billing_failure_does_not_grant_access(client, monkeypatch):
+    from app.health import billing
+    from fastapi import HTTPException
+    monkeypatch.setenv('AUTH_MODE','oidc')
+    monkeypatch.setenv('BILLING_MODE','revenuecat')
+    monkeypatch.setenv('REVENUECAT_SECRET_KEY','secret')
+    def unavailable(*args,**kwargs): raise billing.httpx.ConnectError('offline')
+    monkeypatch.setattr(billing.httpx,'get',unavailable)
+    with pytest.raises(HTTPException) as caught: billing.status('student-jimin',verify=True)
+    assert caught.value.status_code == 503
