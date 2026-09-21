@@ -63,7 +63,7 @@ Synex Health
 │       pages/                  /health, /health/body, /health/comparison, /health/routine,
 │                               /health/workout, /health/progress, /health/agent, /health/profile,
 │                               /health-center (건강센터 상담사)
-│       components/body3d/      절차적으로 생성된 인체 실루엣 3D Body Map (5개 측정 부위 기준)
+│       components/body3d/      CC0 인체 표면 메시 기반 3D Body Map (5개 측정 부위 기준)
 │       lib/                    bodyMapColors.js (모드별 색상 매핑)
 └── docs/                    DATA_ACCURACY.md / PROVIDERS.md / BODY_3D.md
 ```
@@ -136,9 +136,9 @@ cd frontend && npm test
 - **실제 기준(Reference) 데이터셋**: 현재 `ReferenceRange`는 데모용 placeholder이며 `source=demo`로
   명시됩니다. 실제 임상/통계 기준 데이터를 관리자가 `POST /api/admin/reference-ranges`로 등록하면
   즉시 반영됩니다(코드 변경 불필요).
-- **3D Body Map 에셋**: 라이선스가 확인되지 않은 GLB를 사용하지 않기 위해, 현재는 5개 측정 부위를
-  매끄럽게 lofting하여 절차적으로 생성한 인체 실루엣 메시를 사용합니다(로봇/마네킹 조립 방식 아님).
-  남성·여성·중립 인체 비율과 손·발·얼굴 방향을 구현했습니다. 개인 스캔·임상 해부학 모델은 아닙니다.
+- **3D Body Map 에셋**: MakeHuman CC0 성인 인체 표면 메시를 사용합니다. 남성·여성·중립 외형,
+  얼굴·손가락·발가락과 연속적인 관절 표면을 표시합니다. 한 손가락 회전·두 손가락 확대/축소를
+  지원합니다. 개인 스캔·임상 해부학 모델은 아닙니다. 출처·재생성 방법은 [3D 모형 문서](docs/BODY_3D.md)에 있습니다.
 
 ## Android · iOS 앱 / 멤버십
 
