@@ -1,0 +1,6 @@
+import React,{useState} from 'react';
+import {api} from '../../shared/lib/api.js';
+import {useApiData} from '../lib/useApiData.js';
+import {Card,ErrorState,Skeleton} from '../../shared/components/ui.jsx';
+import ExerciseCard from '../components/exercise/ExerciseCard.jsx';
+export default function ExerciseLibraryPage(){const {data,loading,error,reload}=useApiData(()=>api('/api/exercise-catalog'),[]),[query,setQuery]=useState(''),[category,setCategory]=useState('all');if(loading)return <Skeleton/>;if(error)return <ErrorState message={error.message} onRetry={reload}/>;const list=data||[];return <Card title={`운동 라이브러리 · ${list.length}개`}><div className="profile-grid"><label>운동 검색<input value={query} onChange={e=>setQuery(e.target.value)}/></label><label>카테고리<select value={category} onChange={e=>setCategory(e.target.value)}><option value="all">전체</option>{[...new Set(list.map(e=>e.category))].sort().map(c=><option key={c}>{c}</option>)}</select></label></div><p className="muted">개념 동작 시범입니다. 변형 동작의 도구·지지점·자세는 설명을 함께 확인하세요.</p>{list.filter(e=>(category==='all'||e.category===category)&&(e.name+e.english_name).toLowerCase().includes(query.toLowerCase())).map(e=><ExerciseCard key={e.id} exercise={{...e,exercise_name:e.name,exercise_id:e.id,rest_seconds:e.rest,reason:`${e.category} · ${e.english_name} · ${e.equipment.join(', ')||'맨몸'}`}}/>)}</Card>;}

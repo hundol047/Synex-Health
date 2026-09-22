@@ -15,3 +15,8 @@ body-composition data source implements: `get_user_measurements`, `get_latest_me
 No provider silently returns fabricated data if it isn't really connected — see
 `main.py`'s `provider_not_configured_handler` for how `ProviderNotConfigured` becomes a clean 501
 instead of a stack trace or (worse) fake success.
+
+
+## September 2026 extension
+
+The current digital-twin, 44-motion catalog, pose, native adapters and verification limits are documented in [DIGITAL_TWIN_UPGRADE.md](DIGITAL_TWIN_UPGRADE.md). Earlier verification results above describe the previous implementation.

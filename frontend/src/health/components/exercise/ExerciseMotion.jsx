@@ -1,9 +1,12 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { Play, Pause, RotateCcw } from 'lucide-react';
+import ExerciseMotion3D from './ExerciseMotion3D.jsx';
 import { MOTIONS, samplePose } from './motions.js';
 
 export default function ExerciseMotion({ exercise }) {
   const motion = MOTIONS[exercise.motion_id];
+  const [dimension,setDimension]=useState('3d');
+  const [loop,setLoop]=useState(true);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [progress, setProgress] = useState(0);
@@ -16,7 +19,8 @@ export default function ExerciseMotion({ exercise }) {
     let frame, last;
     function animate(time) {
       if (last !== undefined) {
-        phase.current = (phase.current + Math.min(time-last,100) * speed / 6000) % 1;
+        const next=phase.current + Math.min(time-last,100) * speed / 6000;
+        phase.current = loop?next%1:Math.min(next,1);if(!loop&&next>=1)setPlaying(false);
         setProgress(phase.current);
       }
       last=time; frame=requestAnimationFrame(animate);
@@ -25,7 +29,7 @@ export default function ExerciseMotion({ exercise }) {
     const hide=()=>{if(document.hidden) setPlaying(false);};
     document.addEventListener('visibilitychange',hide);
     return () => {cancelAnimationFrame(frame);document.removeEventListener('visibilitychange',hide);};
-  }, [playing, speed, motion]);
+  }, [playing, speed, motion, loop]);
   if (!motion) return <p className="muted">이전 버전 운동입니다. 루틴을 다시 생성하면 동작 안내를 볼 수 있습니다.</p>;
   const points=samplePose(exercise.motion_id,progress);
   const bone=(a,b,color,width=15,key='')=><line key={key || `${a}-${b}`} x1={points[a][0]} y1={points[a][1]} x2={points[b][0]} y2={points[b][1]} stroke={color} strokeWidth={width} strokeLinecap="round"/>;
@@ -33,7 +37,8 @@ export default function ExerciseMotion({ exercise }) {
   return <div className="motion-layout">
     <div className="motion-viewer">
       <div className="motion-caption"><span>동작 가이드</span><span>{motion.view}</span></div>
-      <svg viewBox="0 0 360 330" role="img" aria-labelledby={labelId} className="motion-svg">
+      <div className="motion-controls"><button className="btn btn-ghost" onClick={()=>setDimension(d=>d==='3d'?'2d':'3d')}>{dimension==='3d'?'2D 안내 보기':'3D 안내 보기'}</button><label><input type="checkbox" checked={loop} onChange={e=>setLoop(e.target.checked)}/> 반복 재생</label></div>
+      {dimension==='3d'?<ExerciseMotion3D motion={exercise.motion_id} progress={progress} mirror={mirror}/>:<svg viewBox="0 0 360 330" role="img" aria-labelledby={labelId} className="motion-svg">
         <title id={labelId}>{exercise.exercise_name} 동작 시범</title>
         <ellipse cx="183" cy="308" rx="124" ry="9" fill="#dae5f3"/>
         <path d="M30 301H330" stroke="#c6d5e8" strokeWidth="2"/>
@@ -56,7 +61,7 @@ export default function ExerciseMotion({ exercise }) {
           {[8,10].map(i=><path key={i} d={`M${points[i][0]-5} ${points[i][1]+2}h18`} stroke="#1a344f" strokeWidth="10" strokeLinecap="round"/>)}
           {motion.prop==='dumbbell' && [4,6].map(i=><g key={i} transform={`translate(${points[i]})`}><path d="M-13 0H13" stroke="#344861" strokeWidth="5"/><path d="M-13 -8V8M13 -8V8" stroke="#344861" strokeWidth="7" strokeLinecap="round"/></g>)}
         </g>
-      </svg>
+      </svg>}
       <p className="motion-phase">{motion.label}</p>
       <input aria-label="동작 구간" type="range" min="0" max="100" value={Math.round(progress*100)} onChange={e=>setPhase(Number(e.target.value)/100)} />
       <div className="motion-controls">

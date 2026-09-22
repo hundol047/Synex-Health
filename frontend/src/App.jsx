@@ -14,6 +14,18 @@ const AgentChatPage = lazy(() => import('./health/pages/AgentChatPage.jsx'));
 const ProfilePage = lazy(() => import('./health/pages/ProfilePage.jsx'));
 const CounselorDashboardPage = lazy(() => import('./health/pages/CounselorDashboardPage.jsx'));
 
+const GoalsPage = lazy(() => import('./health/pages/GoalsPage.jsx'));
+
+const PrivacyPage = lazy(() => import('./health/pages/PrivacyPage.jsx'));
+
+const ExerciseLibraryPage = lazy(() => import('./health/pages/ExerciseLibraryPage.jsx'));
+
+const PoseCoachPage = lazy(() => import('./health/pages/PoseCoachPage.jsx'));
+
+const AdminPage = lazy(() => import('./health/pages/AdminPage.jsx'));
+
+const ConnectionsPage = lazy(() => import('./health/pages/ConnectionsPage.jsx'));
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -22,6 +34,12 @@ export default function App() {
           <Route path="/" element={<Navigate to="/health" replace />} />
           <Route path="/health/subscription" element={<SubscriptionPage />} />
           <Route path="/health/report" element={<MonthlyReportPage />} />
+          <Route path="/health/goals" element={<GoalsPage />} />
+          <Route path="/health/privacy" element={<PrivacyPage />} />
+          <Route path="/health/library" element={<ExerciseLibraryPage />} />
+          <Route path="/health/pose" element={<PoseCoachPage />} />
+          <Route path="/health/admin" element={<AdminPage />} />
+          <Route path="/health/connections" element={<ConnectionsPage />} />
           <Route path="/health" element={<HomePage />} />
           <Route path="/health/body" element={<BodyMapPage />} />
           <Route path="/health/comparison" element={<ComparisonPage />} />

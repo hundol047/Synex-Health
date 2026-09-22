@@ -10,7 +10,7 @@ from .comparison import left_right_balance
 from .exercise_catalog import CATALOG
 from .store import new_id, now
 
-VERSION = '2.0.0'
+VERSION = '3.0.0'
 SOURCES = [
     {'title': 'CDC 성인 신체활동 지침', 'url': 'https://www.cdc.gov/physical-activity-basics/guidelines/adults.html'},
     {'title': 'WHO 신체활동', 'url': 'https://www.who.int/news-room/fact-sheets/detail/physical-activity'},
@@ -77,6 +77,7 @@ def build_deterministic_routine(user_id, measurement, profile, based_on_measurem
                                 workouts=None, user=None):
     if safety_screen_failed(profile):
         raise PlanBlocked('건강센터 또는 의료전문가와 상담 후 운동계획을 설정하세요.')
+    age = None
     if user and user.birth_date:
         try:
             birth = date.fromisoformat(user.birth_date)
@@ -92,12 +93,13 @@ def build_deterministic_routine(user_id, measurement, profile, based_on_measurem
     bmi = weight / (height / 100) ** 2 if weight and height else None
     # Load-support ratio is a conservative product heuristic; does not diagnose low muscle or set kg.
     support_ratio = muscle / weight if muscle and weight else None
-    conservative = (profile.experience_level == ExperienceLevel.BEGINNER or
+    conservative = ((age is not None and age>=65) or profile.experience_level == ExperienceLevel.BEGINNER or
                     (bmi is not None and (bmi >= 30 or bmi < 18.5)) or
                     (support_ratio is not None and support_ratio < 1/3))
     notices = ['성인 일반 건강관리용 제안입니다. 체성분은 근력·관절 상태를 직접 측정하지 않습니다.',
                '체중·근육량 비율과 변화 기준은 보수적인 제품 규칙이며 임상적으로 검증된 처방 기준이 아닙니다.']
-    rationale = []
+    rationale = ['성별만으로 운동 종류나 중량을 결정하지 않습니다. 실제 측정값과 운동 가능 조건을 우선합니다.']
+    if age is not None and age>=65:rationale.append('연령을 고려해 낮은 시작량과 쉬운 동작을 우선했습니다.')
     if weight is not None and muscle is not None:
         rationale.append(f'체중 {weight:g}kg·골격근량 {muscle:g}kg를 함께 고려하여 시작 동작 난이도를 조정했습니다. 중량(kg)은 추정하지 않습니다.')
     else:
@@ -116,6 +118,8 @@ def build_deterministic_routine(user_id, measurement, profile, based_on_measurem
         notices.append('제약 부위에 부담을 줄 수 있는 동작을 제외했습니다. 제외되지 않은 동작도 통증이 있으면 중단하세요.')
     equipment = set(profile.available_equipment) - {'none'}
     candidates = [m for m in CATALOG if set(m['equipment']) <= equipment and not set(m['avoid']) & constraints]
+    if conservative:
+        candidates=[m for m in candidates if m['easy']]
     if profile.exercise_location == 'outdoor':
         candidates = [m for m in candidates if m['id'] not in ('sit_stand', 'wall_push', 'march')]
     if not candidates or not any(m['pattern'] != 'cardio' for m in candidates):
@@ -132,6 +136,8 @@ def build_deterministic_routine(user_id, measurement, profile, based_on_measurem
     consumed = previous_routine.input_snapshot.get('feedback_ids', []) if previous_routine else []
     if feedback_key and feedback_key == consumed and previous_sets:
         sets = min(previous_sets)
+    if logs and sum(w.completed for w in logs)/len(logs)<.5:
+        sets=max(1,sets-1);progression='최근 기록의 완료율이 낮아 시작량을 줄였습니다. 미기록 운동은 완료율에 포함하지 않습니다.'
     if logs and any(w.difficulty == 'hard' for w in logs):
         sets = max(1, min(sets, min(previous_sets or [sets]) - 1))
         conservative = True

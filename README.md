@@ -147,3 +147,15 @@ cd frontend && npm test
 `/health/subscription`에서 Free/Plus와 구독 상태를 확인합니다. Free 기능은 유지되며 Plus는 서버에서 구독 권한을 확인한 월별 리포트를 제공합니다. 결제 미연결 상태가 기본입니다. 개발 시 `AUTH_MODE=demo BILLING_MODE=demo`로 무과금 시연을 사용할 수 있습니다. 실제 구매/복원은 RevenueCat·스토어 연결 후 앱에서 제공합니다.
 
 설정, 인증, 구독 검증 구조, 아직 검증하지 않은 항목은 [모바일·구독 가이드](docs/MOBILE_AND_SUBSCRIPTIONS.md)에 정리했습니다.
+
+## Digital Twin / Exercise Coach 확장
+
+체성분 기반 부위별 morph, 설명용 레이어·단면, Before/After 카메라 동기화,
+44개 운동 및 사람형 3D 동작 시범, 스쿼트 카메라 코치, 목표·캘린더,
+개인정보 삭제/내보내기, 다학교 SSO/provider adapter, HealthKit/Health Connect,
+로컬 알림과 운영용 PostgreSQL 전환 구조를 추가했습니다.
+
+구현 범위·외부 연결 조건·설치·라이선스·미검증 항목은
+[docs/DIGITAL_TWIN_UPGRADE.md](docs/DIGITAL_TWIN_UPGRADE.md)를 확인하세요.
+카메라 모델은 `cd frontend && npm run pose:setup` 후 빌드해야 합니다.
+실제 인체 스캔·의료 해부학·임상적으로 검증된 운동 처방을 제공하는 서비스는 아닙니다.

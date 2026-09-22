@@ -39,7 +39,7 @@ export default function HomePage() {
         <Card title="체성분 데이터">
           <EmptyState
             title="아직 측정 데이터가 없어요"
-            description="건강센터에서 측정 후 데이터가 자동으로 연동됩니다."
+            description="결과지의 측정값을 프로필에서 입력하세요. 공식 장비 연동은 별도 연결이 필요합니다."
           />
         </Card>
       ) : measurement.error ? (
@@ -72,7 +72,7 @@ export default function HomePage() {
           {bodyMap.loading ? (
             <Skeleton height={200} />
           ) : bodyMap.data ? (
-            <BodyScene segmentColors={colorsForMode(bodyMap.data, 'reference')} height={200} interactive={false} />
+            <BodyScene gender={bodyMap.data.body_profile?.gender} profile={bodyMap.data.body_profile} measurement={bodyMap.data.measurement} segmentColors={colorsForMode(bodyMap.data, 'reference')} height={200} interactive={false} />
           ) : (
             <p className="muted">표시할 데이터가 없습니다.</p>
           )}

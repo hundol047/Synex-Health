@@ -127,7 +127,7 @@ export default function ProfilePage() {
 
   return (
     <>
-      <section className="card"><h2>나의 건강 메뉴</h2><div className="membership-actions"><Link className="btn btn-ghost" to="/health/workout">운동 기록</Link><Link className="btn btn-ghost" to="/health/progress">변화 추적</Link><Link className="btn btn-ghost" to="/health/comparison">측정 비교</Link><Link className="btn btn-ghost" to="/health/agent">AI 코치</Link><Link className="btn btn-ghost" to="/health/report">월별 리포트</Link></div></section>
+      <section className="card"><h2>나의 건강 메뉴</h2><div className="membership-actions"><Link className="btn btn-ghost" to="/health/goals">목표</Link><Link className="btn btn-ghost" to="/health/library">운동 라이브러리</Link><Link className="btn btn-ghost" to="/health/pose">카메라 자세 코치</Link><Link className="btn btn-ghost" to="/health/connections">기기·알림 연동</Link><Link className="btn btn-ghost" to="/health/privacy">개인정보 관리</Link></div><div className="membership-actions"><Link className="btn btn-ghost" to="/health/workout">운동 기록</Link><Link className="btn btn-ghost" to="/health/progress">변화 추적</Link><Link className="btn btn-ghost" to="/health/comparison">측정 비교</Link><Link className="btn btn-ghost" to="/health/agent">AI 코치</Link><Link className="btn btn-ghost" to="/health/report">월별 리포트</Link></div></section>
       <SchoolSelector profile={profile.data} onSaved={profile.reload}/>
       <MeasurementEntry />
       <Card title="내 정보">

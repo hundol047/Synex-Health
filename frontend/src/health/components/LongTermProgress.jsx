@@ -1,0 +1,3 @@
+import React,{useState} from 'react';
+import {api} from '../../shared/lib/api.js';
+export default function LongTermProgress(){const [result,setResult]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false);return <section className="card"><h2>Plus · 장기 변화 분석</h2><button className="btn btn-primary" disabled={busy} onClick={async()=>{setBusy(true);try{setResult(await api('/api/advanced/progress'));setError('');}catch(e){setError(e.message);}finally{setBusy(false);}}}>장기 변화 확인</button>{error&&<p role="alert">{error}</p>}{result&&<><p>{result.first_date} ~ {result.last_date} · 측정 {result.measurement_count}회</p><p>{result.summary}</p><p className="muted">{result.notice}</p></>}</section>;}

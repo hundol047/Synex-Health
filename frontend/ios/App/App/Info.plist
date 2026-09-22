@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+  <key>NSCameraUsageDescription</key><string>운동 자세를 기기에서 분석합니다. 영상은 서버로 전송하지 않습니다.</string>
+  <key>NSHealthShareUsageDescription</key><string>선택한 건강 기록을 읽어 내 건강 화면에 표시합니다. 서버에 전송하지 않습니다.</string>
   <key>CAPACITOR_DEBUG</key>
 	<string>$(CAPACITOR_DEBUG)</string>
 	<key>CFBundleURLTypes</key><array><dict><key>CFBundleURLSchemes</key><array><string>com.synex.health</string></array></dict></array>

@@ -52,7 +52,7 @@ export function Modal({ open, onClose, title, children }) {
 }
 
 export function Skeleton({ height = 20, width = '100%', style }) {
-  return <div className="skeleton" style={{ height, width, ...style }} />;
+  return <div className="skeleton" role="status" aria-label="불러오는 중" style={{ height, width, ...style }} />;
 }
 
 export function EmptyState({ icon, title, description, action }) {
@@ -68,7 +68,7 @@ export function EmptyState({ icon, title, description, action }) {
 
 export function ErrorState({ message, onRetry }) {
   return (
-    <div className="error-state">
+    <div className="error-state" role="alert">
       <strong>문제가 발생했습니다</strong>
       <span>{message}</span>
       {onRetry && <button className="btn btn-secondary" onClick={onRetry} style={{ alignSelf: 'flex-start' }}>다시 시도</button>}

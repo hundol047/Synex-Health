@@ -58,12 +58,13 @@ def _require_user_record(user_id: str) -> HealthUser:
 
 def _can_access_student(actor, student):
     if actor.role == 'admin':
-        return True
+        return actor.id == student.id
     if actor.role == 'student':
         return actor.id == student.id
     counselor = store.get_user(actor.id)
     return bool(counselor and counselor.school_id and student.school_id == counselor.school_id
-                and student.share_with_center and student.role == 'student')
+                and student.share_with_center and student.role == 'student'
+                and (os.getenv('AUTH_MODE','demo')=='demo' or (store.preference(student.id,'membership',{}).get('verified') and store.preference(student.id,'membership',{}).get('school_id')==student.school_id)))
 
 
 def _require_student_access(actor, student_id):
@@ -115,9 +116,14 @@ def select_school(req: SchoolSelection, user: User = Depends(require('health:wri
         raise HTTPException(422, '목록에서 학교를 선택하세요.')
     if req.share_with_center and not req.school_id:
         raise HTTPException(422, '학교를 먼저 선택하세요.')
+    changed = u.school_id != req.school_id
+    if changed:
+        store.save_preference(user.id,'membership',{})
     u.school_id = req.school_id
     u.share_with_center = req.share_with_center
     store.upsert_user(u)
+    with store.connect() as db:
+        db.execute('INSERT INTO consent_history VALUES (?,?,?,?,?)',(new_id('CONSENT'),user.id,req.school_id,int(req.share_with_center),now()))
     audit.record(user.id, 'school_sharing_updated', {'school_id': req.school_id, 'shared': req.share_with_center}, user_id=user.id, role=user.role)
     return u
 
@@ -214,7 +220,7 @@ def body_map_latest(user: User = Depends(require('measurement:read'))):
         raise HTTPException(404, '등록된 측정 데이터가 없습니다.')
     previous = store.previous_measurement(user.id, current.id)
     ranges = _ranges_for(u)
-    return {**cmp.full_comparison(previous, current, ranges), 'body_profile': body_model_profile(u)}
+    return {**cmp.full_comparison(previous, current, ranges), 'body_profile': body_model_profile(u), 'measurement': current}
 
 
 @router.get('/body-map/comparison')
@@ -227,7 +233,12 @@ def body_map_comparison(user: User = Depends(require('measurement:read'))):
 def progress(user: User = Depends(require('measurement:read'))):
     items = store.list_measurements(user.id)
     workouts = store.list_workouts(user.id)
-    return {'measurements': items, 'workout_count': len(workouts),
+    weeks={}
+    for w in workouts:
+        d=date.fromisoformat(w.date);key=(d-__import__('datetime').timedelta(days=d.weekday())).isoformat()
+        row=weeks.setdefault(key,{'date':key,'total':0,'completed':0});row['total']+=1;row['completed']+=int(w.completed)
+    for row in weeks.values():row['completion']=round(row['completed']/row['total']*100,1)
+    return {'workout_weeks':sorted(weeks.values(),key=lambda w:w['date']),'measurements': items, 'workout_count': len(workouts),
             'completed_workout_count': sum(1 for w in workouts if w.completed)}
 
 
@@ -251,7 +262,9 @@ def health_agent_chat(req: HealthAgentChatRequest, user: User = Depends(require(
     latest = store.latest_measurement(user.id)
     profile = store.get_profile(user.id)
     context = {'latest_measurement': latest.model_dump(mode='json') if latest else None,
-               'profile': profile.model_dump(mode='json') if profile else None}
+               'profile': profile.model_dump(mode='json') if profile else None,
+               'comparison':cmp.full_comparison(store.previous_measurement(user.id,latest.id),latest,{}) if latest else None,
+               'routine':store.latest_routine(user.id).model_dump(mode='json') if store.latest_routine(user.id) else None}
     reply = health_agent.chat(u, req.message, context)
     return {'reply': reply}
 

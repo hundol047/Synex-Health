@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import WorkoutCalendar from '../components/WorkoutCalendar.jsx';
 import ExerciseCard from '../components/exercise/ExerciseCard.jsx';
 import { Link } from 'react-router-dom';
 import { CheckCircle2, Circle } from 'lucide-react';
@@ -27,6 +28,7 @@ export default function WorkoutPage() {
   const [logging, setLogging] = useState(null);
   const [logError, setLogError] = useState(null);
   const [feedback, setFeedback] = useState({});
+  const [minutes,setMinutes]=useState({});
 
   const latest = (routines.data || [])[0];
   const days = useMemo(() => groupByDay(latest?.exercises), [latest]);
@@ -56,6 +58,7 @@ export default function WorkoutPage() {
         duration: ex.duration ?? null,
         difficulty: feedback[ex.exercise_id||ex.exercise_name] || 'moderate',
         completed: feedback[ex.exercise_id||ex.exercise_name] !== 'pain',
+        actual_minutes:minutes[ex.exercise_id||ex.exercise_name]==null||minutes[ex.exercise_id||ex.exercise_name]===''?null:Number(minutes[ex.exercise_id||ex.exercise_name]),
         memo: '',
       });
       await workouts.reload();
@@ -87,7 +90,7 @@ export default function WorkoutPage() {
 
   return (
     <>
-      <Card title="오늘의 운동">
+      <WorkoutCalendar workouts={workouts.data||[]} routine={latest}/><Card title="오늘의 운동">
         {days.length > 1 && (
           <div style={{ display: 'flex', gap: 6, marginBottom: 12, overflowX: 'auto', paddingBottom: 2 }}>
             {days.map(([d]) => (
@@ -104,7 +107,7 @@ export default function WorkoutPage() {
             const done=isDone(ex), key=ex.exercise_id||ex.exercise_name;
             return <ExerciseCard key={key+i} exercise={ex}>
               <div className="workout-feedback">
-                <label className="muted" htmlFor={`feedback-${i}`}>오늘의 난이도</label>
+                <label className="muted" htmlFor={`minutes-${i}`}>실제 운동 시간 (분)</label><input id={`minutes-${i}`} className="text-input" type="number" min="0" max="1440" step=".5" value={minutes[key]??''} onChange={e=>setMinutes({...minutes,[key]:e.target.value})}/><label className="muted" htmlFor={`feedback-${i}`}>오늘의 난이도</label>
                 <select id={`feedback-${i}`} className="text-input" value={feedback[key]||'moderate'} onChange={e=>setFeedback({...feedback,[key]:e.target.value})}>
                   <option value="easy">쉬웠어요</option><option value="moderate">적당했어요</option><option value="hard">어려웠어요</option><option value="pain">통증으로 중단</option>
                 </select>

@@ -29,15 +29,16 @@ export default function Layout({ children }) {
   },[]);
   const auth = useAuth();
   const demoUser = getDemoUser();
+  const isAdmin = auth.demo ? demoUser==='admin-demo' : auth.role==='admin';
   const isCounselor = auth.demo ? demoUser === 'counselor-demo' : ['counselor','admin'].includes(auth.role);
 
   function switchRole(id) {
     setDemoUser(id);
-    navigate(id === 'counselor-demo' ? '/health-center' : '/health');
+    navigate(id==='admin-demo'?'/health/admin':id === 'counselor-demo' ? '/health-center' : '/health');
     window.location.reload();
   }
 
-  const nav = isCounselor ? [{ to: '/health-center', label: '학생 관리', icon: Users, end: true }] : STUDENT_NAV;
+  const nav = isAdmin ? [{to:'/health/admin',label:'관리자',icon:Users,end:true}] : isCounselor ? [{ to: '/health-center', label: '학생 관리', icon: Users, end: true }] : STUDENT_NAV;
 
   return (
     <div className="health-shell">
@@ -52,13 +53,13 @@ export default function Layout({ children }) {
           ))}
         </nav>
         {auth.demo ? <div className="health-role-switch" role="tablist" aria-label="데모 역할 전환">
-          <button className={!isCounselor ? 'active' : ''} onClick={() => switchRole('student-jimin')}>학생</button>
-          <button className={isCounselor ? 'active' : ''} onClick={() => switchRole('counselor-demo')}>상담사</button>
+          <button className={!isCounselor&&!isAdmin ? 'active' : ''} onClick={() => switchRole('student-jimin')}>학생</button>
+          <button className={isCounselor&&!isAdmin ? 'active' : ''} onClick={() => switchRole('counselor-demo')}>상담사</button><button className={isAdmin?'active':''} onClick={()=>switchRole('admin-demo')}>관리자</button>
         </div> : <button className="btn btn-ghost" onClick={auth.logout}>로그아웃</button>}
       </header>
       <main className="health-main">{!online && <div className="card" role="status">인터넷 연결이 끊겼습니다. 기록 저장·구독 확인은 연결 후 다시 시도해 주세요.</div>}{children}</main>
       <nav className="health-bottom-nav" aria-label="모바일 메뉴">
-        {(isCounselor ? nav : nav.filter(item => ['/health','/health/body','/health/routine','/health/subscription','/health/profile'].includes(item.to))).map(({ to, label, icon: Icon, end }) => (
+        {(isCounselor||isAdmin ? nav : nav.filter(item => ['/health','/health/body','/health/routine','/health/subscription','/health/profile'].includes(item.to))).map(({ to, label, icon: Icon, end }) => (
           <NavLink key={to} to={to} end={end}>
             <Icon size={20} strokeWidth={2.2} />
             {label}

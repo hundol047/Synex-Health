@@ -29,6 +29,10 @@ def now() -> str:
 
 class HealthStore:
     def __init__(self, path=None):
+        self.database=None
+        if path is None and os.getenv('DATABASE_URL'):
+            from ..services.persistence import Database
+            self.database=Database(os.environ['DATABASE_URL'])
         self.path = str(path or os.getenv('SYNEX_HEALTH_DB_PATH', DEFAULT_PATH))
         Path(self.path).parent.mkdir(parents=True, exist_ok=True)
         with self.connect() as db:
@@ -64,8 +68,29 @@ class HealthStore:
             db.execute('''CREATE TABLE IF NOT EXISTS counselor_notes (
                 id TEXT PRIMARY KEY, student_id TEXT NOT NULL, payload TEXT NOT NULL, created_at TEXT NOT NULL)''')
 
+        with self.connect() as db:
+            db.execute('CREATE TABLE IF NOT EXISTS preferences (user_id TEXT NOT NULL, kind TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(user_id,kind))')
+            db.execute('CREATE TABLE IF NOT EXISTS consent_history (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, school_id TEXT, shared INTEGER NOT NULL, created_at TEXT NOT NULL)')
+            db.execute('CREATE INDEX IF NOT EXISTS idx_consent_user ON consent_history(user_id,created_at)')
+            db.execute('CREATE TABLE IF NOT EXISTS deleted_accounts (user_id TEXT PRIMARY KEY, deleted_at TEXT NOT NULL)')
+            db.execute('CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)')
+            db.execute('INSERT OR IGNORE INTO schema_migrations VALUES (?,?)',(2,now()))
+
+    def preference(self, uid, kind, default=None):
+        with self.connect() as db:
+            row=db.execute('SELECT payload FROM preferences WHERE user_id=? AND kind=?',(uid,kind)).fetchone()
+        return json.loads(row[0]) if row else default
+
+    def save_preference(self, uid, kind, value):
+        with self.connect() as db:
+            db.execute('INSERT OR REPLACE INTO preferences VALUES (?,?,?)',(uid,kind,json.dumps(value)))
+        return value
+
     @contextmanager
     def connect(self):
+        if self.database:
+            with self.database.connect() as db:yield db
+            return
         db = sqlite3.connect(self.path, timeout=15)
         try:
             with db:

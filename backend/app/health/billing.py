@@ -83,14 +83,14 @@ def status(uid, verify=False):
             'expires_at': payload.get('expires_at') if active else None,
             'will_renew': bool(active and payload.get('will_renew')), 'store': payload.get('store') if active else None,
             'customer_id': cid if current == 'revenuecat' else None,
-            'entitlements': {'monthly_report': active}, 'demo': current == 'demo'}
+            'entitlements': {k:active for k in ('monthly_report','advanced_body','pose_coach','long_term_progress')}, 'demo': current == 'demo'}
 
 
 @router.get('/plans')
 def plans():
     return {'mode': mode(), 'plans': [
-        {'id': 'free', 'name': 'Free', 'price_label': '무료', 'features': ['체성분 기록 · 3D 인체도', '맞춤 루틴 · 14종 운동 모션', '학교 공유 설정 · 운동 기록']},
-        {'id': 'plus', 'name': 'Plus', 'price_label': '스토어에서 가격 확인', 'features': ['Free의 모든 기능', '월별 운동·체성분 요약 리포트', '웹에서 리포트 인쇄 · PDF 저장']}],
+        {'id': 'free', 'name': 'Free', 'price_label': '무료', 'features': ['체성분 기록 · 3D 인체도', '맞춤 루틴 · 운동 동작 가이드', '학교 공유 설정 · 운동 기록']},
+        {'id': 'plus', 'name': 'Plus', 'price_label': '스토어에서 가격 확인', 'features': ['Free의 모든 기능', 'Before/After 3D 비교 · 카메라 자세 코치', '월별 요약 리포트 · 장기 변화 분석', '웹에서 리포트 인쇄 · PDF 저장']}],
         'message': '요금은 연결된 스토어 상품의 실제 가격으로 표시합니다. 미연결 상태에서는 결제되지 않습니다.'}
 
 

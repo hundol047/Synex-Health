@@ -58,9 +58,15 @@ def health_status():
 app.include_router(health_router)
 from .health.billing import router as billing_router
 app.include_router(billing_router)
+from .health.extensions import router as extensions_router
+app.include_router(extensions_router)
 
 DIST = Path(__file__).resolve().parents[2] / 'frontend' / 'dist'
 if DIST.exists():
+    import mimetypes
+    mimetypes.add_type('application/octet-stream', '.task')
+    if (DIST / 'pose').is_dir():
+        app.mount('/pose', StaticFiles(directory=DIST / 'pose'), name='pose')
     app.mount('/assets', StaticFiles(directory=DIST / 'assets'), name='assets')
     models_dir = Path(__file__).resolve().parents[2] / 'frontend' / 'public' / 'models'
     if models_dir.exists():

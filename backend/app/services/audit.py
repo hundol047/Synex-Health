@@ -6,6 +6,10 @@ from pathlib import Path
 DEFAULT=Path(__file__).resolve().parents[2]/'data'/'audit.sqlite3'
 class AuditStore:
     def __init__(self,path=None):
+        self.database=None
+        if path is None and os.getenv('DATABASE_URL'):
+            from .persistence import Database
+            self.database=Database(os.environ['DATABASE_URL'],'health_audit')
         self.path=str(path or os.getenv('SYNEX_AUDIT_PATH',DEFAULT))
         Path(self.path).parent.mkdir(parents=True,exist_ok=True)
         with self.connect() as db:
@@ -15,9 +19,9 @@ class AuditStore:
             db.execute('CREATE TABLE IF NOT EXISTS analyses (id TEXT PRIMARY KEY, patient_id TEXT NOT NULL, payload TEXT NOT NULL)')
             # Append-only additions for user-linked audit (who did this, under which role). Nullable
             # so every event recorded before this column existed still reads back fine.
+            columns={row[1] for row in db.execute('PRAGMA table_info(events)')}
             for col in ('user_id','role'):
-                try:db.execute(f'ALTER TABLE events ADD COLUMN {col} TEXT')
-                except sqlite3.OperationalError:pass  # column already exists
+                if col not in columns:db.execute(f'ALTER TABLE events ADD COLUMN {col} TEXT')
     @contextmanager
     def connect(self):
         # A plain `sqlite3.connect(...)` returned here and used only via the connection's own
@@ -26,6 +30,9 @@ class AuditStore:
         # climbed steadily under load). Wrapping the whole thing as its own context manager keeps
         # every existing call site's `with self.connect() as db:` syntax and commit/rollback
         # semantics identical, and guarantees the connection is actually closed afterward.
+        if self.database:
+            with self.database.connect() as db:yield db
+            return
         db=sqlite3.connect(self.path,timeout=15)
         try:
             with db:

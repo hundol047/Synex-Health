@@ -146,6 +146,8 @@ def chat(user: HealthUser, message: str, context: dict) -> str:
     """Free-form chat, grounded in the same context an analyze() call would use. Deterministic mode
     gives a templated, honest "실시간 대화형 AI 없이 실행 중" style short reply that still surfaces
     real data; llm mode uses the same hard rules as health_analysis.md."""
+    if any(word in message for word in ('흉통','실신','호흡곤란','가슴 통증','진단','약 처방','어지럼','심한 통증')):
+        return '이 서비스는 진단하거나 처방하지 않습니다. 운동을 중단하고 의료진에게 상담하세요. 증상이 심하거나 갑자기 발생했다면 응급 도움을 요청하세요.'
     if agent_mode() == 'llm':
         system_prompt = _load_prompt('health_analysis.md') + '\n\nRespond conversationally in Korean, 2-4 sentences, plain text (not JSON).'
         ctx = json.dumps(context, ensure_ascii=False, default=str)
@@ -155,6 +157,21 @@ def chat(user: HealthUser, message: str, context: dict) -> str:
     latest = context.get('latest_measurement')
     if not latest:
         return '아직 등록된 체성분 측정 데이터가 없습니다. 먼저 체성분 측정 결과를 입력해 주세요.'
+    comparison=context.get('comparison') or {}
+    if any(w in message for w in ('왜','이유','하체 운동')):
+        routine=context.get('routine') or {}
+        if routine.get('rationale'):return '저장된 루틴의 추천 이유입니다. '+' '.join(routine['rationale'][:3])
+        return '아직 저장된 루틴이 없습니다. 운동 프로필과 측정값을 등록한 뒤 루틴을 생성하세요.'
+    if any(w in message for w in ('지난','변화','좋아','이전')):
+        delta=comparison.get('top_level_deltas',{})
+        parts=[f'{label} {delta[key]:+g}{unit}' for key,label,unit in [('weight_delta','체중','kg'),('skeletal_muscle_mass_delta','골격근량','kg'),('body_fat_percentage_delta','체지방률','%p')] if delta.get(key) is not None]
+        return ('바로 이전 측정 대비 '+' · '.join(parts)+'입니다. 요청한 달의 비교와 다를 수 있으며 건강 개선을 단정할 수 없습니다.') if parts else '비교 가능한 이전 측정값이 없습니다.'
+    if any(w in message for w in ('왼쪽','오른쪽','약한','균형')):
+        part='arm' if '팔' in message else 'leg';balance=comparison.get('left_right_balance',{}).get(part,{})
+        if balance.get('left_kg') is None or balance.get('right_kg') is None:return '좌우 비교에 필요한 측정값이 없습니다.'
+        return f'측정된 제지방량은 왼쪽 {balance["left_kg"]}kg, 오른쪽 {balance["right_kg"]}kg입니다. 제지방 차이가 근력 차이를 확정하지는 않습니다.'
+    if '체지방' in message and any(w in message for w in ('줄','감소','빼')):
+        return '현재 체지방률은 '+_fmt(latest.get('body_fat_percentage'),'%')+'입니다. 목표 화면에서 체지방 감소를 선택하고 운동 경험·제약사항을 확인한 뒤 루틴을 다시 생성하세요. 특정 감량 효과를 보장하지 않습니다.'
     return (f'현재 등록된 최근 측정 기준으로 체지방률은 {_fmt(latest.get("body_fat_percentage"), "%")}, '
             f'골격근량은 {_fmt(latest.get("skeletal_muscle_mass"), "kg")}입니다. '
             f'더 자세한 분석은 "AI 분석 생성"을 눌러 확인하실 수 있습니다. 궁금하신 부위를 3D Body Map에서 눌러보세요.')

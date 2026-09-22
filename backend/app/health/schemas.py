@@ -112,6 +112,7 @@ class MeasurementValidation(BaseModel):
 
 
 class BodyCompositionMeasurement(MeasurementValidation):
+    external_measurement_id: Optional[str] = None
     id: str
     user_id: str
     measurement_date: str  # ISO date
@@ -227,6 +228,7 @@ class ExerciseRoutine(BaseModel):
 
 # --- Workout log -------------------------------------------------------------------------------
 class WorkoutLog(BaseModel):
+    actual_minutes: Optional[float] = Field(default=None, ge=0, le=1440, allow_inf_nan=False)
     routine_exercise_id: Optional[str] = None
     day_number: Optional[int] = None
     id: str
@@ -244,6 +246,7 @@ class WorkoutLog(BaseModel):
 
 
 class WorkoutLogCreateRequest(BaseModel):
+    actual_minutes: Optional[float] = Field(default=None, ge=0, le=1440, allow_inf_nan=False)
     routine_exercise_id: Optional[str] = None
     day_number: Optional[int] = Field(default=None, ge=1, le=7)
     routine_id: Optional[str] = None

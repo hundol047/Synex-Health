@@ -24,3 +24,8 @@
 부위 비교값은 표면색에 약하게 반영하고 선택 부위는 더 진하게 표시합니다. 실제 값은 부위 상세 패널/범례에서 확인합니다. 해부학적 왼쪽은 정면에서 화면 오른쪽입니다. 머리와 목에는 체성분 비교색을 적용하지 않습니다. 부위 경계는 표면 좌표 기반의 설명용 구획이며 개별 근육의 해부학적 경계가 아닙니다.
 
 이 자산은 **일반적인 성인 외형**입니다. 사용자 스캔이나 환자의 신체 복원, 내부 장기·뼈·근육층·의학적 단면 데이터가 아닙니다. 체중/근육량만으로 실제 외형을 정확하게 복원한다고 표시하지 않습니다.
+
+
+## September 2026 extension
+
+The current digital-twin, 44-motion catalog, pose, native adapters and verification limits are documented in [DIGITAL_TWIN_UPGRADE.md](DIGITAL_TWIN_UPGRADE.md). Earlier verification results above describe the previous implementation.

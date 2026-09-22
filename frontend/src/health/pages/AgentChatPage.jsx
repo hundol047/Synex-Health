@@ -95,7 +95,7 @@ export default function AgentChatPage() {
         {chatError && <ErrorState message={chatError.message} onRetry={send} />}
         <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
           <input
-            className="chat-input"
+            className="chat-input" aria-label="AI 코치에게 질문"
             value={input}
             placeholder="메시지를 입력하세요"
             onChange={(e) => setInput(e.target.value)}

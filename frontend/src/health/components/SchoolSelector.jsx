@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { HealthAPI } from '../../shared/lib/api.js';
+import { HealthAPI,api } from '../../shared/lib/api.js';
 import { useApiData } from '../lib/useApiData.js';
 import { Card, ErrorState } from '../../shared/components/ui.jsx';
 
 export default function SchoolSelector({profile,onSaved}) {
+  const connection=useApiData(()=>api('/api/health/school-connection'),[]);
   const schools=useApiData(()=>HealthAPI.schools(),[]);
   const [query,setQuery]=useState(''),[selected,setSelected]=useState(profile?.school_id||'');
   const [share,setShare]=useState(!!profile?.share_with_center),[saving,setSaving]=useState(false);
@@ -13,7 +14,7 @@ export default function SchoolSelector({profile,onSaved}) {
   const current=(schools.data||[]).find(s=>s.id===selected);
   async function save(){
     setSaving(true);setError(null);setMessage('');
-    try{await HealthAPI.selectSchool({school_id:selected||null,share_with_center:share});setMessage('학교와 공유 설정을 저장했습니다.');onSaved?.();}
+    try{await HealthAPI.selectSchool({school_id:selected||null,share_with_center:share});setMessage('학교와 공유 설정을 저장했습니다.');onSaved?.();connection.reload();}
     catch(e){setError(e);}finally{setSaving(false);}
   }
   async function request(){
@@ -22,7 +23,7 @@ export default function SchoolSelector({profile,onSaved}) {
     catch(e){setError(e);}finally{setSaving(false);}
   }
   return <Card title="내 학교 · 건강센터">
-    <p className="muted">학교·캠퍼스를 선택해 소속을 설정합니다. 학교 선택 자체는 재학 인증이나 건강센터 시스템 연결을 의미하지 않습니다.</p>
+    <p className="muted">인증 상태: {connection.data?.verified?'학교 SSO 인증됨':'학교 인증 미완료'} · 건강센터: {connection.data?.integration_status||'미연결'}</p><p className="muted">학교·캠퍼스를 선택해 소속을 설정합니다. 학교 선택 자체는 재학 인증이나 건강센터 시스템 연결을 의미하지 않습니다.</p>
     {schools.error&&<ErrorState message={schools.error.message} onRetry={schools.reload}/>}
     <div className="profile-grid">
       <label>학교 검색<input className="text-input" placeholder="학교명 또는 지역" value={query} onChange={e=>setQuery(e.target.value)}/></label>

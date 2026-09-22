@@ -43,3 +43,8 @@ npm run build
 - CDP 터치 이벤트로 한 손가락 드래그 시 카메라 위치가 변하는 것, 두 손가락 간격 확장 시 카메라 거리가 줄어드는 것을 검증했습니다.
 - 회전 후 정면 버튼 반복 클릭 시 같은 카메라 위치로 돌아오는 것을 검증했습니다. 관성 때문에 복귀 위치가 달라지던 문제를 수정했습니다.
 - 브라우저 JavaScript 오류 없음. 실기기 검증을 대신하는 결과는 아닙니다.
+
+
+## September 2026 extension
+
+The current digital-twin, 44-motion catalog, pose, native adapters and verification limits are documented in [DIGITAL_TWIN_UPGRADE.md](DIGITAL_TWIN_UPGRADE.md). Earlier verification results above describe the previous implementation.

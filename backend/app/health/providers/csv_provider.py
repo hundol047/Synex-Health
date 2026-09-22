@@ -3,7 +3,7 @@ of a semester's scale readings). Column headers must match BodyCompositionCreate
 names; segment columns are optional and named '<segment>_lean_kg' / '<segment>_fat_kg', e.g.
 'LEFT_ARM_lean_kg'. Unknown/missing columns are left as None rather than guessed."""
 from __future__ import annotations
-import csv, io
+import csv, io, hashlib, json
 
 from ..schemas import BodyCompositionMeasurement, SegmentMeasurement, Segment
 from ..store import HealthStore, new_id, now
@@ -35,7 +35,7 @@ class CSVProvider(HealthDataProvider):
                 ))
         fields = {f: (float(raw[f]) if raw.get(f) not in (None, '') else None) for f in _FLOAT_FIELDS}
         return BodyCompositionMeasurement(
-            id=new_id('MEAS'), user_id=user_id, measurement_date=raw['measurement_date'],
+            id='CSV-'+hashlib.sha256((user_id+'|'+json.dumps(raw,sort_keys=True)).encode()).hexdigest()[:32], user_id=user_id, measurement_date=raw['measurement_date'],
             device_name=raw.get('device_name', ''), source='csv', segments=segments, created_at=now(), **fields,
         )
 
@@ -49,4 +49,7 @@ class CSVProvider(HealthDataProvider):
             raise ValueError('measurement_date required')
         measurements = [self.normalize_measurement(user_id, row) for row in rows]
         # Parse and validate the complete batch before any writes.
-        return [self.store.add_measurement(m) for m in measurements]
+        with self.store.connect() as db:
+            for m in measurements:
+                db.execute('INSERT OR IGNORE INTO measurements VALUES (?,?,?,?,?)',(m.id,m.user_id,m.measurement_date,m.model_dump_json(),m.created_at))
+        return measurements

@@ -2,6 +2,7 @@
 them off a printed InBody slip after a health-center visit). This is the provider the
 POST /api/body-composition endpoint uses by default -- see routers/body_composition.py."""
 from __future__ import annotations
+import hashlib,json
 from ..schemas import BodyCompositionMeasurement, SegmentMeasurement
 from ..store import HealthStore, new_id, now
 from .base import HealthDataProvider
@@ -19,7 +20,7 @@ class ManualProvider(HealthDataProvider):
     def normalize_measurement(self, user_id: str, raw: dict) -> BodyCompositionMeasurement:
         segments = [SegmentMeasurement(**s) for s in raw.get('segments', [])]
         return BodyCompositionMeasurement(
-            id=new_id('MEAS'), user_id=user_id, measurement_date=raw['measurement_date'],
+            id='MANUAL-'+hashlib.sha256((user_id+'|'+json.dumps(raw,sort_keys=True,default=str)).encode()).hexdigest()[:32], user_id=user_id, measurement_date=raw['measurement_date'],
             weight=raw.get('weight'), height=raw.get('height'), bmi=raw.get('bmi'),
             skeletal_muscle_mass=raw.get('skeletal_muscle_mass'), body_fat_mass=raw.get('body_fat_mass'),
             body_fat_percentage=raw.get('body_fat_percentage'), fat_free_mass=raw.get('fat_free_mass'),
@@ -30,4 +31,4 @@ class ManualProvider(HealthDataProvider):
 
     def import_measurement(self, user_id: str, raw: dict) -> BodyCompositionMeasurement:
         m = self.normalize_measurement(user_id, raw)
-        return self.store.add_measurement(m)
+        return self.store.get_measurement(m.id) or self.store.add_measurement(m)

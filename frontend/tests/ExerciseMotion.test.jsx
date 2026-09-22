@@ -1,16 +1,18 @@
 import React from 'react';
-import { describe,it,expect } from 'vitest';
+import { describe,it,expect,vi } from 'vitest';
 import { render,screen,fireEvent } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import ExerciseMotion from '../src/health/components/exercise/ExerciseMotion.jsx';
 import { MOTIONS,samplePose } from '../src/health/components/exercise/motions.js';
 import { resolveBodyProfile } from '../src/health/components/body3d/bodyProfiles.js';
 
+vi.mock('../src/health/components/exercise/ExerciseMotion3D.jsx',()=>({default:()=> <div>3D 시범</div>}));
+
 describe('motion guidance',()=>{
   it('has finite, moving poses for every backend catalogue entry',()=>{
     const catalog=readFileSync('../backend/app/health/exercise_catalog.py','utf8');
     const ids=[...catalog.matchAll(/movement\('([^']+)'/g)].map(m=>m[1]);
-    expect(ids.length).toBe(14);
+    expect(ids.length).toBeGreaterThanOrEqual(40);
     for(const id of ids){
       expect(MOTIONS[id]).toBeTruthy();
       const a=samplePose(id,0), b=samplePose(id,.31);
@@ -20,6 +22,7 @@ describe('motion guidance',()=>{
   });
   it('starts paused, supports scrub, playback, speed and reset',()=>{
     render(<ExerciseMotion exercise={{motion_id:'squat',exercise_name:'스쿼트',instructions:['천천히 앉습니다.'],cautions:[]}}/>);
+    fireEvent.click(screen.getByText('2D 안내 보기'));
     expect(screen.getByRole('img',{name:'스쿼트 동작 시범'})).toBeTruthy();
     fireEvent.change(screen.getByLabelText('동작 구간'),{target:{value:50}});
     expect(screen.getByLabelText('동작 구간').value).toBe('50');

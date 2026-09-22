@@ -94,6 +94,10 @@ AUTH_SESSION_TTL_SECONDS = 8 * 3600
 
 class _AuthSessionStore:
     def __init__(self, path=None):
+        self.database=None
+        if path is None and os.getenv('DATABASE_URL'):
+            from .persistence import Database
+            self.database=Database(os.environ['DATABASE_URL'],'health_auth')
         self.path = str(path or os.getenv('SYNEX_HEALTH_AUTH_SESSION_PATH',
                          Path(__file__).resolve().parents[2] / 'data' / 'auth_session.sqlite3'))
         Path(self.path).parent.mkdir(parents=True, exist_ok=True)
@@ -103,6 +107,9 @@ class _AuthSessionStore:
 
     @contextmanager
     def _connect(self):
+        if self.database:
+            with self.database.connect() as db:yield db
+            return
         db = sqlite3.connect(self.path, timeout=15)
         try:
             with db:
@@ -149,19 +156,24 @@ def get_current_user(authorization: Optional[str] = Header(None),
     if mode == 'demo':
         demo_id = x_synex_demo_user or os.getenv('SYNEX_DEMO_USER_ID', 'student-jimin')
         info = DEMO_USERS.get(demo_id, DEMO_USERS['student-jimin'])
-        return User(id=demo_id, role=os.getenv('SYNEX_DEMO_ROLE', info['role']))
+        return _account_active(User(id=demo_id, role=os.getenv('SYNEX_DEMO_ROLE', info['role'])))
     if authorization and authorization.lower().startswith('bearer '):
-        issuer, audience = os.environ['OIDC_ISSUER'], os.environ['OIDC_AUDIENCE']
         try:
-            return verify_oidc_token(authorization.split(' ', 1)[1], issuer, audience)
+            token=authorization.split(' ',1)[1]
+            if os.getenv('SCHOOL_OIDC_CONFIG'):
+                from .school_oidc import verify_school_token
+                actor,school_id=verify_school_token(token)
+                return _account_active(actor,school_id)
+            issuer,audience=os.environ['OIDC_ISSUER'],os.environ['OIDC_AUDIENCE']
+            return _account_active(verify_oidc_token(token, issuer, audience))
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(401, f'Invalid token: {e}')
+            raise HTTPException(401, '유효하지 않은 인증 토큰입니다.')
     if synex_health_auth_session:
         user = AUTH_SESSIONS.get(synex_health_auth_session)
         if user is not None:
-            return user
+            return _account_active(user)
     raise HTTPException(401, 'Missing bearer token or a valid authenticated session cookie')
 
 
@@ -183,3 +195,17 @@ def require_self_or_counselor(student_id: str, user: User = Depends(get_current_
     if user.role not in ('student', 'counselor', 'admin'):
         raise HTTPException(403, 'Not permitted')
     return user
+
+
+def _account_active(actor, school_id=None):
+    from ..health.router import store
+    from ..health.schemas import HealthUser
+    with store.connect() as db:
+        deleted=db.execute('SELECT user_id FROM deleted_accounts WHERE user_id=?',(actor.id,)).fetchone()
+    if deleted:raise HTTPException(401,'삭제된 계정입니다.')
+    if school_id:
+        u=store.get_user(actor.id) or HealthUser(id=actor.id,name='사용자',role=actor.role)
+        if u.school_id!=school_id:u.share_with_center=False
+        u.school_id=school_id;u.role=actor.role;store.upsert_user(u)
+        store.save_preference(actor.id,'membership',{'school_id':school_id,'verified':True})
+    return actor

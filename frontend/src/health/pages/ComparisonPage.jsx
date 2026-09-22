@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { HealthAPI } from '../../shared/lib/api.js';
 import { Card, Skeleton, ErrorState, EmptyState, Badge } from '../../shared/components/ui.jsx';
+import BodyComparison from '../components/body3d/BodyComparison.jsx';
 import BodyMapWorkspace from '../components/body3d/BodyMapWorkspace.jsx';
 import { SEGMENT_LABEL_KO } from '../lib/bodyMapColors.js';
 import { useApiData } from '../lib/useApiData.js';
@@ -117,7 +118,7 @@ export default function ComparisonPage() {
                   </div>
                 ))}
               </div>
-              <BodyMapWorkspace comparisonData={data} defaultMode="previous" />
+              <BodyComparison />
             </>
           )}
         </Card>

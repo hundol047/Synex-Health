@@ -19,3 +19,6 @@ coverage/
 *.keystore
 *.p12
 *.mobileprovision
+
+frontend/public/pose/wasm/
+frontend/public/pose/*.task
