@@ -1,0 +1,14 @@
+import fs from 'node:fs';
+import {loadEnv} from 'vite';
+import {validateRelease} from './release-config.mjs';
+const e={...loadEnv('production',process.cwd(),''),...process.env,VITE_RELEASE_BUILD:'true'};
+const errors=validateRelease(e);if(errors.length)throw Error(errors.join('\n'));
+const id=e.IOS_BUNDLE_ID;
+const config=JSON.parse(fs.readFileSync('capacitor.config.json','utf8'));config.appId=id;fs.writeFileSync('capacitor.config.json',JSON.stringify(config,null,2)+'\n');
+const path='ios/App/App.xcodeproj/project.pbxproj';let project=fs.readFileSync(path,'utf8').replace(/PRODUCT_BUNDLE_IDENTIFIER = [^;]+;/g,`PRODUCT_BUNDLE_IDENTIFIER = ${id};`);
+if(e.APP_VERSION&&!/^\d+\.\d+\.\d+$/.test(e.APP_VERSION))throw Error('Invalid APP_VERSION');
+if(e.APP_BUILD&&!/^\d+$/.test(e.APP_BUILD))throw Error('Invalid APP_BUILD');
+if(e.APP_VERSION)project=project.replace(/MARKETING_VERSION = [^;]+;/g,`MARKETING_VERSION = ${e.APP_VERSION};`);
+if(e.APP_BUILD)project=project.replace(/CURRENT_PROJECT_VERSION = [^;]+;/g,`CURRENT_PROJECT_VERSION = ${e.APP_BUILD};`);
+fs.writeFileSync(path,project);
+console.log('Native bundle and release version configured. Use the registered Apple Team in Xcode.');

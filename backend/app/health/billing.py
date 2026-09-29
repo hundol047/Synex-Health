@@ -18,6 +18,7 @@ with store.connect() as db:
 
 
 def mode():
+    if os.getenv('LAUNCH_MODE')=='free':return 'disabled'
     value = os.getenv('BILLING_MODE', 'disabled')
     auth = os.getenv('AUTH_MODE', 'demo').lower()
     if value == 'demo' and auth == 'demo':
@@ -75,6 +76,8 @@ def refresh(uid):
 
 def status(uid, verify=False):
     cid, payload = account(uid)
+    if uid=='app-review-synthetic' and os.getenv('APP_REVIEW_MODE')=='true':
+        return {'mode':'disabled','plan':'review','active':True,'demo':False,'review':True,'entitlements':{k:True for k in ('monthly_report','advanced_body','pose_coach','long_term_progress')}}
     current = mode()
     if current == 'revenuecat' and (verify or time.time() - payload.get('verified_at', 0) > 60):
         payload = refresh(uid)

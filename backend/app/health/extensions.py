@@ -91,6 +91,8 @@ def delete_health(req:DeleteRequest,user:User=Depends(require('health:write'))):
 @router.delete('/privacy/account')
 def delete_account(req:DeleteRequest,user:User=Depends(require('health:read'))):
     purge(user.id,True)
+    from ..services.auth import AUTH_SESSIONS
+    with AUTH_SESSIONS._connect() as db:db.execute('DELETE FROM auth_sessions WHERE user_id=?',(user.id,))
     audit.record(user.id,'account_deleted',{},user_id=user.id,role=user.role)
     return {'deleted':True,'notice':'스토어 구독은 별도로 해지해야 합니다. 외부 학교 계정은 삭제하지 않습니다.'}
 

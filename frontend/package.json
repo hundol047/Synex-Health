@@ -11,9 +11,11 @@
     "mobile:sync": "node scripts/mobile-sync.mjs",
     "android": "cap open android",
     "ios": "cap open ios",
-    "prebuild": "node scripts/prepare-pose.mjs",
+    "prebuild": "node scripts/prepare-pose.mjs && node scripts/legal-pages.mjs",
     "predev": "node scripts/prepare-pose.mjs",
-    "pose:setup": "node scripts/install-pose-model.mjs && node scripts/prepare-pose.mjs"
+    "pose:setup": "node scripts/install-pose-model.mjs && node scripts/prepare-pose.mjs",
+    "build:release": "node scripts/build-release.mjs",
+    "native:configure": "node scripts/configure-native.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",

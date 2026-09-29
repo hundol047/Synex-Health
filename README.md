@@ -159,3 +159,7 @@ cd frontend && npm test
 [docs/DIGITAL_TWIN_UPGRADE.md](docs/DIGITAL_TWIN_UPGRADE.md)를 확인하세요.
 카메라 모델은 `cd frontend && npm run pose:setup` 후 빌드해야 합니다.
 실제 인체 스캔·의료 해부학·임상적으로 검증된 운동 처방을 제공하는 서비스는 아닙니다.
+
+## Release candidate verification
+
+See [release readiness](docs/APP_STORE_RELEASE_READINESS.md) for verified results and blockers, [iOS release guide](docs/IOS_RELEASE.md) for native signing/build steps, and [App Privacy](docs/APP_STORE_PRIVACY.md) for source-based disclosures. Native projects exist for Android and iOS; synchronization does not certify a store-ready binary.

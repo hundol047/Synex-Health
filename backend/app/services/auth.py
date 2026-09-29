@@ -20,7 +20,7 @@ RBAC roles:
     to counselor notes. Never sees Clinical Agent / EMR data (this app does not expose it).
   - admin: everything, plus reference-range management (ReferenceRange CRUD) and user administration.
 """
-import os, secrets, sqlite3, time
+import os, secrets, sqlite3, time, hashlib
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -69,8 +69,11 @@ def verify_oidc_token(token: str, issuer: str, audience: str, role_claim: str = 
             self._fetched_at = 0.0
         def keys(self):
             if self._keys is None or time.time() - self._fetched_at > 3600:
-                cfg = self._client.get(f'{self.issuer}/.well-known/openid-configuration').json()
-                self._keys = self._client.get(cfg['jwks_uri']).json()['keys']
+                try:
+                    cfg = self._client.get(f'{self.issuer}/.well-known/openid-configuration').json()
+                    if cfg.get('issuer')!=self.issuer or not cfg.get('jwks_uri','').startswith('https://'):raise ValueError('Invalid discovery')
+                    self._keys = self._client.get(cfg['jwks_uri']).json()['keys']
+                finally:self._client.close()
                 self._fetched_at = time.time()
             return self._keys
     jwks = jwks or _JWKS(issuer)
@@ -102,6 +105,7 @@ class _AuthSessionStore:
                          Path(__file__).resolve().parents[2] / 'data' / 'auth_session.sqlite3'))
         Path(self.path).parent.mkdir(parents=True, exist_ok=True)
         with self._connect() as db:
+            db.execute('CREATE TABLE IF NOT EXISTS revoked_tokens (token_hash TEXT PRIMARY KEY, expires REAL NOT NULL)')
             db.execute('CREATE TABLE IF NOT EXISTS auth_sessions (session_id TEXT PRIMARY KEY, user_id TEXT NOT NULL, '
                        'role TEXT NOT NULL, created_at_ts REAL NOT NULL)')
 
@@ -160,6 +164,10 @@ def get_current_user(authorization: Optional[str] = Header(None),
     if authorization and authorization.lower().startswith('bearer '):
         try:
             token=authorization.split(' ',1)[1]
+            with AUTH_SESSIONS._connect() as db:
+                if db.execute('SELECT token_hash FROM revoked_tokens WHERE token_hash=? AND expires>?',(hashlib.sha256(token.encode()).hexdigest(),time.time())).fetchone():raise HTTPException(401,'로그아웃된 인증입니다.')
+            review=AUTH_SESSIONS.get(token)
+            if review and review.id=='app-review-synthetic' and os.getenv('APP_REVIEW_MODE')=='true':return _account_active(review)
             if os.getenv('SCHOOL_OIDC_CONFIG'):
                 from .school_oidc import verify_school_token
                 actor,school_id=verify_school_token(token)

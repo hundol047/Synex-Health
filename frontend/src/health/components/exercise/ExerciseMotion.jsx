@@ -3,7 +3,7 @@ import { Play, Pause, RotateCcw } from 'lucide-react';
 import ExerciseMotion3D from './ExerciseMotion3D.jsx';
 import { MOTIONS, samplePose } from './motions.js';
 
-export default function ExerciseMotion({ exercise }) {
+export default function ExerciseMotion({ exercise, measurement, profile }) {
   const motion = MOTIONS[exercise.motion_id];
   const [dimension,setDimension]=useState('3d');
   const [loop,setLoop]=useState(true);
@@ -38,7 +38,7 @@ export default function ExerciseMotion({ exercise }) {
     <div className="motion-viewer">
       <div className="motion-caption"><span>동작 가이드</span><span>{motion.view}</span></div>
       <div className="motion-controls"><button className="btn btn-ghost" onClick={()=>setDimension(d=>d==='3d'?'2d':'3d')}>{dimension==='3d'?'2D 안내 보기':'3D 안내 보기'}</button><label><input type="checkbox" checked={loop} onChange={e=>setLoop(e.target.checked)}/> 반복 재생</label></div>
-      {dimension==='3d'?<ExerciseMotion3D motion={exercise.motion_id} progress={progress} mirror={mirror}/>:<svg viewBox="0 0 360 330" role="img" aria-labelledby={labelId} className="motion-svg">
+      {dimension==='3d'?<ExerciseMotion3D motion={exercise.motion_id} progress={progress} mirror={mirror} measurement={measurement} profile={profile}/>:<svg viewBox="0 0 360 330" role="img" aria-labelledby={labelId} className="motion-svg">
         <title id={labelId}>{exercise.exercise_name} 동작 시범</title>
         <ellipse cx="183" cy="308" rx="124" ry="9" fill="#dae5f3"/>
         <path d="M30 301H330" stroke="#c6d5e8" strokeWidth="2"/>

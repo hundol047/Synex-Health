@@ -1,5 +1,5 @@
 import {Capacitor} from '@capacitor/core';
-export const HEALTH_TYPES=['steps','distance','activeEnergy','workouts','heartRate','restingHeartRate','sleep','weight'];
+export const HEALTH_TYPES=['steps','workouts','weight'];
 const nativeType=t=>t==='activeEnergy'?'calories':t;
 export async function healthAvailability(){
  const provider=Capacitor.getPlatform()==='ios'?'HealthKit':'Health Connect';

@@ -1,4 +1,6 @@
 import os, logging
+from .services.release_config import validate_production
+validate_production()
 from contextlib import asynccontextmanager
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
@@ -34,6 +36,8 @@ async def lifespan(app):
     yield
 
 app = FastAPI(title='Synex Health API', version='0.1.0', lifespan=lifespan)
+from .services.security import SecurityMiddleware
+app.add_middleware(SecurityMiddleware)
 _cors_origins, _cors_allow_credentials = resolve_cors_config()
 app.add_middleware(CORSMiddleware, allow_origins=_cors_origins, allow_credentials=_cors_allow_credentials,
                     allow_methods=['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -47,11 +51,13 @@ async def provider_not_configured_handler(request, exc):
 
 @app.get('/api/health/status')
 def health_status():
+    from .health.providers.configured import inbody
+    provider=inbody(health_store)
     return {
-        'status': 'ok', 'demo': os.getenv('AUTH_MODE', 'demo').lower() == 'demo', 'service': 'synex-health',
+        'status': 'ok', 'demo': os.getenv('AUTH_MODE', 'demo').lower() == 'demo', 'service': 'synex-health', 'review_login':os.getenv('APP_REVIEW_MODE')=='true',
         'agent': {'status': 'ok', 'mode': health_agent.agent_mode()},
         'auth': {'status': 'ok', 'mode': os.getenv('AUTH_MODE', 'demo').lower()},
-        'providers': {'mock': 'ok', 'manual': 'ok', 'csv': 'ok', 'inbody': 'not_configured', 'biogram': 'not_configured'},
+        'providers': {'mock': 'ok' if os.getenv('AUTH_MODE','demo')=='demo' else 'disabled', 'manual': 'ok', 'csv': 'ok', 'inbody': 'configured' if provider.configured() else 'not_configured', 'biogram': 'not_configured'},
     }
 
 
@@ -60,6 +66,8 @@ from .health.billing import router as billing_router
 app.include_router(billing_router)
 from .health.extensions import router as extensions_router
 app.include_router(extensions_router)
+from .services.review_access import router as review_router
+app.include_router(review_router)
 
 DIST = Path(__file__).resolve().parents[2] / 'frontend' / 'dist'
 if DIST.exists():

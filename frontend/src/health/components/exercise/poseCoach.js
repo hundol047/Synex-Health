@@ -23,3 +23,29 @@ export class SquatCoach{
   return {reps:this.reps,phase:this.phase,knee:Math.round(knee),hip:Math.round(hip),lean:Math.round(lean),feedback};
  }
 }
+
+export const POSE_EXERCISES={
+ squat:{label:'스쿼트',joints:[23,25,27,24,26,28],down:110,up:155},
+ lunge:{label:'런지',joints:[23,25,27,24,26,28],down:110,up:155,minimum:true},
+ push_up:{label:'푸시업',joints:[11,13,15,12,14,16],down:100,up:155},
+ plank:{label:'플랭크',joints:[11,23,27,12,24,28],hold:true,up:155},
+ shoulder_press:{label:'숄더 프레스',joints:[11,13,15,12,14,16],down:100,up:155,overhead:true},
+ curl:{label:'컬',joints:[11,13,15,12,14,16],down:65,up:145},
+ hip_hinge:{label:'힙힌지',joints:[11,23,25,12,24,26],down:110,up:155},
+ glute_bridge:{label:'글루트 브리지',joints:[11,23,25,12,24,26],down:125,up:160},
+};
+export class MovementCoach {
+ constructor(id='squat'){this.config=POSE_EXERCISES[id];if(!this.config)throw Error('Unsupported movement');this.reps=0;this.phase='ready';this.last=0;this.lowAt=0;this.holdSince=null;this.holdMs=0;this.previousTime=null;}
+ update(points,time){const c=this.config;
+  if(!points||c.joints.some(i=>!points[i]||(points[i].visibility??0)<.7||![points[i].x,points[i].y,points[i].z??0].every(Number.isFinite))){this.phase='ready';this.lowAt=0;this.previousTime=null;return {reps:this.reps,phase:'unknown',feedback:'전신이 잘 보이도록 위치를 조정하세요. 자세 피드백을 일시 중지합니다.'};}
+  const a=jointAngle(...c.joints.slice(0,3).map(i=>points[i])),b=jointAngle(...c.joints.slice(3).map(i=>points[i]));
+  if(a==null||b==null){this.phase='ready';this.previousTime=null;return {reps:this.reps,phase:'unknown',feedback:'관절 위치를 확인할 수 없습니다.'};}
+  const angle=c.minimum?Math.min(a,b):(a+b)/2;
+  if(c.hold){if(angle>=c.up){if(this.previousTime!=null)this.holdMs+=Math.min(200,time-this.previousTime);this.phase='holding';}else this.phase='adjust';this.previousTime=angle>=c.up?time:null;return {reps:0,seconds:Math.floor(this.holdMs/1000),angle:Math.round(angle),phase:this.phase,feedback:this.phase==='holding'?'유지 시간이 기록되고 있습니다. 통증이 있으면 중지하세요.':'화면상 어깨·골반·발목 정렬을 확인하세요.'};}
+  const extended=angle>c.up&&(!c.overhead||(points[15].y<points[11].y&&points[16].y<points[12].y));
+  if(extended&&this.phase==='ready')this.phase='standing';
+  if(angle<c.down&&this.phase==='standing'){this.phase='down';this.lowAt=time;}
+  if(extended&&this.phase==='down'&&time-this.lowAt>350&&time-this.last>1000){this.reps++;this.phase='standing';this.last=time;}
+  return {reps:this.reps,angle:Math.round(angle),phase:this.phase,feedback:'동작을 감지하고 있습니다. 편안한 범위에서 천천히 움직이세요.'};
+ }
+}

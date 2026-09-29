@@ -1,4 +1,4 @@
-import { getAccessToken } from './session.js';
+import { getAccessToken,refreshAccessToken } from './session.js';
 export const BASE = import.meta.env.VITE_API_BASE || '';
 
 // Demo-mode identity switch (see backend/app/services/auth.py's get_current_user docstring):
@@ -16,12 +16,14 @@ export function setDemoUser(id) {
 
 export async function api(path, body, { method, signal, headers } = {}) {
   const m = method || (body === undefined ? 'GET' : 'POST');
-  const response = await fetch(BASE + path, {
+  const options = {
     method: m,
-    headers: { 'Content-Type': 'application/json', 'X-Synex-Demo-User': getDemoUser(), ...(getAccessToken() ? {Authorization: `Bearer ${getAccessToken()}`} : {}), ...headers },
+    headers: { 'Content-Type': 'application/json', ...(import.meta.env.VITE_RELEASE_BUILD==='true'?{}:{'X-Synex-Demo-User':getDemoUser()}), ...(getAccessToken() ? {Authorization: `Bearer ${getAccessToken()}`} : {}), ...headers },
     body: body === undefined ? undefined : JSON.stringify(body),
     signal, credentials: 'include',
-  });
+  };
+  let response=await fetch(BASE+path,options);
+  if(response.status===401&&await refreshAccessToken()){options.headers.Authorization=`Bearer ${getAccessToken()}`;response=await fetch(BASE+path,options);}
   if (!response.ok) {
     if (response.status === 401) window.dispatchEvent(new Event('synex-session-expired'));
     let data;
