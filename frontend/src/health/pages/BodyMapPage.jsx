@@ -20,7 +20,7 @@ export default function BodyMapPage() {
       ) : error ? (
         <ErrorState message={error.message} onRetry={reload} />
       ) : (
-        <BodyMapWorkspace comparisonData={data} routine={routines.data?.[0]} onGroupChange={async group_id=>{await api('/api/body-map/reference-group',{group_id},{method:'PUT'});reload();}} />
+        <BodyMapWorkspace comparisonData={data} routine={routines.data?.[0]} onGroupChange={async group_id=>{await api('/api/body-map/reference-group',{group_id},{method:'PUT'});await Promise.all([reload(),routines.reload()]);}} />
       )}
     </Card>
   );

@@ -14,7 +14,7 @@ export default function BodyMapWorkspace({comparisonData,height=480,defaultMode=
  const [layer,setLayer]=useState('body'),[slice,setSlice]=useState({enabled:false,axis:'horizontal',position:0});
  const [selected,setSelected]=useState(null),[hovered,setHovered]=useState(null),[details,setDetails]=useState(false);
  const [groupError,setGroupError]=useState(''),[groupBusy,setGroupBusy]=useState(false);
- const [groupId,setGroupId]=useState('auto'),[pair,setPair]=useState('current-average'),[highlight,setHighlight]=useState(false);
+ const [groupId,setGroupId]=useState(()=>comparisonData?.average_comparison?.selection_mode==='manual'?comparisonData.average_comparison.selected_group_id:'auto'),[pair,setPair]=useState('current-average'),[highlight,setHighlight]=useState(false);
  const [options,setOptions]=useState({showMy:true,showReference:true,myOpacity:.86,referenceOpacity:.40,myStyle:'surface',referenceStyle:'wireframe',interpolate:false,mix:0});
  const change=(key,value)=>setOptions(old=>({...old,[key]:value}));
  const groups=comparisonData?.average_comparison?.groups||[];

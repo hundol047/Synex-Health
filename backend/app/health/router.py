@@ -35,7 +35,9 @@ def _average_for(user, measurement):
     from .reference import average_comparison
     result = average_comparison(user, measurement, store.list_reference_ranges())
     selected = store.preference(user.id, 'average_reference_group')
+    result['selection_mode'] = 'auto'
     if selected and any(g['id'] == selected for g in result['groups']):
+        result['selection_mode'] = 'manual'
         result['selected_group_id'] = selected
     return result
 

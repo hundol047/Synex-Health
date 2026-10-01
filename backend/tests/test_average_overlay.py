@@ -102,7 +102,8 @@ def test_reference_selection_is_owned_validated_and_persisted(client):
     assert client.put('/api/body-map/reference-group',headers=student_headers(),json={'group_id':'invented'}).status_code==422
     assert client.put('/api/body-map/reference-group',headers={'X-Synex-Demo-User':'counselor-demo'},json={'group_id':group}).status_code==403
     assert client.put('/api/body-map/reference-group',headers=student_headers(),json={'group_id':group}).status_code==200
-    assert client.get('/api/body-map/latest',headers=student_headers()).json()['average_comparison']['selected_group_id']==group
+    selected=client.get('/api/body-map/latest',headers=student_headers()).json()['average_comparison']
+    assert selected['selected_group_id']==group and selected['selection_mode']=='manual'
     assert client.put('/api/body-map/reference-group',headers=student_headers(),json={'group_id':None}).status_code==200
 
 
