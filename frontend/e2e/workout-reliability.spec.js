@@ -1,5 +1,5 @@
 import {test,expect} from '@playwright/test';
-test.use({timezoneId:'Asia/Seoul'});
+test.use({timezoneId:'Asia/Seoul',viewport:{width:390,height:844}});
 test('encrypted draft survives closed page and guards app navigation before resuming in Korean timezone',async({page,context},info)=>{
  await context.addInitScript(()=>localStorage.setItem('synex-onboarding-v1','done'));
  await page.goto('/health/workout');
