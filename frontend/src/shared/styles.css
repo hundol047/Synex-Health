@@ -193,3 +193,7 @@ small{font-size:.8125rem}
 @media(max-width:480px){.overlay-controls{grid-template-columns:1fr}.comparison-table{font-size:.72rem}.comparison-table td,.comparison-table th{padding:10px 5px}.compare-summary{padding:12px}.compare-tabs .btn{font-size:.76rem}}
 .workout-mode .exercise-card-top{display:flex;flex-direction:column;align-items:stretch}.workout-mode .exercise-preview{width:100%;height:240px}.workout-mode .exercise-preview svg{height:220px;width:100%}.workout-mode h3{margin:16px 0}.workout-mode details{margin-top:20px}.workout-mode details label{display:block;padding:8px 0}
 @media(max-width:480px){.overlay-tooltip{bottom:90px}}
+
+.set-record-editor{min-inline-size:0;width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:12px;padding:12px;margin:12px 0}
+.set-record-editor .profile-grid{padding:10px 0;border-bottom:1px solid var(--line)}
+.set-record-editor>button{margin-top:10px}
