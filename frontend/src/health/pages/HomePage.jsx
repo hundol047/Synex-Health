@@ -1,10 +1,10 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { HealthAPI } from '../../shared/lib/api.js';
 import { Card, StatTile, Skeleton, EmptyState, ErrorState, DemoBadge, Disclaimer } from '../../shared/components/ui.jsx';
 import ReferenceSource from '../components/body3d/ReferenceSource.jsx';
 import {signed,valuesFor,referenceValues} from '../components/body3d/overlayMath.js';
-import BodyScene from '../components/body3d/BodyScene.jsx';
+const BodyScene=lazy(()=>import('../components/body3d/BodyScene.jsx'));
 import { colorsForMode } from '../lib/bodyMapColors.js';
 import { useApiData } from '../lib/useApiData.js';
 
@@ -14,6 +14,7 @@ export default function HomePage() {
   const routines = useApiData(() => HealthAPI.listRoutines(), []);
   const bodyMap = useApiData(() => HealthAPI.bodyMapLatest(), []);
 
+  const [showPreview,setShowPreview]=useState(false);
   const [analysis, setAnalysis] = useState({ loading: false, error: null, data: null });
   const runAnalysis = useCallback(async () => {
     setAnalysis({ loading: true, error: null, data: null });
@@ -87,7 +88,7 @@ export default function HomePage() {
           {bodyMap.loading ? (
             <Skeleton height={200} />
           ) : bodyMap.data ? (
-            <><p>내 골격근량 {measurement.data?.skeletal_muscle_mass??'—'} kg · 비교군 평균 {total?.reference_value??'자료 없음'}{total?.reference_value!=null?' kg':''}</p>{total?.difference_kg!=null&&<p>{signed(total.difference_kg)} kg · {signed(total.difference_percent)}%</p>}<BodyScene overlay={overlay} gender={bodyMap.data.body_profile?.gender} profile={bodyMap.data.body_profile} measurement={bodyMap.data.measurement} segmentColors={{}} height={200} interactive={false} /><ReferenceSource group={group}/></>
+            <><p>내 골격근량 {measurement.data?.skeletal_muscle_mass??'—'} kg · 비교군 평균 {total?.reference_value??'자료 없음'}{total?.reference_value!=null?' kg':''}</p>{total?.difference_kg!=null&&<p>{signed(total.difference_kg)} kg · {signed(total.difference_percent)}%</p>}<button type="button" className="btn btn-secondary" aria-expanded={showPreview} onClick={()=>setShowPreview(v=>!v)}>{showPreview?'3D 미리보기 닫기':'3D 미리보기 열기'}</button>{showPreview&&<Suspense fallback={<Skeleton height={200}/>}><BodyScene overlay={overlay} gender={bodyMap.data.body_profile?.gender} profile={bodyMap.data.body_profile} measurement={bodyMap.data.measurement} segmentColors={{}} height={200} interactive={false} /></Suspense>}<ReferenceSource group={group}/></>
           ) : (
             <p className="muted">표시할 데이터가 없습니다.</p>
           )}

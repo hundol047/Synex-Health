@@ -10,6 +10,7 @@ vi.mock('../src/health/components/body3d/BodyScene.jsx', () => ({
   default: () => <div data-testid="body-scene-mock" />,
 }));
 
+import userEvent from '@testing-library/user-event';
 import HomePage from '../src/health/pages/HomePage.jsx';
 
 beforeEach(() => {
@@ -38,6 +39,10 @@ describe('HomePage', () => {
     expect(await screen.findByText('체지방률')).toBeTruthy();
     expect(screen.getByText('26.3%')).toBeTruthy();
     expect(screen.getByText('오늘의 루틴 시작하기')).toBeTruthy();
+    expect(screen.queryByTestId('body-scene-mock')).toBeNull();
+    await userEvent.click(screen.getByRole('button',{name:'3D 미리보기 열기'}));
     expect(await screen.findByTestId('body-scene-mock')).toBeTruthy();
+    await userEvent.click(screen.getByRole('button',{name:'3D 미리보기 닫기'}));
+    expect(screen.queryByTestId('body-scene-mock')).toBeNull();
   });
 });
