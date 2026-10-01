@@ -167,3 +167,7 @@ See [release readiness](docs/APP_STORE_RELEASE_READINESS.md) for verified result
 ## Production upgrade
 
 [Current upgrade readiness](docs/PRODUCTION_READINESS.md): inline exercise previews, twelve pose analyzers, adaptive history, session offline queue, reference provenance and explicit database migrations. See [database operations](docs/DATABASE_OPERATIONS.md), [mobile release](docs/MOBILE_RELEASE.md), [billing](docs/BILLING.md) and [security/privacy](docs/SECURITY_AND_PRIVACY.md).
+
+## Cohort average overlay and guided workouts
+
+`/health/body` now offers same-viewer lean/fat average overlays, numeric kg/% comparisons, provenance, layer controls and interpolation. Real cohort means are never inferred from device percentages or segment sums; production excludes demo references. Workout Mode records each exercise and stops on pain. See [implementation and verification boundaries](docs/AVERAGE_OVERLAY_UPGRADE.md).

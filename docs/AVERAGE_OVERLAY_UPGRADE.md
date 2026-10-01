@@ -14,7 +14,9 @@ Comparison values come from one coherent cohort (same dataset, source, publicati
 
 **VERIFIED (unit tests)** — independent deformation buffers, equal vertical/pose coordinates, bounded finite coordinates, interpolation endpoints, missing/zero-denominator handling, kg/% calculations, shared viewer props, layer visibility and selected regions.
 
-**IMPLEMENTED / NOT DEVICE VERIFIED** — actual WebGL surfaces, opacity, ghost wireframe, selected-region dimming, difference sorting/highlight, hover/tap tooltip, rotation/zoom/reset/double-tap, and lean/fat separation. Browser CI evidence is recorded below when available.
+**VERIFIED (Chromium desktop and 390px browser tests)** — two actual WebGL surfaces in one viewer, opacity changes, ghost wireframe, pointer selection of the right arm, rotation/zoom/reset, preserved Range View, distinct regional vertex depths for the 7.1kg / 7.8kg fixture, and missing-reference fallback. Saved screenshots were visually inspected.
+
+**IMPLEMENTED / NOT DEVICE VERIFIED** — physical touch/pinch/double-tap behavior and device performance. Browser viewport emulation is not a physical Android/iOS test.
 
 Both surfaces use one authored base mesh, pose, height scale and camera. Deltoid/upper-arm/forearm, glute/thigh/calf, chest/back/abdomen envelopes are artistic deformation zones driven by the five measured regions. They do not imply individual-muscle measurements. A bounded monotonic log transfer maps mass to visual thickness; mesh volume is not calibrated tissue volume. Missing regions are invisible on the reference surface. Interpolation requires all five paired regions.
 
@@ -48,14 +50,17 @@ Reference fields extend the existing JSON payload; no schema migration is requir
 
 **IMPLEMENTED / NOT DEVICE VERIFIED** — demand rendering, hidden-document pause, memoized deformation, shared CPU topology, independent GPU index ownership to avoid layer-disposal corruption, geometry cleanup, no contact-shadow pass for overlays, and DPR capped at 1.25. Production diagnostic UI excludes GPU fingerprint fields. Development diagnostics report renderer, layer count, vertices and demand-frame samples; these samples are not a device FPS benchmark.
 
+CPU benchmark: `node frontend/scripts/benchmark-overlay.mjs` measures two deformation buffers after warmup, reporting median/p95, vertex count and position-buffer bytes. It does not measure browser/GPU/device FPS.
+
 **NOT IMPLEMENTED** — automatic low-FPS device classification and physical low-end Android benchmarking. Default ghost wireframe and manual layer toggles provide the economical viewing path. The existing large human-mesh/Three bundle remains a performance risk.
 
 ## Tests
 
-- Backend: final full run recorded below.
-- Frontend: final full run recorded below.
+- Backend: **93 passed** on the full local run; an additional changed-reference/routine-review regression passed in the focused suite. Final CI includes all **94 tests**.
+- Frontend: **41 passed** in the full local run. Includes the existing regression suite and new overlay/workout tests.
 - Pose model installation, ordinary optimized `npm run build`, and `npx cap sync`: passed locally.
-- Browser: local Chromium could not start because this execution environment rejects required sockets (`Operation not permitted`). GitHub Actions browser job runs desktop/390px, actual WebGL layer interaction, numerical fixtures, missing references and workout persistence, and uploads screenshots/traces.
+- Browser: local Chromium could not start because this execution environment rejects required sockets (`Operation not permitted`). Remote Chromium tests **3 passed**, including WebGL interaction, desktop/390px, fixture volume direction, reference-unavailable rendering, inline routine previews, persisted workout feedback, next-exercise progression and pain-stop summary. Screenshots were downloaded and inspected.
+- GitHub Actions backend, frontend, PostgreSQL and browser jobs all passed on [run 36873476783](https://github.com/hundol047/Synex-Health/actions/runs/36873476783). Final follow-up adds mobile tooltip spacing, fat/interpolation checks and the changed-reference regression; its check results are visible on PR #1.
 - Release-specific `build:release` requires real deployment URLs, operator metadata, OIDC and bundle identifiers. Ordinary bundle success does not satisfy those external release gates.
 
 ## External Requirements

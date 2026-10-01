@@ -36,6 +36,10 @@ test('same viewer renders both meshes, opacity/selection/camera/mobile and origi
  await expect(page.getByLabel('레이어 범례')).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
  await page.locator('.overlay-viewer').screenshot({path:info.outputPath('overlay-390.png')});
+ await page.screenshot({path:info.outputPath('body-page-390.png'),fullPage:true});
+ await page.getByRole('button',{name:'Fat · 체지방',exact:true}).click();await expect(page.getByRole('table')).toContainText('체지방량');
+ await page.getByRole('button',{name:'Muscle · 제지방',exact:true}).click();
+ await page.getByText('레이어 · 투명도 · 겹쳐보기 설정').click();await page.getByRole('checkbox',{name:/My Body →/}).check();await page.getByLabel('표면 전환',{exact:true}).fill('1');await page.getByRole('checkbox',{name:/My Body →/}).uncheck();await page.getByText('레이어 · 투명도 · 겹쳐보기 설정').click();
  await page.getByRole('button',{name:/Previous Compare/}).click();
  await expect(page.getByRole('table')).toContainText('이전 측정');
  await page.getByRole('button',{name:/Range View/}).click();await expect(page.getByText('기준 범위',{exact:true})).toBeVisible();

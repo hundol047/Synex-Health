@@ -104,3 +104,19 @@ def test_reference_selection_is_owned_validated_and_persisted(client):
     assert client.put('/api/body-map/reference-group',headers=student_headers(),json={'group_id':group}).status_code==200
     assert client.get('/api/body-map/latest',headers=student_headers()).json()['average_comparison']['selected_group_id']==group
     assert client.put('/api/body-map/reference-group',headers=student_headers(),json={'group_id':None}).status_code==200
+
+
+def test_reference_change_marks_old_routine_for_review(client):
+    headers=student_headers()
+    created=client.post('/api/exercise-routines/generate',headers=headers,json={})
+    assert created.status_code==200
+    body=client.get('/api/body-map/latest',headers=headers).json()
+    from app.health.router import store
+    refs=store.list_reference_ranges()
+    for r in refs:
+        store.add_reference_range(r.model_copy(update={'id':r.id+'-other','dataset_id':'alternative-demo','lean_mean':r.lean_mean*1.1}))
+    changed=client.get('/api/body-map/latest',headers=headers).json()
+    group=next(g for g in changed['average_comparison']['groups'] if g['id']!=body['average_comparison']['selected_group_id'])
+    assert client.put('/api/body-map/reference-group',headers=headers,json={'group_id':group['id']}).status_code==200
+    routines=client.get('/api/exercise-routines',headers=headers).json()
+    assert routines[0]['needs_review'] and '비교군' in routines[0]['review_reason']
