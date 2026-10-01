@@ -22,3 +22,6 @@ coverage/
 
 frontend/public/pose/wasm/
 frontend/public/pose/*.task
+
+frontend/test-results/
+frontend/playwright-report/

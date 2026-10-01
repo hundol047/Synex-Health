@@ -6,7 +6,7 @@ import {POSE_EXERCISES} from './poseCoach.js';
 
 export default function ExerciseCard({ exercise, children }) {
   const [open,setOpen]=useState(false);
-  return <article className={`exercise-card ${open?'exercise-card-open':''}`}>
+  return <article id={exercise.exercise_id} className={`exercise-card ${open?'exercise-card-open':''}`}>
     <div className="exercise-card-top"><div className="exercise-card-info">
       <div className="exercise-regions">{(exercise.target_regions||[]).join(' · ')}</div>
       <strong>{exercise.exercise_name}</strong>

@@ -174,7 +174,29 @@ class ReferenceRange(BaseModel):
     effective_date: Optional[str] = None
     unit: str = 'kg'
     interpretation: str = '설명용 참고 범위이며 진단 기준이 아닙니다.'
-    source: str = 'demo'  # 'demo' unless an admin has registered a real reference dataset
+    source: str = 'demo'  # never used in production average comparisons
+    dataset_id: Optional[str] = None
+    reference_population: Optional[str] = None
+    sample_size: Optional[int] = Field(default=None, gt=0)
+    bmi_min: Optional[float] = Field(default=None, gt=0)
+    bmi_max: Optional[float] = Field(default=None, gt=0)
+    weight_min: Optional[float] = Field(default=None, gt=0)
+    weight_max: Optional[float] = Field(default=None, gt=0)
+    skeletal_muscle_mean: Optional[float] = Field(default=None, gt=0)
+    body_fat_mean: Optional[float] = Field(default=None, ge=0)
+
+    @model_validator(mode='after')
+    def valid_reference(self):
+        for lo, hi in [('age_min','age_max'), ('height_min','height_max'), ('bmi_min','bmi_max'),
+                       ('weight_min','weight_max'), ('lean_lower','lean_upper'), ('fat_lower','fat_upper')]:
+            a, b = getattr(self, lo), getattr(self, hi)
+            if a is not None and b is not None and a > b:
+                raise ValueError('Reference lower bound exceeds upper bound')
+        for key in ('lean_mean','fat_mean','lean_lower','lean_upper','fat_lower','fat_upper'):
+            v = getattr(self,key)
+            if v is not None and v < 0: raise ValueError('Negative reference mass')
+        if self.effective_date: date.fromisoformat(self.effective_date)
+        return self
 
 
 # --- Exercise profile / routines ----------------------------------------------------------------

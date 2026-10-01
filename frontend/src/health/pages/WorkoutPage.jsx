@@ -1,3 +1,4 @@
+import WorkoutMode from '../components/exercise/WorkoutMode.jsx';
 import React, { useMemo, useState } from 'react';
 import WorkoutCalendar from '../components/WorkoutCalendar.jsx';
 import ExerciseCard from '../components/exercise/ExerciseCard.jsx';
@@ -24,6 +25,7 @@ function groupByDay(exercises) {
 export default function WorkoutPage() {
   const routines = useApiData(() => HealthAPI.listRoutines(), []);
   const workouts = useApiData(() => HealthAPI.listWorkouts(), []);
+  const [workoutMode,setWorkoutMode]=useState(false);
   const [selectedDay, setSelectedDay] = useState(null);
   const [logging, setLogging] = useState(null);
   const [logError, setLogError] = useState(null);
@@ -92,9 +94,11 @@ export default function WorkoutPage() {
   if (latest.needs_review) return <Card><EmptyState title="운동 계획을 먼저 갱신하세요" description={latest.review_reason}
     action={<Link className="btn btn-primary" to="/health/routine">루틴 재생성</Link>}/></Card>;
 
+  if(workoutMode)return <Card><WorkoutMode routine={latest} exercises={dayExercises} onSaved={workouts.reload} onClose={()=>setWorkoutMode(false)}/></Card>;
+
   return (
     <>
-      <WorkoutCalendar workouts={workouts.data||[]} routine={latest}/><Card title="오늘의 운동">
+      <button className="btn btn-primary" disabled={!dayExercises.length} onClick={()=>setWorkoutMode(true)}>Workout Mode · 한 운동씩 시작</button><WorkoutCalendar workouts={workouts.data||[]} routine={latest}/><Card title="오늘의 운동">
         {days.length > 1 && (
           <div style={{ display: 'flex', gap: 6, marginBottom: 12, overflowX: 'auto', paddingBottom: 2 }}>
             {days.map(([d]) => (

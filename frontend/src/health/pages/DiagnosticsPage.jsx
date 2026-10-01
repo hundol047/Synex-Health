@@ -1,3 +1,4 @@
+import {rendererStats} from '../components/body3d/rendererStats.js';
 import React,{useState} from 'react';
 import {Capacitor} from '@capacitor/core';
 import {healthAvailability} from '../../shared/lib/deviceHealth.js';
@@ -6,7 +7,7 @@ import {useApiData} from '../lib/useApiData.js';
 import {Card,ErrorState} from '../../shared/components/ui.jsx';
 export default function DiagnosticsPage(){
  const state=useApiData(()=>api('/api/diagnostics'),[]),[checks,setChecks]=useState({}),[busy,setBusy]=useState(false);
- async function inspect(){setBusy(true);const next={};
+ async function inspect(){setBusy(true);const next={};const renderer=rendererStats();next['3D Renderer']=renderer?'available (last viewed scene)':'3D 화면을 먼저 여세요';next['Average overlay available']=renderer?.overlayAvailable??false;if(import.meta.env.DEV&&renderer){next.WebGL=renderer.webgl;next.GPU=renderer.renderer;next.FPS=renderer.renderedFPS+' (on-demand sample; not device benchmark)';next['Mesh count']=renderer.meshCount;next.Vertices=renderer.vertices;next['Geometry buffers']=renderer.geometryBuffers;}
  try{const r=await fetch('/pose/pose_landmarker_lite.task',{method:'HEAD'});next.pose=r.ok?'asset_available_not_inference_verified':'asset_unavailable';}catch{next.pose='unavailable';}
  if(Capacitor.isNativePlatform()){
   try{const {App}=await import('@capacitor/app');const info=await App.getInfo();next.version=`${info.version} (${info.build})`;}catch{next.version='unavailable';}

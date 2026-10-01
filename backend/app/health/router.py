@@ -31,6 +31,15 @@ store = HealthStore()
 audit = AuditStore()  # append-only write-event log (section 34) -- reused from SynexAgent's shape
 
 
+def _average_for(user, measurement):
+    from .reference import average_comparison
+    result = average_comparison(user, measurement, store.list_reference_ranges())
+    selected = store.preference(user.id, 'average_reference_group')
+    if selected and any(g['id'] == selected for g in result['groups']):
+        result['selected_group_id'] = selected
+    return result
+
+
 def _ranges_for(user: HealthUser) -> dict[Segment, ReferenceRange]:
     age = None
     if user.birth_date:
@@ -220,7 +229,18 @@ def body_map_latest(user: User = Depends(require('measurement:read'))):
         raise HTTPException(404, '등록된 측정 데이터가 없습니다.')
     previous = store.previous_measurement(user.id, current.id)
     ranges = _ranges_for(u)
-    return {**cmp.full_comparison(previous, current, ranges), 'body_profile': body_model_profile(u), 'measurement': current}
+    return {**cmp.full_comparison(previous, current, ranges), 'body_profile': body_model_profile(u), 'measurement': current, 'previous_measurement': previous, 'average_comparison': _average_for(u, current)}
+
+
+@router.put('/body-map/reference-group')
+def select_average_reference(selection: dict, user: User = Depends(require('health:write'))):
+    u = _require_user_record(user.id)
+    current = store.latest_measurement(user.id)
+    group_id = selection.get('group_id')
+    if group_id is not None and group_id not in [g['id'] for g in _average_for(u, current)['groups']]:
+        raise HTTPException(422, '현재 측정에 지원되는 비교군을 선택하세요.')
+    store.save_preference(user.id, 'average_reference_group', group_id)
+    return _average_for(u, current)
 
 
 @router.get('/body-map/comparison')
@@ -238,7 +258,7 @@ def progress(user: User = Depends(require('measurement:read'))):
         d=date.fromisoformat(w.date);key=(d-__import__('datetime').timedelta(days=d.weekday())).isoformat()
         row=weeks.setdefault(key,{'date':key,'total':0,'completed':0});row['total']+=1;row['completed']+=int(w.completed)
     for row in weeks.values():row['completion']=round(row['completed']/row['total']*100,1)
-    return {'workout_weeks':sorted(weeks.values(),key=lambda w:w['date']),'measurements': items, 'workout_count': len(workouts),
+    return {'average_comparison': _average_for(_require_user_record(user.id), items[-1]) if items else None, 'workout_weeks':sorted(weeks.values(),key=lambda w:w['date']),'measurements': items, 'workout_count': len(workouts),
             'completed_workout_count': sum(1 for w in workouts if w.completed)}
 
 
@@ -251,7 +271,7 @@ def health_agent_analyze(user: User = Depends(require('agent:chat'))):
         raise HTTPException(404, '분석할 측정 데이터가 없습니다. 먼저 체성분 데이터를 등록해 주세요.')
     previous = store.previous_measurement(user.id, current.id)
     ranges = _ranges_for(u)
-    analysis = health_agent.analyze(u, current, previous, ranges)
+    analysis = health_agent.analyze(u, current, previous, ranges, average=_average_for(u, current))
     store.add_analysis(analysis)
     return analysis
 
@@ -263,6 +283,7 @@ def health_agent_chat(req: HealthAgentChatRequest, user: User = Depends(require(
     profile = store.get_profile(user.id)
     context = {'latest_measurement': latest.model_dump(mode='json') if latest else None,
                'profile': profile.model_dump(mode='json') if profile else None,
+               'average_comparison': _average_for(u, latest) if latest else None,
                'comparison':cmp.full_comparison(store.previous_measurement(user.id,latest.id),latest,{}) if latest else None,
                'routine':store.latest_routine(user.id).model_dump(mode='json') if store.latest_routine(user.id) else None}
     reply = health_agent.chat(u, req.message, context)
@@ -300,6 +321,8 @@ def list_exercise_routines(user: User = Depends(require('routine:read'))):
             reason = '새 측정값이 등록되었습니다. 운동 계획을 다시 생성하세요.'
         elif profile and routine.input_snapshot.get('profile') and routine.input_snapshot['profile'] != profile.model_dump(mode='json'):
             reason = '운동 프로필이 변경되었습니다. 변경된 조건으로 계획을 다시 생성하세요.'
+        elif measurement and routine.input_snapshot.get('reference_group_id') != _average_for(_require_user_record(user.id), measurement)['selected_group_id']:
+            reason = '비교군 기준이 변경되었습니다. 같은 기준으로 운동 이유를 보려면 계획을 다시 생성하세요.'
         result.append({**routine.model_dump(mode='json'), 'needs_review': bool(reason), 'review_reason': reason})
     return result
 
@@ -324,7 +347,8 @@ def generate_exercise_routine(user: User = Depends(require('routine:write'))):
     try:
         routine = build_deterministic_routine(user.id, measurement, profile, change_note=change_note,
             previous_measurement=previous_measurement, previous_routine=previous_routine,
-            workouts=store.list_workouts(user.id), user=store.get_user(user.id))
+            workouts=store.list_workouts(user.id), user=store.get_user(user.id),
+            average=_average_for(_require_user_record(user.id), measurement))
     except PlanBlocked as exc:
         raise HTTPException(409, str(exc))
 

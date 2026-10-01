@@ -72,7 +72,7 @@ def _recent_feedback(workouts, previous_routine):
 
 def build_deterministic_routine(user_id, measurement, profile, based_on_measurement_id=None,
                                 change_note='', previous_measurement=None, previous_routine=None,
-                                workouts=None, user=None):
+                                workouts=None, user=None, average=None):
     if safety_screen_failed(profile):
         raise PlanBlocked('건강센터 또는 의료전문가와 상담 후 운동계획을 설정하세요.')
     age = None
@@ -86,6 +86,12 @@ def build_deterministic_routine(user_id, measurement, profile, based_on_measurem
             raise PlanBlocked('현재 자동 운동 추천은 성인용입니다. 건강센터에 상담하세요.')
     constraints = _limitations(profile)
     weak = _weak_segments(measurement)
+    from .reference import selected_group
+    reference = selected_group(average)
+    reference_rows = (reference or {}).get('segments', {})
+    below = [Segment(key) for key, row in reference_rows.items()
+             if row['lean']['difference_kg'] is not None and row['lean']['difference_kg'] < 0]
+    weak = list(dict.fromkeys(weak + below))
     weight, muscle = measurement.weight, measurement.skeletal_muscle_mass
     height = measurement.height or (user.height if user else None)
     bmi = weight / (height / 100) ** 2 if weight and height else None
@@ -195,6 +201,11 @@ def build_deterministic_routine(user_id, measurement, profile, based_on_measurem
         for m in available_patterns:
             if remaining - cardio_budget < per_exercise: continue
             reason = '전신 주요 움직임을 균형 있게 구성하고, 사용 가능한 장비와 제약사항을 반영했습니다.'
+            for segment in below:
+                if SEGMENT_LABEL_KO[segment] in m['regions'] or any(t in ' '.join(m['regions']) for t in (['하체','다리','둔근'] if 'LEG' in segment.value else ['상체','팔'] if 'ARM' in segment.value else ['코어','몸통'])):
+                    row = reference_rows[segment.value]['lean']
+                    reason += f' {SEGMENT_LABEL_KO[segment]} 제지방량이 선택된 비교군 평균보다 {abs(row["difference_kg"]):g}kg ({abs(row["difference_percent"]):g}%) 낮아 관련 움직임을 포함했습니다. 평균 차이만으로 세트 수를 늘리지는 않습니다.'
+                    break
             if conservative: reason += ' 체격·경험·측정자료에 맞춰 낮은 시작 부하를 선택했습니다.'
             exercises.append(RoutineExercise(exercise_id=f'd{day}-{m["id"]}', motion_id=m['id'],
                 day_number=day, exercise_name=m['name'], sets=day_sets, reps='8–12회 (좌우 동일)', rest_seconds=60,
@@ -220,7 +231,7 @@ def build_deterministic_routine(user_id, measurement, profile, based_on_measurem
     return ExerciseRoutine(id=new_id('ROUTINE'),user_id=user_id,created_at=now(),based_on_measurement_id=based_on_measurement_id or measurement.id,
         goal=goal_label,summary=(change_note+' ' if change_note else '')+f'{goal_label}을 위한 개인별 시작 계획입니다. {progression}',
         duration_weeks=4,days_per_week=profile.days_per_week,exercises=exercises,generated_by='deterministic',algorithm_version=VERSION,
-        rationale=rationale,notices=notices,input_snapshot={'weight_kg':weight,'height_cm':height,'muscle_kg':muscle,
+        rationale=rationale,notices=notices,input_snapshot={'reference_group_id':(reference or {}).get('id'),'reference_metadata':(reference or {}).get('metadata'),'weight_kg':weight,'height_cm':height,'muscle_kg':muscle,
             'adherence':round(len(completed)/len(logs),3) if logs else None,'feedback_ids':feedback_key, 'body_fat_percent':measurement.body_fat_percentage,'bmi':round(bmi,1) if bmi else None,'profile':profile.model_dump(mode='json')},
         day_minutes=day_minutes,progression=progression,sources=SOURCES,schedule=schedule)
 
