@@ -14,7 +14,7 @@ export default function ExerciseCard({ exercise, children }) {
       <p className="muted">{exercise.duration || `${exercise.sets??'-'}세트 × ${exercise.reps??'-'}`}{exercise.rest_seconds!=null?` · 휴식 ${exercise.rest_seconds}초`:''}</p>
     </div><ExercisePreview exercise={exercise} onOpen={()=>setOpen(true)}/></div><button className="btn btn-secondary" type="button" onClick={()=>setOpen(x=>!x)} aria-expanded={open} aria-label={`${exercise.exercise_name} 동작 ${open?'닫기':'보기'}`}>
       {open?<ChevronUp size={16}/>:<Play size={16}/>} {open?'접기':'동작 보기'}</button>
-    {POSE_EXERCISES[exercise.motion_id] && <span className="badge">카메라 자세 참고 · 실측 아님</span>}
+    <span className="badge">{POSE_EXERCISES[exercise.motion_id]?'카메라 자세 참고 지원 · 정확도 검증 전':'카메라 분석 미지원 · 동작 안내 제공'}</span>
     <ul className="exercise-cues">{(exercise.instructions||[]).slice(0,2).map(t=><li key={t}>{t}</li>)}</ul>
     <p className="muted exercise-reason">{exercise.reason}</p>
     {open && <Suspense fallback={<p role="status">동작을 불러오는 중입니다.</p>}><ExerciseMotion exercise={exercise}/></Suspense>}

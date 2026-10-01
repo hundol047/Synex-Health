@@ -1,3 +1,5 @@
+import SetRecordEditor from '../components/exercise/SetRecordEditor.jsx';
+import {normalizeSets,previousWorkout} from '../lib/workoutProgress.js';
 import WorkoutMode from '../components/exercise/WorkoutMode.jsx';
 import React, { useMemo, useState } from 'react';
 import WorkoutCalendar from '../components/WorkoutCalendar.jsx';
@@ -32,6 +34,7 @@ export default function WorkoutPage() {
   const [feedback, setFeedback] = useState({});
   const [minutes,setMinutes]=useState({});
   const [details,setDetails]=useState({});
+  const [setRows,setSetRows]=useState({});
   const field=(key,name,value)=>setDetails(d=>({...d,[key]:{...d[key],[name]:value}}));
 
   const latest = (routines.data || [])[0];
@@ -47,11 +50,18 @@ export default function WorkoutPage() {
       (ex.exercise_id?w.routine_exercise_id===ex.exercise_id:w.exercise_name===ex.exercise_name) && w.completed);
   }
 
+  function rowsFor(ex){
+    const key=`${latest.id}-${ex.exercise_id}`;
+    const existing=todaysLogs.find(w=>w.routine_id===latest.id&&w.routine_exercise_id===ex.exercise_id);
+    return setRows[key]??existing?.set_records??[];
+  }
   async function complete(ex) {
     setLogging(ex.exercise_id||ex.exercise_name);
     setLogError(null);
     try {
+      const set_records=normalizeSets(rowsFor(ex));
       const saved=await HealthAPI.createWorkout({
+        set_records,
         routine_id: latest.id,
         routine_exercise_id: ex.exercise_id,
         day_number: ex.day_number,
@@ -94,7 +104,7 @@ export default function WorkoutPage() {
   if (latest.needs_review) return <Card><EmptyState title="운동 계획을 먼저 갱신하세요" description={latest.review_reason}
     action={<Link className="btn btn-primary" to="/health/routine">루틴 재생성</Link>}/></Card>;
 
-  if(workoutMode)return <Card><WorkoutMode routine={latest} exercises={dayExercises} onSaved={workouts.reload} onClose={()=>setWorkoutMode(false)}/></Card>;
+  if(workoutMode)return <Card><WorkoutMode routine={latest} exercises={dayExercises} workouts={workouts.data||[]} onSaved={workouts.reload} onClose={()=>setWorkoutMode(false)}/></Card>;
 
   return (
     <>
@@ -113,7 +123,11 @@ export default function WorkoutPage() {
           {dayExercises.length === 0 && <p className="muted">이 날에는 계획된 운동이 없습니다.</p>}
           {dayExercises.map((ex,i) => {
             const done=isDone(ex), key=ex.exercise_id||ex.exercise_name;
+            const previous=previousWorkout(workouts.data||[],ex,today);
             return <ExerciseCard key={key+i} exercise={ex}>
+              {previous&&<p className="muted">지난 기록 ({previous.date}): {previous.set_records?.length?previous.set_records.map(s=>`${s.weight_kg==null?'중량 미기록':`${s.weight_kg}kg`} × ${s.reps}회${s.kind==='warmup'?' (준비)':''}`).join(' / '):`${previous.sets_completed??'—'}세트 · ${previous.reps_completed??'횟수 미기록'}`}</p>}
+              {ex.dose_type==='reps'&&<SetRecordEditor rows={rowsFor(ex)} onChange={rows=>setSetRows(old=>({...old,[`${latest.id}-${ex.exercise_id}`]:rows}))} disabled={logging===key}/>}
+              {rowsFor(ex).length>0&&<p>세트별 입력을 기준으로 저장합니다. 아래 전체 세트·반복 입력보다 우선합니다.</p>}
               <div className="workout-feedback">
                 {[['sets','실제 세트',0,100],['reps','실제 반복 횟수',0,1000],['rpe','운동 힘듦 (RPE 1–10)',1,10],['pain','통증 (0–10)',0,10]].map(([name,label,min,max])=><label key={name}>{label}<input type="number" min={min} max={max} value={details[key]?.[name]??''} onChange={e=>field(key,name,e.target.value)}/></label>)}
                 <label>메모<input maxLength="2000" value={details[key]?.memo||''} onChange={e=>field(key,'memo',e.target.value)}/></label>
@@ -139,7 +153,7 @@ export default function WorkoutPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {[...(workouts.data || [])].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 15).map((w) => (
               <div key={w.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.875rem' }}>
-                <span>{w.date} · {w.exercise_name}</span>
+                <span>{w.date} · {w.exercise_name}{w.set_records?.length>0&&<small style={{display:'block'}}>{w.set_records.map(s=>`${s.weight_kg==null?'미기록':`${s.weight_kg}kg`} × ${s.reps}회`).join(' / ')}</small>}</span>
                 <Badge tone={w.completed ? 'success' : 'blue'}>{w.completed ? '완료' : '미완료'}</Badge>
               </div>
             ))}

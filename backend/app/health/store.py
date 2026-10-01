@@ -197,9 +197,13 @@ class HealthStore:
         return ExerciseProfile.model_validate_json(row[0]) if row else None
 
     # --- Routines --------------------------------------------------------------------------------
-    def add_routine(self, r: ExerciseRoutine) -> ExerciseRoutine:
+    def add_routine(self, r: ExerciseRoutine, expected_latest=None) -> ExerciseRoutine:
         with self.connect() as db:
+            # Serialize plan publication per account in SQLite and PostgreSQL.
+            db.execute('UPDATE users SET name=name WHERE id=?', (r.user_id,))
             prior=db.execute('SELECT id,payload FROM routines WHERE user_id=? ORDER BY created_at DESC LIMIT 1',(r.user_id,)).fetchone()
+            if expected_latest is not None and (not prior or prior[0] != expected_latest):
+                raise ValueError('새 루틴이 있습니다. 목록을 새로고침하세요.')
             db.execute('INSERT OR REPLACE INTO routines VALUES (?,?,?,?)', (r.id, r.user_id, r.model_dump_json(), r.created_at))
             history={'old_routine':json.loads(prior[1]) if prior else None,'new_routine':r.model_dump(mode='json'),'reason':r.progression,'measurements':r.input_snapshot,'workout_adherence':r.input_snapshot.get('adherence')}
             db.execute('INSERT OR IGNORE INTO adaptive_history VALUES (?,?,?,?,?,?)',(r.id,r.user_id,prior[0] if prior else None,r.id,json.dumps(history),r.created_at))

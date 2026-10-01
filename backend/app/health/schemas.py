@@ -268,7 +268,16 @@ class ExerciseRoutine(BaseModel):
 
 
 # --- Workout log -------------------------------------------------------------------------------
+class WorkoutSet(BaseModel):
+    # External load only; bodyweight and unknown load remain null, never inferred.
+    weight_kg: Optional[float] = Field(default=None, ge=0, le=1000, allow_inf_nan=False)
+    reps: int = Field(ge=0, le=1000)
+    kind: Literal['working', 'warmup'] = 'working'
+
+
 class WorkoutLog(BaseModel):
+    exercise_catalog_id: Optional[str] = None
+    set_records: list[WorkoutSet] = Field(default_factory=list, max_length=100)
     revision: int = Field(default=1, ge=1)
     mutation_id: Optional[str] = None
     rpe: Optional[int] = Field(default=None,ge=1,le=10)
@@ -292,6 +301,7 @@ class WorkoutLog(BaseModel):
 
 
 class WorkoutLogCreateRequest(BaseModel):
+    set_records: list[WorkoutSet] = Field(default_factory=list, max_length=100)
     expected_revision: int = Field(default=0, ge=0)
     mutation_id: Optional[str] = Field(default=None, max_length=80)
     rpe: Optional[int] = Field(default=None,ge=1,le=10)

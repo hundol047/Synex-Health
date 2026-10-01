@@ -1,3 +1,4 @@
+import ExerciseReplacement from '../components/exercise/ExerciseReplacement.jsx';
 import React, { useState } from 'react';
 import ExerciseCard from '../components/exercise/ExerciseCard.jsx';
 import { Link } from 'react-router-dom';
@@ -116,7 +117,7 @@ export default function RoutinePage() {
         <Card key={day} title={`${day}일차`} action={latest.day_minutes?.[String(day)] != null ? <Badge>약 {latest.day_minutes[String(day)]}분</Badge> : null}>
           <p className="muted">{latest.schedule?.[day-1] || '작은 시범으로 동작을 확인하고 자세히 보기를 눌러 확대하세요.'}</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {exs.map((ex,i)=><ExerciseCard key={ex.exercise_id||i} exercise={ex}/>)}
+            {exs.map((ex,i)=><ExerciseCard key={`${latest.id}-${ex.exercise_id||i}`} exercise={ex}><ExerciseReplacement routine={latest} exercise={ex} onReplaced={()=>Promise.all([routines.reload(),history.reload()])}/></ExerciseCard>)}
           </div>
         </Card>
       ))}

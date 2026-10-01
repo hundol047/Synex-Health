@@ -49,10 +49,10 @@ export default function ExerciseMotion({ exercise, measurement, profile }) {
       <p className="motion-note">자세 이해를 위한 개념 애니메이션입니다. 관절 각도나 개인 가동범위를 측정한 영상이 아닙니다.</p>
     </div>
     <div className="motion-instructions">
-      <h4>이렇게 따라 하세요</h4>
+      <h4>준비부터 마무리까지</h4><p>먼저 정지 화면으로 지지점과 시작 자세를 확인한 뒤, 0.5× 속도로 동작을 살펴보세요.</p>
       <ol>{(exercise.instructions||[]).map(step=><li key={step}>{step}</li>)}</ol>
       <div className="motion-intensity"><strong>운동 강도</strong><p>{exercise.intensity || '통증 없는 편안한 범위'}</p></div>
-      <ul className="motion-cautions">{(exercise.cautions||[]).map(c=><li key={c}>{c}</li>)}</ul>
+      <h4>수행 중 확인할 점</h4><ul className="motion-cautions">{(exercise.cautions||[]).map(c=><li key={c}>{c}</li>)}</ul>
     </div>
   </div>;
 }

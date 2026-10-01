@@ -11,7 +11,7 @@ test('mobile catalog separates bodyweight/gym, filters equipment, and opens a ma
  await page.getByLabel('이용할 기구').selectOption('leg_press_machine');
  await expect(page.locator('.exercise-card')).toHaveCount(1);
  await page.getByRole('button',{name:'레그 프레스 동작 보기'}).click();
- await expect(page.getByRole('heading',{name:'이렇게 따라 하세요'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'준비부터 마무리까지'})).toBeVisible();
  await expect(page.getByRole('button',{name:'기구·지지점 2D 안내'})).toBeDisabled();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await page.screenshot({path:info.outputPath('gym-library-390.png'),fullPage:true});expect(errors).toEqual([]);
@@ -29,11 +29,12 @@ test('encrypted pending workout survives a closed page and syncs once after reco
  await page.reload();await expect(page.getByRole('button',{name:/운동 따라하기/})).toBeVisible();
  await context.route('**/api/workouts',route=>route.request().method()==='POST'?route.abort('internetdisconnected'):route.continue());
  await page.getByRole('button',{name:/운동 따라하기/}).click();
+ await page.getByLabel('이번 세트 반복 횟수',{exact:true}).fill('9');
+ await page.getByLabel('이번 세트 중량 kg',{exact:true}).fill('15');
  for(let n=0;n<(ex.sets||1);n++){
   await page.getByRole('button',{name:'세트 완료',exact:true}).click();
   const skip=page.getByRole('button',{name:'휴식 건너뛰기'});if(await skip.isVisible())await skip.click();
  }
- await page.getByLabel('실제 반복 횟수',{exact:true}).fill('9');
  await page.getByRole('button',{name:'완료 기록 · 다음 운동',exact:true}).click();
  await expect(page.getByRole('heading',{name:'기기 보관 기록 1건'})).toBeVisible();
  await page.close();const reopened=await context.newPage();await reopened.goto('/health/workout');
@@ -43,5 +44,5 @@ test('encrypted pending workout survives a closed page and syncs once after reco
  await expect(reopened.getByRole('heading',{name:'기기 보관 기록 1건'})).toHaveCount(0);
  const saved=await(await reopened.request.get('/api/workouts')).json();
  const matches=saved.filter(w=>w.routine_id===routine.id&&w.routine_exercise_id===ex.exercise_id);
- expect(matches).toHaveLength(1);expect(matches[0].reps_completed).toBe('9');expect(matches[0].revision).toBe(1);
+ expect(matches).toHaveLength(1);expect(matches[0].reps_completed).toBe('9');expect(matches[0].revision).toBe(1);expect(matches[0].set_records[0]).toMatchObject({weight_kg:15,reps:9});
 });

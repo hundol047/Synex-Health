@@ -383,6 +383,73 @@ def get_exercise_routine(routine_id: str, user: User = Depends(require('routine:
     return r
 
 
+def _replacement_context(routine_id, exercise_id, user):
+    from .exercise_catalog import CATALOG
+    from .exercise_engine import _limitations
+    routine = store.get_routine(routine_id)
+    if not routine or routine.user_id != user.id:
+        raise HTTPException(404, '본인의 루틴을 선택하세요.')
+    current = store.latest_routine(user.id)
+    if not current or current.id != routine.id:
+        raise HTTPException(409, '새 루틴이 있습니다. 목록을 새로고침하세요.')
+    status = next(r for r in list_exercise_routines(user) if r['id'] == routine_id)
+    if status['needs_review']:
+        raise HTTPException(409, status['review_reason'])
+    profile, measurement = store.get_profile(user.id), store.latest_measurement(user.id)
+    if not profile or not measurement:
+        raise HTTPException(422, '측정값과 운동 프로필을 먼저 등록하세요.')
+    # Reuse full adult screening and recent-pain gate; replacements never bypass it.
+    try:
+        build_deterministic_routine(user.id, measurement, profile, previous_routine=routine,
+            workouts=store.list_workouts(user.id), user=store.get_user(user.id))
+        constraints = _limitations(profile)
+    except PlanBlocked as exc:
+        raise HTTPException(409, str(exc))
+    source = next((e for e in routine.exercises if e.exercise_id == exercise_id), None)
+    item = next((m for m in CATALOG if source and m['id'] == source.motion_id), None)
+    if not item:
+        raise HTTPException(404, '교체할 운동이 없습니다.')
+    used = {e.motion_id for e in routine.exercises if e.day_number == source.day_number}
+    candidates = [m for m in CATALOG if m['id'] not in used and m['pattern'] == item['pattern']
+        and m['dose_type'] == source.dose_type and m['auto_recommend'] and m['easy']
+        and set(m['equipment']) <= set(profile.available_equipment)
+        and not set(m['avoid']) & constraints and profile.exercise_location in m['locations']
+        and (profile.training_mode != 'bodyweight' or not m['equipment'])
+        and not (profile.exercise_location == 'outdoor' and m['id'] in ('sit_stand','wall_push','march'))]
+    return routine, source, candidates
+
+
+@router.get('/exercise-routines/{routine_id}/alternatives/{exercise_id}')
+def exercise_alternatives(routine_id: str, exercise_id: str, user: User = Depends(require('routine:write'))):
+    _, _, candidates = _replacement_context(routine_id, exercise_id, user)
+    return [{'id':m['id'], 'name':m['name'], 'equipment':m['equipment']} for m in candidates]
+
+
+@router.post('/exercise-routines/{routine_id}/replace/{exercise_id}/{replacement_id}')
+def replace_exercise(routine_id: str, exercise_id: str, replacement_id: str, user: User = Depends(require('routine:write'))):
+    routine, source, candidates = _replacement_context(routine_id, exercise_id, user)
+    item = next((m for m in candidates if m['id'] == replacement_id), None)
+    if not item:
+        raise HTTPException(422, '현재 조건에 맞는 대체 운동을 선택하세요.')
+    changed = source.model_copy(update=dict(exercise_id=f'd{source.day_number}-{item["id"]}',
+        motion_id=item['id'], exercise_name=item['name'], equipment=item['equipment'],
+        training_type=item['training_type'], instructions=item['instructions'], cautions=item['cautions'],
+        target_regions=item['regions'], hold_seconds=item.get('hold_seconds'),
+        reps=item['reps'] if source.dose_type == 'hold' else source.reps,
+        reason='사용자가 선택한 같은 움직임 유형의 쉬운 대체 운동입니다. 이전 시간·세트 계획을 유지했습니다.'))
+    result = routine.model_copy(deep=True)
+    result.id, result.created_at = new_id('ROUTINE'), now()
+    result.exercises = [changed if e.exercise_id == exercise_id else e for e in result.exercises]
+    result.input_snapshot['replaces_routine_id'] = routine.id
+    result.progression = f'{source.exercise_name} → {item["name"]} 교체. 과거 운동 기록은 원래 루틴에 보관합니다.'
+    try:
+        store.add_routine(result, expected_latest=routine.id)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc))
+    audit.record(user.id, 'routine_exercise_replaced', {'routine_id':result.id}, user_id=user.id, role=user.role)
+    return result
+
+
 # --- Workouts --------------------------------------------------------------------------------------
 @router.post('/workouts')
 def create_workout(req: WorkoutLogCreateRequest, user: User = Depends(require('workout:write'))):
@@ -405,7 +472,11 @@ def create_workout(req: WorkoutLogCreateRequest, user: User = Depends(require('w
     exercise = matching[0]
     payload = req.model_dump(exclude={'expected_revision'})
     payload.update(exercise_name=exercise.exercise_name, day_number=exercise.day_number,
-                   routine_exercise_id=exercise.exercise_id)
+                   routine_exercise_id=exercise.exercise_id, exercise_catalog_id=exercise.motion_id)
+    if req.set_records:
+        if exercise.dose_type != 'reps':
+            raise HTTPException(422, '시간 기준 운동은 세트별 중량·횟수 대신 운동 시간을 기록하세요.')
+        payload.update(sets_completed=len(req.set_records), reps_completed=', '.join(str(s.reps) for s in req.set_records))
     # Stable logical identity, mutation replay and optimistic revision checks.
     key = f'{user.id}|{routine.id}|{logged_date}|{exercise.day_number}|{exercise.exercise_id or exercise.exercise_name}'
     w = WorkoutLog(id='WORKOUT-' + hashlib.sha256(key.encode()).hexdigest()[:24], user_id=user.id, created_at=now(), **payload)

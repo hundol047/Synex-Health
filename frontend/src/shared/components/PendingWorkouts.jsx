@@ -1,6 +1,7 @@
 import React,{useState} from 'react';
 import {discardPending,resolvePending} from '../lib/offline.js';
 import {syncPendingWorkouts} from '../lib/api.js';
+const describeSets=w=>(w.set_records||[]).map((s,i)=>`${i+1}세트 ${s.weight_kg==null?'중량 미기록':`${s.weight_kg}kg`} × ${s.reps}회${s.kind==='warmup'?' (준비)':''}`).join(' / ');
 export default function PendingWorkouts({state}) {
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
  async function run(action) { setBusy(true);setError('');try { await action(); } catch(e) { setError(e.message); } finally { setBusy(false); } }
@@ -10,9 +11,9 @@ export default function PendingWorkouts({state}) {
   {(state.storageError||error)&&<p role="alert">{state.storageError||error}</p>}
   <button className="btn btn-secondary" disabled={busy||state.syncing} onClick={()=>run(syncPendingWorkouts)}>기록 전송</button>
   <details><summary>미전송 기록 확인·충돌 해결</summary>{state.entries.map(entry=><article key={entry.id} className="exercise-card">
-   <strong>{entry.body.exercise_name} · {entry.body.date}</strong><p>이 기기: {entry.body.sets_completed??'—'}세트 · {entry.body.reps_completed??'—'}회 · 통증 {entry.body.pain??0}</p>
+   <strong>{entry.body.exercise_name} · {entry.body.date}</strong><p>이 기기: {entry.body.sets_completed??'—'}세트 · {entry.body.reps_completed??'—'}회 · 통증 {entry.body.pain??0}</p><p>{describeSets(entry.body)}</p>
    {entry.error&&<p role="alert">{entry.error}</p>}
-   {entry.conflict&&<><p>서버: {entry.conflict.sets_completed??'—'}세트 · {entry.conflict.reps_completed??'—'}회 · 통증 {entry.conflict.pain??0}</p><button className="btn btn-secondary" disabled={busy} onClick={()=>run(async()=>{await resolvePending(entry.id,entry.conflict.revision);await syncPendingWorkouts();})}>이 기기 기록으로 변경</button></>}
+   {entry.conflict&&<><p>서버: {entry.conflict.sets_completed??'—'}세트 · {entry.conflict.reps_completed??'—'}회 · 통증 {entry.conflict.pain??0}</p><p>{describeSets(entry.conflict)}</p><button className="btn btn-secondary" disabled={busy} onClick={()=>run(async()=>{await resolvePending(entry.id,entry.conflict.revision);await syncPendingWorkouts();})}>이 기기 기록으로 변경</button></>}
    <button className="btn btn-ghost" disabled={busy} onClick={()=>{if(window.confirm('이 기기의 미전송 기록을 삭제할까요? 서버 기록은 유지됩니다.'))run(()=>discardPending(entry.id));}}>{entry.conflict?'서버 기록 유지':'미전송 기록 삭제'}</button>
   </article>)}</details>
  </section>;

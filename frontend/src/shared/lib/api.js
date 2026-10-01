@@ -75,6 +75,8 @@ export const HealthAPI = {
   generateRoutine: () => api('/api/exercise-routines/generate', {}),
   getRoutine: (id) => api(`/api/exercise-routines/${id}`),
 
+  exerciseAlternatives: (routine, exercise) => api(`/api/exercise-routines/${encodeURIComponent(routine)}/alternatives/${encodeURIComponent(exercise)}`),
+  replaceExercise: (routine, exercise, replacement) => api(`/api/exercise-routines/${encodeURIComponent(routine)}/replace/${encodeURIComponent(exercise)}/${encodeURIComponent(replacement)}`, {}),
   listWorkouts: () => api('/api/workouts'),
   createWorkout: (payload) => api('/api/workouts', payload),
 
