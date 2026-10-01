@@ -19,7 +19,8 @@ test('mobile replacement, set recording and weekly progress round trip',async({p
  await exercise.getByLabel('1세트 중량 kg',{exact:true}).fill('20');await exercise.getByLabel('1세트 횟수',{exact:true}).fill('12');
  await exercise.getByRole('button',{name:'완료 기록',exact:true}).click();await expect(exercise.getByText('오늘 완료',{exact:true})).toBeVisible();
  await page.reload();await expect(page.getByLabel('1세트 중량 kg',{exact:true})).toHaveValue('20');
- expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ const overflow=await page.evaluate(()=>[...document.querySelectorAll('body *')].filter(e=>e.getBoundingClientRect().right>innerWidth+1).map(e=>({tag:e.tagName,cls:e.className,right:e.getBoundingClientRect().right,text:e.textContent.slice(0,60)})).slice(-20));
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),JSON.stringify(overflow)).toBe(true);
  await page.screenshot({path:info.outputPath('sets-mobile.png'),fullPage:true});
  await page.goto('/health/progress');await expect(page.getByRole('heading',{name:'운동 성장 기록'})).toBeVisible();
  await expect(page.getByRole('table',{name:'주간 활동과 기록된 외부 중량 운동량'})).toContainText('240 kg·회');

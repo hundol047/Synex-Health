@@ -197,3 +197,6 @@ small{font-size:.8125rem}
 .set-record-editor{min-inline-size:0;width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:12px;padding:12px;margin:12px 0}
 .set-record-editor .profile-grid{padding:10px 0;border-bottom:1px solid var(--line)}
 .set-record-editor>button{margin-top:10px}
+.workout-feedback>label{display:flex;flex-direction:column;gap:6px;flex:1 1 140px;min-width:0;max-width:100%}
+.workout-feedback input{width:100%;min-width:0;box-sizing:border-box}
+.workout-feedback>input{flex:1 1 140px;max-width:100%}
