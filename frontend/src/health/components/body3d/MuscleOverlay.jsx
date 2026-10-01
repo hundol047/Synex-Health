@@ -3,7 +3,8 @@ import * as THREE from 'three';
 import data from './assets/human-mesh.json';
 import {overlayPositions,interpolatePositions,OVERLAY_REGIONS} from './overlayMath.js';
 
-// Share topology between layers. Only positions/normals vary; two surfaces, one pose/camera.
+// Share topology CPU storage. Independent GPU index handles prevent disposal of one layer
+// from invalidating another; positions/normals vary, with one shared pose/camera.
 const grouped=[];const groups=[];
 for(let r=0;r<6;r++){
  const start=grouped.length;

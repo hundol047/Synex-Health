@@ -75,7 +75,7 @@ export default function WorkoutPage() {
     }
   }
 
-  if (routines.loading || workouts.loading) return <Card><Skeleton height={220} /></Card>;
+  if ((routines.loading || workouts.loading) && !workoutMode) return <Card><Skeleton height={220} /></Card>;
   if (routines.error) return <ErrorState message={routines.error.message} onRetry={routines.reload} />;
   if (workouts.error) return <ErrorState message={workouts.error.message} onRetry={workouts.reload} />;
 
