@@ -1,4 +1,8 @@
 import {test,expect} from '@playwright/test';
+async function confirmAction(page,accept,action){
+ const handled=new Promise((resolve,reject)=>page.once('dialog',dialog=>(accept?dialog.accept():dialog.dismiss()).then(resolve,reject)));
+ await Promise.all([handled,action()]);
+}
 test.use({timezoneId:'Asia/Seoul',viewport:{width:390,height:844}});
 test('encrypted draft survives closed page and guards app navigation before resuming in Korean timezone',async({page,context},info)=>{
  await context.addInitScript(()=>localStorage.setItem('synex-onboarding-v1','done'));
@@ -8,12 +12,12 @@ test('encrypted draft survives closed page and guards app navigation before resu
  await page.reload();const card=page.locator('.exercise-card').filter({has:page.getByRole('button',{name:'세트 추가',exact:true})}).first();
  await card.getByRole('button',{name:'세트 추가',exact:true}).click();await card.getByLabel('1세트 중량 kg',{exact:true}).fill('18');await card.getByLabel('1세트 횟수',{exact:true}).fill('7');
  await expect(card.getByText('기기에 임시 저장됨',{exact:true})).toBeVisible();
- page.once('dialog',dialog=>dialog.dismiss());await page.locator('.health-bottom-nav a[href="/health/profile"]').click();await expect(page).toHaveURL(/\/health\/workout$/);
- page.once('dialog',dialog=>dialog.accept());await page.locator('.health-bottom-nav a[href="/health/profile"]').click();await expect(page).toHaveURL(/\/health\/profile$/);
+ await confirmAction(page,false,()=>page.locator('.health-bottom-nav a[href="/health/profile"]').click());await expect(page).toHaveURL(/\/health\/workout$/);
+ await confirmAction(page,true,()=>page.locator('.health-bottom-nav a[href="/health/profile"]').click());await expect(page).toHaveURL(/\/health\/profile$/);
  await page.goBack();await expect(page.getByLabel('1세트 중량 kg',{exact:true})).toHaveValue('18');
  await page.close();page=await context.newPage();await page.goto('/health/workout');await expect(page.getByLabel('1세트 횟수',{exact:true})).toHaveValue('7');
  const restored=page.locator('.exercise-card').filter({has:page.getByLabel('1세트 중량 kg',{exact:true})});
- page.once('dialog',dialog=>dialog.accept());await restored.getByRole('button',{name:'임시 입력 버리기',exact:true}).click();
+ await confirmAction(page,true,()=>restored.getByRole('button',{name:'임시 입력 버리기',exact:true}).click());
  await page.getByRole('button',{name:'운동 따라하기 · 한 운동씩 시작',exact:true}).click();
  await page.getByLabel('이번 세트 반복 횟수',{exact:true}).fill('9');await page.getByLabel('이번 세트 중량 kg',{exact:true}).fill('21');await page.getByRole('button',{name:'세트 완료',exact:true}).click();
  await expect(page.getByText('기기에 임시 저장됨',{exact:true})).toBeVisible();await page.close();page=await context.newPage();await page.goto('/health/workout');await page.getByRole('button',{name:'운동 따라하기 · 한 운동씩 시작',exact:true}).click();
