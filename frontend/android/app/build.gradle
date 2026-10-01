@@ -4,11 +4,11 @@ android {
     namespace = "com.synex.health"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId (System.getenv("SYNEX_APPLICATION_ID") ?: "com.synex.health")
+        applicationId = System.getenv("SYNEX_APPLICATION_ID") ?: "com.synex.health"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode (System.getenv("SYNEX_VERSION_CODE") ?: "1").toInteger()
-        versionName (System.getenv("SYNEX_VERSION_NAME") ?: "1.0")
+        versionCode = Integer.parseInt(System.getenv("SYNEX_VERSION_CODE") ?: "1")
+        versionName = System.getenv("SYNEX_VERSION_NAME") ?: "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
