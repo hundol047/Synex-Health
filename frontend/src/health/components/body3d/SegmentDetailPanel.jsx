@@ -21,6 +21,13 @@ export default function SegmentDetailPanel({ segment, comparisonData, onClose, a
     <Modal open={!!segment} onClose={onClose} title={label}>
       <Row label="현재 부위 제지방량" value={segDelta?.current_lean_kg != null ? `${segDelta.current_lean_kg} kg` : '측정 없음'} />
       <Row label="현재 체지방량" value={segDelta?.current_fat_kg != null ? `${segDelta.current_fat_kg} kg` : '측정 없음'} />
+      <Row label="이전 제지방량" value={segDelta?.current_lean_kg!=null&&segDelta?.lean_mass_delta_kg!=null?`${(segDelta.current_lean_kg-segDelta.lean_mass_delta_kg).toFixed(2)} kg`:'이전 측정 없음'}/>
+      <Row label="좌우 차이" value={(()=>{const pair=segment.includes('ARM')?'arm':segment.includes('LEG')?'leg':null;const difference=comparisonData?.left_right_balance?.[pair]?.diff_percent;return difference!=null?`${difference}% (왼쪽−오른쪽, 오른쪽 기준)`:'비교 없음';})()}/>
+      <Row label="측정일" value={comparisonData?.measurement?.measurement_date||'확인 불가'}/>
+      <Row label="측정 출처" value={comparisonData?.measurement?.source||'확인 불가'}/>
+      <Row label="참고 범위" value={ref?.lower!=null&&ref?.upper!=null?`${ref.lower}–${ref.upper} ${ref.unit}`:'등록된 범위 없음'}/>
+      <Row label="기준 출처·버전" value={ref?.reference_source?`${ref.reference_source} · ${ref.reference_version||'미등록'}`:ref?.source||'없음'}/>
+      {ref?.publication&&<p className="muted">{ref.publication} · 적용일 {ref.effective_date||'미등록'}</p>}
       <Row label="기준 대비" value={ref?.reference_percent != null ? `${ref.reference_percent}%` : '기준 데이터 없음'} />
       <Row label="지난 측정 대비 변화(제지방)" value={segDelta?.lean_mass_delta_kg != null ? `${segDelta.lean_mass_delta_kg > 0 ? '+' : ''}${segDelta.lean_mass_delta_kg} kg` : '이전 측정 없음'} />
       <Row label="지난 측정 대비 변화(체지방)" value={segDelta?.fat_mass_delta_kg != null ? `${segDelta.fat_mass_delta_kg > 0 ? '+' : ''}${segDelta.fat_mass_delta_kg} kg` : '이전 측정 없음'} />

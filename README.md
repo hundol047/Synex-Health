@@ -163,3 +163,7 @@ cd frontend && npm test
 ## Release candidate verification
 
 See [release readiness](docs/APP_STORE_RELEASE_READINESS.md) for verified results and blockers, [iOS release guide](docs/IOS_RELEASE.md) for native signing/build steps, and [App Privacy](docs/APP_STORE_PRIVACY.md) for source-based disclosures. Native projects exist for Android and iOS; synchronization does not certify a store-ready binary.
+
+## Production upgrade
+
+[Current upgrade readiness](docs/PRODUCTION_READINESS.md): inline exercise previews, twelve pose analyzers, adaptive history, session offline queue, reference provenance and explicit database migrations. See [database operations](docs/DATABASE_OPERATIONS.md), [mobile release](docs/MOBILE_RELEASE.md), [billing](docs/BILLING.md) and [security/privacy](docs/SECURITY_AND_PRIVACY.md).

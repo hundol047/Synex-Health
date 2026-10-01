@@ -1,3 +1,4 @@
+import {cacheResponse,cachedResponse,queueWorkout,syncWorkouts,clearOffline,offlineEpoch} from './offline.js';
 import { getAccessToken,refreshAccessToken } from './session.js';
 export const BASE = import.meta.env.VITE_API_BASE || '';
 
@@ -11,10 +12,12 @@ export function getDemoUser() {
   try { return localStorage.getItem(DEMO_USER_KEY) || 'student-jimin'; } catch { return 'student-jimin'; }
 }
 export function setDemoUser(id) {
+  clearOffline();
   try { localStorage.setItem(DEMO_USER_KEY, id); } catch {}
 }
 
-export async function api(path, body, { method, signal, headers } = {}) {
+export async function api(path, body, { method, signal, headers, offlineRetry=false } = {}) {
+  const requestEpoch=offlineEpoch();
   const m = method || (body === undefined ? 'GET' : 'POST');
   const options = {
     method: m,
@@ -22,7 +25,13 @@ export async function api(path, body, { method, signal, headers } = {}) {
     body: body === undefined ? undefined : JSON.stringify(body),
     signal, credentials: 'include',
   };
-  let response=await fetch(BASE+path,options);
+  let response;
+  try{response=await fetch(BASE+path,options);}catch(error){
+    if(error.name==='AbortError'||requestEpoch!==offlineEpoch())throw error;
+    if(m==='GET'){const cached=cachedResponse(path);if(cached!==undefined){window.dispatchEvent(new Event('synex-cache-used'));return cached;}}
+    if(path==='/api/workouts'&&m==='POST'&&!offlineRetry)return queueWorkout(body);
+    throw Error('네트워크에 연결할 수 없습니다. 연결 후 다시 시도하세요.');
+  }
   if(response.status===401&&await refreshAccessToken()){options.headers.Authorization=`Bearer ${getAccessToken()}`;response=await fetch(BASE+path,options);}
   if (!response.ok) {
     if (response.status === 401) window.dispatchEvent(new Event('synex-session-expired'));
@@ -33,10 +42,11 @@ export async function api(path, body, { method, signal, headers } = {}) {
     throw err;
   }
   if (response.status === 204) return null;
-  return response.json();
+  const data=await response.json();if(m==='GET'&&requestEpoch===offlineEpoch())cacheResponse(path,data);return data;
 }
 
 export const HealthAPI = {
+  adaptiveHistory: () => api('/api/adaptive-history'),
   schools: () => api('/api/schools'),
   selectSchool: (selection) => api('/api/health/school', selection, {method:'PUT'}),
   requestSchool: (name) => api('/api/schools/request', {name}),
@@ -71,3 +81,5 @@ export const HealthAPI = {
 
   healthStatus: () => api('/api/health/status'),
 };
+
+export const syncPendingWorkouts=()=>syncWorkouts(body=>api('/api/workouts',body,{offlineRetry:true}));

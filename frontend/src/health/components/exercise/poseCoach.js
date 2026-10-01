@@ -32,6 +32,10 @@ export const POSE_EXERCISES={
  shoulder_press:{label:'숄더 프레스',joints:[11,13,15,12,14,16],down:100,up:155,overhead:true},
  curl:{label:'컬',joints:[11,13,15,12,14,16],down:65,up:145},
  hip_hinge:{label:'힙힌지',joints:[11,23,25,12,24,26],down:110,up:155},
+ lateral_raise:{label:'레터럴 레이즈',joints:[23,11,13,24,12,14],down:30,up:75},
+ bent_row:{label:'벤트오버 로우',joints:[11,13,15,12,14,16],down:85,up:145},
+ front_raise:{label:'프런트 레이즈',joints:[23,11,15,24,12,16],down:30,up:75},
+ side_lunge:{label:'사이드 런지',joints:[23,25,27,24,26,28],down:115,up:155,minimum:true},
  glute_bridge:{label:'글루트 브리지',joints:[11,23,25,12,24,26],down:125,up:160},
 };
 export class MovementCoach {
@@ -49,3 +53,31 @@ export class MovementCoach {
   return {reps:this.reps,angle:Math.round(angle),phase:this.phase,feedback:'동작을 감지하고 있습니다. 편안한 범위에서 천천히 움직이세요.'};
  }
 }
+
+// Every analyzer instance owns its phase, ROM and timing; unknown frames never infer corrections.
+export class ExercisePoseAnalyzer {
+ constructor(id){this.id=id;this.engine=new MovementCoach(id);this.min=Infinity;this.max=-Infinity;this.lastRep=0;this.repAt=null;this.tempo=null;}
+ update(points,time){
+  const result=this.engine.update(points,time),c=this.engine.config;
+  const detected=result.phase!=='unknown';
+  const visibleJoints=c.joints.filter(i=>points?.[i]&&(points[i].visibility??0)>=.7);
+  const confidence=detected?Math.min(...c.joints.map(i=>points[i].visibility??0)):0;
+  const left=detected?jointAngle(...c.joints.slice(0,3).map(i=>points[i])):null;
+  const right=detected?jointAngle(...c.joints.slice(3).map(i=>points[i])):null;
+  const angle=left!=null&&right!=null?(left+right)/2:null;
+  if(angle!=null){this.min=Math.min(this.min,angle);this.max=Math.max(this.max,angle);}
+  if(!detected)this.repAt=null;
+  if(result.reps>this.lastRep){this.tempo=this.repAt==null?null:(time-this.repAt)/1000;this.repAt=time;this.lastRep=result.reps;}
+  const warnings=[],corrections=[];
+  if(detected&&Math.abs(left-right)>20){warnings.push('화면상 좌우 움직임 차이가 보입니다. 카메라 각도도 확인하세요.');}
+  if(detected&&['push_up','plank'].includes(this.id)){
+   const align=jointAngle(points[11],points[23],points[27]);
+   if([11,23,27].every(i=>(points[i]?.visibility??0)>=.7)&&align!=null&&align<150)corrections.push('화면상 어깨·골반·발목 정렬을 확인하세요.');
+  }
+  if(detected&&this.id==='bent_row')corrections.push('상체를 고정하고 팔꿈치를 몸통 쪽으로 당기는지 확인하세요.');
+  if(detected&&this.id==='curl')corrections.push('팔꿈치 위치를 유지하고 몸통 반동을 줄이세요.');
+  return {...result,detected,confidence,visible_joints:visibleJoints,range_of_motion:detected&&Number.isFinite(this.min)?Math.round(this.max-this.min):null,tempo:this.tempo,left_right_balance:detected?Math.round(Math.abs(left-right)):null,warnings,corrections,completion_state:detected?(c.hold?'holding':result.reps?'repetition_recorded':'in_progress'):'tracking_lost'};
+ }
+}
+export const ANALYZERS=Object.fromEntries(Object.keys(POSE_EXERCISES).map(id=>[id,class extends ExercisePoseAnalyzer{constructor(){super(id);}}]));
+export function createExercisePoseAnalyzer(id){if(!ANALYZERS[id])throw Error('Unsupported exercise');return new ANALYZERS[id]();}

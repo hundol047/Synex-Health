@@ -97,7 +97,7 @@ def reference_comparison(current: BodyCompositionMeasurement, ranges: dict[Segme
             status = 'below'
         else:
             status = 'far_below'
-        out[s.value] = {'status': status, 'reference_percent': pct, 'source': ('demo' if current.source == 'mock' else 'device') if m.lean_reference_percent is not None else (r.source if r else None)}
+        out[s.value] = {'status': status, 'reference_percent': pct, 'current_value':m.lean_mass_kg,'lower':r.lean_lower if r else None,'upper':r.lean_upper if r else None,'unit':r.unit if r else 'kg','reference_source':r.source if r else None,'reference_version':r.version if r else None,'publication':r.publication if r else None,'effective_date':r.effective_date if r else None, 'source': ('demo' if current.source == 'mock' else 'device') if m.lean_reference_percent is not None else (r.source if r else None)}
     return out
 
 

@@ -471,4 +471,7 @@ def list_reference_ranges(user: User = Depends(require('reference_range:write'))
 
 @router.post('/admin/reference-ranges')
 def create_reference_range(r: ReferenceRange, user: User = Depends(require('reference_range:write'))):
+    if os.getenv('AUTH_MODE','demo')!='demo' or os.getenv('APP_ENV')=='production':
+        if r.source=='demo' or not r.publication or not r.version or not r.effective_date:raise HTTPException(422,'실제 기준의 출처·간행물·버전·적용일이 필요합니다.')
+    if r.age_min>r.age_max or any(lo is not None and hi is not None and lo>hi for lo,hi in [(r.lean_lower,r.lean_upper),(r.fat_lower,r.fat_upper)]):raise HTTPException(422,'참고 범위의 상·하한을 확인하세요.')
     return store.add_reference_range(r)

@@ -1,7 +1,8 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { Play, Pause, RotateCcw } from 'lucide-react';
 import ExerciseMotion3D from './ExerciseMotion3D.jsx';
-import { MOTIONS, samplePose } from './motions.js';
+import { MOTIONS } from './motions.js';
+import MotionFigure from './MotionFigure.jsx';
 
 export default function ExerciseMotion({ exercise, measurement, profile }) {
   const motion = MOTIONS[exercise.motion_id];
@@ -31,37 +32,12 @@ export default function ExerciseMotion({ exercise, measurement, profile }) {
     return () => {cancelAnimationFrame(frame);document.removeEventListener('visibilitychange',hide);};
   }, [playing, speed, motion, loop]);
   if (!motion) return <p className="muted">이전 버전 운동입니다. 루틴을 다시 생성하면 동작 안내를 볼 수 있습니다.</p>;
-  const points=samplePose(exercise.motion_id,progress);
-  const bone=(a,b,color,width=15,key='')=><line key={key || `${a}-${b}`} x1={points[a][0]} y1={points[a][1]} x2={points[b][0]} y2={points[b][1]} stroke={color} strokeWidth={width} strokeLinecap="round"/>;
   const setPhase=(value)=>{setPlaying(false); phase.current=value;setProgress(value);};
   return <div className="motion-layout">
     <div className="motion-viewer">
       <div className="motion-caption"><span>동작 가이드</span><span>{motion.view}</span></div>
       <div className="motion-controls"><button className="btn btn-ghost" onClick={()=>setDimension(d=>d==='3d'?'2d':'3d')}>{dimension==='3d'?'2D 안내 보기':'3D 안내 보기'}</button><label><input type="checkbox" checked={loop} onChange={e=>setLoop(e.target.checked)}/> 반복 재생</label></div>
-      {dimension==='3d'?<ExerciseMotion3D motion={exercise.motion_id} progress={progress} mirror={mirror} measurement={measurement} profile={profile}/>:<svg viewBox="0 0 360 330" role="img" aria-labelledby={labelId} className="motion-svg">
-        <title id={labelId}>{exercise.exercise_name} 동작 시범</title>
-        <ellipse cx="183" cy="308" rx="124" ry="9" fill="#dae5f3"/>
-        <path d="M30 301H330" stroke="#c6d5e8" strokeWidth="2"/>
-        <g transform={mirror ? 'translate(360 0) scale(-1 1)' : undefined}>
-          {motion.prop==='chair' && <path d="M89 222H158M96 222V298M153 222V298M89 222V158" fill="none" stroke="#94a3b8" strokeWidth="8"/>}
-          {motion.prop==='seat' && <path d="M119 207H178M125 207V297M174 207V297M119 207V129" fill="none" stroke="#94a3b8" strokeWidth="8"/>}
-          {motion.prop==='wall' && <path d="M291 40V301" stroke="#94a3b8" strokeWidth="12"/>}
-          {motion.prop==='mat' && <rect x="26" y="294" width="301" height="6" rx="3" fill="#b6cce8"/>}
-          {motion.prop==='support' && <path d="M105 139H134M110 139V301" stroke="#94a3b8" strokeWidth="6"/>}
-          {motion.prop==='band' && <><path d="M310 53V299" stroke="#94a3b8" strokeWidth="7"/><path d={`M310 114L${points[4]}M310 114L${points[6]}`} stroke="#f59e0b" strokeWidth="4" fill="none"/></>}
-          {[[1,5],[5,6],[2,9],[9,10]].map(([a,b])=>bone(a,b,'#9eb9da',14))}
-          {bone(1,2,'#2266b0',32)}
-          {bone(0,1,'#c69170',12)}
-          {[[1,3],[3,4]].map(([a,b])=>bone(a,b,'#4289d2',15))}
-          {[[2,7],[7,8]].map(([a,b])=>bone(a,b,'#244b79',19))}
-          {[3,7,9].map(i=><circle key={i} cx={points[i][0]} cy={points[i][1]} r="5" fill="#e8f2fd"/>)}
-          <circle cx={points[0][0]} cy={points[0][1]} r="21" fill="#d9ab89"/>
-          <path d={`M${points[0][0]-19} ${points[0][1]-6}q19 -30 39 0`} stroke="#24415f" strokeWidth="9" fill="none"/>
-          <circle cx={points[0][0]+9} cy={points[0][1]} r="2" fill="#24415f"/>
-          {[8,10].map(i=><path key={i} d={`M${points[i][0]-5} ${points[i][1]+2}h18`} stroke="#1a344f" strokeWidth="10" strokeLinecap="round"/>)}
-          {motion.prop==='dumbbell' && [4,6].map(i=><g key={i} transform={`translate(${points[i]})`}><path d="M-13 0H13" stroke="#344861" strokeWidth="5"/><path d="M-13 -8V8M13 -8V8" stroke="#344861" strokeWidth="7" strokeLinecap="round"/></g>)}
-        </g>
-      </svg>}
+      {dimension==='3d'?<ExerciseMotion3D motion={exercise.motion_id} progress={progress} mirror={mirror} measurement={measurement} profile={profile}/>:<MotionFigure exercise={exercise} progress={progress} mirror={mirror}/>}
       <p className="motion-phase">{motion.label}</p>
       <input aria-label="동작 구간" type="range" min="0" max="100" value={Math.round(progress*100)} onChange={e=>setPhase(Number(e.target.value)/100)} />
       <div className="motion-controls">

@@ -104,6 +104,7 @@ class _AuthSessionStore:
         self.path = str(path or os.getenv('SYNEX_HEALTH_AUTH_SESSION_PATH',
                          Path(__file__).resolve().parents[2] / 'data' / 'auth_session.sqlite3'))
         Path(self.path).parent.mkdir(parents=True, exist_ok=True)
+        if os.getenv('APP_ENV')=='production' and os.getenv('SYNEX_MIGRATING')!='true':return
         with self._connect() as db:
             db.execute('CREATE TABLE IF NOT EXISTS revoked_tokens (token_hash TEXT PRIMARY KEY, expires REAL NOT NULL)')
             db.execute('CREATE TABLE IF NOT EXISTS auth_sessions (session_id TEXT PRIMARY KEY, user_id TEXT NOT NULL, '

@@ -28,13 +28,19 @@ def now() -> str:
 
 
 class HealthStore:
-    def __init__(self, path=None):
+    def __init__(self, path=None, migrate=False):
         self.database=None
         if path is None and os.getenv('DATABASE_URL'):
             from ..services.persistence import Database
             self.database=Database(os.environ['DATABASE_URL'])
         self.path = str(path or os.getenv('SYNEX_HEALTH_DB_PATH', DEFAULT_PATH))
         Path(self.path).parent.mkdir(parents=True, exist_ok=True)
+        if os.getenv('APP_ENV')=='production' and not migrate:
+            from .migrations import VERSION
+            with self.connect() as db:
+                row=db.execute('SELECT MAX(version) FROM schema_migrations').fetchone()
+                if not row or row[0]!=VERSION:raise RuntimeError('Run database migration before production startup')
+            return
         with self.connect() as db:
             db.execute('PRAGMA journal_mode=WAL')
             db.execute('''CREATE TABLE IF NOT EXISTS users (
@@ -75,6 +81,8 @@ class HealthStore:
             db.execute('CREATE TABLE IF NOT EXISTS deleted_accounts (user_id TEXT PRIMARY KEY, deleted_at TEXT NOT NULL)')
             db.execute('CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)')
             db.execute('INSERT OR IGNORE INTO schema_migrations VALUES (?,?)',(2,now()))
+            from .migrations import upgrade
+            upgrade(db,now())
 
     def preference(self, uid, kind, default=None):
         with self.connect() as db:
@@ -166,6 +174,8 @@ class HealthStore:
         if height is not None:
             in_height = [r for r in candidates if (r.height_min is None or height >= r.height_min) and (r.height_max is None or height <= r.height_max)]
             candidates = in_height
+        if os.getenv('APP_ENV')=='production' or os.getenv('AUTH_MODE','demo')!='demo':
+            candidates=[r for r in candidates if r.source!='demo' and r.publication and r.version and r.effective_date]
         candidates.sort(key=lambda r: (r.source == 'demo', r.gender == 'any'))
         return candidates[0] if candidates else None
 
@@ -183,7 +193,10 @@ class HealthStore:
     # --- Routines --------------------------------------------------------------------------------
     def add_routine(self, r: ExerciseRoutine) -> ExerciseRoutine:
         with self.connect() as db:
+            prior=db.execute('SELECT id,payload FROM routines WHERE user_id=? ORDER BY created_at DESC LIMIT 1',(r.user_id,)).fetchone()
             db.execute('INSERT OR REPLACE INTO routines VALUES (?,?,?,?)', (r.id, r.user_id, r.model_dump_json(), r.created_at))
+            history={'old_routine':json.loads(prior[1]) if prior else None,'new_routine':r.model_dump(mode='json'),'reason':r.progression,'measurements':r.input_snapshot,'workout_adherence':r.input_snapshot.get('adherence')}
+            db.execute('INSERT OR IGNORE INTO adaptive_history VALUES (?,?,?,?,?,?)',(r.id,r.user_id,prior[0] if prior else None,r.id,json.dumps(history),r.created_at))
         return r
 
     def list_routines(self, user_id: str) -> list[ExerciseRoutine]:

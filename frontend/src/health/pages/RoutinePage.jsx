@@ -17,6 +17,7 @@ function groupByDay(exercises) {
 }
 
 export default function RoutinePage() {
+  const history = useApiData(() => HealthAPI.adaptiveHistory(), []);
   const routines = useApiData(() => HealthAPI.listRoutines(), []);
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState(null);
@@ -29,6 +30,7 @@ export default function RoutinePage() {
     try {
       await HealthAPI.generateRoutine();
       await routines.reload();
+      await history.reload();
     } catch (error) {
       if (error.status === 409 || error.message === SAFETY_MESSAGE) {
         setSafetyBlocked(true);
@@ -108,14 +110,16 @@ export default function RoutinePage() {
         </Card>
       )}
 
+
       {!safetyBlocked && days.map(([day, exs]) => (
         <Card key={day} title={`Day ${day}`} action={latest.day_minutes?.[String(day)] != null ? <Badge>약 {latest.day_minutes[String(day)]}분</Badge> : null}>
-          <p className="muted">{latest.schedule?.[day-1] || '동작을 눌러 자세를 확인하세요.'}</p>
+          <p className="muted">{latest.schedule?.[day-1] || '작은 시범으로 동작을 확인하고 자세히 보기를 눌러 확대하세요.'}</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {exs.map((ex,i)=><ExerciseCard key={ex.exercise_id||i} exercise={ex}/>)}
           </div>
         </Card>
       ))}
+      <Card title="운동 계획 변경 이력">{history.error?<ErrorState message={history.error.message} onRetry={history.reload}/>:history.loading?<Skeleton/>:!(history.data||[]).length?<p className="muted">루틴을 생성하면 변경 이유가 여기에 기록됩니다.</p>:(history.data||[]).map(h=><details key={h.id}><summary>{h.date.slice(0,10)} · {h.new_routine.goal}</summary><p>{h.reason}</p><p>이전: {h.old_routine?.goal||'첫 계획'} → 현재: {h.new_routine.goal}</p><p>기록된 완료 비율: {h.workout_adherence==null?'자료 없음':`${Math.round(h.workout_adherence*100)}%`}</p></details>)}</Card>
     </>
   );
 }

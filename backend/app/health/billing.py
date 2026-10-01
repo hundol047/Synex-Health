@@ -13,8 +13,7 @@ from ..services.auth import get_current_user, User
 from .router import store
 
 router = APIRouter(prefix='/api/billing', tags=['subscriptions'])
-with store.connect() as db:
-    db.execute('CREATE TABLE IF NOT EXISTS billing_accounts (user_id TEXT PRIMARY KEY, customer_id TEXT UNIQUE NOT NULL, payload TEXT NOT NULL)')
+
 
 
 def mode():
@@ -61,11 +60,17 @@ def refresh(uid):
         product = entitlement.get('product_identifier')
         subscription = subscriber.get('subscriptions', {}).get(product, {})
         expiry = timestamp(entitlement.get('expires_date'))
+        grace = timestamp(subscription.get('grace_period_expires_date'))
+        access_until=max(expiry,grace)
         allowed = set(os.getenv('REVENUECAT_PRODUCTS', 'synex_plus_monthly,synex_plus_yearly').split(','))
         sandbox_ok = not subscription.get('is_sandbox', False) or os.getenv('REVENUECAT_ALLOW_SANDBOX') == 'true'
         revoked = bool(subscription.get('refunded_at'))
-        active = bool(product in allowed and expiry > time.time() and subscription and sandbox_ok and not revoked)
-        payload = {'source': 'revenuecat', 'active': active, 'expires_at': expiry,
+        active = bool(product in allowed and access_until > time.time() and subscription and sandbox_ok and not revoked)
+        state=('refunded' if revoked else 'grace_period' if active and grace>time.time() else
+               'billing_issue' if subscription.get('billing_issues_detected_at') else
+               'expired' if product and not active else 'cancelled' if active and subscription.get('unsubscribe_detected_at') else
+               'trial' if active and subscription.get('period_type')=='trial' else 'active' if active else 'free')
+        payload = {'source': 'revenuecat', 'active': active, 'state':state,'expires_at': access_until,
                    'will_renew': active and not subscription.get('unsubscribe_detected_at') and not subscription.get('billing_issues_detected_at'),
                    'store': subscription.get('store'), 'product': product, 'verified_at': time.time()}
     except (httpx.HTTPError, ValueError, KeyError, TypeError, AttributeError):
@@ -83,6 +88,7 @@ def status(uid, verify=False):
         payload = refresh(uid)
     active = bool(current != 'disabled' and payload.get('source') == current and payload.get('active') and payload.get('expires_at', 0) > time.time())
     return {'mode': current, 'plan': 'plus' if active else 'free', 'active': active,
+            'state':payload.get('state', 'active' if active and payload.get('will_renew') else 'cancelled' if active else 'free') if current!='disabled' else 'free',
             'expires_at': payload.get('expires_at') if active else None,
             'will_renew': bool(active and payload.get('will_renew')), 'store': payload.get('store') if active else None,
             'customer_id': cid if current == 'revenuecat' else None,

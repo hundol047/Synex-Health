@@ -3,7 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Home, PersonStanding, GitCompare, Dumbbell, ClipboardList, TrendingUp, MessageCircle, User, Users, Crown } from 'lucide-react';
-import { getDemoUser, setDemoUser } from '../lib/api.js';
+import {offlineState} from '../lib/offline.js';
+import { getDemoUser, setDemoUser, syncPendingWorkouts } from '../lib/api.js';
 
 const STUDENT_NAV = [
   { to: '/health', label: '홈', icon: Home, end: true },
@@ -19,13 +20,16 @@ const STUDENT_NAV = [
 
 export default function Layout({ children }) {
   const navigate = useNavigate();
+  const [offline,setOffline]=useState(offlineState()),[syncError,setSyncError]=useState(''),[cached,setCached]=useState(false);
   const [online,setOnline] = useState(navigator.onLine);
   useEffect(()=>{
-    const update = () => setOnline(navigator.onLine);
+    const update=()=>{setOnline(navigator.onLine);if(navigator.onLine)syncPendingWorkouts().then(()=>{setSyncError('');setCached(false);}).catch(()=>setSyncError('미전송 기록이 있습니다. 연결·로그인 상태를 확인한 후 다시 시도하세요.'));};
+    const pending=()=>setOffline(offlineState()),cache=()=>setCached(true);
+    window.addEventListener('synex-offline-change',pending);window.addEventListener('synex-cache-used',cache);
     window.addEventListener('online',update);window.addEventListener('offline',update);
     let back;
     const ready=Capacitor.getPlatform()==='android' ? import('@capacitor/app').then(({App})=>App.addListener('backButton',({canGoBack})=>{if(canGoBack)history.back();else App.minimizeApp();})).then(h=>{back=h;}) : Promise.resolve();
-    return()=>{window.removeEventListener('online',update);window.removeEventListener('offline',update);ready.then(()=>back?.remove());};
+    return()=>{window.removeEventListener('synex-offline-change',pending);window.removeEventListener('synex-cache-used',cache);window.removeEventListener('online',update);window.removeEventListener('offline',update);ready.then(()=>back?.remove());};
   },[]);
   const auth = useAuth();
   const demoUser = getDemoUser();
@@ -57,7 +61,7 @@ export default function Layout({ children }) {
           <button className={isCounselor&&!isAdmin ? 'active' : ''} onClick={() => switchRole('counselor-demo')}>상담사</button><button className={isAdmin?'active':''} onClick={()=>switchRole('admin-demo')}>관리자</button>
         </div> : <button className="btn btn-ghost" onClick={auth.logout}>로그아웃</button>}
       </header>
-      <main className="health-main">{!online && <div className="card" role="status">인터넷 연결이 끊겼습니다. 기록 저장·구독 확인은 연결 후 다시 시도해 주세요.</div>}{children}</main>
+      <main className="health-main">{!online && <div className="card" role="status">오프라인입니다. 이 실행 중 열었던 기록과 루틴을 표시합니다. 임시 운동 기록은 연결 복구 시 전송되며 앱 종료·로그아웃 시 사라집니다.</div>}{cached&&<p role="status">저장된 화면을 표시 중입니다. 최신 정보가 아닐 수 있습니다.</p>}{(offline.pending>0||syncError)&&<div className="card" role="status">임시 기록 {offline.pending}건 · {syncError}<button className="btn" onClick={()=>syncPendingWorkouts().then(()=>setSyncError('')).catch(()=>setSyncError('기록 전송을 다시 시도하세요.'))}>전송 재시도</button></div>}<NavLink to="/health/diagnostics">기기 진단</NavLink>{children}</main>
       <nav className="health-bottom-nav" aria-label="모바일 메뉴">
         {(isCounselor||isAdmin ? nav : nav.filter(item => ['/health','/health/body','/health/routine','/health/subscription','/health/profile'].includes(item.to))).map(({ to, label, icon: Icon, end }) => (
           <NavLink key={to} to={to} end={end}>

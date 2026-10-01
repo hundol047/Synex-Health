@@ -10,11 +10,9 @@ from .comparison import left_right_balance
 from .exercise_catalog import CATALOG
 from .store import new_id, now
 
-VERSION = '3.0.0'
-SOURCES = [
-    {'title': 'CDC 성인 신체활동 지침', 'url': 'https://www.cdc.gov/physical-activity-basics/guidelines/adults.html'},
-    {'title': 'WHO 신체활동', 'url': 'https://www.who.int/news-room/fact-sheets/detail/physical-activity'},
-]
+VERSION = '3.1.0'
+from pathlib import Path
+SOURCES = json.loads(Path(__file__).with_name('evidence.json').read_text())
 SAFETY_FLAGS = ['safety_chest_pain', 'safety_fainting', 'safety_breathlessness', 'safety_acute_injury', 'safety_medical_restriction']
 LIMITATION_WORDS = {
     'knee': ['무릎', 'knee'], 'back': ['허리', '디스크', '척추', 'back'],
@@ -125,7 +123,7 @@ def build_deterministic_routine(user_id, measurement, profile, based_on_measurem
     if not candidates or not any(m['pattern'] != 'cardio' for m in candidates):
         raise PlanBlocked('현재 운동환경과 제약사항으로 구성할 수 있는 운동이 부족합니다. 건강센터 상담이 필요합니다.')
     logs, completed = _recent_feedback(workouts, previous_routine)
-    if any(w.difficulty == 'pain' for w in logs):
+    if any(w.difficulty == 'pain' or (w.pain or 0)>0 for w in logs):
         raise PlanBlocked('최근 운동에서 통증이 기록되었습니다. 건강센터 상담 후 운동계획을 조정하세요.')
     sets = 1 if conservative else (3 if profile.experience_level == ExperienceLevel.ADVANCED else 2)
     if profile.goal == Goal.MUSCLE_GAIN and not conservative:
@@ -138,11 +136,11 @@ def build_deterministic_routine(user_id, measurement, profile, based_on_measurem
         sets = min(previous_sets)
     if logs and sum(w.completed for w in logs)/len(logs)<.5:
         sets=max(1,sets-1);progression='최근 기록의 완료율이 낮아 시작량을 줄였습니다. 미기록 운동은 완료율에 포함하지 않습니다.'
-    if logs and any(w.difficulty == 'hard' for w in logs):
+    if logs and any(w.difficulty == 'hard' or (w.rpe or 0)>=8 for w in logs):
         sets = max(1, min(sets, min(previous_sets or [sets]) - 1))
         conservative = True
         progression = '최근 어려움 피드백을 반영해 세트 수를 줄이거나 쉬운 동작으로 전환했습니다.'
-    elif feedback_key != consumed and len(completed) >= 4 and len({w.date for w in completed}) >= 2 and all(w.difficulty == 'easy' for w in logs) and len(completed) == len(logs):
+    elif feedback_key != consumed and len(completed) >= 4 and len({w.date for w in completed}) >= 2 and all(w.difficulty == 'easy' and (w.rpe is None or w.rpe<=5) and not w.pain for w in logs) and len(completed) == len(logs):
         sets = min(3, min(previous_sets or [sets]) + 1)
         progression = '서로 다른 2일 이상, 4건 이상의 쉬움·완료 기록을 반영해 시간 범위 내에서 최대 1세트를 추가했습니다.'
     muscle_loss = False
@@ -223,7 +221,7 @@ def build_deterministic_routine(user_id, measurement, profile, based_on_measurem
         goal=goal_label,summary=(change_note+' ' if change_note else '')+f'{goal_label}을 위한 개인별 시작 계획입니다. {progression}',
         duration_weeks=4,days_per_week=profile.days_per_week,exercises=exercises,generated_by='deterministic',algorithm_version=VERSION,
         rationale=rationale,notices=notices,input_snapshot={'weight_kg':weight,'height_cm':height,'muscle_kg':muscle,
-            'feedback_ids':feedback_key, 'body_fat_percent':measurement.body_fat_percentage,'bmi':round(bmi,1) if bmi else None,'profile':profile.model_dump(mode='json')},
+            'adherence':round(len(completed)/len(logs),3) if logs else None,'feedback_ids':feedback_key, 'body_fat_percent':measurement.body_fat_percentage,'bmi':round(bmi,1) if bmi else None,'profile':profile.model_dump(mode='json')},
         day_minutes=day_minutes,progression=progression,sources=SOURCES,schedule=schedule)
 
 

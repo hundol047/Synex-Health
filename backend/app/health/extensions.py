@@ -24,7 +24,7 @@ def advanced_body(user:User=Depends(require('measurement:read'))):
 @router.get('/advanced/pose')
 def pose_access(user:User=Depends(require('health:read'))):
     plus(user)
-    return {'enabled':True,'upload_video':False,'exercises':['squat'],'notice':'설명용 자세 추정. 진단·정확한 관절각 측정이 아닙니다.'}
+    return {'enabled':True,'upload_video':False,'exercises':['squat','lunge','push_up','plank','shoulder_press','curl','lateral_raise','bent_row','hip_hinge','glute_bridge','front_raise','side_lunge'],'notice':'설명용 자세 추정. 진단·정확한 관절각 측정이 아닙니다.'}
 
 class GoalRequest(BaseModel):
     model_config=ConfigDict(allow_inf_nan=False)
@@ -63,14 +63,14 @@ def export_data(user:User=Depends(require('health:read'))):
     with store.connect() as db:
         analyses=[json.loads(r[0]) for r in db.execute('SELECT payload FROM analyses WHERE user_id=?',(user.id,))]
         history=[dict(id=r[0],school_id=r[1],shared=bool(r[2]),created_at=r[3]) for r in db.execute('SELECT id,school_id,shared,created_at FROM consent_history WHERE user_id=? ORDER BY created_at',(user.id,))]
-    return {'profile':store.get_user(user.id),'measurements':store.list_measurements(user.id),'analyses':analyses,'exercise_profile':store.get_profile(user.id),'routines':store.list_routines(user.id),'workouts':store.list_workouts(user.id),'goal':goal(user),'sharing_history':history,'exported_at':now()}
+    return {'profile':store.get_user(user.id),'measurements':store.list_measurements(user.id),'analyses':analyses,'exercise_profile':store.get_profile(user.id),'routines':store.list_routines(user.id),'workouts':store.list_workouts(user.id),'goal':goal(user),'adaptive_history':adaptive_history(100,0,user),'sharing_history':history,'exported_at':now()}
 
 class DeleteRequest(BaseModel):
     confirmation:Literal['DELETE']
 
 def purge(uid,account=False):
     with store.connect() as db:
-        for table in ('measurements','routines','workouts','analyses','exercise_profiles','preferences'):
+        for table in ('adaptive_history','pose_sessions','measurements','routines','workouts','analyses','exercise_profiles','preferences'):
             db.execute(f'DELETE FROM {table} WHERE user_id=?',(uid,))
         db.execute('DELETE FROM counselor_notes WHERE student_id=?',(uid,))
         db.execute('UPDATE users SET share_with_center=0 WHERE id=?',(uid,))
@@ -93,8 +93,12 @@ def delete_account(req:DeleteRequest,user:User=Depends(require('health:read'))):
     purge(user.id,True)
     from ..services.auth import AUTH_SESSIONS
     with AUTH_SESSIONS._connect() as db:db.execute('DELETE FROM auth_sessions WHERE user_id=?',(user.id,))
-    audit.record(user.id,'account_deleted',{},user_id=user.id,role=user.role)
-    return {'deleted':True,'notice':'스토어 구독은 별도로 해지해야 합니다. 외부 학교 계정은 삭제하지 않습니다.'}
+    anonymous=new_id('deleted')
+    with audit.connect() as db:
+        db.execute('UPDATE events SET patient_id=?,user_id=NULL,detail=? WHERE patient_id=? OR user_id=?',(anonymous,'{}',user.id,user.id))
+        db.execute('DELETE FROM analyses WHERE patient_id=?',(user.id,))
+    audit.record(anonymous,'account_deleted',{},role=user.role)
+    return {'deleted':True,'deleted_categories':['measurements','routines','adaptive_history','workouts','pose_sessions','profile','billing_mapping','consents','preferences'],'photos':'not_stored','notice':'개인 기록과 연결 정보를 삭제했습니다. 보안용 최소 계정 차단 기록은 유지됩니다. 스토어 구독은 별도로 해지해야 합니다. 외부 학교 계정은 삭제하지 않습니다.'}
 
 @router.delete('/body-composition/{mid}')
 def delete_measurement(mid:str,user:User=Depends(require('measurement:write'))):
@@ -105,6 +109,7 @@ def delete_measurement(mid:str,user:User=Depends(require('measurement:write'))):
         # Comparison summaries may reference any earlier reading. Invalidate all derived
         # records, but retain independently entered workout history without stale links.
         db.execute('DELETE FROM analyses WHERE user_id=?',(user.id,))
+        db.execute('DELETE FROM adaptive_history WHERE user_id=?',(user.id,))
         db.execute('DELETE FROM routines WHERE user_id=?',(user.id,))
         rows=db.execute('SELECT id,payload FROM workouts WHERE user_id=?',(user.id,)).fetchall()
         for wid,payload in rows:
@@ -209,3 +214,21 @@ def long_term_progress(user:User=Depends(require('measurement:read'))):
     items=store.list_measurements(user.id)
     from .comparison import describe_change
     return {'measurement_count':len(items),'first_date':items[0].measurement_date if items else None,'last_date':items[-1].measurement_date if items else None,'summary':describe_change(items[0],items[-1]) if len(items)>1 else '두 번 이상의 측정이 필요합니다.','notice':'전체 기록의 첫 측정과 마지막 측정 비교이며 진단이 아닙니다.'}
+
+@router.get('/adaptive-history')
+def adaptive_history(limit:int=20,offset:int=0,user:User=Depends(require('routine:read'))):
+    if not 1<=limit<=100 or offset<0:raise HTTPException(422,'페이지 범위를 확인하세요.')
+    with store.connect() as db:
+        rows=db.execute('SELECT id,payload,created_at FROM adaptive_history WHERE user_id=? ORDER BY created_at DESC LIMIT ? OFFSET ?',(user.id,limit,offset)).fetchall()
+    return [{'id':r[0],'date':r[2],**json.loads(r[1])} for r in rows]
+
+@router.get('/body-shape/status')
+def body_shape_status(user:User=Depends(require('health:read'))):
+    return {'status':'disabled','upload_enabled':False,'stores_photos':False,'reason':'검증된 신체 재구성 모델이 연결되지 않았습니다.'}
+
+@router.get('/diagnostics')
+def diagnostics(user:User=Depends(require('health:read'))):
+    import os
+    with store.connect() as db:db.execute('SELECT 1').fetchone()
+    from .billing import mode
+    return {'api':'reachable','auth':'authenticated','database':'reachable','database_kind':'postgresql' if store.database else 'sqlite','schema_version':3,'billing':mode(),'school':connection(user),'body_shape':'disabled'}

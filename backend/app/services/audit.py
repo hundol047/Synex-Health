@@ -12,6 +12,7 @@ class AuditStore:
             self.database=Database(os.environ['DATABASE_URL'],'health_audit')
         self.path=str(path or os.getenv('SYNEX_AUDIT_PATH',DEFAULT))
         Path(self.path).parent.mkdir(parents=True,exist_ok=True)
+        if os.getenv('APP_ENV')=='production' and os.getenv('SYNEX_MIGRATING')!='true':return
         with self.connect() as db:
             db.execute('PRAGMA journal_mode=WAL')
             db.execute('CREATE TABLE IF NOT EXISTS events (id INTEGER PRIMARY KEY AUTOINCREMENT, patient_id TEXT NOT NULL, timestamp TEXT NOT NULL, event TEXT NOT NULL, detail TEXT NOT NULL)')

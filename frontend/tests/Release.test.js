@@ -9,8 +9,8 @@ it('creates distinct finite user meshes and a complete non-overlapping clothing 
  for(const base of meshes){const wear=sportswear(base);expect(wear.positions.every(Number.isFinite)).toBe(true);expect(Object.values(wear.indices).reduce((n,indices)=>n+indices.length,0)).toBe(data.indices.length);for(const indices of Object.values(wear.indices))expect(indices.length).toBeGreaterThan(0);}
  const invalid=personalizedVertices({height:Infinity,weight:NaN,segments:[{segment:'LEFT_ARM',lean_mass_kg:NaN,fat_mass_kg:Infinity}]},{});expect(invalid.every(Number.isFinite)).toBe(true);
 });
-it('all eight coaches reject lost tracking and use independent supported configurations',()=>{
- expect(Object.keys(POSE_EXERCISES)).toHaveLength(8);
+it('all twelve coaches reject lost tracking and use independent supported configurations',()=>{
+ expect(Object.keys(POSE_EXERCISES)).toHaveLength(12);
  for(const [id,c] of Object.entries(POSE_EXERCISES)){
  const coach=new MovementCoach(id);expect(coach.update([],1000).phase).toBe('unknown');
  const pose=bent=>{const p=Array.from({length:33},()=>({x:0,y:0,z:0,visibility:1}));for(let side=0;side<2;side++){const [a,b,d]=c.joints.slice(side*3,side*3+3);p[a]={x:side,y:c.overhead?1:0,z:0,visibility:1};p[b]={x:side,y:.5,z:0,visibility:1};p[d]={x:side+(bent?.5:0),y:bent?.5:c.overhead?0:1,z:0,visibility:1};}return p;};

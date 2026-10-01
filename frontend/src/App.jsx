@@ -2,6 +2,7 @@ import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './shared/components/Layout.jsx';
 
+const DiagnosticsPage = lazy(() => import('./health/pages/DiagnosticsPage.jsx'));
 const SubscriptionPage = lazy(() => import('./health/pages/SubscriptionPage.jsx'));
 const MonthlyReportPage = lazy(() => import('./health/pages/MonthlyReportPage.jsx'));
 const HomePage = lazy(() => import('./health/pages/HomePage.jsx'));
@@ -32,6 +33,7 @@ export default function App() {
       <Layout>
         <Suspense fallback={<p role="status">화면을 불러오는 중입니다.</p>}><Routes>
           <Route path="/" element={<Navigate to="/health" replace />} />
+          <Route path="/health/diagnostics" element={<DiagnosticsPage />} />
           <Route path="/health/subscription" element={<SubscriptionPage />} />
           <Route path="/health/report" element={<MonthlyReportPage />} />
           <Route path="/health/goals" element={<GoalsPage />} />

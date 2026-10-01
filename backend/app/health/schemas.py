@@ -125,6 +125,7 @@ class BodyCompositionMeasurement(MeasurementValidation):
     fat_free_mass: Optional[float] = None
     total_body_water: Optional[float] = None
     basal_metabolic_rate: Optional[float] = None
+    waist_circumference: Optional[float] = Field(default=None,ge=30,le=250,allow_inf_nan=False)
     visceral_fat_level: Optional[float] = None
     smi: Optional[float] = None
     device_name: str = ''
@@ -144,6 +145,7 @@ class BodyCompositionCreateRequest(MeasurementValidation):
     fat_free_mass: Optional[float] = None
     total_body_water: Optional[float] = None
     basal_metabolic_rate: Optional[float] = None
+    waist_circumference: Optional[float] = Field(default=None,ge=30,le=250,allow_inf_nan=False)
     visceral_fat_level: Optional[float] = None
     smi: Optional[float] = None
     device_name: str = ''
@@ -153,6 +155,7 @@ class BodyCompositionCreateRequest(MeasurementValidation):
 
 # --- Reference ranges --------------------------------------------------------------------------
 class ReferenceRange(BaseModel):
+    model_config = ConfigDict(allow_inf_nan=False)
     id: str
     gender: str  # 'male' | 'female' | 'any'
     age_min: int
@@ -166,6 +169,11 @@ class ReferenceRange(BaseModel):
     fat_mean: Optional[float] = None
     fat_lower: Optional[float] = None
     fat_upper: Optional[float] = None
+    publication: Optional[str] = None
+    version: Optional[str] = None
+    effective_date: Optional[str] = None
+    unit: str = 'kg'
+    interpretation: str = '설명용 참고 범위이며 진단 기준이 아닙니다.'
     source: str = 'demo'  # 'demo' unless an admin has registered a real reference dataset
 
 
@@ -228,6 +236,9 @@ class ExerciseRoutine(BaseModel):
 
 # --- Workout log -------------------------------------------------------------------------------
 class WorkoutLog(BaseModel):
+    rpe: Optional[int] = Field(default=None,ge=1,le=10)
+    pain: Optional[int] = Field(default=None,ge=0,le=10)
+    pose_evaluation: Optional[dict] = None
     actual_minutes: Optional[float] = Field(default=None, ge=0, le=1440, allow_inf_nan=False)
     routine_exercise_id: Optional[str] = None
     day_number: Optional[int] = None
@@ -236,28 +247,31 @@ class WorkoutLog(BaseModel):
     routine_id: Optional[str] = None
     date: str
     exercise_name: str
-    sets_completed: Optional[int] = None
+    sets_completed: Optional[int] = Field(default=None,ge=0,le=100)
     reps_completed: Optional[str] = None
     duration: Optional[str] = None
     difficulty: Optional[Literal['easy', 'moderate', 'hard', 'pain']] = None  # 'easy' | 'moderate' | 'hard'
     completed: bool = True
-    memo: str = ''
+    memo: str = Field(default='',max_length=2000)
     created_at: str = Field(default_factory=_now)
 
 
 class WorkoutLogCreateRequest(BaseModel):
+    rpe: Optional[int] = Field(default=None,ge=1,le=10)
+    pain: Optional[int] = Field(default=None,ge=0,le=10)
+    pose_evaluation: Optional[dict] = None
     actual_minutes: Optional[float] = Field(default=None, ge=0, le=1440, allow_inf_nan=False)
     routine_exercise_id: Optional[str] = None
     day_number: Optional[int] = Field(default=None, ge=1, le=7)
     routine_id: Optional[str] = None
     date: str
     exercise_name: str
-    sets_completed: Optional[int] = None
+    sets_completed: Optional[int] = Field(default=None,ge=0,le=100)
     reps_completed: Optional[str] = None
     duration: Optional[str] = None
     difficulty: Optional[Literal['easy', 'moderate', 'hard', 'pain']] = None
     completed: bool = True
-    memo: str = ''
+    memo: str = Field(default='',max_length=2000)
 
 
 # --- AI Health Analysis --------------------------------------------------------------------------

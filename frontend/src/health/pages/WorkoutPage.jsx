@@ -29,6 +29,8 @@ export default function WorkoutPage() {
   const [logError, setLogError] = useState(null);
   const [feedback, setFeedback] = useState({});
   const [minutes,setMinutes]=useState({});
+  const [details,setDetails]=useState({});
+  const field=(key,name,value)=>setDetails(d=>({...d,[key]:{...d[key],[name]:value}}));
 
   const latest = (routines.data || [])[0];
   const days = useMemo(() => groupByDay(latest?.exercises), [latest]);
@@ -47,21 +49,23 @@ export default function WorkoutPage() {
     setLogging(ex.exercise_id||ex.exercise_name);
     setLogError(null);
     try {
-      await HealthAPI.createWorkout({
+      const saved=await HealthAPI.createWorkout({
         routine_id: latest.id,
         routine_exercise_id: ex.exercise_id,
         day_number: ex.day_number,
         date: today,
         exercise_name: ex.exercise_name,
-        sets_completed: ex.sets ?? null,
-        reps_completed: ex.reps ?? null,
+        sets_completed: details[ex.exercise_id||ex.exercise_name]?.sets==null?ex.sets??null:Number(details[ex.exercise_id||ex.exercise_name].sets),
+        reps_completed: details[ex.exercise_id||ex.exercise_name]?.reps || null,
         duration: ex.duration ?? null,
         difficulty: feedback[ex.exercise_id||ex.exercise_name] || 'moderate',
-        completed: feedback[ex.exercise_id||ex.exercise_name] !== 'pain',
+        completed: feedback[ex.exercise_id||ex.exercise_name] !== 'pain' && !(Number(details[ex.exercise_id||ex.exercise_name]?.pain)>0),
         actual_minutes:minutes[ex.exercise_id||ex.exercise_name]==null||minutes[ex.exercise_id||ex.exercise_name]===''?null:Number(minutes[ex.exercise_id||ex.exercise_name]),
-        memo: '',
+        memo: details[ex.exercise_id||ex.exercise_name]?.memo||'',
+        rpe: details[ex.exercise_id||ex.exercise_name]?.rpe?Number(details[ex.exercise_id||ex.exercise_name].rpe):null,
+        pain: details[ex.exercise_id||ex.exercise_name]?.pain?Number(details[ex.exercise_id||ex.exercise_name].pain):0,
       });
-      await workouts.reload();
+      if(saved.pending_sync){setLogError({message:'기기에 임시 보관했습니다. 앱을 닫지 마세요. 연결 복구 시 전송합니다.'});}else await workouts.reload();
     } catch (error) {
       setLogError(error);
     } finally {
@@ -107,6 +111,8 @@ export default function WorkoutPage() {
             const done=isDone(ex), key=ex.exercise_id||ex.exercise_name;
             return <ExerciseCard key={key+i} exercise={ex}>
               <div className="workout-feedback">
+                {[['sets','실제 세트',0,100],['reps','실제 반복 횟수',0,1000],['rpe','RPE (1–10)',1,10],['pain','통증 (0–10)',0,10]].map(([name,label,min,max])=><label key={name}>{label}<input type="number" min={min} max={max} value={details[key]?.[name]??''} onChange={e=>field(key,name,e.target.value)}/></label>)}
+                <label>메모<input maxLength="2000" value={details[key]?.memo||''} onChange={e=>field(key,'memo',e.target.value)}/></label>
                 <label className="muted" htmlFor={`minutes-${i}`}>실제 운동 시간 (분)</label><input id={`minutes-${i}`} className="text-input" type="number" min="0" max="1440" step=".5" value={minutes[key]??''} onChange={e=>setMinutes({...minutes,[key]:e.target.value})}/><label className="muted" htmlFor={`feedback-${i}`}>오늘의 난이도</label>
                 <select id={`feedback-${i}`} className="text-input" value={feedback[key]||'moderate'} onChange={e=>setFeedback({...feedback,[key]:e.target.value})}>
                   <option value="easy">쉬웠어요</option><option value="moderate">적당했어요</option><option value="hard">어려웠어요</option><option value="pain">통증으로 중단</option>
@@ -116,7 +122,7 @@ export default function WorkoutPage() {
                 </button>
                 {done && <span className="muted">오늘 완료</span>}
               </div>
-              {feedback[key]==='pain' && <p className="motion-cautions">운동을 중단하고 건강센터에 상담하세요. 통증 기록이 있으면 자동 증량하지 않습니다.</p>}
+              {(feedback[key]==='pain'||Number(details[key]?.pain)>0) && <p className="motion-cautions">운동을 중단하고 건강센터에 상담하세요. 통증 기록이 있으면 자동 증량하지 않습니다.</p>}
             </ExerciseCard>;
           })}
         </div>
