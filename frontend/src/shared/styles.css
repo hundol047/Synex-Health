@@ -200,3 +200,15 @@ small{font-size:.8125rem}
 .workout-feedback>label{display:flex;flex-direction:column;gap:6px;flex:1 1 140px;min-width:0;max-width:100%}
 .workout-feedback input{width:100%;min-width:0;box-sizing:border-box}
 .workout-feedback>input{flex:1 1 140px;max-width:100%}
+
+/* Workout workspace: clear primary action, compact optional fields, consistent touch controls. */
+.workout-hero{background:linear-gradient(135deg,#eaf2ff,#f3faf7);border:1px solid #d9e7fa;border-radius:22px;padding:24px;display:grid;gap:12px}
+.workout-hero h1,.workout-hero p{margin:0}.workout-eyebrow{font-size:.75rem;font-weight:700;letter-spacing:.06em;color:#315e95}
+.workout-hero progress{width:100%;height:9px;accent-color:#2463eb}.workout-hero>a{font-size:.85rem;text-align:center}
+.record-fields{border:0;padding:0;margin:0;min-inline-size:0}.record-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.record-grid label{display:flex;flex-direction:column;gap:6px;min-width:0;font-size:.85rem}.record-wide{grid-column:1/-1}
+.record-extra{margin:16px 0}.record-extra summary,.workout-calendar-disclosure>summary{padding:12px 0;cursor:pointer;font-weight:600;font-size:.85rem}.record-extra[open] summary{margin-bottom:8px}
+.record-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px}.record-complete{color:#166447;font-size:.82rem;font-weight:600}
+.workout-calendar-disclosure{border:1px solid var(--line);border-radius:16px;padding:0 16px;background:#fff}
+.workout-record-form textarea{resize:vertical;min-height:72px}.workout-record-form input,.workout-record-form select{min-height:44px}
+.workout-mode-paused{padding:16px;border-radius:12px;background:#fff3d6;color:#735014;margin:12px 0}.workout-mode .workout-mode-actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}

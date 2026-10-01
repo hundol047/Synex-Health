@@ -15,3 +15,14 @@ it('records completed sets/RPE/reps, advances, and pain stops the workout with a
  await user.clear(screen.getByLabelText('통증 (0–10)'));await user.type(screen.getByLabelText('통증 (0–10)'),'3');await user.click(screen.getByRole('button',{name:'통증 기록 · 운동 중단'}));
  expect(await screen.findByText('오늘의 운동 요약')).toBeTruthy();expect(screen.getByRole('alert').textContent).toContain('진행을 중단');expect(HealthAPI.createWorkout.mock.calls[1][0]).toMatchObject({pain:3,completed:false,sets_completed:0});
 });
+it('pauses active time, blocks set completion while paused, and guards unsaved exit',async()=>{
+ let now=100000;const clock=vi.spyOn(Date,'now').mockImplementation(()=>now),confirm=vi.spyOn(window,'confirm').mockReturnValue(false);
+ const user=userEvent.setup(),onClose=vi.fn();render(<WorkoutMode routine={{id:'r'}} exercises={[exercises[0]]} onSaved={vi.fn()} onClose={onClose}/>);
+ try{
+  await user.type(screen.getByLabelText('이번 세트 반복 횟수'),'10');await user.click(screen.getByRole('button',{name:'목록으로'}));expect(onClose).not.toHaveBeenCalled();expect(confirm).toHaveBeenCalled();
+  now+=60000;await user.click(screen.getByRole('button',{name:'잠시 멈추기'}));expect(screen.getByRole('button',{name:'세트 완료'}).disabled).toBe(true);
+  now+=120000;await user.click(screen.getByRole('button',{name:'운동 계속하기'}));now+=60000;
+  await user.click(screen.getByRole('button',{name:'세트 완료'}));await user.click(screen.getByRole('button',{name:'완료 기록 · 다음 운동'}));
+  expect(HealthAPI.createWorkout.mock.lastCall[0].actual_minutes).toBe(2);
+ }finally{clock.mockRestore();confirm.mockRestore();}
+});

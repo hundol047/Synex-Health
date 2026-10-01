@@ -9,5 +9,6 @@ export default function SetRecordEditor({rows,onChange,disabled=false}){
  <label>구분<select className="text-input" aria-label={`${i+1}세트 구분`} value={r.kind||'working'} onChange={e=>field(i,'kind',e.target.value)}><option value="working">본 세트</option><option value="warmup">준비 세트</option></select></label>
  <button type="button" className="btn btn-ghost" aria-label={`${i+1}세트 삭제`} onClick={()=>onChange(rows.filter((_,j)=>i!==j))}>삭제</button></div>)}
  <button type="button" className="btn btn-secondary" disabled={rows.length>=100} onClick={()=>onChange([...rows,{weight_kg:'',reps:'',kind:'working'}])}>세트 추가</button>
+ {rows.length>0&&<button type="button" className="btn btn-ghost" disabled={rows.length>=100} onClick={()=>onChange([...rows,{...rows.at(-1)}])}>같은 세트 추가</button>}
  </fieldset>;
 }

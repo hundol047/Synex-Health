@@ -73,6 +73,9 @@ test('routine previews and instructions visible; workout flow persists feedback 
  await expect(page.getByRole('heading',{name:/운동 따라하기/})).toBeVisible();
  await page.getByLabel('이번 세트 반복 횟수',{exact:true}).fill('10');
  await page.getByLabel('이번 세트 중량 kg',{exact:true}).fill('12.5');
+ await page.getByRole('button',{name:'잠시 멈추기',exact:true}).click();
+ await expect(page.getByRole('button',{name:'세트 완료',exact:true})).toBeDisabled();
+ await page.getByRole('button',{name:'운동 계속하기',exact:true}).click();
  await page.getByRole('button',{name:/세트 완료/}).click();
  await page.getByLabel('운동 힘듦 (RPE 1–10)',{exact:true}).fill('6');
  await page.getByRole('button',{name:'완료 기록 · 다음 운동',exact:true}).click();
