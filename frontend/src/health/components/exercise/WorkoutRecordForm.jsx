@@ -14,7 +14,7 @@ export default function WorkoutRecordForm({exercise,routine,date,existing,previo
  const value=(name,fallback='')=>patch[name]??base[name]??fallback;
  const field=(name,v)=>setPatch(p=>({...p,[name]:v}));
  const rows=value('set_records',[]),pain=Number(value('pain',0)),difficulty=value('difficulty','moderate');
- const preview=workoutStatus({set_records:rows,sets_completed:value('sets_completed',0),performed_seconds:value('performed_seconds',0),timed_sets_seconds:value('timed_sets_seconds',[]),pain,difficulty},exercise);
+ const preview=workoutStatus({set_records:rows,sets_completed:value('sets_completed',0),reps_completed:value('reps_completed',''),performed_seconds:value('performed_seconds',0),timed_sets_seconds:value('timed_sets_seconds',[]),pain,difficulty},exercise);
  async function save(e){
   e.preventDefault();if(busy||pending||!draft.ready)return;setBusy(true);setError('');setMessage('');
   try{
@@ -35,7 +35,7 @@ export default function WorkoutRecordForm({exercise,routine,date,existing,previo
  }
  return <form onSubmit={save} className="workout-record-form">
  <p className="muted">기록 날짜 {recordDate}</p>{draft.status&&<p role="status">{draft.status}</p>}{draft.error&&<p role="alert">{draft.error}</p>}
- {dirty&&<button type="button" className="btn btn-ghost" onClick={async()=>{if(window.confirm('임시 입력을 버리고 저장된 값으로 돌아갈까요?')){await draft.clear();setPatch({});setBase(existing||{});setRecordDate(date);setBaseRevision(existing?.revision??0);setMutationId(crypto.randomUUID());}}}>임시 입력 버리기</button>}
+ {dirty&&<button type="button" className="btn btn-ghost" onClick={async()=>{if(window.confirm('임시 입력을 버리고 저장된 값으로 돌아갈까요?')){await draft.clear();setPatch({});setBase(existing||{});setRecordDate(date);setRecordZone(Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC');setBaseRevision(existing?.revision??0);setMutationId(crypto.randomUUID());}}}>임시 입력 버리기</button>}
  {previous?.set_records?.length>0&&<button type="button" className="btn btn-ghost" disabled={busy||pending||!draft.ready} onClick={()=>field('set_records',previous.set_records.map(s=>({...s})))}>지난 세트 불러오기 · {previous.date}</button>}
  <fieldset disabled={busy||pending||!draft.ready} className="record-fields">
  {(exercise.dose_type||'reps')==='reps'&&<SetRecordEditor rows={rows} onChange={v=>field('set_records',v)}/>}

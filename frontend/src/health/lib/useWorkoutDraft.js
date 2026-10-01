@@ -20,7 +20,7 @@ export function useWorkoutDraft(scope,value,dirty,onRestore){
    catch(e){blocked.current=true;setError(e.message);throw e;}
   });chain.current.catch(()=>{});
  },[scope,encoded,dirty,ready]);
- const flush=useCallback(()=>chain.current,[scope]);
+ const flush=useCallback(()=>blocked.current?Promise.reject(Error('임시 저장에 실패했습니다. 입력을 확인하세요.')):chain.current,[scope]);
  useEffect(()=>registerDraftNavigation(identity.current,dirty,flush),[dirty,flush]);
  async function clear(){skip.current=true;try{await chain.current.catch(()=>{});await removeDraft(scope,token.current);token.current=null;last.current=currentValue.current;blocked.current=false;chain.current=Promise.resolve();setStatus('');setError('');}finally{skip.current=false;}}
  return {ready,status,error,flush,clear};

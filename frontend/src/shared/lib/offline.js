@@ -1,4 +1,4 @@
-// Only pending workout writes persist. Health response caches and auth tokens stay in memory.
+// Only pending workout writes and unfinished workout drafts persist. Health response caches and auth tokens stay in memory.
 // AES-GCM + non-exportable CryptoKey protect stored bytes, not a compromised same-origin script.
 const cache = new Map();
 const allowed = new Set(['/api/body-composition','/api/body-composition/latest','/api/body-map/latest','/api/exercise-routines','/api/workouts','/api/exercise-catalog']);

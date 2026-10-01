@@ -19,6 +19,7 @@ test('encrypted draft survives closed page and guards app navigation before resu
  await expect(page.getByText('기기에 임시 저장됨',{exact:true})).toBeVisible();await page.close();page=await context.newPage();await page.goto('/health/workout');await page.getByRole('button',{name:'운동 따라하기 · 한 운동씩 시작',exact:true}).click();
  await expect(page.getByRole('button',{name:'운동 계속하기',exact:true})).toBeVisible();await expect(page.getByLabel('1세트 중량 kg',{exact:true})).toHaveValue('21');
  await page.getByRole('button',{name:'운동 계속하기',exact:true}).click();await page.getByRole('button',{name:'완료 기록 · 다음 운동',exact:true}).click();
+ await expect(page.getByRole('heading',{name:/운동 따라하기 · 2/})).toBeVisible();
  const logs=await(await page.request.get('/api/workouts')).json();const saved=logs.filter(w=>w.routine_id===routine.id);expect(saved).toHaveLength(1);expect(saved[0]).toMatchObject({time_zone:'Asia/Seoul',completion_status:'completed',set_records:[{weight_kg:21,reps:9,kind:'working'}]});
  await page.screenshot({path:info.outputPath('draft-resumed.png'),fullPage:true});
 });
