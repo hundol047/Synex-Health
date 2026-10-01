@@ -10,7 +10,7 @@ from .comparison import left_right_balance
 from .exercise_catalog import CATALOG
 from .store import new_id, now
 
-VERSION = '3.1.0'
+VERSION = '3.2.0'
 from pathlib import Path
 SOURCES = json.loads(Path(__file__).with_name('evidence.json').read_text())
 SAFETY_FLAGS = ['safety_chest_pain', 'safety_fainting', 'safety_breathlessness', 'safety_acute_injury', 'safety_medical_restriction']
@@ -121,7 +121,9 @@ def build_deterministic_routine(user_id, measurement, profile, based_on_measurem
     if constraints:
         notices.append('제약 부위에 부담을 줄 수 있는 동작을 제외했습니다. 제외되지 않은 동작도 통증이 있으면 중단하세요.')
     equipment = set(profile.available_equipment) - {'none'}
-    candidates = [m for m in CATALOG if set(m['equipment']) <= equipment and not set(m['avoid']) & constraints]
+    candidates = [m for m in CATALOG if set(m['equipment']) <= equipment and not set(m['avoid']) & constraints
+                  and profile.exercise_location in m['locations'] and m['auto_recommend']
+                  and (profile.training_mode != 'bodyweight' or not m['equipment'])]
     if conservative:
         candidates=[m for m in candidates if m['easy']]
     if profile.exercise_location == 'outdoor':
@@ -193,6 +195,11 @@ def build_deterministic_routine(user_id, measurement, profile, based_on_measurem
                     preference = ' '.join(profile.preferences).lower()
                     pool.sort(key=lambda m: (not (m['name'].lower() in preference or m['id'] in preference) if preference else False,
                                              m['easy'] != conservative, not bool(m['equipment']), m['id']))
+                    # Rotate within equally suitable candidates across training days.
+                    rank=lambda m:(m['easy'] != conservative, not bool(m['equipment']))
+                    preferred=[m for m in pool if preference and (m['name'].lower() in preference or m['id'] in preference)]
+                    best=preferred or [m for m in pool if rank(m)==rank(pool[0])]
+                    pool=[best[day_idx % len(best)]]
                     available_patterns.append(pool[0])
         day_sets = sets
         while day_sets > 1 and day_sets * .7 + (day_sets - 1) + .5 > remaining - cardio_budget:
@@ -208,15 +215,17 @@ def build_deterministic_routine(user_id, measurement, profile, based_on_measurem
                     break
             if conservative: reason += ' 체격·경험·측정자료에 맞춰 낮은 시작 부하를 선택했습니다.'
             exercises.append(RoutineExercise(exercise_id=f'd{day}-{m["id"]}', motion_id=m['id'],
-                day_number=day, exercise_name=m['name'], sets=day_sets, reps='8–12회 (좌우 동일)', rest_seconds=60,
+                day_number=day, exercise_name=m['name'], sets=day_sets, reps=m['reps'] if m['dose_type']=='hold' else '8–12회 (좌우 동일)', rest_seconds=60,
+                equipment=m['equipment'],training_type=m['training_type'],dose_type=m['dose_type'],hold_seconds=m.get('hold_seconds'),
                 instructions=m['instructions'], cautions=m['cautions'], target_regions=m['regions'],
                 intensity='2–3회 더 할 여유를 남기고 중단', estimated_minutes=round(per_exercise,1), reason=reason))
             remaining -= per_exercise
         cardio = [m for m in candidates if m['pattern']=='cardio']
         if cardio and remaining >= 1:
-            m = next((m for m in cardio if m['id']=='walk'),cardio[0]); minutes = int(remaining)
+            m = next((m for m in cardio if m['equipment']),None) if profile.training_mode=='equipment' else None
+            m = m or next((m for m in cardio if m['id']=='walk'),cardio[0]); minutes = int(remaining)
             exercises.append(RoutineExercise(exercise_id=f'd{day}-{m["id"]}', motion_id=m['id'], day_number=day,
-                exercise_name=m['name'], duration=f'{minutes}분', estimated_minutes=minutes, instructions=m['instructions'],
+                exercise_name=m['name'], equipment=m['equipment'],training_type=m['training_type'],dose_type='duration',duration=f'{minutes}분', estimated_minutes=minutes, instructions=m['instructions'],
                 cautions=m['cautions'], target_regions=m['regions'], intensity='편안하게 대화 가능한 속도',
                 reason='선택한 시간 안에서 활동량을 확보합니다. 처음에는 편안한 속도부터 시작하세요.'))
         day_exercises = [e for e in exercises if e.day_number==day]
@@ -224,7 +233,8 @@ def build_deterministic_routine(user_id, measurement, profile, based_on_measurem
         day_minutes[str(day)] = round(warm_cool + sum(e.estimated_minutes for e in day_exercises),1)
     covered = {p for p in patterns if any(m['pattern']==p for m in candidates)}
     if len(covered)<5: notices.append('제약 또는 장비 부족으로 일부 움직임이 제외되었습니다. 전체 근력훈련을 대체하는 완전한 계획은 아닙니다.')
-    if not equipment: notices.append('맨몸 구성에서는 당기기 저항운동이 제한됩니다. 밴드 등 장비 확보 후 다시 생성할 수 있습니다.')
+    if profile.training_mode=='equipment': notices.append('선택한 장비를 우선 사용하며, 적합한 장비 운동이 없는 부위는 맨몸 동작으로 보완합니다.')
+    if not equipment or profile.training_mode=='bodyweight': notices.append('맨몸 구성에서는 당기기 저항운동이 제한됩니다. 밴드 등 장비 확보 후 다시 생성할 수 있습니다.')
     notices.append('매회 표시된 시간에 준비·정리운동 각 2분이 포함됩니다. 주간 권장 활동량을 충족하지 못할 수 있으므로 여건에 맞춰 점진적으로 활동을 늘리세요.')
     goal_label = {Goal.MUSCLE_GAIN:'근육 증가',Goal.FAT_MANAGEMENT:'체지방 관리',Goal.GENERAL_FITNESS:'전신 체력',Goal.BALANCE:'균형 있는 운동',Goal.GENERAL_HEALTH:'일반 건강관리'}[profile.goal]
     if underweight and profile.goal==Goal.FAT_MANAGEMENT: goal_label='체력 유지·건강 상담 우선'

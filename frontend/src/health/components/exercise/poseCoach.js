@@ -58,13 +58,18 @@ export class MovementCoach {
 export class ExercisePoseAnalyzer {
  constructor(id){this.id=id;this.engine=new MovementCoach(id);this.phases=new TemporalPhases(id);this.min=Infinity;this.max=-Infinity;this.lastRep=0;this.repAt=null;this.tempo=null;}
  update(points,time){
-  const result=this.engine.update(points,time),c=this.engine.config;
+  const c=this.engine.config;
+  const inFrame=c.joints.every(i=>points?.[i]&&Number.isFinite(points[i].x)&&Number.isFinite(points[i].y)&&points[i].x>=0&&points[i].x<=1&&points[i].y>=0&&points[i].y<=1);
+  if(!inFrame)points=[];
+  if(this.phases.lastTime!=null&&(time<=this.phases.lastTime||time-this.phases.lastTime>500))this.engine.previousTime=null;
+  const result=this.engine.update(points,time);
   const detected=result.phase!=='unknown';
   const visibleJoints=c.joints.filter(i=>points?.[i]&&(points[i].visibility??0)>=.7);
   const confidence=detected?Math.min(...c.joints.map(i=>points[i].visibility??0)):0;
   const left=detected?jointAngle(...c.joints.slice(0,3).map(i=>points[i])):null;
   const right=detected?jointAngle(...c.joints.slice(3).map(i=>points[i])):null;
-  const angle=left!=null&&right!=null?(left+right)/2:null;
+  let angle=left!=null&&right!=null?(c.minimum?Math.min(left,right):(left+right)/2):null;
+  if(c.overhead&&angle>c.up&&!(points[15].y<points[11].y&&points[16].y<points[12].y))angle=(c.down+c.up)/2;
   if(angle!=null){this.min=Math.min(this.min,angle);this.max=Math.max(this.max,angle);}
   if(!detected){this.repAt=null;this.min=Infinity;this.max=-Infinity;}
   const temporal=this.phases.update(angle,time,confidence);
@@ -76,9 +81,8 @@ export class ExercisePoseAnalyzer {
    const align=jointAngle(points[11],points[23],points[27]);
    if([11,23,27].every(i=>(points[i]?.visibility??0)>=.7)&&align!=null&&align<150)corrections.push('화면상 어깨·골반·발목 정렬을 확인하세요.');
   }
-  if(detected&&this.id==='bent_row')corrections.push('상체를 고정하고 팔꿈치를 몸통 쪽으로 당기는지 확인하세요.');
-  if(detected&&this.id==='curl')corrections.push('팔꿈치 위치를 유지하고 몸통 반동을 줄이세요.');
-  return {...result,...temporal,detected,confidence,visible_joints:visibleJoints,range_of_motion:detected&&Number.isFinite(this.min)?Math.round(this.max-this.min):null,tempo:this.tempo,left_right_balance:detected?Math.round(Math.abs(left-right)):null,warnings,corrections,completion_state:detected?(c.hold?'holding':result.reps?'repetition_recorded':'in_progress'):'tracking_lost'};
+
+  return {...result,...temporal,detected,confidence,visible_joints:visibleJoints,range_of_motion:detected&&Number.isFinite(this.min)?Math.round(this.max-this.min):null,tempo:this.tempo,left_right_balance:detected?Math.round(Math.abs(left-right)):null,warnings,corrections,completion_state:detected?(c.hold?result.phase:result.reps?'repetition_recorded':'in_progress'):'tracking_lost'};
  }
 }
 export const ANALYZERS=Object.fromEntries(Object.keys(POSE_EXERCISES).map(id=>[id,class extends ExercisePoseAnalyzer{constructor(){super(id);}}]));

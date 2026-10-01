@@ -69,8 +69,29 @@ app.include_router(extensions_router)
 from .services.review_access import router as review_router
 app.include_router(review_router)
 
+
+@app.get('/healthz', include_in_schema=False)
+def liveness():
+    return {'status':'ok'}
+
+
+@app.get('/readyz', include_in_schema=False)
+def readiness():
+    # Probe the same storage as user writes; never expose connections or exception details.
+    try:
+        from .health.migrations import VERSION
+        with health_store.connect() as db:
+            version=db.execute('SELECT MAX(version) FROM schema_migrations').fetchone()
+            db.execute('SELECT 1 FROM users LIMIT 1').fetchone()
+        if not version or version[0]!=VERSION:
+            return JSONResponse(status_code=503,content={'status':'not_ready'})
+        return {'status':'ready'}
+    except Exception:
+        return JSONResponse(status_code=503,content={'status':'not_ready'})
+
+
 DIST = Path(__file__).resolve().parents[2] / 'frontend' / 'dist'
-if DIST.exists():
+if (DIST / 'index.html').is_file() and (DIST / 'assets').is_dir():
     import mimetypes
     mimetypes.add_type('application/octet-stream', '.task')
     if (DIST / 'pose').is_dir():

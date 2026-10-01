@@ -1,3 +1,4 @@
+import {equipmentText} from '../../lib/exerciseLabels.js';
 import React, { useState, lazy, Suspense } from 'react';
 import { Play, ChevronUp } from 'lucide-react';
 const ExerciseMotion=lazy(()=>import('./ExerciseMotion.jsx'));
@@ -9,11 +10,11 @@ export default function ExerciseCard({ exercise, children }) {
   return <article id={exercise.exercise_id} className={`exercise-card ${open?'exercise-card-open':''}`}>
     <div className="exercise-card-top"><div className="exercise-card-info">
       <div className="exercise-regions">{(exercise.target_regions||[]).join(' · ')}</div>
-      <strong>{exercise.exercise_name}</strong>
+      <strong>{exercise.exercise_name}</strong>{exercise.training_type&&<p className="muted">{exercise.training_type==='bodyweight'?'맨몸운동':'헬스장·기구 운동'} · {equipmentText(exercise.equipment)}</p>}
       <p className="muted">{exercise.duration || `${exercise.sets??'-'}세트 × ${exercise.reps??'-'}`}{exercise.rest_seconds!=null?` · 휴식 ${exercise.rest_seconds}초`:''}</p>
     </div><ExercisePreview exercise={exercise} onOpen={()=>setOpen(true)}/></div><button className="btn btn-secondary" type="button" onClick={()=>setOpen(x=>!x)} aria-expanded={open} aria-label={`${exercise.exercise_name} 동작 ${open?'닫기':'보기'}`}>
       {open?<ChevronUp size={16}/>:<Play size={16}/>} {open?'접기':'동작 보기'}</button>
-    {POSE_EXERCISES[exercise.motion_id] && <span className="badge">AI FORM CHECK · 설명용 추정</span>}
+    {POSE_EXERCISES[exercise.motion_id] && <span className="badge">카메라 자세 참고 · 실측 아님</span>}
     <ul className="exercise-cues">{(exercise.instructions||[]).slice(0,2).map(t=><li key={t}>{t}</li>)}</ul>
     <p className="muted exercise-reason">{exercise.reason}</p>
     {open && <Suspense fallback={<p role="status">동작을 불러오는 중입니다.</p>}><ExerciseMotion exercise={exercise}/></Suspense>}

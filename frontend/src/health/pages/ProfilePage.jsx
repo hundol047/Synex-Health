@@ -1,3 +1,4 @@
+import {EQUIPMENT_LABELS} from '../lib/exerciseLabels.js';
 import { Link } from 'react-router-dom';
 import React, { useEffect, useState } from 'react';
 import MeasurementEntry from '../components/MeasurementEntry.jsx';
@@ -26,13 +27,7 @@ const LOCATION_OPTIONS = [
   { value: 'outdoor', label: '실외' },
 ];
 
-const EQUIPMENT_OPTIONS = [
-  { value: 'dumbbell', label: '덤벨' },
-  { value: 'barbell', label: '바벨' },
-  { value: 'machine', label: '머신' },
-  { value: 'band', label: '밴드' },
-  { value: 'none', label: '맨몸운동' },
-];
+const EQUIPMENT_OPTIONS = Object.entries(EQUIPMENT_LABELS).filter(([value])=>value!=='none').map(([value,label])=>({value,label}));
 
 const SAFETY_FIELDS = [
   { key: 'safety_chest_pain', label: '최근 심한 흉통이 있었나요?' },
@@ -101,6 +96,7 @@ export default function ProfilePage() {
         days_per_week: Number(form.days_per_week) || 1,
         minutes_per_session: Number(form.minutes_per_session) || 10,
         exercise_location: form.exercise_location,
+        training_mode: form.training_mode || 'mixed',
         available_equipment: [...equipmentSet],
         limitations: fromCsv(limitationsText),
         preferences: fromCsv(preferencesText),
@@ -175,6 +171,7 @@ export default function ProfilePage() {
             <input id="minutes-input" type="number" min={10} max={180} className="text-input" value={form.minutes_per_session}
               onChange={(e) => setForm({ ...form, minutes_per_session: e.target.value })} />
           </div>
+          <div><label className="field-label" htmlFor="training-mode">운동 방식</label><select id="training-mode" className="text-input" value={form.training_mode||'mixed'} onChange={e=>setForm({...form,training_mode:e.target.value})}><option value="mixed">장비와 맨몸 함께</option><option value="bodyweight">맨몸운동만</option><option value="equipment">헬스장·장비 운동 우선</option></select></div>
           <div>
             <label className="field-label" htmlFor="location-select">운동 장소</label>
             <select id="location-select" className="text-input" value={form.exercise_location} onChange={(e) => setForm({ ...form, exercise_location: e.target.value })}>
@@ -184,7 +181,7 @@ export default function ProfilePage() {
         </div>
 
         <div style={{ marginTop: 14 }}>
-          <label className="field-label">이용 가능한 운동 기구</label>
+          <label className="field-label">실제로 이용할 수 있는 운동 기구</label><p className="muted">맨몸운동만 선택하면 기구 설정과 관계없이 맨몸으로 구성합니다. 머신은 이용할 종류를 각각 선택하세요.</p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
             {EQUIPMENT_OPTIONS.map((o) => (
               <label key={o.value} className={`chip-checkbox ${equipmentSet.has(o.value) ? 'checked' : ''}`}>

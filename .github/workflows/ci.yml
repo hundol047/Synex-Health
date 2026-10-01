@@ -91,3 +91,40 @@ jobs:
           path: |
             frontend/test-results
             frontend/playwright-report
+
+  android-compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - run: npm ci && npm run pose:setup && npm run build && npx cap sync android
+        working-directory: frontend
+      - run: chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+        working-directory: frontend/android
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-debug-build
+          path: frontend/android/app/build/outputs/apk/debug/*.apk
+
+  ios-compile:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci && npm run pose:setup && npm run build && npx cap sync ios
+        working-directory: frontend
+      - run: xcodebuild -project App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+        working-directory: frontend/ios/App

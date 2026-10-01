@@ -1,0 +1,3 @@
+export const EQUIPMENT_LABELS={dumbbell:'덤벨',barbell:'바벨',band:'밴드',bench:'벤치',safety_rack:'안전바 랙',cable:'케이블',rope_handle:'로프 손잡이',chest_press_machine:'체스트 프레스 머신',lat_pulldown_machine:'랫 풀다운 머신',row_machine:'시티드 로우 머신',leg_press_machine:'레그 프레스 머신',leg_extension_machine:'레그 익스텐션 머신',leg_curl_machine:'레그 컬 머신',hip_abduction_machine:'힙 어브덕션 머신',seated_cable_row:'시티드 케이블 로우',treadmill:'트레드밀',stationary_bike:'실내 자전거',elliptical:'일립티컬',none:'맨몸'};
+export const CATEGORY_LABELS={Chest:'가슴',Back:'등',Shoulder:'어깨',Arms:'팔',Core:'코어',Glutes:'엉덩이',Legs:'하체',Cardio:'유산소',Mobility:'가동성',Stretching:'스트레칭'};
+export const equipmentText=items=>(items||[]).map(x=>EQUIPMENT_LABELS[x]||x).join(' · ')||'맨몸';

@@ -10,8 +10,8 @@ it('records completed sets/RPE/reps, advances, and pain stops the workout with a
  const user=userEvent.setup(),onSaved=vi.fn();render(<WorkoutMode routine={{id:'r'}} exercises={exercises} onSaved={onSaved} onClose={()=>{}}/>);
  expect(screen.getByRole('checkbox',{name:/음성/}).checked).toBe(false);
  expect(screen.getByRole('button',{name:'완료 기록 · 다음 운동'}).disabled).toBe(true);
- await user.click(screen.getByRole('button',{name:/Complete Set/}));await user.type(screen.getByLabelText('RPE (1–10)'),'6');await user.type(screen.getByLabelText('실제 반복 횟수'),'10');await user.click(screen.getByRole('button',{name:'완료 기록 · 다음 운동'}));
- expect(await screen.findByText('Workout Mode · 2 / 2')).toBeTruthy();expect(HealthAPI.createWorkout.mock.calls[0][0]).toMatchObject({sets_completed:1,reps_completed:'10',rpe:6,completed:true});
+ await user.click(screen.getByRole('button',{name:/세트 완료/}));await user.type(screen.getByLabelText('운동 힘듦 (RPE 1–10)'),'6');await user.type(screen.getByLabelText('실제 반복 횟수'),'10');await user.click(screen.getByRole('button',{name:'완료 기록 · 다음 운동'}));
+ expect(await screen.findByText('운동 따라하기 · 2 / 2')).toBeTruthy();expect(HealthAPI.createWorkout.mock.calls[0][0]).toMatchObject({sets_completed:1,reps_completed:'10',rpe:6,completed:true});
  await user.clear(screen.getByLabelText('통증 (0–10)'));await user.type(screen.getByLabelText('통증 (0–10)'),'3');await user.click(screen.getByRole('button',{name:'통증 기록 · 운동 중단'}));
  expect(await screen.findByText('오늘의 운동 요약')).toBeTruthy();expect(screen.getByRole('alert').textContent).toContain('진행을 중단');expect(HealthAPI.createWorkout.mock.calls[1][0]).toMatchObject({pain:3,completed:false,sets_completed:0});
 });

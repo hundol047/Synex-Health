@@ -27,6 +27,12 @@ def now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+class WorkoutConflict(ValueError):
+    def __init__(self, current):
+        self.current = current
+        super().__init__('Workout revision conflict')
+
+
 class HealthStore:
     def __init__(self, path=None, migrate=False):
         self.database=None
@@ -214,9 +220,28 @@ class HealthStore:
         return items[0] if items else None
 
     # --- Workouts ------------------------------------------------------------------------------
-    def add_workout(self, w: WorkoutLog) -> WorkoutLog:
+    def add_workout(self, w: WorkoutLog, expected_revision=None) -> WorkoutLog:
+        # Compare-and-swap works across SQLite/PostgreSQL workers; no read-then-overwrite.
         with self.connect() as db:
-            db.execute('INSERT OR REPLACE INTO workouts VALUES (?,?,?,?)', (w.id, w.user_id, w.date, w.model_dump_json()))
+            row = db.execute('SELECT payload FROM workouts WHERE id=? AND user_id=?', (w.id,w.user_id)).fetchone()
+            current = WorkoutLog.model_validate_json(row[0]) if row else None
+            if current and w.mutation_id and current.mutation_id == w.mutation_id:
+                return current  # lost HTTP response: retry is not another edit
+            if expected_revision is not None and expected_revision != (current.revision if current else 0):
+                raise WorkoutConflict(current)
+            w.revision = current.revision + 1 if current else 1
+            if current:
+                result = db.execute('UPDATE workouts SET payload=?,date=? WHERE id=? AND user_id=? AND payload=?',
+                                    (w.model_dump_json(),w.date,w.id,w.user_id,row[0]))
+            else:
+                result = db.execute('INSERT INTO workouts (id,user_id,date,payload) VALUES (?,?,?,?) ON CONFLICT (id) DO NOTHING',
+                                    (w.id,w.user_id,w.date,w.model_dump_json()))
+            if result.rowcount != 1:
+                latest = db.execute('SELECT payload FROM workouts WHERE id=? AND user_id=?',(w.id,w.user_id)).fetchone()
+                record = WorkoutLog.model_validate_json(latest[0]) if latest else None
+                if record and w.mutation_id and record.mutation_id == w.mutation_id:
+                    return record
+                raise WorkoutConflict(record)
         return w
 
     def list_workouts(self, user_id: str) -> list[WorkoutLog]:

@@ -1,7 +1,9 @@
+import {clearOffline} from './offline.js';
 import {Capacitor} from '@capacitor/core';
 import {setAccessToken} from './session.js';
 import {logoutPurchases} from './subscriptions.js';
 export async function clearLocalAccount(){
+ await clearOffline();
  setAccessToken('');
  for(const storage of [localStorage,sessionStorage])for(const key of Object.keys(storage))if(key.startsWith('synex'))storage.removeItem(key);
  await logoutPurchases().catch(()=>{});

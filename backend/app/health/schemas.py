@@ -155,6 +155,12 @@ class BodyCompositionCreateRequest(MeasurementValidation):
 
 # --- Reference ranges --------------------------------------------------------------------------
 class ReferenceRange(BaseModel):
+    source_url: Optional[str] = None
+    license_note: Optional[str] = None
+    reviewed_by: Optional[str] = None
+    reviewed_at: Optional[str] = None
+    measurement_method: Optional[str] = None
+    compatible_device_names: list[str] = Field(default_factory=list)
     model_config = ConfigDict(allow_inf_nan=False)
     id: str
     gender: str  # 'male' | 'female' | 'any'
@@ -206,6 +212,7 @@ class ExerciseProfile(BaseModel):
     goal: Goal = Goal.GENERAL_HEALTH
     days_per_week: int = Field(default=3, ge=1, le=7)
     minutes_per_session: int = Field(default=40, ge=10, le=180)
+    training_mode: Literal['mixed','bodyweight','equipment'] = 'mixed'
     exercise_location: Literal['gym', 'home', 'outdoor'] = 'gym'  # 'gym' | 'home' | 'outdoor'
     available_equipment: list[str] = Field(default_factory=list)
     limitations: list[str] = Field(default_factory=list)
@@ -219,6 +226,10 @@ class ExerciseProfile(BaseModel):
 
 
 class RoutineExercise(BaseModel):
+    training_type: str = 'bodyweight'
+    equipment: list[str] = Field(default_factory=list)
+    dose_type: str = 'reps'
+    hold_seconds: Optional[int] = None
     exercise_id: Optional[str] = None
     motion_id: Optional[str] = None
     instructions: list[str] = Field(default_factory=list)
@@ -258,6 +269,8 @@ class ExerciseRoutine(BaseModel):
 
 # --- Workout log -------------------------------------------------------------------------------
 class WorkoutLog(BaseModel):
+    revision: int = Field(default=1, ge=1)
+    mutation_id: Optional[str] = None
     rpe: Optional[int] = Field(default=None,ge=1,le=10)
     pain: Optional[int] = Field(default=None,ge=0,le=10)
     pose_evaluation: Optional[dict] = None
@@ -279,6 +292,8 @@ class WorkoutLog(BaseModel):
 
 
 class WorkoutLogCreateRequest(BaseModel):
+    expected_revision: int = Field(default=0, ge=0)
+    mutation_id: Optional[str] = Field(default=None, max_length=80)
     rpe: Optional[int] = Field(default=None,ge=1,le=10)
     pain: Optional[int] = Field(default=None,ge=0,le=10)
     pose_evaluation: Optional[dict] = None

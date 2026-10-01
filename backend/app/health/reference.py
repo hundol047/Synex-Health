@@ -13,8 +13,24 @@ def delta(value, mean):
             'difference_percent': round((value - mean) / mean * 100, 1) if valid and mean > 0 else None}
 
 
+def production_eligible(r):
+    from urllib.parse import urlparse
+    try:
+        reviewed=date.fromisoformat(r.reviewed_at or '')
+        effective=date.fromisoformat(r.effective_date or '')
+    except ValueError:
+        return False
+    url=urlparse(r.source_url or '')
+    return (r.source.strip().lower() not in ('demo','mock','placeholder') and r.gender in ('male','female')
+            and r.unit=='kg' and 18 <= r.age_min <= r.age_max <= 120
+            and url.scheme=='https' and bool(url.hostname) and reviewed<=date.today() and effective<=date.today()
+            and bool(r.dataset_id and r.reference_population and r.publication and r.sample_size and r.version
+                     and r.license_note and r.reviewed_by and r.measurement_method and r.compatible_device_names))
+
+
 def metadata(r):
-    return {'dataset_id': r.dataset_id, 'reference_population': r.reference_population,
+    return {'source_url':r.source_url,'measurement_method':r.measurement_method,'compatible_device_names':r.compatible_device_names,
+            'dataset_id': r.dataset_id, 'reference_population': r.reference_population,
             'reference_source': r.source, 'publication': r.publication, 'sample_size': r.sample_size,
             'sex': r.gender, 'age_range': [r.age_min, r.age_max],
             'height_range': [r.height_min, r.height_max], 'BMI_range': [r.bmi_min, r.bmi_max],
@@ -40,8 +56,8 @@ def average_comparison(user, measurement, references):
     for r in references:
         if r.gender != user.gender or r.unit != 'kg': continue
         meta = metadata(r)
-        if strict and (meta['demo'] or not all([r.dataset_id, r.reference_population, r.publication,
-                                               r.sample_size, r.version, r.effective_date])): continue
+        if strict and not production_eligible(r): continue
+        if r.compatible_device_names and measurement.device_name.casefold().strip() not in {n.casefold().strip() for n in r.compatible_device_names}: continue
         if r.effective_date and r.effective_date > date.today().isoformat(): continue
         values = [(age,r.age_min,r.age_max), (height,r.height_min,r.height_max),
                   (bmi,r.bmi_min,r.bmi_max), (measurement.weight,r.weight_min,r.weight_max)]

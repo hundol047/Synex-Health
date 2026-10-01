@@ -69,10 +69,10 @@ test('routine previews and instructions visible; workout flow persists feedback 
  await page.reload();await expect(page.getByTestId('exercise-preview').first()).toBeVisible();
  await expect(page.locator('.exercise-cues').first()).not.toBeEmpty();await expect(page.locator('.exercise-reason').first()).not.toBeEmpty();
  await page.screenshot({path:info.outputPath('routine-inline.png'),fullPage:true});
- await page.goto('/health/workout');await page.getByRole('button',{name:/Workout Mode/}).click();
- await expect(page.getByRole('heading',{name:/Workout Mode/})).toBeVisible();
- await page.getByRole('button',{name:/Complete Set/}).click();
- await page.getByLabel('RPE (1–10)',{exact:true}).fill('6');
+ await page.goto('/health/workout');await page.getByRole('button',{name:/운동 따라하기/}).click();
+ await expect(page.getByRole('heading',{name:/운동 따라하기/})).toBeVisible();
+ await page.getByRole('button',{name:/세트 완료/}).click();
+ await page.getByLabel('운동 힘듦 (RPE 1–10)',{exact:true}).fill('6');
  await page.getByLabel('실제 반복 횟수',{exact:true}).fill('10');
  await page.getByRole('button',{name:'완료 기록 · 다음 운동',exact:true}).click();
  await expect(page.getByRole('heading',{name:/2 \//})).toBeVisible();

@@ -403,13 +403,18 @@ def create_workout(req: WorkoutLogCreateRequest, user: User = Depends(require('w
     if len(matching) != 1:
         raise HTTPException(422, '루틴의 운동과 Day를 정확히 선택하세요.')
     exercise = matching[0]
-    payload = req.model_dump()
+    payload = req.model_dump(exclude={'expected_revision'})
     payload.update(exercise_name=exercise.exercise_name, day_number=exercise.day_number,
                    routine_exercise_id=exercise.exercise_id)
-    # Stable key + INSERT OR REPLACE: retries and feedback edits do not inflate completion rate.
+    # Stable logical identity, mutation replay and optimistic revision checks.
     key = f'{user.id}|{routine.id}|{logged_date}|{exercise.day_number}|{exercise.exercise_id or exercise.exercise_name}'
     w = WorkoutLog(id='WORKOUT-' + hashlib.sha256(key.encode()).hexdigest()[:24], user_id=user.id, created_at=now(), **payload)
-    store.add_workout(w)
+    from .store import WorkoutConflict
+    try:
+        w = store.add_workout(w, expected_revision=req.expected_revision)
+    except WorkoutConflict as conflict:
+        raise HTTPException(409, {'message':'다른 기기에서 변경된 기록이 있습니다. 저장할 기록을 선택하세요.',
+                                  'current':conflict.current.model_dump(mode='json') if conflict.current else None})
     audit.record(user.id, 'workout_logged', {'workout_id': w.id, 'routine_id': w.routine_id, 'completed': w.completed},
                  user_id=user.id, role=user.role)
     return w

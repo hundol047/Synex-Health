@@ -67,7 +67,7 @@ export default function WorkoutPage() {
         rpe: details[ex.exercise_id||ex.exercise_name]?.rpe?Number(details[ex.exercise_id||ex.exercise_name].rpe):null,
         pain: details[ex.exercise_id||ex.exercise_name]?.pain?Number(details[ex.exercise_id||ex.exercise_name].pain):0,
       });
-      if(saved.pending_sync){setLogError({message:'기기에 임시 보관했습니다. 앱을 닫지 마세요. 연결 복구 시 전송합니다.'});}else await workouts.reload();
+      if(saved.pending_sync){setLogError({message:'기기에 임시 보관했습니다. 앱을 다시 열고 같은 계정으로 로그인해도 전송을 이어갑니다.'});}else await workouts.reload();
     } catch (error) {
       setLogError(error);
     } finally {
@@ -84,7 +84,7 @@ export default function WorkoutPage() {
       <Card>
         <EmptyState
           title="운동 루틴이 없어요"
-          description="루틴 페이지에서 먼저 AI 맞춤 루틴을 생성해 보세요."
+          description="루틴 페이지에서 먼저 맞춤 루틴을 생성해 보세요."
           action={<Link className="btn btn-primary" to="/health/routine">루틴 만들러 가기</Link>}
         />
       </Card>
@@ -98,12 +98,12 @@ export default function WorkoutPage() {
 
   return (
     <>
-      <button className="btn btn-primary" disabled={!dayExercises.length} onClick={()=>setWorkoutMode(true)}>Workout Mode · 한 운동씩 시작</button><WorkoutCalendar workouts={workouts.data||[]} routine={latest}/><Card title="오늘의 운동">
+      <button className="btn btn-primary" disabled={!dayExercises.length} onClick={()=>setWorkoutMode(true)}>운동 따라하기 · 한 운동씩 시작</button><WorkoutCalendar workouts={workouts.data||[]} routine={latest}/><Card title="오늘의 운동">
         {days.length > 1 && (
           <div style={{ display: 'flex', gap: 6, marginBottom: 12, overflowX: 'auto', paddingBottom: 2 }}>
             {days.map(([d]) => (
               <button key={d} className={`btn ${activeDay === d ? 'btn-primary' : 'btn-ghost'}`} style={{ whiteSpace: 'nowrap' }} onClick={() => setSelectedDay(d)}>
-                Day {d}
+                {d}일차
               </button>
             ))}
           </div>
@@ -115,7 +115,7 @@ export default function WorkoutPage() {
             const done=isDone(ex), key=ex.exercise_id||ex.exercise_name;
             return <ExerciseCard key={key+i} exercise={ex}>
               <div className="workout-feedback">
-                {[['sets','실제 세트',0,100],['reps','실제 반복 횟수',0,1000],['rpe','RPE (1–10)',1,10],['pain','통증 (0–10)',0,10]].map(([name,label,min,max])=><label key={name}>{label}<input type="number" min={min} max={max} value={details[key]?.[name]??''} onChange={e=>field(key,name,e.target.value)}/></label>)}
+                {[['sets','실제 세트',0,100],['reps','실제 반복 횟수',0,1000],['rpe','운동 힘듦 (RPE 1–10)',1,10],['pain','통증 (0–10)',0,10]].map(([name,label,min,max])=><label key={name}>{label}<input type="number" min={min} max={max} value={details[key]?.[name]??''} onChange={e=>field(key,name,e.target.value)}/></label>)}
                 <label>메모<input maxLength="2000" value={details[key]?.memo||''} onChange={e=>field(key,'memo',e.target.value)}/></label>
                 <label className="muted" htmlFor={`minutes-${i}`}>실제 운동 시간 (분)</label><input id={`minutes-${i}`} className="text-input" type="number" min="0" max="1440" step=".5" value={minutes[key]??''} onChange={e=>setMinutes({...minutes,[key]:e.target.value})}/><label className="muted" htmlFor={`feedback-${i}`}>오늘의 난이도</label>
                 <select id={`feedback-${i}`} className="text-input" value={feedback[key]||'moderate'} onChange={e=>setFeedback({...feedback,[key]:e.target.value})}>

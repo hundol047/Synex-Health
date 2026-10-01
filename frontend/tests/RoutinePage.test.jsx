@@ -25,8 +25,8 @@ describe('RoutinePage', () => {
     expect(await screen.findByText('스쿼트')).toBeTruthy();
     expect(screen.getByText('덤벨 로우')).toBeTruthy();
     expect(screen.getByText('플랭크')).toBeTruthy();
-    expect(screen.getByText('Day 1')).toBeTruthy();
-    expect(screen.getByText('Day 2')).toBeTruthy();
+    expect(screen.getByText('1일차')).toBeTruthy();
+    expect(screen.getByText('2일차')).toBeTruthy();
     expect(screen.getByText(routine.summary)).toBeTruthy();
   });
 

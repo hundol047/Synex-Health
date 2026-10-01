@@ -25,3 +25,9 @@ frontend/public/pose/*.task
 
 frontend/test-results/
 frontend/playwright-report/
+
+# Consented evaluation data, backups and release evidence remain outside source control.
+evaluation-data/
+release-evidence/
+*.age
+*.dump

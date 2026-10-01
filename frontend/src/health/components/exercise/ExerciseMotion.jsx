@@ -6,7 +6,7 @@ import MotionFigure from './MotionFigure.jsx';
 
 export default function ExerciseMotion({ exercise, measurement, profile }) {
   const motion = MOTIONS[exercise.motion_id];
-  const [dimension,setDimension]=useState('3d');
+  const [dimension,setDimension]=useState(motion?.twoDimensionalOnly?'2d':'3d');
   const [loop,setLoop]=useState(true);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
@@ -36,7 +36,7 @@ export default function ExerciseMotion({ exercise, measurement, profile }) {
   return <div className="motion-layout">
     <div className="motion-viewer">
       <div className="motion-caption"><span>동작 가이드</span><span>{motion.view}</span></div>
-      <div className="motion-controls"><button className="btn btn-ghost" onClick={()=>setDimension(d=>d==='3d'?'2d':'3d')}>{dimension==='3d'?'2D 안내 보기':'3D 안내 보기'}</button><label><input type="checkbox" checked={loop} onChange={e=>setLoop(e.target.checked)}/> 반복 재생</label></div>
+      <div className="motion-controls"><button disabled={motion.twoDimensionalOnly} className="btn btn-ghost" onClick={()=>setDimension(d=>d==='3d'?'2d':'3d')}>{motion.twoDimensionalOnly?'기구·지지점 2D 안내':dimension==='3d'?'2D 안내 보기':'3D 안내 보기'}</button><label><input type="checkbox" checked={loop} onChange={e=>setLoop(e.target.checked)}/> 반복 재생</label></div>
       {dimension==='3d'?<ExerciseMotion3D motion={exercise.motion_id} progress={progress} mirror={mirror} measurement={measurement} profile={profile}/>:<MotionFigure exercise={exercise} progress={progress} mirror={mirror}/>}
       <p className="motion-phase">{motion.label}</p>
       <input aria-label="동작 구간" type="range" min="0" max="100" value={Math.round(progress*100)} onChange={e=>setPhase(Number(e.target.value)/100)} />

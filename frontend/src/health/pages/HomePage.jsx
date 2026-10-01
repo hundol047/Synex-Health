@@ -11,6 +11,7 @@ import { useApiData } from '../lib/useApiData.js';
 export default function HomePage() {
   const profile = useApiData(() => HealthAPI.getProfile(), []);
   const measurement = useApiData(() => HealthAPI.latestMeasurement(), []);
+  const routines = useApiData(() => HealthAPI.listRoutines(), []);
   const bodyMap = useApiData(() => HealthAPI.bodyMapLatest(), []);
 
   const [analysis, setAnalysis] = useState({ loading: false, error: null, data: null });
@@ -38,6 +39,12 @@ export default function HomePage() {
         <h1>{profile.loading ? <Skeleton height={28} width={220} /> : `안녕하세요${name ? `, ${name}님` : ''}`}</h1>
         <p className="muted" style={{ marginTop: 4 }}>오늘도 건강한 하루가 될 거예요.</p>
       </div>
+
+      <Card title="오늘은 여기서 시작하세요">
+        <p>{noMeasurement?'체성분을 입력하면 내 변화와 운동 계획을 확인할 수 있어요.':!routines.data?.length?'운동 방식과 이용할 기구를 정하고 첫 계획을 만들어 보세요.':'준비된 운동을 하나씩 따라 하고 오늘의 기록을 남겨 보세요.'}</p>
+        <Link className="btn btn-primary" to={noMeasurement?'/health/profile':!routines.data?.length?'/health/routine':'/health/workout'}>{noMeasurement?'1. 체성분 입력하기':!routines.data?.length?'2. 내 운동 계획 만들기':'3. 오늘 운동 시작하기'}</Link>
+        <div className="motion-controls"><Link to="/health/library">맨몸·헬스장 운동 찾기</Link><Link to="/health/progress">내 기록과 변화 보기</Link></div>
+      </Card>
 
       {measurement.loading ? (
         <Card><Skeleton height={110} /></Card>
@@ -74,7 +81,7 @@ export default function HomePage() {
       )}
 
       {!noMeasurement && (
-        <Card title="Body Comparison · 근육량 비교" action={<Link className="btn btn-ghost" to="/health/body">자세히 보기</Link>}>
+        <Card title="내 몸의 변화와 비교" action={<Link className="btn btn-ghost" to="/health/body">자세히 보기</Link>}>
           {bodyMap.loading ? (
             <Skeleton height={200} />
           ) : bodyMap.data ? (
@@ -88,10 +95,10 @@ export default function HomePage() {
       <Link to="/health/workout" className="btn btn-primary btn-block">오늘의 루틴 시작하기</Link>
 
       <Card
-        title="AI 건강 분석"
+        title="측정값 해설"
         action={
           <button className="btn btn-secondary" onClick={runAnalysis} disabled={analysis.loading || noMeasurement}>
-            {analysis.loading ? '분석 중...' : 'AI 분석 보기'}
+            {analysis.loading ? '분석 중...' : '측정값 해설 보기'}
           </button>
         }
       >
@@ -107,7 +114,7 @@ export default function HomePage() {
           </div>
         )}
         {!analysis.data && !analysis.error && !analysis.loading && (
-          <p className="muted">버튼을 눌러 최신 측정 기반 AI 분석을 확인하세요.</p>
+          <p className="muted">버튼을 눌러 최신 측정 기반 규칙형 해설을 확인하세요.</p>
         )}
       </Card>
 
