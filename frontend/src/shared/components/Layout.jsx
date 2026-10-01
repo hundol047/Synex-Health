@@ -39,7 +39,7 @@ export default function Layout({ children }) {
   const isCounselor = auth.demo ? demoUser === 'counselor-demo' : ['counselor','admin'].includes(auth.role);
 
   async function switchRole(id) {
-    if(offlineState().pending&&!window.confirm('미전송 기록을 삭제하고 데모 계정을 바꿀까요?'))return;
+    if((offlineState().pending||offlineState().drafts)&&!window.confirm('미전송·진행 중 기록을 삭제하고 데모 계정을 바꿀까요?'))return;
     await setDemoUser(id);
     navigate(id==='admin-demo'?'/health/admin':id === 'counselor-demo' ? '/health-center' : '/health');
     window.location.reload();
@@ -64,7 +64,7 @@ export default function Layout({ children }) {
           <button className={isCounselor&&!isAdmin ? 'active' : ''} onClick={() => switchRole('counselor-demo')}>상담사</button><button className={isAdmin?'active':''} onClick={()=>switchRole('admin-demo')}>관리자</button>
         </div> : <button className="btn btn-ghost" onClick={auth.logout}>로그아웃</button>}
       </header>
-      <main className="health-main">{!online && <div className="card" role="status">오프라인입니다. 열었던 화면을 표시합니다. 저장한 운동 기록은 기기에 암호화 보관하며, 연결 복구 또는 재로그인 후 전송합니다.</div>}{cached&&<p role="status">저장된 화면을 표시 중입니다. 최신 정보가 아닐 수 있습니다.</p>}{syncError&&<p role="status">{syncError}</p>}<PendingWorkouts state={offline}/><NavLink to="/health/diagnostics">기기 진단</NavLink>{children}</main>
+      <main className="health-main">{!online && <div className="card" role="status">오프라인입니다. 열었던 화면을 표시합니다. 저장한 운동 기록은 기기에 암호화 보관하며, 연결 복구 또는 재로그인 후 전송합니다.</div>}{cached&&<p role="status">저장된 화면을 표시 중입니다. 최신 정보가 아닐 수 있습니다.</p>}{syncError&&<p role="status">{syncError}</p>}<PendingWorkouts state={offline}/>{offline.drafts>0&&<p className="muted">진행 중 임시 입력 {offline.drafts}건 · 해당 운동 화면에서 복구할 수 있습니다. <NavLink to="/health/privacy">임시 입력 관리</NavLink></p>}<NavLink to="/health/diagnostics">기기 진단</NavLink>{children}</main>
       <nav className="health-bottom-nav" aria-label="모바일 메뉴">
         {(isCounselor||isAdmin ? nav : nav.filter(item => ['/health','/health/body','/health/routine','/health/subscription','/health/profile'].includes(item.to))).map(({ to, label, icon: Icon, end }) => (
           <NavLink key={to} to={to} end={end}>

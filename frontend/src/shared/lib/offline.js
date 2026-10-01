@@ -3,6 +3,7 @@
 const cache = new Map();
 const allowed = new Set(['/api/body-composition','/api/body-composition/latest','/api/body-map/latest','/api/exercise-routines','/api/workouts','/api/exercise-catalog']);
 let active = null, epoch = 0, syncing = false, entries = [], storageError = '';
+let draftCount=0;
 let chain = Promise.resolve();
 const notify = () => window.dispatchEvent(new Event('synex-offline-change'));
 const serial = fn => { const result = chain.then(fn); chain = result.catch(() => {}); return result; };
@@ -15,10 +16,10 @@ const identity = b => JSON.stringify([b.routine_id,b.date,b.day_number,b.routine
 function database() {
   return new Promise((resolve,reject) => {
     if (!globalThis.indexedDB || !globalThis.crypto?.subtle) return reject(Error('암호화 기록 저장을 지원하지 않는 환경입니다.'));
-    const request = indexedDB.open('synex-workout-outbox-v1',1);
+    const request = indexedDB.open('synex-workout-outbox-v1',2);
     request.onupgradeneeded = () => {
-      request.result.createObjectStore('keys');
-      request.result.createObjectStore('records',{keyPath:'id'}).createIndex('account','account');
+      if(!request.result.objectStoreNames.contains('keys'))request.result.createObjectStore('keys');
+      for(const name of ['records','drafts'])if(!request.result.objectStoreNames.contains(name))request.result.createObjectStore(name,{keyPath:'id'}).createIndex('account','account');
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
@@ -83,6 +84,7 @@ export async function bindOfflineAccount(userId,namespace='') {
       const restored = await readEntries(ctx);
       if (version !== epoch) return;
       active = ctx; entries = restored; storageError = '';
+      draftCount=await transaction(['drafts'],'readonly',(tx,done)=>{const q=tx.objectStore('drafts').index('account').count(account);q.onsuccess=()=>done(q.result);});
     } catch { if (version === epoch) { active={account,key:null,keyId:null}; storageError = '기기에 기록을 보관할 수 없습니다. 저장 공간과 브라우저 설정을 확인하세요.'; } }
     notify();
   });
@@ -92,7 +94,7 @@ export function cacheResponse(path,data) { if (allowed.has(path)) cache.set(path
 export function cachedResponse(path) { return allowed.has(path) && cache.has(path) ? structuredClone(cache.get(path)) : undefined; }
 export function prepareWorkout(body) {
   const previous = (cachedResponse('/api/workouts') || []).find(w => identity(w) === identity(body));
-  return {...body,expected_revision:body.expected_revision ?? previous?.revision ?? 0,mutation_id:body.mutation_id || crypto.randomUUID()};
+  return {...body,time_zone:body.time_zone||Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC',expected_revision:body.expected_revision ?? previous?.revision ?? 0,mutation_id:body.mutation_id || crypto.randomUUID()};
 }
 export async function queueWorkout(body) {
   const ctx = active;
@@ -116,16 +118,18 @@ export async function acknowledgeWorkout(body) {
   });
 }
 export const offlineEpoch = () => epoch;
-export const offlineState = () => ({pending:entries.length,syncing,sessionOnly:false,ready:!!active?.key,storageError,entries:structuredClone(entries)});
+export const offlineState = () => ({pending:entries.length,drafts:draftCount,syncing,sessionOnly:false,ready:!!active?.key,storageError,entries:structuredClone(entries)});
 // Expiry locks local records until this server-verified account signs in again; it does not erase them.
-export function lockOffline() { epoch++; active = null; cache.clear(); entries = []; storageError = ''; notify(); }
+export function lockOffline() { epoch++; active = null; cache.clear(); entries = []; draftCount=0; storageError = ''; notify(); }
 // Explicit logout/account deletion purges that account's key and ciphertext.
 export function clearOffline() {
   const ctx = active; lockOffline();
   if(ctx)channel?.postMessage({action:'logout',account:ctx.account});
   return serial(async () => {
     if (!ctx) return;
-    await transaction(['keys','records'],'readwrite',tx => {
+    await transaction(['keys','records','drafts'],'readwrite',tx => {
+      const drafts=tx.objectStore('drafts').index('account').openCursor(IDBKeyRange.only(ctx.account));
+      drafts.onsuccess=()=>{if(drafts.result){drafts.result.delete();drafts.result.continue();}};
       tx.objectStore('keys').delete(ctx.account);
       const cursor = tx.objectStore('records').index('account').openCursor(IDBKeyRange.only(ctx.account));
       cursor.onsuccess = () => { if (cursor.result) { cursor.result.delete(); cursor.result.continue(); } };
@@ -177,3 +181,52 @@ export async function syncWorkouts(send) {
   if (failure) throw failure;
 }
 if (typeof window !== 'undefined') window.addEventListener('synex-session-expired',lockOffline);
+
+
+// Drafts are encrypted, account-bound, never sent as completed workouts.
+export async function loadDraft(scope) {
+ const ctx=active;if(!ctx?.key)return null;
+ return serial(async()=>{
+  if(active!==ctx)throw Error('계정이 변경되었습니다.');
+  const id=`${ctx.account}:draft:${await hash(scope)}`;
+  const row=await transaction(['drafts'],'readonly',(tx,done)=>{const q=tx.objectStore('drafts').get(id);q.onsuccess=()=>done(q.result);});
+  if(!row)return null;
+  const bytes=await crypto.subtle.decrypt({name:'AES-GCM',iv:row.iv,additionalData:encode(id)},ctx.key,row.data);
+  if(active!==ctx)throw Error('계정이 변경되었습니다.');
+  return {token:row.token,value:JSON.parse(new TextDecoder().decode(bytes))};
+ });
+}
+export async function saveDraft(scope,value,expectedToken=null) {
+ const ctx=active;if(!ctx?.key)throw Error('로그인·저장 공간을 확인하세요. 임시 저장되지 않았습니다.');
+ return serial(async()=>{
+  const id=`${ctx.account}:draft:${await hash(scope)}`,token=crypto.randomUUID(),iv=crypto.getRandomValues(new Uint8Array(12));
+  const data=await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:encode(id)},ctx.key,encode(JSON.stringify(value)));
+  let conflict=false;
+  try{await transaction(['keys','drafts'],'readwrite',tx=>{
+   const key=tx.objectStore('keys').get(ctx.account);key.onsuccess=()=>{
+    if(active!==ctx||key.result?.id!==ctx.keyId){tx.abort();return;}
+    const store=tx.objectStore('drafts'),q=store.get(id);q.onsuccess=()=>{
+     if((q.result?.token??null)!==expectedToken){conflict=true;tx.abort();return;}
+     store.put({id,account:ctx.account,token,iv,data});
+    };
+   };
+  });}catch(e){if(conflict)throw Error('다른 탭에서 임시 기록이 바뀌었습니다. 다시 열어 확인하세요.');throw e;}
+  if(active===ctx){draftCount=await transaction(['drafts'],'readonly',(tx,done)=>{const q=tx.objectStore('drafts').index('account').count(ctx.account);q.onsuccess=()=>done(q.result);});notify();}
+  return token;
+ });
+}
+export async function removeDraft(scope,expectedToken) {
+ const ctx=active;if(!ctx?.key)return;
+ return serial(async()=>{
+  const id=`${ctx.account}:draft:${await hash(scope)}`;
+  await transaction(['drafts'],'readwrite',tx=>{const store=tx.objectStore('drafts'),q=store.get(id);q.onsuccess=()=>{if(active===ctx&&q.result?.token===expectedToken)store.delete(id);};});
+  if(active===ctx){draftCount=await transaction(['drafts'],'readonly',(tx,done)=>{const q=tx.objectStore('drafts').index('account').count(ctx.account);q.onsuccess=()=>done(q.result);});notify();}
+ });
+}
+export async function clearWorkoutDrafts(){
+ const ctx=active;if(!ctx?.key)return;
+ await serial(async()=>{await transaction(['drafts'],'readwrite',tx=>{
+  if(active!==ctx){tx.abort();return;}const cursor=tx.objectStore('drafts').index('account').openCursor(IDBKeyRange.only(ctx.account));
+  cursor.onsuccess=()=>{if(cursor.result){cursor.result.delete();cursor.result.continue();}};
+ });if(active===ctx){draftCount=0;notify();}});
+}

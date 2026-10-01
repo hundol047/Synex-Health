@@ -38,3 +38,14 @@ it('an expired session locks pending records without discarding them',async()=>{
 it('storage refusal never reports an unsaved workout as pending',async()=>{
  await offline.clearOffline();await expect(offline.queueWorkout(body())).rejects.toThrow('로그인');expect(offline.offlineState().pending).toBe(0);
 });
+it('drafts are encrypted, account scoped, CAS guarded, and removed on logout',async()=>{
+ await offline.bindOfflineAccount('draft-A');
+ const token=await offline.saveDraft('session',{reps:7,memo:'비밀 운동'});
+ expect((await offline.loadDraft('session')).value.reps).toBe(7);
+ const db=await new Promise(resolve=>{const q=indexedDB.open('synex-workout-outbox-v1');q.onsuccess=()=>resolve(q.result);});
+ const raw=await new Promise(resolve=>{const q=db.transaction('drafts').objectStore('drafts').getAll();q.onsuccess=()=>resolve(q.result);});db.close();expect(JSON.stringify(raw)).not.toContain('비밀');
+ await expect(offline.saveDraft('session',{reps:9},null)).rejects.toThrow('다른 탭');
+ offline.lockOffline();await offline.bindOfflineAccount('draft-B');expect(await offline.loadDraft('session')).toBeNull();
+ await offline.bindOfflineAccount('draft-A');expect((await offline.loadDraft('session')).token).toBe(token);
+ await offline.clearOffline();await offline.bindOfflineAccount('draft-A');expect(await offline.loadDraft('session')).toBeNull();
+});

@@ -1,6 +1,6 @@
 import React from 'react';
 import {it,expect,vi} from 'vitest';
-import {render,screen} from '@testing-library/react';
+import {render,screen,waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import WorkoutRecordForm from '../src/health/components/exercise/WorkoutRecordForm.jsx';
 import {HealthAPI} from '../src/shared/lib/api.js';
@@ -9,7 +9,7 @@ const exercise={exercise_id:'d1-squat',motion_id:'squat',exercise_name:'스쿼�
 it('editing only a load retains stored pain, effort, duration and memo',async()=>{
  const user=userEvent.setup();render(<WorkoutRecordForm exercise={exercise} routine={{id:'r'}} date="2026-10-02" existing={{set_records:[{weight_kg:10,reps:8}],rpe:7,pain:2,difficulty:'pain',actual_minutes:12.5,memo:'기존 메모',completed:false}} onSaved={vi.fn()}/>);
  expect(screen.queryByLabelText('실제 세트')).toBeNull();
- const input=screen.getByLabelText('1세트 중량 kg');await user.clear(input);await user.type(input,'12.5');await user.click(screen.getByRole('button',{name:'기록 수정'}));
+ const input=screen.getByLabelText('1세트 중량 kg');await waitFor(()=>expect(input.closest('fieldset').disabled).toBe(false));await user.clear(input);await user.type(input,'12.5');await user.click(screen.getByRole('button',{name:'기록 수정'}));
  expect(HealthAPI.createWorkout.mock.lastCall[0]).toMatchObject({set_records:[{weight_kg:12.5,reps:8}],rpe:7,pain:2,difficulty:'pain',actual_minutes:12.5,memo:'기존 메모',completed:false});
 });
 it('copying last sets is explicit, duplicate is editable and pending save locks repeated submit',async()=>{

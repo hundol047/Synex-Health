@@ -1,0 +1,24 @@
+import {test,expect} from '@playwright/test';
+test.use({timezoneId:'Asia/Seoul'});
+test('encrypted draft survives closed page and guards app navigation before resuming in Korean timezone',async({page,context},info)=>{
+ await context.addInitScript(()=>localStorage.setItem('synex-onboarding-v1','done'));
+ await page.goto('/health/workout');
+ for(const w of await(await page.request.get('/api/workouts')).json())await page.request.delete(`/api/workouts/${w.id}`);
+ const generated=await page.request.post('/api/exercise-routines/generate',{data:{}});expect(generated.ok()).toBeTruthy();const routine=await generated.json();
+ await page.reload();const card=page.locator('.exercise-card').filter({has:page.getByRole('button',{name:'세트 추가',exact:true})}).first();
+ await card.getByRole('button',{name:'세트 추가',exact:true}).click();await card.getByLabel('1세트 중량 kg',{exact:true}).fill('18');await card.getByLabel('1세트 횟수',{exact:true}).fill('7');
+ await expect(card.getByText('기기에 임시 저장됨',{exact:true})).toBeVisible();
+ page.once('dialog',dialog=>dialog.dismiss());await page.locator('.health-bottom-nav a[href="/health/profile"]').click();await expect(page).toHaveURL(/\/health\/workout$/);
+ page.once('dialog',dialog=>dialog.accept());await page.locator('.health-bottom-nav a[href="/health/profile"]').click();await expect(page).toHaveURL(/\/health\/profile$/);
+ await page.goBack();await expect(page.getByLabel('1세트 중량 kg',{exact:true})).toHaveValue('18');
+ await page.close();page=await context.newPage();await page.goto('/health/workout');await expect(page.getByLabel('1세트 횟수',{exact:true})).toHaveValue('7');
+ const restored=page.locator('.exercise-card').filter({has:page.getByLabel('1세트 중량 kg',{exact:true})});
+ page.once('dialog',dialog=>dialog.accept());await restored.getByRole('button',{name:'임시 입력 버리기',exact:true}).click();
+ await page.getByRole('button',{name:'운동 따라하기 · 한 운동씩 시작',exact:true}).click();
+ await page.getByLabel('이번 세트 반복 횟수',{exact:true}).fill('9');await page.getByLabel('이번 세트 중량 kg',{exact:true}).fill('21');await page.getByRole('button',{name:'세트 완료',exact:true}).click();
+ await expect(page.getByText('기기에 임시 저장됨',{exact:true})).toBeVisible();await page.close();page=await context.newPage();await page.goto('/health/workout');await page.getByRole('button',{name:'운동 따라하기 · 한 운동씩 시작',exact:true}).click();
+ await expect(page.getByRole('button',{name:'운동 계속하기',exact:true})).toBeVisible();await expect(page.getByLabel('1세트 중량 kg',{exact:true})).toHaveValue('21');
+ await page.getByRole('button',{name:'운동 계속하기',exact:true}).click();await page.getByRole('button',{name:'완료 기록 · 다음 운동',exact:true}).click();
+ const logs=await(await page.request.get('/api/workouts')).json();const saved=logs.filter(w=>w.routine_id===routine.id);expect(saved).toHaveLength(1);expect(saved[0]).toMatchObject({time_zone:'Asia/Seoul',completion_status:'completed',set_records:[{weight_kg:21,reps:9,kind:'working'}]});
+ await page.screenshot({path:info.outputPath('draft-resumed.png'),fullPage:true});
+});

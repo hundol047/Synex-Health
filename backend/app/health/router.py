@@ -457,12 +457,13 @@ def create_workout(req: WorkoutLogCreateRequest, user: User = Depends(require('w
         logged_date = date.fromisoformat(req.date)
     except ValueError:
         raise HTTPException(422, '운동 날짜를 확인하세요.')
-    if logged_date > date.today():
+    from .workout_rules import today_in_zone, created_day, completion
+    if logged_date > today_in_zone(req.time_zone):
         raise HTTPException(422, '미래 운동 기록은 저장할 수 없습니다.')
     routine = store.get_routine(req.routine_id) if req.routine_id else None
     if routine is None or routine.user_id != user.id:
         raise HTTPException(404, '본인의 운동 루틴을 선택하세요.')
-    if logged_date < date.fromisoformat(routine.created_at[:10]):
+    if logged_date < created_day(routine.created_at, req.time_zone):
         raise HTTPException(422, '루틴 생성 전 날짜로 기록할 수 없습니다.')
     matching = [e for e in routine.exercises if
                 (e.exercise_id == req.routine_exercise_id if req.routine_exercise_id else e.exercise_name == req.exercise_name)
@@ -477,6 +478,12 @@ def create_workout(req: WorkoutLogCreateRequest, user: User = Depends(require('w
         if exercise.dose_type != 'reps':
             raise HTTPException(422, '시간 기준 운동은 세트별 중량·횟수 대신 운동 시간을 기록하세요.')
         payload.update(sets_completed=len(req.set_records), reps_completed=', '.join(str(s.reps) for s in req.set_records))
+    if req.timed_sets_seconds and exercise.dose_type != 'hold':
+        raise HTTPException(422, '유지시간 기록은 유지 운동에만 사용하세요.')
+    status = completion(req, exercise)
+    payload.update(completion_status=status, completed=status == 'completed')
+    if exercise.dose_type == 'hold':
+        payload.update(sets_completed=len(req.timed_sets_seconds), performed_seconds=sum(req.timed_sets_seconds))
     # Stable logical identity, mutation replay and optimistic revision checks.
     key = f'{user.id}|{routine.id}|{logged_date}|{exercise.day_number}|{exercise.exercise_id or exercise.exercise_name}'
     w = WorkoutLog(id='WORKOUT-' + hashlib.sha256(key.encode()).hexdigest()[:24], user_id=user.id, created_at=now(), **payload)

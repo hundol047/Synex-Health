@@ -22,7 +22,7 @@ export function workoutSummary(logs,now=new Date()){
   const sets=(w.set_records||[]).filter(s=>s.kind!=='warmup'&&s.reps>0);
   const loaded=sets.filter(s=>Number.isFinite(s.weight_kg));
   const week=weeks.findLast(v=>w.date>=v.date);
-  if(week){if(w.completed)week.days.add(w.date);week.sets+=w.set_records?.length?sets.length:(w.completed?w.sets_completed||0:0);week.volume+=loaded.reduce((n,s)=>n+s.weight_kg*s.reps,0);week.loadedSets+=loaded.length;}
+  if(week){if(w.completed)week.days.add(w.date);week.sets+=w.set_records?.length?sets.length:w.timed_sets_seconds?.length?w.timed_sets_seconds.filter(s=>s>0).length:(w.completed?w.sets_completed||0:0);week.volume+=loaded.reduce((n,s)=>n+s.weight_kg*s.reps,0);week.loadedSets+=loaded.length;}
   const key=exerciseKey(w);
   if(!exercises.has(key))exercises.set(key,{key,name:w.exercise_name,sessions:[]});
   if(sets.length)exercises.get(key).sessions.push({date:w.date,sets:sets.length,reps:sets.reduce((n,s)=>n+s.reps,0),volume:loaded.length?loaded.reduce((n,s)=>n+s.weight_kg*s.reps,0):null,max:loaded.length?Math.max(...loaded.map(s=>s.weight_kg)):null,pain:w.pain||0});

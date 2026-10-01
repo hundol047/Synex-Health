@@ -276,6 +276,26 @@ class WorkoutSet(BaseModel):
 
 
 class WorkoutLog(BaseModel):
+    completion_status: Optional[Literal['not_started','partial','completed','stopped']] = None
+    time_zone: str = Field(default='UTC', max_length=80)
+    performed_seconds: Optional[float] = Field(default=None, ge=0, le=86400, allow_inf_nan=False)
+    timed_sets_seconds: list[float] = Field(default_factory=list, max_length=100)
+
+    @field_validator('time_zone')
+    @classmethod
+    def valid_zone(cls, value):
+        from .workout_rules import workout_zone
+        workout_zone(value)
+        return value
+
+    @field_validator('timed_sets_seconds')
+    @classmethod
+    def valid_times(cls, values):
+        import math
+        if any(not math.isfinite(v) or v < 0 or v > 86400 for v in values) or sum(values) > 86400:
+            raise ValueError('시간 기록은 0–86400초 범위여야 합니다.')
+        return values
+
     exercise_catalog_id: Optional[str] = None
     set_records: list[WorkoutSet] = Field(default_factory=list, max_length=100)
     revision: int = Field(default=1, ge=1)
@@ -301,6 +321,25 @@ class WorkoutLog(BaseModel):
 
 
 class WorkoutLogCreateRequest(BaseModel):
+    time_zone: str = Field(default='UTC', max_length=80)
+    performed_seconds: Optional[float] = Field(default=None, ge=0, le=86400, allow_inf_nan=False)
+    timed_sets_seconds: list[float] = Field(default_factory=list, max_length=100)
+
+    @field_validator('time_zone')
+    @classmethod
+    def valid_zone(cls, value):
+        from .workout_rules import workout_zone
+        workout_zone(value)
+        return value
+
+    @field_validator('timed_sets_seconds')
+    @classmethod
+    def valid_times(cls, values):
+        import math
+        if any(not math.isfinite(v) or v < 0 or v > 86400 for v in values) or sum(values) > 86400:
+            raise ValueError('시간 기록은 0–86400초 범위여야 합니다.')
+        return values
+
     set_records: list[WorkoutSet] = Field(default_factory=list, max_length=100)
     expected_revision: int = Field(default=0, ge=0)
     mutation_id: Optional[str] = Field(default=None, max_length=80)

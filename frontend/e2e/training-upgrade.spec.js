@@ -25,7 +25,7 @@ test('mobile replacement, set recording and weekly progress round trip',async({p
  await page.reload();await expect(page.getByLabel('1세트 중량 kg',{exact:true})).toHaveValue('20');
  await page.getByLabel('1세트 중량 kg',{exact:true}).fill('22');
  await page.getByRole('button',{name:'기록 수정',exact:true}).click();
- await expect(page.getByText('기록을 저장했습니다.',{exact:true})).toBeVisible();
+ await expect(page.getByText('완료 기록을 저장했습니다.',{exact:true})).toBeVisible();
  const updated=(await(await page.request.get('/api/workouts')).json()).find(w=>w.set_records?.[0]?.weight_kg===22);
  expect(updated).toMatchObject({memo:'수정해도 유지할 메모',actual_minutes:12.5,rpe:7});
  const overflow=await page.evaluate(()=>[...document.querySelectorAll('body *')].filter(e=>e.getBoundingClientRect().right>innerWidth+1).map(e=>({tag:e.tagName,cls:e.className,right:e.getBoundingClientRect().right,text:e.textContent.slice(0,60)})).slice(-20));

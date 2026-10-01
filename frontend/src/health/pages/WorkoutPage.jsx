@@ -1,3 +1,4 @@
+import {WORKOUT_STATUS} from '../lib/workoutStatus.js';
 import WorkoutRecordForm from '../components/exercise/WorkoutRecordForm.jsx';
 import {previousWorkout} from '../lib/workoutProgress.js';
 import WorkoutMode from '../components/exercise/WorkoutMode.jsx';
@@ -99,8 +100,8 @@ export default function WorkoutPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {[...(workouts.data || [])].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 15).map((w) => (
               <div key={w.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.875rem' }}>
-                <span>{w.date} · {w.exercise_name}{w.set_records?.length>0&&<small style={{display:'block'}}>{w.set_records.map(s=>`${s.weight_kg==null?'미기록':`${s.weight_kg}kg`} × ${s.reps}회`).join(' / ')}</small>}</span>
-                <Badge tone={w.completed ? 'success' : 'blue'}>{w.completed ? '완료' : '미완료'}</Badge>
+                <span>{w.date} · {w.exercise_name}{w.set_records?.length>0&&<small style={{display:'block'}}>{w.set_records.map(s=>`${s.weight_kg==null?'미기록':`${s.weight_kg}kg`} × ${s.reps}회`).join(' / ')}</small>}{w.timed_sets_seconds?.length>0&&<small style={{display:'block'}}>유지시간 {w.timed_sets_seconds.join(' / ')}초</small>}{w.performed_seconds>0&&!w.timed_sets_seconds?.length&&<small style={{display:'block'}}>수행 {w.performed_seconds}초</small>}</span>
+                <Badge tone={w.completed ? 'success' : 'blue'}>{WORKOUT_STATUS[w.completion_status]||(w.completed?'완료':'미완료')}</Badge>
               </div>
             ))}
           </div>
