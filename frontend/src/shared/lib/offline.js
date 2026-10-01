@@ -87,6 +87,7 @@ export async function bindOfflineAccount(userId,namespace='') {
     notify();
   });
 }
+export function clearResponseCache() { cache.clear(); }
 export function cacheResponse(path,data) { if (allowed.has(path)) cache.set(path,structuredClone(data)); }
 export function cachedResponse(path) { return allowed.has(path) && cache.has(path) ? structuredClone(cache.get(path)) : undefined; }
 export function prepareWorkout(body) {
