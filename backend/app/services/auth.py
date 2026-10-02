@@ -63,14 +63,15 @@ def verify_oidc_token(token: str, issuer: str, audience: str, role_claim: str = 
 
     class _JWKS:
         def __init__(self, issuer):
-            self.issuer = issuer.rstrip('/')
+            self.issuer = issuer
             self._client = httpx.Client(timeout=10)
             self._keys = None
             self._fetched_at = 0.0
         def keys(self):
             if self._keys is None or time.time() - self._fetched_at > 3600:
                 try:
-                    cfg = self._client.get(f'{self.issuer}/.well-known/openid-configuration').json()
+                    discovery_url = self.issuer.rstrip('/') + '/.well-known/openid-configuration'
+                    cfg = self._client.get(discovery_url).json()
                     if cfg.get('issuer')!=self.issuer or not cfg.get('jwks_uri','').startswith('https://'):raise ValueError('Invalid discovery')
                     self._keys = self._client.get(cfg['jwks_uri']).json()['keys']
                 finally:self._client.close()
@@ -169,7 +170,9 @@ def get_current_user(authorization: Optional[str] = Header(None),
                 if db.execute('SELECT token_hash FROM revoked_tokens WHERE token_hash=? AND expires>?',(hashlib.sha256(token.encode()).hexdigest(),time.time())).fetchone():raise HTTPException(401,'로그아웃된 인증입니다.')
             review=AUTH_SESSIONS.get(token)
             if review and review.id=='app-review-synthetic' and os.getenv('APP_REVIEW_MODE')=='true':return _account_active(review)
-            if os.getenv('SCHOOL_OIDC_CONFIG'):
+            import jwt
+            claimed_issuer = jwt.decode(token, options={'verify_signature': False}).get('iss')
+            if os.getenv('SCHOOL_OIDC_CONFIG') and claimed_issuer != os.getenv('OIDC_ISSUER'):
                 from .school_oidc import verify_school_token
                 actor,school_id=verify_school_token(token)
                 return _account_active(actor,school_id)

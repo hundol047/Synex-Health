@@ -8,7 +8,7 @@ def configurations():
     if not isinstance(items,list):raise HTTPException(503,'학교 SSO 설정 오류')
     valid=[]
     for item in items:
-        if not all(isinstance(item.get(k),str) and item[k] for k in ('school_id','issuer','client_id','audience','redirect_url')) or not item['issuer'].startswith('https://'):
+        if not isinstance(item, dict) or not all(isinstance(item.get(k),str) and item[k] for k in ('school_id','issuer','client_id','audience','redirect_url')) or not item['issuer'].startswith('https://'):
             raise HTTPException(503,'학교 SSO 설정 오류')
         if item.get('status')=='connected':valid.append(item)
     if len({i['issuer'] for i in valid})!=len(valid):raise HTTPException(503,'학교 issuer는 고유해야 합니다.')

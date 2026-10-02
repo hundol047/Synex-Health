@@ -9,6 +9,9 @@ def validate_production(env=None):
     if e.get('AUTH_MODE')!='oidc':failures.append('AUTH_MODE must be oidc')
     if not e.get('DATABASE_URL','').startswith('postgresql+psycopg://'):failures.append('PostgreSQL DATABASE_URL required')
     if not e.get('SCHOOL_OIDC_CONFIG') and not (e.get('OIDC_ISSUER','').startswith('https://') and e.get('OIDC_AUDIENCE')):failures.append('OIDC configuration required')
+    if e.get('OIDC_ISSUER'):
+        from .login_config import public_login_config
+        if not public_login_config(e)['configured']:failures.append('OIDC_CLIENT_ID, OIDC_AUDIENCE and valid OIDC_REDIRECT_URLS required')
     for name in ('PUBLIC_API_URL','PRIVACY_POLICY_URL','SUPPORT_URL','TERMS_URL'):
         u=urlparse(e.get(name,''))
         if u.scheme!='https' or not u.hostname or u.hostname in ('localhost','127.0.0.1') or u.hostname.endswith(('.example','.test')) or u.hostname in ('example.com','example.org','example.net'):failures.append(name+' must be a real HTTPS URL')
