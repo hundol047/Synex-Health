@@ -35,9 +35,7 @@ CMD ["python", "-m", "uvicorn", "app.main:app", "--app-dir", "backend", "--host"
 
 FROM runtime-base AS development
 COPY --from=frontend-dev /build/dist /app/frontend/dist
-COPY --from=frontend-dev /build/public/models /app/frontend/public/models
 
 FROM runtime-base AS production
 COPY --from=frontend-release /build/dist /app/frontend/dist
-COPY --from=frontend-release /build/public/models /app/frontend/public/models
 ENV APP_ENV=production AUTH_MODE=oidc SYNEX_HEALTH_DEMO_SEED=false
