@@ -200,7 +200,7 @@ export async function saveDraft(scope,value,expectedToken=null) {
  const ctx=active;if(!ctx?.key)throw Error('로그인·저장 공간을 확인하세요. 임시 저장되지 않았습니다.');
  return serial(async()=>{
   const id=`${ctx.account}:draft:${await hash(scope)}`,token=crypto.randomUUID(),iv=crypto.getRandomValues(new Uint8Array(12));
-  const data=await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:encode(id)},ctx.key,encode(JSON.stringify(value)));
+  const data=await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:encode(id)},ctx.key,encode(JSON.stringify({...value,_draftScope:scope})));
   let conflict=false;
   try{await transaction(['keys','drafts'],'readwrite',tx=>{
    const key=tx.objectStore('keys').get(ctx.account);key.onsuccess=()=>{
@@ -229,4 +229,20 @@ export async function clearWorkoutDrafts(){
   if(active!==ctx){tx.abort();return;}const cursor=tx.objectStore('drafts').index('account').openCursor(IDBKeyRange.only(ctx.account));
   cursor.onsuccess=()=>{if(cursor.result){cursor.result.delete();cursor.result.continue();}};
  });if(active===ctx){draftCount=0;notify();}});
+}
+
+export async function listWorkoutDrafts(scopes=[]){
+ const ctx=active;if(!ctx?.key)return [];
+ return serial(async()=>{
+  if(active!==ctx)throw Error('계정이 변경되었습니다.');
+  const names=new Map(await Promise.all(scopes.map(async scope=>[`${ctx.account}:draft:${await hash(scope)}`,scope])));
+  const rows=await transaction(['drafts'],'readonly',(tx,done)=>{const q=tx.objectStore('drafts').index('account').getAll(ctx.account);q.onsuccess=()=>done(q.result);});
+  const result=await Promise.all(rows.map(async row=>{
+   const bytes=await crypto.subtle.decrypt({name:'AES-GCM',iv:row.iv,additionalData:encode(row.id)},ctx.key,row.data);
+   const value=JSON.parse(new TextDecoder().decode(bytes));
+   return {id:row.id,token:row.token,scope:value._draftScope||names.get(row.id),value};
+  }));
+  if(active!==ctx)throw Error('계정이 변경되었습니다.');
+  return result;
+ });
 }

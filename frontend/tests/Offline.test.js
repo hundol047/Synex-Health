@@ -49,3 +49,8 @@ it('drafts are encrypted, account scoped, CAS guarded, and removed on logout',as
  await offline.bindOfflineAccount('draft-A');expect((await offline.loadDraft('session')).token).toBe(token);
  await offline.clearOffline();await offline.bindOfflineAccount('draft-A');expect(await offline.loadDraft('session')).toBeNull();
 });
+it('enumerates encrypted drafts for archived routines within the active account only',async()=>{
+ await offline.bindOfflineAccount('archive-owner');await offline.saveDraft('record:old:exercise',{date:'2026-10-01',patch:{memo:'보관 기록'}});
+ expect(await offline.listWorkoutDrafts()).toEqual([expect.objectContaining({scope:'record:old:exercise',value:expect.objectContaining({patch:{memo:'보관 기록'}})})]);
+ await offline.bindOfflineAccount('other-owner');expect(await offline.listWorkoutDrafts()).toEqual([]);
+});

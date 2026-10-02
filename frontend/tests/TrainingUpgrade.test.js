@@ -8,7 +8,7 @@ it('retains unknown external loads and rejects incomplete, negative or fractiona
 it('weekly totals exclude warmup and future records, include performed sets from stopped sessions',()=>{
  const logs=[{exercise_catalog_id:'squat',exercise_name:'스쿼트',date:'2026-09-30',completed:false,pain:2,set_records:[{weight_kg:10,reps:10,kind:'warmup'},{weight_kg:20,reps:8},{weight_kg:null,reps:8}]},{date:'2026-10-03',completed:true,sets_completed:99}];
  const summary=workoutSummary(logs,new Date(2026,9,1));
- expect(summary.weeks.at(-1)).toMatchObject({date:'2026-09-28',sets:2,volume:160,days:0,loadedSets:1});
+ expect(summary.weeks.at(-1)).toMatchObject({date:'2026-09-28',sets:2,volume:160,days:1,completedDays:0,loadedSets:1});
  expect(summary.exercises[0].sessions[0]).toMatchObject({max:20,reps:16,pain:2});
  expect(previousWorkout(logs,{motion_id:'squat'},'2026-10-01')).toBe(logs[0]);
 });

@@ -1,6 +1,7 @@
+import {registerDraftNavigation} from '../../shared/lib/draftNavigation.js';
 import {EQUIPMENT_LABELS} from '../lib/exerciseLabels.js';
 import { Link } from 'react-router-dom';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import MeasurementEntry from '../components/MeasurementEntry.jsx';
 import SchoolSelector from '../components/SchoolSelector.jsx';
 import { HealthAPI } from '../../shared/lib/api.js';
@@ -45,6 +46,8 @@ function fromCsv(text) {
 }
 
 export default function ProfilePage() {
+  const [dirty,setDirty]=useState(false),guard=useRef(Symbol());
+  useEffect(()=>registerDraftNavigation(guard.current,dirty,()=>Promise.resolve(),'저장하지 않은 프로필·안전 문진 변경이 있습니다. 변경을 버리고 이동할까요?'),[dirty]);
   const profile = useApiData(() => HealthAPI.getProfile(), []);
   const exercise = useApiData(() => HealthAPI.getExerciseProfile(), []);
 
@@ -106,7 +109,7 @@ export default function ProfilePage() {
         safety_acute_injury: !!form.safety_acute_injury,
         safety_medical_restriction: !!form.safety_medical_restriction,
       });
-      setSaved(true);
+      setDirty(false);setSaved(true);
       profile.reload();
       exercise.reload();
     } catch (error) {
@@ -123,10 +126,10 @@ export default function ProfilePage() {
 
   return (
     <>
-      <section className="card"><h2>나의 건강 메뉴</h2><div className="membership-actions"><Link className="btn btn-ghost" to="/health/goals">목표</Link><Link className="btn btn-ghost" to="/health/library">운동 라이브러리</Link><Link className="btn btn-ghost" to="/health/pose">카메라 자세 코치</Link><Link className="btn btn-ghost" to="/health/connections">기기·알림 연동</Link><Link className="btn btn-ghost" to="/health/privacy">개인정보 관리</Link></div><div className="membership-actions"><Link className="btn btn-ghost" to="/health/workout">운동 기록</Link><Link className="btn btn-ghost" to="/health/progress">변화 추적</Link><Link className="btn btn-ghost" to="/health/comparison">측정 비교</Link><Link className="btn btn-ghost" to="/health/agent">AI 코치</Link><Link className="btn btn-ghost" to="/health/report">월별 리포트</Link></div></section>
+      <section className="card"><h2>나의 건강 메뉴</h2><div className="membership-actions"><Link className="btn btn-ghost" to="/health/goals">목표</Link><Link className="btn btn-ghost" to="/health/subscription">멤버십</Link><Link className="btn btn-ghost" to="/health/library">운동 라이브러리</Link><Link className="btn btn-ghost" to="/health/pose">카메라 자세 코치</Link><Link className="btn btn-ghost" to="/health/connections">기기·알림 연동</Link><Link className="btn btn-ghost" to="/health/privacy">개인정보 관리</Link></div><div className="membership-actions"><Link className="btn btn-ghost" to="/health/workout">운동 기록</Link><Link className="btn btn-ghost" to="/health/progress">변화 추적</Link><Link className="btn btn-ghost" to="/health/comparison">측정 비교</Link><Link className="btn btn-ghost" to="/health/agent">AI 코치</Link><Link className="btn btn-ghost" to="/health/report">월별 리포트</Link></div></section>
       <SchoolSelector profile={profile.data} onSaved={profile.reload}/>
       <MeasurementEntry />
-      <Card title="내 정보">
+      <div onChangeCapture={()=>{setDirty(true);setSaved(false);}}><fieldset disabled={saving} style={{border:0,padding:0,minWidth:0}}><Card title="내 정보">
         <div className="profile-grid">
           <div>
             <label className="field-label">이름</label>
@@ -222,7 +225,7 @@ export default function ProfilePage() {
 
       {saveError && <ErrorState message={saveError.message} onRetry={save} />}
       {saved && <p className="muted">저장되었습니다.</p>}
-      <button className="btn btn-primary btn-block" onClick={save} disabled={saving}>{saving ? '저장 중...' : '저장하기'}</button>
+      <button className="btn btn-primary btn-block" onClick={save} disabled={saving}>{saving ? '저장 중...' : '저장하기'}</button></fieldset></div>
     </>
   );
 }

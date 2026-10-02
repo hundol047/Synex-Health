@@ -27,3 +27,20 @@ test('encrypted draft survives closed page and guards app navigation before resu
  const logs=await(await page.request.get('/api/workouts')).json();const saved=logs.filter(w=>w.routine_id===routine.id);expect(saved).toHaveLength(1);expect(saved[0]).toMatchObject({time_zone:'Asia/Seoul',completion_status:'completed',set_records:[{weight_kg:21,reps:9,kind:'working'}]});
  await page.screenshot({path:info.outputPath('draft-resumed.png'),fullPage:true});
 });
+test('mobile workout menu, unsaved safety answers, and archived routine draft recovery',async({page,context})=>{
+ await context.addInitScript(()=>localStorage.setItem('synex-onboarding-v1','done'));
+ await page.goto('/health/profile');
+ const safety=page.getByLabel('최근 심한 흉통이 있었나요?',{exact:true});await expect(safety).toBeVisible();const original=await safety.isChecked();await safety.setChecked(!original);
+ const workoutLink=page.locator('.health-bottom-nav a[href="/health/workout"]');await expect(workoutLink).toBeVisible();
+ await confirmAction(page,false,()=>workoutLink.click());await expect(safety).toBeChecked({checked:!original});
+ await confirmAction(page,true,()=>workoutLink.click());await expect(page).toHaveURL(/\/health\/workout$/);
+ await page.locator('.health-bottom-nav a[href="/health/profile"]').click();await expect(safety).toBeChecked({checked:original});
+ const first=await page.request.post('/api/exercise-routines/generate',{data:{}});expect(first.ok()).toBeTruthy();const old=await first.json();
+ await page.locator('.health-bottom-nav a[href="/health/workout"]').click();
+ const card=page.locator('.exercise-card').filter({has:page.getByRole('button',{name:'세트 추가',exact:true})}).first();
+ await card.getByRole('button',{name:'세트 추가',exact:true}).click();await card.getByLabel('1세트 횟수',{exact:true}).fill('6');await expect(card.getByText('기기에 임시 저장됨',{exact:true})).toBeVisible();
+ const newer=await page.request.post('/api/exercise-routines/generate',{data:{}});expect(newer.ok()).toBeTruthy();expect((await newer.json()).id).not.toBe(old.id);
+ await confirmAction(page,true,()=>page.getByRole('link',{name:'임시 입력 관리',exact:true}).click());
+ const list=page.getByRole('region',{name:'임시 운동 기록 목록'});await expect(list.getByRole('link',{name:'이 기록 이어 쓰기'})).toHaveCount(1);
+ await list.getByRole('link',{name:'이 기록 이어 쓰기'}).click();await expect(page).toHaveURL(new RegExp('routine='+old.id));await expect(page.getByLabel('1세트 횟수',{exact:true})).toHaveValue('6');
+});

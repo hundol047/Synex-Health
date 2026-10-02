@@ -5,7 +5,7 @@ import WorkoutMode from '../components/exercise/WorkoutMode.jsx';
 import React, { useMemo, useState } from 'react';
 import WorkoutCalendar from '../components/WorkoutCalendar.jsx';
 import ExerciseCard from '../components/exercise/ExerciseCard.jsx';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { HealthAPI } from '../../shared/lib/api.js';
 import { Card, Skeleton, ErrorState, EmptyState, Badge } from '../../shared/components/ui.jsx';
 import { useApiData } from '../lib/useApiData.js';
@@ -25,14 +25,16 @@ function groupByDay(exercises) {
 }
 
 export default function WorkoutPage() {
+  const [query]=useSearchParams();
   const routines = useApiData(() => HealthAPI.listRoutines(), []);
   const workouts = useApiData(() => HealthAPI.listWorkouts(), []);
-  const [workoutMode,setWorkoutMode]=useState(false);
+  const [workoutMode,setWorkoutMode]=useState(()=>query.get('mode')==='guided');
   const [selectedDay, setSelectedDay] = useState(null);
 
-  const latest = (routines.data || [])[0];
+  const requested=query.get('routine');
+  const latest = requested?(routines.data||[]).find(r=>r.id===requested):(routines.data || [])[0];
   const days = useMemo(() => groupByDay(latest?.exercises), [latest]);
-  const activeDay = selectedDay ?? days[0]?.[0] ?? 1;
+  const activeDay = selectedDay ?? (Number(query.get('day'))||days[0]?.[0]||1);
   const dayExercises = days.find(([d]) => d === activeDay)?.[1] || [];
 
   const today = todayStr();
@@ -47,6 +49,7 @@ export default function WorkoutPage() {
   if (routines.error) return <ErrorState message={routines.error.message} onRetry={routines.reload} />;
   if (workouts.error) return <ErrorState message={workouts.error.message} onRetry={workouts.reload} />;
 
+  if(requested&&!latest)return <Card><p>이 계획을 찾을 수 없습니다. 임시 입력 관리에서 보관된 내용을 확인하세요.</p><Link to="/health/privacy">임시 입력 관리</Link></Card>;
   if (!latest) {
     return (
       <Card>
@@ -66,7 +69,7 @@ export default function WorkoutPage() {
 
   return (
     <>
-      <section className="workout-hero"><span className="workout-eyebrow">TODAY · 오늘의 움직임</span><h1>내 속도로, 하나씩</h1><p>{activeDay}일차 · {dayExercises.length}개 운동 · {dayExercises.filter(isDone).length}개 완료</p><progress aria-label="오늘 운동 진행률" value={dayExercises.filter(isDone).length} max={Math.max(1,dayExercises.length)}/><button className="btn btn-primary" disabled={!dayExercises.length} onClick={()=>setWorkoutMode(true)}>운동 따라하기 · 한 운동씩 시작</button><Link to="/health/routine">운동 교체·계획 확인</Link></section><Card title="오늘의 운동">
+      {requested&&<p role="status">보관된 계획의 입력을 복구했습니다. 기록 날짜를 확인하세요. <Link to="/health/privacy">임시 입력 목록</Link></p>}<section className="workout-hero"><span className="workout-eyebrow">TODAY · 오늘의 움직임</span><h1>내 속도로, 하나씩</h1><p>{activeDay}일차 · {dayExercises.length}개 운동 · {dayExercises.filter(isDone).length}개 완료</p><progress aria-label="오늘 운동 진행률" value={dayExercises.filter(isDone).length} max={Math.max(1,dayExercises.length)}/><button className="btn btn-primary" disabled={!dayExercises.length} onClick={()=>setWorkoutMode(true)}>운동 따라하기 · 한 운동씩 시작</button><Link to="/health/routine">운동 교체·계획 확인</Link></section><Card title="오늘의 운동">
         {days.length > 1 && (
           <div style={{ display: 'flex', gap: 6, marginBottom: 12, overflowX: 'auto', paddingBottom: 2 }}>
             {days.map(([d]) => (
