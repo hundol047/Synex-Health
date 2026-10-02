@@ -213,3 +213,7 @@ small{font-size:.8125rem}
 .workout-record-form textarea{resize:vertical;min-height:72px}.workout-record-form input,.workout-record-form select{min-height:44px}
 .workout-mode-paused{padding:16px;border-radius:12px;background:#fff3d6;color:#735014;margin:12px 0}.workout-mode .workout-mode-actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
 .workout-timer{border:1px solid #cbdcf7;border-radius:16px;background:#eff5ff;padding:16px;margin:16px 0}.workout-timer [role=timer]{font-size:2rem;font-variant-numeric:tabular-nums}.workout-timer button{margin:4px}
+
+/* Canvas intrinsic width must not enlarge a mobile grid column. */
+.motion-layout,.motion-viewer,.motion-instructions{min-width:0;max-width:100%;box-sizing:border-box}
+@media(max-width:720px){.motion-layout{grid-template-columns:minmax(0,1fr)}}

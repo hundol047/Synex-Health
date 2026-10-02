@@ -1,6 +1,6 @@
 import {it,expect} from 'vitest';
 import {Vector3} from 'three';
-import {REST,deformSurface,bindSurface} from '../src/health/components/exercise/rig.js';
+import {REST,BONES,poseJoints,deformSurface,bindSurface} from '../src/health/components/exercise/rig.js';
 import {personalizedVertices,sportswear} from '../src/health/components/body3d/avatar.js';
 import {avatarGeometry} from '../src/health/components/body3d/appearance.js';
 it('keeps a blended cross-section rigid rather than shrinking between opposite rotations',()=>{
@@ -16,4 +16,12 @@ it('rest pose preserves geometry and clothing faces form a complete partition wi
  for(let i=0;i<base.length;i++)expect(out[i]).toBeCloseTo(base[i],5);
  expect(g.groups).toHaveLength(4);expect(g.groups.reduce((n,x)=>n+x.count,0)).toBe(g.index.count);
  expect(g.attributes.color.array.every(Number.isFinite)).toBe(true);expect(new Set(wear.labels).size).toBe(4);g.dispose();
+});
+
+it('keeps squat feet planted while preserving every bone length',()=>{
+ for(const phase of [0,.25,.5,.75,1]){
+  const joints=poseJoints('squat',phase);
+  for(const [a,b] of BONES)expect(new Vector3(...joints[a]).distanceTo(new Vector3(...joints[b]))).toBeCloseTo(new Vector3(...REST[a]).distanceTo(new Vector3(...REST[b])),6);
+  for(const [ankle,toe] of [[11,15],[14,16]])expect(new Vector3(...joints[toe]).sub(new Vector3(...joints[ankle])).distanceTo(new Vector3(...REST[toe]).sub(new Vector3(...REST[ankle])))).toBeLessThan(1e-6);
+ }
 });

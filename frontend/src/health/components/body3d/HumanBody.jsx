@@ -2,6 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import data from './assets/human-mesh.json';
 import { morphPositions } from './morph.js';
+import Footwear,{footwearAnchors} from './Footwear.jsx';
 import {avatarGeometry,MATERIALS} from './appearance.js';
 import {sportswear} from './avatar.js';
 
@@ -14,7 +15,7 @@ export default function HumanBody({gender='unspecified',segmentColors={},onSelec
     const shaped=measurement?morphPositions(p,measurement,{...profile,gender}):p;
     const suit=sportswear(shaped,Math.max(.6,Math.min(1.4,(measurement?.height||profile?.height_cm||178)/178)),gender);
     const dressed=avatarGeometry(suit,Math.max(.6,Math.min(1.4,(measurement?.height||profile?.height_cm||178)/178)));
-    return dressed;
+    dressed.userData.shoes=footwearAnchors(shaped);return dressed;
   },[gender,measurement,profile]);
   useEffect(()=>()=>geometry.dispose(),[geometry]);
   useEffect(()=>{
@@ -29,10 +30,10 @@ export default function HumanBody({gender='unspecified',segmentColors={},onSelec
     });colors.needsUpdate=true;
   },[geometry,segmentColors,selectedSegment,layer]);
   const regionFor=e=>REGION_NAMES[data.regions[e.face?.a]];
-  return <mesh name={`human-${gender}`} geometry={geometry} castShadow receiveShadow
+  return <group><mesh name={`human-${gender}`} geometry={geometry} castShadow receiveShadow
     onClick={e=>{if(e.delta>5)return;const region=regionFor(e);if(region){e.stopPropagation();onSelect?.(region);}}}
     onPointerMove={e=>{const region=regionFor(e);onHover?.(region||null);}}
     onPointerOut={()=>onHover?.(null)}>
     {MATERIALS.map((material,i)=><meshStandardMaterial key={i} attach={`material-${i}`} vertexColors roughness={material.roughness} metalness={0} side={THREE.DoubleSide} clippingPlanes={clippingPlanes} transparent={layer==='skeleton'} opacity={layer==='skeleton'?.2:1} depthWrite={layer!=='skeleton'}/>)}
-  </mesh>;
+  </mesh><Footwear anchors={geometry.userData.shoes} clippingPlanes={clippingPlanes} opacity={layer==='skeleton'?.2:1}/></group>;
 }

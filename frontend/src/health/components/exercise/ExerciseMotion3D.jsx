@@ -2,6 +2,7 @@ import React,{useMemo,useEffect,useRef,useState} from 'react';
 import {Canvas} from '@react-three/fiber';
 import {OrbitControls,Grid,Line,ContactShadows} from '@react-three/drei';
 import * as THREE from 'three';
+import Footwear,{footwearAnchors} from '../body3d/Footwear.jsx';
 import {avatarGeometry,MATERIALS} from '../body3d/appearance.js';
 import {personalizedVertices,sportswear} from '../body3d/avatar.js';
 import {morphPositions,morphParameters} from '../body3d/morph.js';
@@ -17,12 +18,17 @@ function Athlete({motion,progress,mirror,measurement,profile}) {
   const weights=bindSurface(neutral),wear=sportswear(base,scale,profile?.gender);
   const flat=morphPositions(Float32Array.from(REST.flat()),measurement,profile),rest=REST.map((_,i)=>Array.from(flat.slice(i*3,i*3+3)));
   const geometry=avatarGeometry(wear,scale);
-  return {base:wear.positions,weights,rest,geometry};
+  return {base:wear.positions,weights,rest,geometry,shoes:footwearAnchors(base)};
  },[measurement,profile]);
  const joints=useMemo(()=>poseJoints(motion,progress,model.rest),[motion,progress,model]);
- useEffect(()=>{const g=model.geometry;deformSurface(model.base,model.weights,joints,g.attributes.position.array,model.rest,false);g.attributes.position.needsUpdate=true;g.computeVertexNormals();g.computeBoundingSphere();g.computeBoundingBox();if(actor.current)actor.current.position.y=.015-g.boundingBox.min.y;},[model,joints]);
+ const shoes=useMemo(()=>model.shoes.map((shoe,i)=>{
+  const [ankle,toe]=i===0?[11,15]:[14,16],origin=new THREE.Vector3(...model.rest[ankle]),destination=new THREE.Vector3(...joints[ankle]);
+  const rotation=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(...model.rest[toe]).sub(origin).normalize(),new THREE.Vector3(...joints[toe]).sub(destination).normalize());
+  return {...shoe,center:new THREE.Vector3(...shoe.center).sub(origin).applyQuaternion(rotation).add(destination).toArray(),rotation};
+ }),[model,joints]);
+ useEffect(()=>{const g=model.geometry;deformSurface(model.base,model.weights,joints,g.attributes.position.array,model.rest,false);g.attributes.position.needsUpdate=true;g.computeVertexNormals();g.computeBoundingSphere();g.computeBoundingBox();if(actor.current)actor.current.position.y=.003-Math.min(g.boundingBox.min.y,...shoes.map(s=>s.center[1]-.04));},[model,joints,shoes]);
  useEffect(()=>()=>model.geometry.dispose(),[model]);
- return <group ref={actor} scale={[mirror?-1:1,1,1]}><mesh name="exercise-athlete" geometry={model.geometry} castShadow receiveShadow>{MATERIALS.map((m,i)=><meshStandardMaterial key={i} attach={`material-${i}`} vertexColors roughness={m.roughness} side={THREE.DoubleSide}/>)}</mesh><Equipment motion={motion} joints={joints}/></group>;
+ return <group ref={actor} scale={[mirror?-1:1,1,1]}><mesh name="exercise-athlete" geometry={model.geometry} castShadow receiveShadow>{MATERIALS.map((m,i)=><meshStandardMaterial key={i} attach={`material-${i}`} vertexColors roughness={m.roughness} side={THREE.DoubleSide}/>)}</mesh><Footwear anchors={shoes}/><Equipment motion={motion} joints={joints}/></group>;
 }
 function Dumbbell({position}){return <group position={position}><mesh rotation={[0,0,Math.PI/2]}><cylinderGeometry args={[.016,.016,.19,12]}/><meshStandardMaterial color="#8190a5"/></mesh>{[-.1,.1].map(x=><mesh key={x} position={[x,0,0]}><boxGeometry args={[.055,.11,.11]}/><meshStandardMaterial color="#27364b"/></mesh>)}</group>;}
 function Equipment({motion,joints}){const prop=MOTIONS[motion]?.prop,mat=prop==='mat'||/plank|bridge|dead_bug|bird_dog|push_?up/.test(motion);return <>
