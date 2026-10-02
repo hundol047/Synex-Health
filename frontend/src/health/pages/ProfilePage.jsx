@@ -1,3 +1,4 @@
+import {saveProfileChanges} from '../lib/saveProfileChanges.js';
 import {registerDraftNavigation} from '../../shared/lib/draftNavigation.js';
 import {EQUIPMENT_LABELS} from '../lib/exerciseLabels.js';
 import { Link } from 'react-router-dom';
@@ -51,6 +52,7 @@ export default function ProfilePage() {
   const profile = useApiData(() => HealthAPI.getProfile(), []);
   const exercise = useApiData(() => HealthAPI.getExerciseProfile(), []);
 
+  const confirmedHealth=useRef(null);
   const [heightInput, setHeightInput] = useState('');
   const [gender,setGender]=useState('unspecified');
   const [form, setForm] = useState(null);
@@ -63,6 +65,7 @@ export default function ProfilePage() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
+    if(profile.data)confirmedHealth.current={height:profile.data.height,gender:profile.data.gender};
     if (profile.data?.height != null) setHeightInput(String(profile.data.height));
     setGender(profile.data?.gender||'unspecified');
   }, [profile.data]);
@@ -90,10 +93,9 @@ export default function ProfilePage() {
     setSaved(false);
     try {
       const heightNum = heightInput === '' ? null : Number(heightInput);
-      if (profile.data && (heightNum !== profile.data.height || gender !== profile.data.gender)) {
-        await HealthAPI.updateProfile({ height: heightNum, gender });
-      }
-      await HealthAPI.updateExerciseProfile({
+      const current=confirmedHealth.current||profile.data;
+      const health=current&&(heightNum!==current.height||gender!==current.gender)?{height:heightNum,gender}:null;
+      await saveProfileChanges(HealthAPI,health,{
         experience_level: form.experience_level,
         goal: form.goal,
         days_per_week: Number(form.days_per_week) || 1,
@@ -108,10 +110,9 @@ export default function ProfilePage() {
         safety_breathlessness: !!form.safety_breathlessness,
         safety_acute_injury: !!form.safety_acute_injury,
         safety_medical_restriction: !!form.safety_medical_restriction,
-      });
+      },value=>{confirmedHealth.current=value;});
       setDirty(false);setSaved(true);
-      profile.reload();
-      exercise.reload();
+      await Promise.all([profile.reload(),exercise.reload()]);
     } catch (error) {
       setSaveError(error);
     } finally {

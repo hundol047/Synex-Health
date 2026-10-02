@@ -46,9 +46,13 @@ export default function WorkoutMode({routine,exercises,workouts=[],onSaved,onClo
  if(exercise.dose_type==='hold'){if(timerSeconds<=0){setError('먼저 유지시간을 측정하세요.');return;}setTimedSets(old=>[...old,timerSeconds]);setTimerSeconds(0);}
  if(exercise.dose_type==='duration'){if(timerSeconds<=0){setError('먼저 운동 시간을 측정하세요.');return;}setPerformedSeconds(timerSeconds);setTimerSeconds(0);}
  const next=sets+1;setSets(next);notify('세트를 완료했습니다.');if(next<(exercise.sets||1))setRestUntil(Date.now()+(exercise.rest_seconds||60)*1000);}
- async function save(){if(busy||!draft.ready)return;setBusy(true);setError('');try{
+ async function save(){if(busy||!draft.ready)return;if(Number(pain)>0)pause();setBusy(true);setError('');try{
   const set_records=normalizeSets(setRows);
-  const body={set_records,time_zone:recordZone,timed_sets_seconds:timedSets,performed_seconds:performedSeconds,expected_revision:baseRevisions[exercise.exercise_id]||0,mutation_id:mutationIds[exercise.exercise_id],routine_id:routine.id,routine_exercise_id:exercise.exercise_id,day_number:exercise.day_number,date:recordDate,exercise_name:exercise.exercise_name,sets_completed:sets,reps_completed:reps||null,rpe:rpe===''?null:Number(rpe),pain:Number(pain),difficulty:Number(pain)>0?'pain':Number(rpe)>=8?'hard':Number(rpe)>0&&Number(rpe)<=5?'easy':'moderate',completed:Number(pain)===0,actual_minutes:Number((elapsed()/60000).toFixed(1)),memo:'운동 따라하기'};
+  const stopping=Number(pain)>0;
+  const savedTimedSets=stopping&&exercise.dose_type==='hold'&&timerSeconds>0?[...timedSets,timerSeconds]:timedSets;
+  const savedSeconds=performedSeconds+(stopping&&exercise.dose_type==='duration'?timerSeconds:0);
+  const savedSets=exercise.dose_type==='hold'?savedTimedSets.filter(s=>s>0).length:exercise.dose_type==='duration'&&savedSeconds>0?Math.max(1,sets):sets;
+  const body={set_records,time_zone:recordZone,timed_sets_seconds:savedTimedSets,performed_seconds:savedSeconds,expected_revision:baseRevisions[exercise.exercise_id]||0,mutation_id:mutationIds[exercise.exercise_id],routine_id:routine.id,routine_exercise_id:exercise.exercise_id,day_number:exercise.day_number,date:recordDate,exercise_name:exercise.exercise_name,sets_completed:savedSets,reps_completed:reps||null,rpe:rpe===''?null:Number(rpe),pain:Number(pain),difficulty:Number(pain)>0?'pain':Number(rpe)>=8?'hard':Number(rpe)>0&&Number(rpe)<=5?'easy':'moderate',completed:Number(pain)===0,actual_minutes:Number((elapsed()/60000).toFixed(1)),memo:'운동 따라하기'};
   body.completion_status=workoutStatus(body,exercise);body.completed=body.completion_status==='completed';
   await draft.flush().catch(()=>{});
   const result=await HealthAPI.createWorkout(body);
