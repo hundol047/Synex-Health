@@ -4,8 +4,8 @@ export default function WorkoutTimer({seconds,onChange,target,paused,disabled}){
  useEffect(()=>{if(paused||disabled)setRunning(false);},[paused,disabled]);
  useEffect(()=>{
   if(!running||paused||disabled)return;
-  const start=Date.now(),base=latest.current.seconds;
-  const tick=()=>{const elapsed=Math.min(86400,base+(Date.now()-start)/1000);latest.current.onChange(Math.floor(elapsed));if(elapsed>=86400)setRunning(false);};
+  const start=performance.now(),base=latest.current.seconds;
+  const tick=()=>{const elapsed=Math.min(86400,base+Math.max(0,performance.now()-start)/1000);latest.current.onChange(Math.floor(elapsed));if(elapsed>=86400)setRunning(false);};
   const id=setInterval(tick,250);return()=>clearInterval(id);
  },[running,paused,disabled]);
  const format=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
