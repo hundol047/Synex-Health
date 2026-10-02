@@ -16,9 +16,10 @@ class SecurityMiddleware:
    old,count=self.buckets.get(key,(minute,0));count=count+1 if old==minute else 1;self.buckets[key]=(minute,count);self.buckets.move_to_end(key)
    while len(self.buckets)>10000:self.buckets.popitem(last=False)
    if count>(10 if path=='/api/auth/review' else 240):return await JSONResponse({'detail':'요청이 많습니다. 잠시 후 다시 시도하세요.'},429,headers={'Retry-After':'60'})(scope,receive,send)
-   if headers.get(b'cookie') and not headers.get(b'authorization') and method not in ('GET','HEAD','OPTIONS'):
+   if headers.get(b'cookie') and not headers.get(b'authorization',b'').lower().startswith(b'bearer ') and method not in ('GET','HEAD','OPTIONS'):
     import os
     allowed=os.getenv('SYNEX_CORS_ORIGINS','http://localhost:5173,http://127.0.0.1:5173').split(',')
+    allowed=[origin.strip() for origin in allowed]
     if headers.get(b'origin',b'').decode() not in allowed:return await JSONResponse({'detail':'허용되지 않은 요청 출처입니다.'},403)(scope,receive,send)
    messages=[];size=0
    while True:

@@ -68,6 +68,8 @@ from .health.extensions import router as extensions_router
 app.include_router(extensions_router)
 from .services.review_access import router as review_router
 app.include_router(review_router)
+from .services.persistent_login import router as persistent_login_router
+app.include_router(persistent_login_router)
 
 
 @app.get('/healthz', include_in_schema=False)

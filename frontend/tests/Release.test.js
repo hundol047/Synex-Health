@@ -19,3 +19,10 @@ it('all twelve coaches reject lost tracking and use independent supported config
  expect(coach.update([],2500).phase).toBe('unknown');
  }
 });
+it('web release needs actual web settings and cannot weaken native release requirements',()=>{
+ const e={VITE_RELEASE_BUILD:'true',VITE_RELEASE_TARGET:'web',VITE_API_BASE:'https://health.synex.kr',VITE_PRIVACY_URL:'https://health.synex.kr/privacy',VITE_SUPPORT_URL:'https://health.synex.kr/support',VITE_TERMS_URL:'https://health.synex.kr/terms',LEGAL_OPERATOR:'Test operator',SUPPORT_EMAIL:'support@synex.kr',RETENTION_POLICY:'Test retention',VITE_LAUNCH_MODE:'free'};
+ expect(validateRelease(e)).toEqual([]);
+ expect(validateRelease({...e,VITE_RELEASE_TARGET:'native'}).join(' ')).toContain('IOS_BUNDLE_ID');
+ expect(validateRelease({...e,LEGAL_OPERATOR:''}).join(' ')).toContain('LEGAL_OPERATOR');
+ expect(validateRelease({...e,VITE_LAUNCH_MODE:'plus'}).join(' ')).toContain('free launch only');
+});

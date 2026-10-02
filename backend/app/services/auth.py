@@ -20,7 +20,7 @@ RBAC roles:
     to counselor notes. Never sees Clinical Agent / EMR data (this app does not expose it).
   - admin: everything, plus reference-range management (ReferenceRange CRUD) and user administration.
 """
-import os, secrets, sqlite3, time, hashlib
+import os, secrets, sqlite3, time, hashlib, re
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -59,30 +59,16 @@ DEMO_USERS = {
 def verify_oidc_token(token: str, issuer: str, audience: str, role_claim: str = 'role', jwks=None) -> User:
     import jwt
     from jwt import PyJWKSet
-    import httpx
-
-    class _JWKS:
-        def __init__(self, issuer):
-            self.issuer = issuer
-            self._client = httpx.Client(timeout=10)
-            self._keys = None
-            self._fetched_at = 0.0
-        def keys(self):
-            if self._keys is None or time.time() - self._fetched_at > 3600:
-                try:
-                    discovery_url = self.issuer.rstrip('/') + '/.well-known/openid-configuration'
-                    cfg = self._client.get(discovery_url).json()
-                    if cfg.get('issuer')!=self.issuer or not cfg.get('jwks_uri','').startswith('https://'):raise ValueError('Invalid discovery')
-                    self._keys = self._client.get(cfg['jwks_uri']).json()['keys']
-                finally:self._client.close()
-                self._fetched_at = time.time()
-            return self._keys
-    jwks = jwks or _JWKS(issuer)
+    from .oidc_keys import issuer_keys
     header = jwt.get_unverified_header(token)
-    key_set = PyJWKSet.from_dict({'keys': jwks.keys()})
-    signing_key = next((k for k in key_set.keys if k.key_id == header.get('kid')), None)
-    if signing_key is None:
-        raise HTTPException(401, 'No matching JWKS key for token')
+    if header.get('alg') not in ('RS256', 'ES256'):
+        raise HTTPException(401, 'Unsupported token algorithm')
+    if jwks is None:
+        signing_key = issuer_keys(issuer).signing_key(header.get('kid'))
+    else:
+        key_set = PyJWKSet.from_dict({'keys': jwks.keys()})
+        signing_key = next((k for k in key_set.keys if k.key_id == header.get('kid')), None)
+        if signing_key is None: raise HTTPException(401, 'No matching JWKS key for token')
     claims = jwt.decode(token, key=signing_key.key, algorithms=['RS256', 'ES256'], options={'require': ['sub', 'exp', 'iss', 'aud']},
                          audience=audience, issuer=issuer)
     role = claims.get(role_claim)
@@ -129,6 +115,9 @@ class _AuthSessionStore:
             db.execute('DELETE FROM auth_sessions WHERE created_at_ts < ?', (time.time() - AUTH_SESSION_TTL_SECONDS,))
 
     def get(self, session_id) -> Optional['User']:
+        if not isinstance(session_id, str) or not (session_id.startswith('synex-session.') or re.fullmatch(r'[A-Za-z0-9_-]{32}', session_id)):
+            return None
+        session_id = session_storage_key(session_id)
         with self._connect() as db:
             row = db.execute('SELECT user_id, role, created_at_ts FROM auth_sessions WHERE session_id=?', (session_id,)).fetchone()
             if row is None:
@@ -138,6 +127,10 @@ class _AuthSessionStore:
                 db.execute('DELETE FROM auth_sessions WHERE session_id=?', (session_id,))
                 return None
         return User(id=user_id, role=role)
+
+
+def session_storage_key(token):
+    return hashlib.sha256(token.encode()).hexdigest() if token.startswith('synex-session.') else token
 
 
 AUTH_SESSIONS = _AuthSessionStore()
@@ -169,6 +162,7 @@ def get_current_user(authorization: Optional[str] = Header(None),
             with AUTH_SESSIONS._connect() as db:
                 if db.execute('SELECT token_hash FROM revoked_tokens WHERE token_hash=? AND expires>?',(hashlib.sha256(token.encode()).hexdigest(),time.time())).fetchone():raise HTTPException(401,'로그아웃된 인증입니다.')
             review=AUTH_SESSIONS.get(token)
+            if review and token.startswith('synex-session.'):return _account_active(review)
             if review and review.id=='app-review-synthetic' and os.getenv('APP_REVIEW_MODE')=='true':return _account_active(review)
             import jwt
             claimed_issuer = jwt.decode(token, options={'verify_signature': False}).get('iss')
@@ -184,7 +178,8 @@ def get_current_user(authorization: Optional[str] = Header(None),
             raise HTTPException(401, '유효하지 않은 인증 토큰입니다.')
     if synex_health_auth_session:
         user = AUTH_SESSIONS.get(synex_health_auth_session)
-        if user is not None:
+        if user is not None and (synex_health_auth_session.startswith('synex-session.') or
+                                 (user.id == 'app-review-synthetic' and os.getenv('APP_REVIEW_MODE') == 'true')):
             return _account_active(user)
     raise HTTPException(401, 'Missing bearer token or a valid authenticated session cookie')
 
