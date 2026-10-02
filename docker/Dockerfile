@@ -29,6 +29,8 @@ RUN useradd --create-home --uid 10001 synex && mkdir -p /app/runtime && chown -R
 USER synex
 ENV SYNEX_HEALTH_DB_PATH=/app/runtime/health.sqlite3
 ENV SYNEX_HEALTH_AUTH_SESSION_PATH=/app/runtime/auth.sqlite3
+ENV SYNEX_AUDIT_PATH=/app/runtime/audit.sqlite3
+ENV SYNEX_IDEMPOTENCY_PATH=/app/runtime/idempotency.sqlite3
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/readyz')"
 CMD ["python", "-m", "uvicorn", "app.main:app", "--app-dir", "backend", "--host", "0.0.0.0", "--port", "8000"]
