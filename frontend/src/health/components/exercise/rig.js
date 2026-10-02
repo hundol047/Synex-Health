@@ -34,10 +34,28 @@ export function bindSurface(base){
  }
  return weights;
 }
-export function deformSurface(base,weights,joints,target,rest=REST){
- const transforms=BONES.map(([a,b])=>{const from=vec(rest[b]).sub(vec(rest[a])),to=vec(joints[b]).sub(vec(joints[a]));return {origin:vec(rest[a]),destination:vec(joints[a]),rotation:new THREE.Quaternion().setFromUnitVectors(from.normalize(),to.normalize())};});
- const v=new THREE.Vector3(),out=new THREE.Vector3();
- for(let i=0;i<weights.length;i++){out.set(0,0,0);for(const [bone,w] of weights[i]){const tr=transforms[bone];v.fromArray(base,i*3).sub(tr.origin).applyQuaternion(tr.rotation).add(tr.destination);out.addScaledVector(v,w);}out.toArray(target,i*3);}
- let floor=Infinity;for(let i=1;i<target.length;i+=3)floor=Math.min(floor,target[i]);for(let i=1;i<target.length;i+=3)target[i]+=.015-floor;
+// Normalized dual-quaternion blending preserves rigid volume around bent joints.
+// Original implementation of the published algorithm (Kavan et al., 2008).
+export function deformSurface(base,weights,joints,target,rest=REST,ground=true){
+ const transforms=BONES.map(([a,b])=>{
+  const rotation=new THREE.Quaternion().setFromUnitVectors(vec(rest[b]).sub(vec(rest[a])).normalize(),vec(joints[b]).sub(vec(joints[a])).normalize());
+  const t=vec(joints[a]).sub(vec(rest[a]).applyQuaternion(rotation));
+  const dual=new THREE.Quaternion(t.x,t.y,t.z,0).multiply(rotation);
+  return {real:rotation.toArray(),dual:dual.toArray().map(v=>v*.5)};
+ });
+ const v=new THREE.Vector3(),q=new THREE.Quaternion(),d=new THREE.Quaternion(),translation=new THREE.Quaternion();
+ for(let i=0;i<weights.length;i++){
+  const real=[0,0,0,0],dual=[0,0,0,0],anchor=transforms[weights[i][0]?.[0]||0].real;
+  for(const [bone,w] of weights[i]){
+   const tr=transforms[bone],sign=tr.real.reduce((n,x,k)=>n+x*anchor[k],0)<0?-1:1;
+   for(let k=0;k<4;k++){real[k]+=tr.real[k]*w*sign;dual[k]+=tr.dual[k]*w*sign;}
+  }
+  const length=Math.hypot(...real);
+  if(length<1e-8){for(let k=0;k<3;k++)target[i*3+k]=base[i*3+k];continue;}
+  q.fromArray(real.map(x=>x/length));d.fromArray(dual.map(x=>x/length));
+  translation.copy(d).multiply(q.clone().conjugate());
+  v.fromArray(base,i*3).applyQuaternion(q);v.x+=2*translation.x;v.y+=2*translation.y;v.z+=2*translation.z;v.toArray(target,i*3);
+ }
+ if(ground){let floor=Infinity;for(let i=1;i<target.length;i+=3)floor=Math.min(floor,target[i]);for(let i=1;i<target.length;i+=3)target[i]+=.015-floor;}
  return target;
 }
