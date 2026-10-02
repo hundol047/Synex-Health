@@ -48,7 +48,7 @@ function fromCsv(text) {
 
 export default function ProfilePage() {
   const [dirty,setDirty]=useState(false),guard=useRef(Symbol());
-  useEffect(()=>registerDraftNavigation(guard.current,dirty,()=>Promise.resolve(),'저장하지 않은 프로필·안전 문진 변경이 있습니다. 변경을 버리고 이동할까요?'),[dirty]);
+  useEffect(()=>registerDraftNavigation(guard.current,dirty,()=>Promise.resolve(),'저장하지 않은 프로필·안전 문진 변경이 있습니다. 변경을 버리고 이동할까요?','/health/profile'),[dirty]);
   const profile = useApiData(() => HealthAPI.getProfile(), []);
   const exercise = useApiData(() => HealthAPI.getExerciseProfile(), []);
 

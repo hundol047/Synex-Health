@@ -22,7 +22,7 @@ export function useWorkoutDraft(scope,value,dirty,onRestore){
   });chain.current.catch(()=>{});
  },[scope,encoded,dirty,ready]);
  const flush=useCallback(()=>blocked.current?Promise.reject(Error('임시 저장에 실패했습니다. 입력을 확인하세요.')):chain.current,[scope]);
- useEffect(()=>registerDraftNavigation(identity.current,dirty,flush),[dirty,flush]);
+ useEffect(()=>registerDraftNavigation(identity.current,dirty,flush,undefined,'/health/workout'),[dirty,flush]);
  async function clear(){skip.current=true;try{await chain.current.catch(()=>{});await removeDraft(scope,token.current);token.current=null;last.current=currentValue.current;blocked.current=false;chain.current=Promise.resolve();setStatus('');setError('');}finally{skip.current=false;}}
  return {ready,status:ready&&dirty&&!error&&encoded!==savedEncoded?'기기에 임시 저장 중…':status,error,flush,clear};
 }
