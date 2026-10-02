@@ -130,3 +130,36 @@ jobs:
         working-directory: frontend
       - run: xcodebuild -project App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
         working-directory: frontend/ios/App
+
+  container-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the production image with explicit CI-only public settings
+        run: |
+          docker build -f docker/Dockerfile -t synex-release-test \
+            --build-arg VITE_API_BASE=https://ci.synex-health.invalid \
+            --build-arg VITE_PRIVACY_URL=https://ci.synex-health.invalid/privacypolicy.html \
+            --build-arg VITE_SUPPORT_URL=https://ci.synex-health.invalid/support \
+            --build-arg VITE_TERMS_URL=https://ci.synex-health.invalid/terms.html \
+            --build-arg LEGAL_OPERATOR=CI-Operator \
+            --build-arg SUPPORT_EMAIL=ci@synex-health.invalid \
+            --build-arg RETENTION_POLICY=CI-only-retention .
+      - name: Reject missing release settings and missing runtime authentication
+        run: |
+          if docker build -f docker/Dockerfile --target frontend-release .; then
+            echo 'Unconfigured release unexpectedly built'; exit 1
+          fi
+          if docker run --rm synex-release-test; then
+            echo 'Unconfigured production unexpectedly started'; exit 1
+          fi
+      - name: Verify served model, legal pages and release marker
+        run: |
+          docker run -d --name synex-smoke -p 8123:8000 -e APP_ENV=development -e AUTH_MODE=demo synex-release-test
+          python scripts/verify-container.py
+      - name: Container logs
+        if: failure()
+        run: docker logs synex-smoke || true
+      - name: Cleanup
+        if: always()
+        run: docker rm -f synex-smoke || true

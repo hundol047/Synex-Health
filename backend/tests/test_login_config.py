@@ -70,16 +70,20 @@ def test_exact_trailing_slash_issuer_and_signed_token(monkeypatch):
     urls = []
     class Client:
         def __init__(self, **kwargs): pass
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
         def get(self, url):
             urls.append(url)
             data = {'issuer': issuer, 'jwks_uri': issuer+'keys'} if url.endswith('openid-configuration') else {'keys': [jwk]}
-            return httpx.Response(200, json=data)
+            return httpx.Response(200, json=data, request=httpx.Request('GET', url))
         def close(self): pass
     monkeypatch.setattr(httpx, 'Client', Client)
     token = jwt.encode({'sub': 'new-user', 'iss': issuer, 'aud': 'health-api', 'exp': time.time()+60},
                        key, algorithm='RS256', headers={'kid': 'login-test'})
     assert verify_oidc_token(token, issuer, 'health-api').id == 'new-user'
     assert urls[0] == issuer+'.well-known/openid-configuration'
+    assert verify_oidc_token(token, issuer, 'health-api').id == 'new-user'
+    assert len(urls) == 2
     with pytest.raises(jwt.InvalidAudienceError):
         verify_oidc_token(token, issuer, 'wrong-api')
 
