@@ -33,7 +33,7 @@ test('mobile workout menu, unsaved safety answers, and archived routine draft re
  const safety=page.getByLabel('최근 심한 흉통이 있었나요?',{exact:true});await expect(safety).toBeVisible();const original=await safety.isChecked();await safety.setChecked(!original);
  const workoutLink=page.locator('.health-bottom-nav a[href="/health/workout"]');await expect(workoutLink).toBeVisible();
  await confirmAction(page,false,()=>workoutLink.click());await expect(safety).toBeChecked({checked:!original});
- await confirmAction(page,true,()=>workoutLink.click());await expect(page).toHaveURL(/\/health\/workout$/);
+ await confirmAction(page,true,()=>workoutLink.click());await expect(page).toHaveURL(/\/health\/workout$/);await expect(page.getByRole('heading',{name:'내 속도로, 하나씩',exact:true})).toBeVisible();
  await page.locator('.health-bottom-nav a[href="/health/profile"]').click();await expect(safety).toBeChecked({checked:original});
  const first=await page.request.post('/api/exercise-routines/generate',{data:{}});expect(first.ok()).toBeTruthy();const old=await first.json();
  await page.locator('.health-bottom-nav a[href="/health/workout"]').click();
