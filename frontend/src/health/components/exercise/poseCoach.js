@@ -57,10 +57,11 @@ export class MovementCoach {
 // Every analyzer instance owns its phase, ROM and timing; unknown frames never infer corrections.
 export class ExercisePoseAnalyzer {
  constructor(id){this.id=id;this.engine=new MovementCoach(id);this.phases=new TemporalPhases(id);this.min=Infinity;this.max=-Infinity;this.lastRep=0;this.repAt=null;this.tempo=null;}
- update(points,time){
+ update(points,time,aspectRatio=1){
   const c=this.engine.config;
   const inFrame=c.joints.every(i=>points?.[i]&&Number.isFinite(points[i].x)&&Number.isFinite(points[i].y)&&points[i].x>=0&&points[i].x<=1&&points[i].y>=0&&points[i].y<=1);
-  if(!inFrame)points=[];
+  if(!inFrame||!Number.isFinite(aspectRatio)||aspectRatio<=0)points=[];
+  else points=points.map(p=>p?({...p,y:p.y*aspectRatio}):p);
   if(this.phases.lastTime!=null&&(time<=this.phases.lastTime||time-this.phases.lastTime>500))this.engine.previousTime=null;
   const result=this.engine.update(points,time);
   const detected=result.phase!=='unknown';

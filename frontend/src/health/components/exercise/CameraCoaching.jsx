@@ -1,4 +1,5 @@
 import React,{useEffect,useRef,useState,lazy,Suspense} from 'react';
+import {claimCamera} from './cameraLease.js';
 import {api} from '../../../shared/lib/api.js';
 import {createPoseRunner} from './poseRunner.js';
 import {createExercisePoseAnalyzer,POSE_EXERCISES,CAMERA_DIRECTIONS} from './poseCoach.js';
@@ -17,21 +18,21 @@ function Demo({motion,paused}){
  return <><div className="coach-pane-title"><strong>운동 시범 · {POSE_EXERCISES[motion].label}</strong><button type="button" className="btn btn-ghost" disabled={paused} onClick={()=>setPlaying(p=>!p)}>{playing?'시범 정지':'시범 재생'}</button></div><div className="coach-demo"><Suspense fallback={<p>시범 준비 중…</p>}><ExerciseMotion3D motion={motion} progress={progress} mirror={false} compact/></Suspense></div></>;
 }
 export default function CameraCoaching({motion='squat',paused=false}){
- const video=useRef(null),stream=useRef(null),cameraVersion=useRef(0),analysisVersion=useRef(0),resources=useRef({}),voiceRef=useRef(false),speechAt=useRef(-Infinity);
+ const video=useRef(null),stream=useRef(null),cameraVersion=useRef(0),analysisVersion=useRef(0),resources=useRef({}),voiceRef=useRef(false),speechAt=useRef(-Infinity),releaseCamera=useRef(null);
  const [running,setRunning]=useState(false),[busy,setBusy]=useState(false),[feedback,setFeedback]=useState(false),[preparing,setPreparing]=useState(false),[voice,setVoice]=useState(false),[error,setError]=useState(''),[result,setResult]=useState(null),[points,setPoints]=useState([]),[size,setSize]=useState([640,480]),[layout,setLayout]=useState('split');
  function stopAnalysis(){
   analysisVersion.current++;const r=resources.current;resources.current={};
-  cancelAnimationFrame(r.frame);video.current?.cancelVideoFrameCallback?.(r.videoFrame);clearInterval(r.timer);r.detector?.close();
+  cancelAnimationFrame(r.frame);video.current?.cancelVideoFrameCallback?.(r.videoFrame);clearInterval(r.timer);clearTimeout(r.prepareTimer);clearTimeout(r.staleTimer);r.abort?.abort();r.detector?.close();
   window.speechSynthesis?.cancel();voiceRef.current=false;setVoice(false);setFeedback(false);setPreparing(false);setResult(null);setPoints([]);
  }
  function stopCamera(){
-  cameraVersion.current++;stopAnalysis();stream.current?.getTracks().forEach(t=>{t.onended=null;t.stop();});stream.current=null;
+  cameraVersion.current++;releaseCamera.current?.();releaseCamera.current=null;stopAnalysis();stream.current?.getTracks().forEach(t=>{t.onended=null;t.stop();});stream.current=null;
   if(video.current)video.current.srcObject=null;setRunning(false);setBusy(false);
  }
  useEffect(()=>{const hide=()=>{if(document.hidden)stopCamera();};document.addEventListener('visibilitychange',hide);return()=>{stopCamera();document.removeEventListener('visibilitychange',hide);};},[]);
  useEffect(()=>{if(paused)stopCamera();},[paused]);
  async function startCamera(){
-  stopCamera();setError('');setBusy(true);const version=cameraVersion.current;
+  stopCamera();releaseCamera.current=claimCamera(stopCamera);setError('');setBusy(true);const version=cameraVersion.current;
   try{
    if(!navigator.mediaDevices?.getUserMedia)throw Error('HTTPS 카메라 지원 환경에서 이용하세요.');
    const media=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:640,height:480},audio:false});
@@ -46,15 +47,19 @@ export default function CameraCoaching({motion='squat',paused=false}){
  async function startAnalysis(){
   stopAnalysis();setError('');setFeedback(true);setPreparing(true);const version=analysisVersion.current;
   const active=()=>version===analysisVersion.current&&!!stream.current;
+  const r={abort:new AbortController()};resources.current=r;
+  r.prepareTimer=setTimeout(()=>{if(active()){stopAnalysis();setError('피드백 준비 시간이 초과되었습니다. 연결을 확인하고 다시 켜 주세요.');}},20000);
   try{
-   await api('/api/advanced/pose');if(!active())return;
+   await api('/api/advanced/pose',undefined,{signal:r.abort.signal});if(!active())return;
    const model=import.meta.env.VITE_POSE_MODEL_URL||'/pose/pose_landmarker_lite.task';
-   const asset=await fetch(model,{method:'HEAD'});if(!active())return;
+   const asset=await fetch(model,{method:'HEAD',signal:r.abort.signal});if(!active())return;
    if(!asset.ok||!(asset.headers.get('content-type')||'').includes('octet-stream'))throw Error('분석 모델을 준비하지 못했습니다. 카메라만 보기는 계속 사용할 수 있습니다.');
-   const detector=await createPoseRunner(model);if(!active()){detector.close();return;}
-   const r={detector};resources.current=r;
+   const detector=await createPoseRunner(model,{signal:r.abort.signal});if(!active()){detector.close();return;}
+   r.detector=detector;clearTimeout(r.prepareTimer);
    r.timer=setInterval(()=>api('/api/advanced/pose').catch(()=>{if(active()){stopAnalysis();setError('분석 권한을 확인할 수 없어 피드백을 껐습니다. 카메라는 계속 볼 수 있습니다.');}}),60000);
    const coach=createExercisePoseAnalyzer(motion);let last=-Infinity;
+   const watch=()=>{clearTimeout(r.staleTimer);r.staleTimer=setTimeout(()=>{if(active()){stopAnalysis();setError('새 분석 결과가 없어 피드백을 중지했습니다. 카메라 상태를 확인하고 다시 켜 주세요.');}},3000);};
+   watch();
    const schedule=()=>{if(!active())return;if(video.current.requestVideoFrameCallback)r.videoFrame=video.current.requestVideoFrameCallback(loop);else r.frame=requestAnimationFrame(loop);};
    const loop=async time=>{
     if(!active())return;
@@ -63,9 +68,9 @@ export default function CameraCoaching({motion='squat',paused=false}){
       const out=await detector.detectForVideo(video.current,time);if(!active())return;
       const raw=out.landmarks?.[0]||[],w=video.current.videoWidth||640,h=video.current.videoHeight||480;
       const visible=POSE_EXERCISES[motion].joints.every(i=>raw[i]&&raw[i].x>=0&&raw[i].x<=1&&raw[i].y>=0&&raw[i].y<=1);
-      const next=coach.update(visible?raw.map(p=>({...p,y:p.y*h/w})):[],time);
+      const next=coach.update(visible?raw:[],time,h/w);
       const message=next.corrections?.[0]||next.warnings?.[0]||next.feedback;
-      setResult({...next,message});setPoints(next.detected?raw:[]);setSize([w,h]);last=time;
+      watch();setResult({...next,message});setPoints(next.detected?raw:[]);setSize([w,h]);last=time;
       if(voiceRef.current&&time-speechAt.current>10000&&window.speechSynthesis&&typeof SpeechSynthesisUtterance!=='undefined'){
        window.speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(message);utterance.lang='ko-KR';window.speechSynthesis.speak(utterance);speechAt.current=time;
       }
