@@ -1,4 +1,5 @@
-import React,{createContext,useContext,useEffect,useState} from 'react';
+import React,{createContext,useContext,useEffect,useState,useRef} from 'react';
+import {selectLoginConfig,validateLoginRequest,authorizationParameters} from '../lib/login.js';
 import { Capacitor } from '@capacitor/core';
 import { setAccessToken,configureRefresh } from '../lib/session.js';
 import {clearLocalAccount} from '../lib/accountLifecycle.js';
@@ -11,8 +12,8 @@ const random=()=>b64(crypto.getRandomValues(new Uint8Array(32)));
 const native=Capacitor.isNativePlatform();
 const redirect=()=>native?`${import.meta.env.VITE_APP_SCHEME||'com.synex.health'}://auth/callback`:`${location.origin}/auth/callback`;
 async function discovery(config){
- const issuer=config?.issuer||import.meta.env.VITE_OIDC_ISSUER;
- if(!issuer||!issuer.startsWith('https://'))throw Error('학교 로그인 연결을 준비 중입니다. 운영자에게 문의해 주세요.');
+ const issuer=config?.issuer;
+ if(!issuer||!issuer.startsWith('https://'))throw Error('로그인 연결을 준비 중입니다. 운영자에게 문의해 주세요.');
  const response=await fetch(`${issuer.replace(/\/$/,'')}/.well-known/openid-configuration`);
  if(!response.ok)throw Error('로그인 서버에 연결할 수 없습니다.');
  const info=await response.json();
@@ -20,7 +21,9 @@ async function discovery(config){
  return info;
 }
 export default function AuthBoundary({children}){
+ const callbackRunning=useRef(false);
  const [reviewEnabled,setReviewEnabled]=useState(false),[reviewName,setReviewName]=useState(''),[reviewPassword,setReviewPassword]=useState('');
+ const [provider,setProvider]=useState(null),[settingsLoaded,setSettingsLoaded]=useState(false),[settingsError,setSettingsError]=useState('');
  const [schools,setSchools]=useState([]),[school,setSchool]=useState('');
  const [auth,setAuth]=useState(null),[error,setError]=useState(''),[pending,setPending]=useState(false);
  async function load(){setError('');try{
@@ -33,26 +36,32 @@ export default function AuthBoundary({children}){
  async function callback(url){
   const received=new URL(url),target=new URL(redirect());
   if(received.origin!==target.origin||received.protocol!==target.protocol||received.host!==target.host||received.pathname!==target.pathname)return;
-  const raw=sessionStorage.getItem('synex-pkce');
-  if(!raw)return;
-  sessionStorage.removeItem('synex-pkce');
-  const saved=JSON.parse(raw);
+  if(callbackRunning.current)return;
+  callbackRunning.current=true;setPending(true);
   try{
-   if(saved.state!==received.searchParams.get('state')||Date.now()-saved.created>600000)throw Error('로그인 요청이 만료되었습니다. 다시 로그인해 주세요.');
+   const raw=sessionStorage.getItem('synex-pkce');
+   sessionStorage.removeItem('synex-pkce');
+   const saved=validateLoginRequest(raw,received,redirect());
    if(!received.searchParams.get('code'))throw Error('로그인이 취소되었습니다.');
    const info=await discovery(saved.config);
-   const response=await fetch(info.token_endpoint,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'authorization_code',client_id:saved.config?.client_id||import.meta.env.VITE_OIDC_CLIENT_ID,code:received.searchParams.get('code'),code_verifier:saved.verifier,redirect_uri:redirect()})});
+   const response=await fetch(info.token_endpoint,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'authorization_code',client_id:saved.config.client_id,code:received.searchParams.get('code'),code_verifier:saved.verifier,redirect_uri:redirect()})});
    const tokens=await response.json();
    if(!response.ok||!tokens.access_token)throw Error('로그인을 완료하지 못했습니다.');
-   setAccessToken(tokens.access_token);configureRefresh(tokens,info.token_endpoint,saved.config?.client_id||import.meta.env.VITE_OIDC_CLIENT_ID);
+   setAccessToken(tokens.access_token);configureRefresh(tokens,info.token_endpoint,saved.config.client_id);
    // The backend validates issuer, audience, signature and expiry on every request.
    if(native){const {Browser}=await import('@capacitor/browser');await Browser.close().catch(()=>{});}
    history.replaceState({},'', '/health');await load();
-  }catch(e){setError(e.message);setAuth({demo:false,login:true});}finally{setPending(false);}
+  }catch(e){setAccessToken('');history.replaceState({},'', '/health');setError(e.message);setAuth({demo:false,login:true});}finally{callbackRunning.current=false;setPending(false);}
+ }
+ async function loadSettings(){
+  setSettingsLoaded(false);setSettingsError('');
+  try{const [settings,list]=await Promise.all([api('/api/auth/config'),api('/api/auth/schools')]);setProvider(settings.provider);setSchools(list);}
+  catch{setProvider(null);setSchools([]);setSettingsError('로그인 설정을 불러오지 못했습니다. 다시 시도해 주세요.');}
+  finally{setSettingsLoaded(true);}
  }
  useEffect(()=>{
-  api('/api/auth/schools').then(setSchools).catch(()=>{});
-  if(location.pathname==='/auth/callback' && sessionStorage.getItem('synex-pkce')) callback(location.href); else load();
+  loadSettings();
+  if(location.pathname==='/auth/callback') callback(location.href); else load();
   let handle;
   const expired=()=>{setAccessToken('');setAuth({demo:false,login:true});};
   window.addEventListener('synex-session-expired',expired);
@@ -60,16 +69,14 @@ export default function AuthBoundary({children}){
   return()=>{listener.then(()=>handle?.remove());window.removeEventListener('synex-session-expired',expired);};
  },[]);
  async function login(){setPending(true);setError('');try{
-  const config=schools.find(c=>c.school_id===school);
-  if(schools.length&&!config&&!import.meta.env.VITE_OIDC_ISSUER)throw Error('로그인할 학교를 선택하세요.');
-  if(config&&config.redirect_url!==redirect())throw Error('현재 앱의 로그인 redirect URL이 학교 설정과 다릅니다.');
-  const info=await discovery(config),client=config?.client_id||import.meta.env.VITE_OIDC_CLIENT_ID;
-  if(!client)throw Error('로그인 클라이언트 설정이 필요합니다.');
+  const selected=school?schools.find(c=>c.school_id===school):provider;
+  const config=selectLoginConfig(selected,native,redirect());
+  const info=await discovery(config);
   const verifier=random(),state=random(),challenge=b64(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier))));
-  sessionStorage.setItem('synex-pkce',JSON.stringify({verifier,state,created:Date.now(),config}));
-  const url=new URL(info.authorization_endpoint);url.search=new URLSearchParams({response_type:'code',client_id:client,redirect_uri:redirect(),scope:import.meta.env.VITE_OIDC_REFRESH==='true'?'openid profile offline_access':'openid profile',state,code_challenge:challenge,code_challenge_method:'S256'}).toString();
+  sessionStorage.setItem('synex-pkce',JSON.stringify({verifier,state,created:Date.now(),config,redirect_uri:redirect()}));
+  const url=new URL(info.authorization_endpoint);url.search=authorizationParameters(config,{state,challenge,redirectUri:redirect()}).toString();
   if(native){const {Browser}=await import('@capacitor/browser');await Browser.open({url:url.href});setPending(false);}else location.assign(url.href);
  }catch(e){setError(e.message);setPending(false);}}
  if(auth&&!auth.login)return <AuthContext.Provider value={{...auth,logout:async()=>{if((offlineState().pending||offlineState().drafts)&&!window.confirm('미전송 또는 진행 중 임시 기록이 있습니다. 로그아웃하면 이 기기의 미전송·진행 중 기록이 삭제됩니다. 먼저 전송하는 것을 권장합니다. 그래도 로그아웃할까요?'))return;try{await api('/api/auth/logout',{});}finally{await clearLocalAccount();setAuth({demo:false,login:true});}}}}>{children}</AuthContext.Provider>;
- return <main className="health-main"><section className="membership-hero"><span className="eyebrow">SYNEX HEALTH</span><h1>나의 건강 기록을 안전하게</h1><p>내 계정으로 로그인하여 건강 기록을 연결하세요. 학교 연동은 선택할 수 있습니다.</p></section><section className="card">{error&&<p role="alert">{error}</p>}{schools.length>0&&<label>학교 로그인 <select value={school} onChange={e=>setSchool(e.target.value)}><option value="">일반 계정 로그인</option>{schools.map(s=><option key={s.school_id} value={s.school_id}>{s.school_id}</option>)}</select></label>}{reviewEnabled&&<form onSubmit={async e=>{e.preventDefault();setPending(true);try{const r=await api('/api/auth/review',{username:reviewName,password:reviewPassword});setAccessToken(r.access_token);setReviewPassword('');await load();}catch(err){setError(err.message);}finally{setPending(false);}}}><h2>App Review · 심사 계정</h2><label>심사 ID<input autoComplete="username" value={reviewName} onChange={e=>setReviewName(e.target.value)}/></label><label>비밀번호<input type="password" autoComplete="current-password" value={reviewPassword} onChange={e=>setReviewPassword(e.target.value)}/></label><button className="btn" disabled={pending}>심사 로그인</button></form>}{auth?.login?<button className="btn btn-primary" disabled={pending} onClick={login}>{pending?'로그인 중…':school?'학교 계정으로 로그인':'내 계정으로 로그인'}</button>:<><p>서버 연결을 확인하고 있습니다.</p><button className="btn" onClick={load}>다시 연결</button></>}</section></main>;
+ return <main className="health-main"><section className="membership-hero"><span className="eyebrow">SYNEX HEALTH</span><h1>나의 건강 기록을 안전하게</h1><p>내 계정으로 로그인하여 건강 기록을 연결하세요. 회원가입과 비밀번호 재설정은 연결된 인증 서비스에서 진행합니다. 학교 연동은 선택할 수 있습니다.</p></section><section className="card">{settingsError&&<p role="alert">{settingsError} <button className="btn" onClick={loadSettings}>다시 불러오기</button></p>}{settingsLoaded&&!settingsError&&!provider&&!schools.length&&<p role="status">계정 로그인 연결을 준비 중입니다. 연결이 완료되면 회원가입과 로그인을 이용할 수 있습니다.</p>}{error&&<p role="alert">{error}</p>}{schools.length>0&&<label>학교 로그인 <select value={school} onChange={e=>setSchool(e.target.value)}><option value="">일반 계정 로그인</option>{schools.map(s=><option key={s.school_id} value={s.school_id}>{s.school_id}</option>)}</select></label>}{reviewEnabled&&<form onSubmit={async e=>{e.preventDefault();setPending(true);try{const r=await api('/api/auth/review',{username:reviewName,password:reviewPassword});setAccessToken(r.access_token);setReviewPassword('');await load();}catch(err){setError(err.message);}finally{setPending(false);}}}><h2>App Review · 심사 계정</h2><label>심사 ID<input autoComplete="username" value={reviewName} onChange={e=>setReviewName(e.target.value)}/></label><label>비밀번호<input type="password" autoComplete="current-password" value={reviewPassword} onChange={e=>setReviewPassword(e.target.value)}/></label><button className="btn" disabled={pending}>심사 로그인</button></form>}{auth?.login?<button className="btn btn-primary" disabled={pending||!settingsLoaded||!!settingsError||(!school&&!provider)} onClick={login}>{pending?'로그인 중…':school?'학교 계정으로 로그인':'로그인 · 회원가입'}</button>:<><p>서버 연결을 확인하고 있습니다.</p><button className="btn" onClick={load}>다시 연결</button></>}</section></main>;
 }

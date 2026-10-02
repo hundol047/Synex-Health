@@ -198,6 +198,11 @@ def admin_dashboard(user:User=Depends(require('user:admin'))):
         subscriptions=[{'user_id':r[0],'source':json.loads(r[1]).get('source'),'expires_at':json.loads(r[1]).get('expires_at')} for r in db.execute('SELECT user_id,payload FROM billing_accounts')]
     return {'schools':list(_school_directory().values()),'users':users,'school_requests':store.list_school_requests(),'subscriptions':subscriptions,'providers':{'inbody':'not_connected','biogram':'not_connected'},'references':store.list_reference_ranges(),'system':{'database':'ok'}}
 
+@router.get('/auth/config')
+def login_configuration():
+    from ..services.login_config import public_login_config
+    return public_login_config()
+
 @router.get('/auth/schools')
 def school_logins():
     from ..services.school_oidc import configurations
