@@ -3,7 +3,7 @@ import * as THREE from 'three';
 export const GARMENTS=['skin','top','bottom','shoes'];
 export function avatarGeometry(wear,stature=1){
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(wear.positions.slice(),3));
- const index=[];for(const [materialIndex,name] of GARMENTS.entries()){const start=index.length;if(name!=='shoes')index.push(...wear.indices[name]);g.addGroup(start,index.length-start,materialIndex);}g.setIndex(index);
+ const index=[];for(const [materialIndex,name] of GARMENTS.entries()){const start=index.length;index.push(...wear.indices[name]);g.addGroup(start,index.length-start,materialIndex);}g.setIndex(index);
  const colors=new Float32Array(wear.positions.length),base={skin:new THREE.Color('#c99173'),top:new THREE.Color('#29536a'),bottom:new THREE.Color('#24323d'),shoes:new THREE.Color('#c8c7be')};
  const hair=new THREE.Color('#30251f'),lip=new THREE.Color('#9b5d54'),brow=new THREE.Color('#47312a');
  const gaussian=(x,y,cx,cy,sx,sy)=>Math.exp(-(((x-cx)/sx)**2+((y-cy)/sy)**2));

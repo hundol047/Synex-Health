@@ -14,7 +14,7 @@ it('rest pose preserves geometry and clothing faces form a complete partition wi
  const base=personalizedVertices({},{}),wear=sportswear(base),g=avatarGeometry(wear);
  const out=deformSurface(base,bindSurface(base),REST,new Float32Array(base.length),REST,false);
  for(let i=0;i<base.length;i++)expect(out[i]).toBeCloseTo(base[i],5);
- expect(g.groups).toHaveLength(4);expect(g.groups.reduce((n,x)=>n+x.count,0)).toBe(g.index.count);
+ expect(g.groups).toHaveLength(4);expect(g.index.count).toBe(Object.values(wear.indices).reduce((n,x)=>n+x.length,0));expect(g.groups.reduce((n,x)=>n+x.count,0)).toBe(g.index.count);
  expect(g.attributes.color.array.every(Number.isFinite)).toBe(true);expect(new Set(wear.labels).size).toBe(4);g.dispose();
 });
 
