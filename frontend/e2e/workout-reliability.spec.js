@@ -46,11 +46,12 @@ test('mobile workout menu, unsaved safety answers, and archived routine draft re
 });
 test('partial profile save is explained and local draft stays readable during routine server failure',async({page,context})=>{
  await context.addInitScript(()=>localStorage.setItem('synex-onboarding-v1','done'));
- await page.goto('/health/profile');const height=page.getByLabel('키 (cm)',{exact:true});await expect(height).toBeVisible();const original=await height.inputValue(),changed=original==='180'?'181':'180';await height.fill(changed);
+ await page.goto('/health/profile');const height=page.locator('#height-input');await expect(height).toBeVisible();const original=await height.inputValue(),changed=original==='180'?'181':'180';await height.fill(changed);
  let fail=true;await page.route('**/api/exercise-profile',async route=>{if(route.request().method()==='PUT'&&fail){fail=false;await route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({detail:'test interruption'})});}else await route.continue();});
  await page.getByRole('button',{name:'저장하기',exact:true}).click();await expect(page.getByText(/키·성별은 저장되었습니다/)).toBeVisible();await expect(height).toHaveValue(changed);
  expect((await(await page.request.get('/api/health/profile')).json()).height).toBe(Number(changed));
  await page.getByRole('button',{name:'저장하기',exact:true}).click();await expect(page.getByText('저장되었습니다.',{exact:true})).toBeVisible();await expect(height).toBeEnabled();
+ const generated=await page.request.post('/api/exercise-routines/generate',{data:{}});expect(generated.ok()).toBeTruthy();
  await page.locator('.health-bottom-nav a[href="/health/workout"]').click();await expect(page.getByRole('heading',{name:'내 속도로, 하나씩',exact:true})).toBeVisible();
  const card=page.locator('.exercise-card').filter({has:page.getByRole('button',{name:'세트 추가',exact:true})}).first();await card.getByRole('button',{name:'세트 추가',exact:true}).click();await card.getByLabel('1세트 횟수',{exact:true}).fill('7');await expect(card.getByText('기기에 임시 저장됨',{exact:true})).toBeVisible();
  await page.route('**/api/exercise-routines',route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({detail:'plan service unavailable'})}));
