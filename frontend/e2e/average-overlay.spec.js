@@ -85,5 +85,5 @@ test('routine previews and instructions visible; workout flow persists feedback 
  await expect(page.getByRole('heading',{name:'오늘의 운동 요약'})).toBeVisible();
  await expect(page.getByRole('alert')).toContainText('진행을 중단');
  const logs=await(await page.request.get('/api/workouts')).json();expect(logs.some(w=>w.rpe===6&&w.completed)).toBeTruthy();expect(logs.some(w=>w.pain===3&&!w.completed)).toBeTruthy();
- await page.goto('/health/pose');await expect(page.getByText('시작 전 준비')).toBeVisible();await expect(page.getByText(/권장 카메라 방향/)).toBeVisible();
+ await page.goto('/health/pose');await expect(page.getByText('촬영 준비와 개인정보')).toBeVisible();await expect(page.getByText(/권장 촬영/)).toBeVisible();
 });
