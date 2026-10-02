@@ -48,7 +48,7 @@ export const POSE_EXERCISES={
  squat:{label:'스쿼트',joints:[23,25,27,24,26,28],down:110,up:155},
  lunge:{label:'런지',joints:[23,25,27,24,26,28],down:110,up:155,minimum:true},
  push_up:{label:'푸시업',joints:[11,13,15,12,14,16],down:100,up:155},
- plank:{label:'플랭크',joints:[11,23,27,12,24,28],hold:true,up:155},
+ plank:{label:'플랭크',joints:[11,23,27,12,24,28],hold:true,up:155,minimum:true},
  shoulder_press:{label:'숄더 프레스',joints:[11,13,15,12,14,16],down:100,up:155,overhead:true},
  curl:{label:'컬',joints:[11,13,15,12,14,16],down:65,up:145},
  hip_hinge:{label:'힙힌지',joints:[11,23,25,12,24,26],down:110,up:155},

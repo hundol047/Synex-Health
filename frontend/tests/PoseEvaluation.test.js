@@ -50,3 +50,7 @@ it('routes side-view trunk feedback but suppresses it when shoulders are uncerta
 it('rejects non-finite joint confidence instead of reporting tracked movement',()=>{
  const p=squat();p[25].visibility=NaN;const r=createExercisePoseAnalyzer('squat').update(p,100);expect(r.detected).toBe(false);expect(r.corrections).toEqual([]);
 });
+it('does not hide one bent side of a plank by averaging it with the straight side',()=>{
+ const p=plank();p[23].y=.43;const a=createExercisePoseAnalyzer('plank');let r;for(let t=0;t<=3000;t+=150)r=a.update(p,t);
+ expect(r.seconds).toBe(0);expect(r.phase).toBe('adjust');expect(r.movement_phase).toBe('start');
+});
