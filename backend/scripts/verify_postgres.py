@@ -15,3 +15,16 @@ with store.connect() as db:
  db.execute('DELETE FROM preferences WHERE user_id=?',(uid,))
  db.execute('DELETE FROM users WHERE id=?',(uid,))
 print('PostgreSQL migration, concurrent atomic upsert, uniqueness and cleanup passed')
+
+from app.health.schemas import WorkoutLog
+from app.health.store import WorkoutConflict
+workout_id='ci-cas-only'
+with store.connect() as db:db.execute('DELETE FROM workouts WHERE id=?',(workout_id,))
+def workout_write(i):
+ try:return store.add_workout(WorkoutLog(id=workout_id,user_id=uid,date='2026-10-01',exercise_name='CI',mutation_id=str(i)),0)
+ except WorkoutConflict:return None
+with ThreadPoolExecutor(max_workers=8) as pool:results=list(pool.map(workout_write,range(8)))
+assert sum(r is not None for r in results)==1
+assert store.list_workouts(uid)[0].revision==1
+with store.connect() as db:db.execute('DELETE FROM workouts WHERE id=?',(workout_id,))
+print('PostgreSQL optimistic workout concurrency passed')

@@ -118,8 +118,9 @@ def _deterministic_analysis(user: HealthUser, measurement: BodyCompositionMeasur
 
 
 def analyze(user: HealthUser, measurement: BodyCompositionMeasurement, previous: BodyCompositionMeasurement | None,
-            ranges: dict) -> HealthAnalysis:
+            ranges: dict, average=None) -> HealthAnalysis:
     comparison = full_comparison(previous, measurement, ranges)
+    comparison['average_comparison'] = average
     if agent_mode() == 'llm':
         system_prompt = _load_prompt('health_analysis.md')
         context = json.dumps({'user': user.model_dump(mode='json'), 'measurement': measurement.model_dump(mode='json'),
@@ -139,7 +140,11 @@ def analyze(user: HealthUser, measurement: BodyCompositionMeasurement, previous:
                                        generated_by='llm', created_at=now())
             except Exception:
                 pass  # fall through to deterministic
-    return _deterministic_analysis(user, measurement, previous, comparison)
+    result = _deterministic_analysis(user, measurement, previous, comparison)
+    from .reference import comparison_explanations
+    details = comparison_explanations(average)
+    if details: result.recommendations = details + result.recommendations
+    return result
 
 
 def chat(user: HealthUser, message: str, context: dict) -> str:
@@ -154,6 +159,10 @@ def chat(user: HealthUser, message: str, context: dict) -> str:
         raw = _call_anthropic(system_prompt, f'Context: {ctx}\n\nUser message: {message}')
         if raw:
             return raw.strip()
+    if any(w in message for w in ('평균', '비교군')):
+        from .reference import comparison_explanations
+        details = comparison_explanations(context.get('average_comparison'))
+        return ' '.join(details) if details else '현재 조건에 맞는 비교군 데이터가 충분하지 않습니다.'
     latest = context.get('latest_measurement')
     if not latest:
         return '아직 등록된 체성분 측정 데이터가 없습니다. 먼저 체성분 측정 결과를 입력해 주세요.'

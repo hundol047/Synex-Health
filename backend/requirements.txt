@@ -8,3 +8,6 @@ python-multipart==0.0.20
 
 SQLAlchemy==2.0.54
 psycopg[binary]==3.3.6
+
+# IANA timezone data on platforms without a system zoneinfo database.
+tzdata>=2025.2

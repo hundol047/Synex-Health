@@ -2,7 +2,7 @@
 
 IMPLEMENTED: Free / Plus monthly / Plus annual storefront selection, purchase, restore, server RevenueCat entitlement verification, account logout, authenticated webhook refresh. States: free, trial, active, grace_period, billing_issue, cancelled, expired, refunded. Cancellation preserves access until paid expiry; a verified grace period preserves access until its deadline; refunds revoke access. Failed verification does not grant access. Client-supplied plan/receipt/customer identifiers cannot grant Plus.
 
-Source: https://www.revenuecat.com/docs/subscription-guidance/how-grace-periods-work and https://www.revenuecat.com/docs/api-v1/customer-info-model . Webhook refresh always retrieves the authoritative subscriber; duplicate events do not directly grant privileges. Concurrent refresh reconciliation and provider rate limits still need load testing.
+Source: https://www.revenuecat.com/docs/subscription-guidance/how-grace-periods-work and https://www.revenuecat.com/docs/api-v1/customer-info-model . Webhook refresh always retrieves the authoritative subscriber; duplicate events do not directly grant privileges. Concurrent refresh reconciliation uses compare-and-swap and fails for retry instead of persisting a stale snapshot; provider load/rate-limit behavior still needs real testing.
 
 VERIFIED: mocked server state tests, grace expiry, cancellation/refund and repeated webhook regression checks. EXTERNAL SETUP REQUIRED: registered App Store/Play products, RevenueCat keys/entitlement/offering, webhook authorization, real store sandbox purchase/restore/account-transfer/refund tests. No actual products or subscriptions created by this work. Free launch disables purchase. See APP_STORE_SUBSCRIPTION.md.
 

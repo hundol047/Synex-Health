@@ -1,8 +1,11 @@
+import {WORKOUT_STATUS} from '../lib/workoutStatus.js';
+import WorkoutRecordForm from '../components/exercise/WorkoutRecordForm.jsx';
+import {previousWorkout} from '../lib/workoutProgress.js';
+import WorkoutMode from '../components/exercise/WorkoutMode.jsx';
 import React, { useMemo, useState } from 'react';
 import WorkoutCalendar from '../components/WorkoutCalendar.jsx';
 import ExerciseCard from '../components/exercise/ExerciseCard.jsx';
-import { Link } from 'react-router-dom';
-import { CheckCircle2, Circle } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { HealthAPI } from '../../shared/lib/api.js';
 import { Card, Skeleton, ErrorState, EmptyState, Badge } from '../../shared/components/ui.jsx';
 import { useApiData } from '../lib/useApiData.js';
@@ -22,19 +25,16 @@ function groupByDay(exercises) {
 }
 
 export default function WorkoutPage() {
+  const [query]=useSearchParams();
   const routines = useApiData(() => HealthAPI.listRoutines(), []);
   const workouts = useApiData(() => HealthAPI.listWorkouts(), []);
+  const [workoutMode,setWorkoutMode]=useState(()=>query.get('mode')==='guided');
   const [selectedDay, setSelectedDay] = useState(null);
-  const [logging, setLogging] = useState(null);
-  const [logError, setLogError] = useState(null);
-  const [feedback, setFeedback] = useState({});
-  const [minutes,setMinutes]=useState({});
-  const [details,setDetails]=useState({});
-  const field=(key,name,value)=>setDetails(d=>({...d,[key]:{...d[key],[name]:value}}));
 
-  const latest = (routines.data || [])[0];
+  const requested=query.get('routine');
+  const latest = requested?(routines.data||[]).find(r=>r.id===requested):(routines.data || [])[0];
   const days = useMemo(() => groupByDay(latest?.exercises), [latest]);
-  const activeDay = selectedDay ?? days[0]?.[0] ?? 1;
+  const activeDay = selectedDay ?? (Number(query.get('day'))||days[0]?.[0]||1);
   const dayExercises = days.find(([d]) => d === activeDay)?.[1] || [];
 
   const today = todayStr();
@@ -45,44 +45,17 @@ export default function WorkoutPage() {
       (ex.exercise_id?w.routine_exercise_id===ex.exercise_id:w.exercise_name===ex.exercise_name) && w.completed);
   }
 
-  async function complete(ex) {
-    setLogging(ex.exercise_id||ex.exercise_name);
-    setLogError(null);
-    try {
-      const saved=await HealthAPI.createWorkout({
-        routine_id: latest.id,
-        routine_exercise_id: ex.exercise_id,
-        day_number: ex.day_number,
-        date: today,
-        exercise_name: ex.exercise_name,
-        sets_completed: details[ex.exercise_id||ex.exercise_name]?.sets==null?ex.sets??null:Number(details[ex.exercise_id||ex.exercise_name].sets),
-        reps_completed: details[ex.exercise_id||ex.exercise_name]?.reps || null,
-        duration: ex.duration ?? null,
-        difficulty: feedback[ex.exercise_id||ex.exercise_name] || 'moderate',
-        completed: feedback[ex.exercise_id||ex.exercise_name] !== 'pain' && !(Number(details[ex.exercise_id||ex.exercise_name]?.pain)>0),
-        actual_minutes:minutes[ex.exercise_id||ex.exercise_name]==null||minutes[ex.exercise_id||ex.exercise_name]===''?null:Number(minutes[ex.exercise_id||ex.exercise_name]),
-        memo: details[ex.exercise_id||ex.exercise_name]?.memo||'',
-        rpe: details[ex.exercise_id||ex.exercise_name]?.rpe?Number(details[ex.exercise_id||ex.exercise_name].rpe):null,
-        pain: details[ex.exercise_id||ex.exercise_name]?.pain?Number(details[ex.exercise_id||ex.exercise_name].pain):0,
-      });
-      if(saved.pending_sync){setLogError({message:'기기에 임시 보관했습니다. 앱을 닫지 마세요. 연결 복구 시 전송합니다.'});}else await workouts.reload();
-    } catch (error) {
-      setLogError(error);
-    } finally {
-      setLogging(null);
-    }
-  }
-
-  if (routines.loading || workouts.loading) return <Card><Skeleton height={220} /></Card>;
+  if (((routines.loading && !routines.data) || (workouts.loading && !workouts.data)) && !workoutMode) return <Card><Skeleton height={220} /></Card>;
   if (routines.error) return <ErrorState message={routines.error.message} onRetry={routines.reload} />;
   if (workouts.error) return <ErrorState message={workouts.error.message} onRetry={workouts.reload} />;
 
+  if(requested&&!latest)return <Card><p>이 계획을 찾을 수 없습니다. 임시 입력 관리에서 보관된 내용을 확인하세요.</p><Link to="/health/privacy">임시 입력 관리</Link></Card>;
   if (!latest) {
     return (
       <Card>
         <EmptyState
           title="운동 루틴이 없어요"
-          description="루틴 페이지에서 먼저 AI 맞춤 루틴을 생성해 보세요."
+          description="루틴 페이지에서 먼저 맞춤 루틴을 생성해 보세요."
           action={<Link className="btn btn-primary" to="/health/routine">루틴 만들러 가기</Link>}
         />
       </Card>
@@ -92,42 +65,37 @@ export default function WorkoutPage() {
   if (latest.needs_review) return <Card><EmptyState title="운동 계획을 먼저 갱신하세요" description={latest.review_reason}
     action={<Link className="btn btn-primary" to="/health/routine">루틴 재생성</Link>}/></Card>;
 
+  if(workoutMode)return <Card><WorkoutMode routine={latest} exercises={dayExercises} workouts={workouts.data||[]} onSaved={workouts.reload} onClose={()=>setWorkoutMode(false)}/></Card>;
+
   return (
     <>
-      <WorkoutCalendar workouts={workouts.data||[]} routine={latest}/><Card title="오늘의 운동">
+      {requested&&<p role="status">보관된 계획의 입력을 복구했습니다. 기록 날짜를 확인하세요. <Link to="/health/privacy">임시 입력 목록</Link></p>}<section className="workout-hero"><span className="workout-eyebrow">TODAY · 오늘의 움직임</span><h1>내 속도로, 하나씩</h1><p>{activeDay}일차 · {dayExercises.length}개 운동 · {dayExercises.filter(isDone).length}개 완료</p><progress aria-label="오늘 운동 진행률" value={dayExercises.filter(isDone).length} max={Math.max(1,dayExercises.length)}/><button className="btn btn-primary" disabled={!dayExercises.length} onClick={()=>setWorkoutMode(true)}>운동 따라하기 · 한 운동씩 시작</button><Link to="/health/routine">운동 교체·계획 확인</Link></section><Card title="오늘의 운동">
         {days.length > 1 && (
           <div style={{ display: 'flex', gap: 6, marginBottom: 12, overflowX: 'auto', paddingBottom: 2 }}>
             {days.map(([d]) => (
-              <button key={d} className={`btn ${activeDay === d ? 'btn-primary' : 'btn-ghost'}`} style={{ whiteSpace: 'nowrap' }} onClick={() => setSelectedDay(d)}>
-                Day {d}
+              <button key={d} className={`btn ${activeDay === d ? 'btn-primary' : 'btn-ghost'}`} style={{ whiteSpace: 'nowrap' }} aria-pressed={activeDay===d} onClick={() => setSelectedDay(d)}>
+                {d}일차
               </button>
             ))}
           </div>
         )}
-        {logError && <ErrorState message={logError.message} />}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {dayExercises.length === 0 && <p className="muted">이 날에는 계획된 운동이 없습니다.</p>}
           {dayExercises.map((ex,i) => {
-            const done=isDone(ex), key=ex.exercise_id||ex.exercise_name;
+            const key=ex.exercise_id||ex.exercise_name;
+            const previous=previousWorkout(workouts.data||[],ex,today);
             return <ExerciseCard key={key+i} exercise={ex}>
-              <div className="workout-feedback">
-                {[['sets','실제 세트',0,100],['reps','실제 반복 횟수',0,1000],['rpe','RPE (1–10)',1,10],['pain','통증 (0–10)',0,10]].map(([name,label,min,max])=><label key={name}>{label}<input type="number" min={min} max={max} value={details[key]?.[name]??''} onChange={e=>field(key,name,e.target.value)}/></label>)}
-                <label>메모<input maxLength="2000" value={details[key]?.memo||''} onChange={e=>field(key,'memo',e.target.value)}/></label>
-                <label className="muted" htmlFor={`minutes-${i}`}>실제 운동 시간 (분)</label><input id={`minutes-${i}`} className="text-input" type="number" min="0" max="1440" step=".5" value={minutes[key]??''} onChange={e=>setMinutes({...minutes,[key]:e.target.value})}/><label className="muted" htmlFor={`feedback-${i}`}>오늘의 난이도</label>
-                <select id={`feedback-${i}`} className="text-input" value={feedback[key]||'moderate'} onChange={e=>setFeedback({...feedback,[key]:e.target.value})}>
-                  <option value="easy">쉬웠어요</option><option value="moderate">적당했어요</option><option value="hard">어려웠어요</option><option value="pain">통증으로 중단</option>
-                </select>
-                <button className={`btn ${done?'btn-secondary':'btn-primary'}`} disabled={logging===key} onClick={()=>complete(ex)}>
-                  {logging===key?'저장 중...':done?'기록 수정':feedback[key]==='pain'?'중단 기록':'완료 기록'}
-                </button>
-                {done && <span className="muted">오늘 완료</span>}
-              </div>
-              {(feedback[key]==='pain'||Number(details[key]?.pain)>0) && <p className="motion-cautions">운동을 중단하고 건강센터에 상담하세요. 통증 기록이 있으면 자동 증량하지 않습니다.</p>}
+              {previous&&<p className="muted">지난 기록 ({previous.date}): {previous.set_records?.length?previous.set_records.map(s=>`${s.weight_kg==null?'중량 미기록':`${s.weight_kg}kg`} × ${s.reps}회${s.kind==='warmup'?' (준비)':''}`).join(' / '):`${previous.sets_completed??'—'}세트 · ${previous.reps_completed??'횟수 미기록'}`}</p>}
+              <WorkoutRecordForm key={`${latest.id}-${today}-${key}`} exercise={ex} routine={latest} date={today}
+                existing={todaysLogs.find(w=>w.routine_id===latest.id&&w.day_number===ex.day_number&&(ex.exercise_id?w.routine_exercise_id===ex.exercise_id:w.exercise_name===ex.exercise_name))}
+                previous={previous} onSaved={workouts.reload}/>
+
             </ExerciseCard>;
           })}
         </div>
       </Card>
 
+      <details className="workout-calendar-disclosure"><summary>운동 캘린더·연속 기록 보기</summary><WorkoutCalendar workouts={workouts.data||[]} routine={latest}/></details>
       <Card title="최근 운동 기록">
         {(workouts.data || []).length === 0 ? (
           <EmptyState title="기록이 없어요" description="운동을 완료하면 여기에 기록이 쌓여요." />
@@ -135,8 +103,8 @@ export default function WorkoutPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {[...(workouts.data || [])].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 15).map((w) => (
               <div key={w.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.875rem' }}>
-                <span>{w.date} · {w.exercise_name}</span>
-                <Badge tone={w.completed ? 'success' : 'blue'}>{w.completed ? '완료' : '미완료'}</Badge>
+                <span>{w.date} · {w.exercise_name}{w.set_records?.length>0&&<small style={{display:'block'}}>{w.set_records.map(s=>`${s.weight_kg==null?'미기록':`${s.weight_kg}kg`} × ${s.reps}회`).join(' / ')}</small>}{w.timed_sets_seconds?.length>0&&<small style={{display:'block'}}>유지시간 {w.timed_sets_seconds.join(' / ')}초</small>}{w.performed_seconds>0&&!w.timed_sets_seconds?.length&&<small style={{display:'block'}}>수행 {w.performed_seconds}초</small>}</span>
+                <Badge tone={w.completed ? 'success' : 'blue'}>{WORKOUT_STATUS[w.completion_status]||(w.completed?'완료':'미완료')}</Badge>
               </div>
             ))}
           </div>

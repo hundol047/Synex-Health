@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { samplePose, MOTIONS } from './motions.js';
 // Rest joints in the CC0 mesh coordinate system. Segment transforms are blended at joints.
-export const REST=[[0,.94,.035],[0,1.42,.025],[0,1.66,.025],[.185,1.42,.02],[.325,1.25,.04],[.445,1.105,.13],[-.185,1.42,.02],[-.325,1.25,.04],[-.445,1.105,.13],[.1,.90,.035],[.14,.52,.05],[.19,.1,.035],[-.1,.90,.035],[-.14,.52,.05],[-.19,.1,.035]];
-export const BONES=[[0,1],[1,2],[3,4],[4,5],[6,7],[7,8],[9,10],[10,11],[12,13],[13,14]];
+export const REST=[[0,.94,.035],[0,1.42,.025],[0,1.66,.025],[.185,1.42,.02],[.325,1.25,.04],[.445,1.105,.13],[-.185,1.42,.02],[-.325,1.25,.04],[-.445,1.105,.13],[.1,.90,.035],[.14,.52,.05],[.19,.1,.035],[-.1,.90,.035],[-.14,.52,.05],[-.19,.1,.035],[.19,.04,.20],[-.19,.04,.20]];
+export const BONES=[[0,1],[1,2],[3,4],[4,5],[6,7],[7,8],[9,10],[10,11],[12,13],[13,14],[11,15],[14,16]];
 export function poseJoints(id,t,rest=REST){
  const p=samplePose(id,t);if(!p)return rest;
  const front=MOTIONS[id].view.includes('정면');
@@ -16,7 +16,14 @@ export function poseJoints(id,t,rest=REST){
  place(0,1);place(1,2);
  const torsoRotation=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),direction(0,1));
  for(const [root,parent] of [[3,1],[6,1],[9,0],[12,0]])joints[root]=vec(rest[root]).sub(vec(rest[parent])).applyQuaternion(torsoRotation).add(vec(joints[parent])).toArray();
- for(const [a,b] of BONES.slice(2))place(a,b);
+ for(const [a,b] of BONES.slice(2,10))place(a,b);
+ // Feet articulate separately from the calf. Upright exercises retain planted soles.
+ for(const [knee,ankle,toe] of [[10,11,15],[13,14,16]]){
+  const delta=vec(rest[toe]).sub(vec(rest[ankle]));
+  const leg=vec(joints[knee]).sub(vec(joints[ankle])).normalize();
+  if(Math.abs(leg.y)<.5)delta.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(vec(rest[ankle]).sub(vec(rest[knee])).normalize(),vec(joints[ankle]).sub(vec(joints[knee])).normalize()));
+  joints[toe]=vec(joints[ankle]).add(delta).toArray();
+ }
  const lift=.08-Math.min(joints[11][1],joints[14][1]);
  for(const p of joints)p[1]+=lift;
  return joints;
@@ -29,15 +36,33 @@ export function bindSurface(base){
   const x=base[i],y=base[i+1];
   const head=smooth(1.47,1.56,y),arm=smooth(.16,.27,Math.abs(x))*smooth(.84,.91,y)*(1-head),leg=(1-smooth(.85,1.02,y))*(1-arm);
   const trunk=Math.max(0,1-head-arm-leg),elbow=smooth(1.20,1.29,y),knee=smooth(.47,.57,y);
-  const armIndex=x>=0?2:4,legIndex=x>=0?6:8;
-  weights.push([[0,trunk],[1,head],[armIndex,arm*elbow],[armIndex+1,arm*(1-elbow)],[legIndex,leg*knee],[legIndex+1,leg*(1-knee)]].filter(([,w])=>w>0));
+  const armIndex=x>=0?2:4,legIndex=x>=0?6:8,footIndex=x>=0?10:11,foot=1-smooth(.12,.21,y);
+  weights.push([[0,trunk],[1,head],[armIndex,arm*elbow],[armIndex+1,arm*(1-elbow)],[legIndex,leg*knee],[legIndex+1,leg*(1-knee)*(1-foot)],[footIndex,leg*(1-knee)*foot]].filter(([,w])=>w>0));
  }
  return weights;
 }
-export function deformSurface(base,weights,joints,target,rest=REST){
- const transforms=BONES.map(([a,b])=>{const from=vec(rest[b]).sub(vec(rest[a])),to=vec(joints[b]).sub(vec(joints[a]));return {origin:vec(rest[a]),destination:vec(joints[a]),rotation:new THREE.Quaternion().setFromUnitVectors(from.normalize(),to.normalize())};});
- const v=new THREE.Vector3(),out=new THREE.Vector3();
- for(let i=0;i<weights.length;i++){out.set(0,0,0);for(const [bone,w] of weights[i]){const tr=transforms[bone];v.fromArray(base,i*3).sub(tr.origin).applyQuaternion(tr.rotation).add(tr.destination);out.addScaledVector(v,w);}out.toArray(target,i*3);}
- let floor=Infinity;for(let i=1;i<target.length;i+=3)floor=Math.min(floor,target[i]);for(let i=1;i<target.length;i+=3)target[i]+=.015-floor;
+// Normalized dual-quaternion blending preserves rigid volume around bent joints.
+// Original implementation of the published algorithm (Kavan et al., 2008).
+export function deformSurface(base,weights,joints,target,rest=REST,ground=true){
+ const transforms=BONES.map(([a,b])=>{
+  const rotation=new THREE.Quaternion().setFromUnitVectors(vec(rest[b]).sub(vec(rest[a])).normalize(),vec(joints[b]).sub(vec(joints[a])).normalize());
+  const t=vec(joints[a]).sub(vec(rest[a]).applyQuaternion(rotation));
+  const dual=new THREE.Quaternion(t.x,t.y,t.z,0).multiply(rotation);
+  return {real:rotation.toArray(),dual:dual.toArray().map(v=>v*.5)};
+ });
+ const v=new THREE.Vector3(),q=new THREE.Quaternion(),d=new THREE.Quaternion(),translation=new THREE.Quaternion();
+ for(let i=0;i<weights.length;i++){
+  const real=[0,0,0,0],dual=[0,0,0,0],anchor=transforms[weights[i][0]?.[0]||0].real;
+  for(const [bone,w] of weights[i]){
+   const tr=transforms[bone],sign=tr.real.reduce((n,x,k)=>n+x*anchor[k],0)<0?-1:1;
+   for(let k=0;k<4;k++){real[k]+=tr.real[k]*w*sign;dual[k]+=tr.dual[k]*w*sign;}
+  }
+  const length=Math.hypot(...real);
+  if(length<1e-8){for(let k=0;k<3;k++)target[i*3+k]=base[i*3+k];continue;}
+  q.fromArray(real.map(x=>x/length));d.fromArray(dual.map(x=>x/length));
+  translation.copy(d).multiply(q.clone().conjugate());
+  v.fromArray(base,i*3).applyQuaternion(q);v.x+=2*translation.x;v.y+=2*translation.y;v.z+=2*translation.z;v.toArray(target,i*3);
+ }
+ if(ground){let floor=Infinity;for(let i=1;i<target.length;i+=3)floor=Math.min(floor,target[i]);for(let i=1;i<target.length;i+=3)target[i]+=.015-floor;}
  return target;
 }

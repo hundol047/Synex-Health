@@ -301,12 +301,12 @@ def test_workout_identity_idempotency_and_pain(client):
     routine=client.post('/api/exercise-routines/generate').json();exercise=routine['exercises'][0]
     from datetime import date
     payload={'routine_id':routine['id'],'routine_exercise_id':exercise['exercise_id'], 'day_number':exercise['day_number'],
-             'date':date.today().isoformat(),'exercise_name':exercise['exercise_name'],'difficulty':'moderate'}
+             'date':date.today().isoformat(),'exercise_name':exercise['exercise_name'],'difficulty':'moderate','mutation_id':'initial-workout'}
     assert client.post('/api/workouts',json=payload,headers=student_headers('other')).status_code==404
     a=client.post('/api/workouts',json=payload).json();b=client.post('/api/workouts',json=payload).json()
     assert a['id']==b['id']
     assert len(client.get('/api/workouts').json())==1
-    payload.update(difficulty='pain',completed=False)
+    payload.update(difficulty='pain',completed=False,expected_revision=a['revision'],mutation_id='pain-edit')
     assert client.post('/api/workouts',json=payload).status_code==200
     assert client.post('/api/exercise-routines/generate').status_code==409
 

@@ -31,6 +31,17 @@ store = HealthStore()
 audit = AuditStore()  # append-only write-event log (section 34) -- reused from SynexAgent's shape
 
 
+def _average_for(user, measurement):
+    from .reference import average_comparison
+    result = average_comparison(user, measurement, store.list_reference_ranges())
+    selected = store.preference(user.id, 'average_reference_group')
+    result['selection_mode'] = 'auto'
+    if selected and any(g['id'] == selected for g in result['groups']):
+        result['selection_mode'] = 'manual'
+        result['selected_group_id'] = selected
+    return result
+
+
 def _ranges_for(user: HealthUser) -> dict[Segment, ReferenceRange]:
     age = None
     if user.birth_date:
@@ -220,7 +231,18 @@ def body_map_latest(user: User = Depends(require('measurement:read'))):
         raise HTTPException(404, '등록된 측정 데이터가 없습니다.')
     previous = store.previous_measurement(user.id, current.id)
     ranges = _ranges_for(u)
-    return {**cmp.full_comparison(previous, current, ranges), 'body_profile': body_model_profile(u), 'measurement': current}
+    return {**cmp.full_comparison(previous, current, ranges), 'body_profile': body_model_profile(u), 'measurement': current, 'previous_measurement': previous, 'average_comparison': _average_for(u, current)}
+
+
+@router.put('/body-map/reference-group')
+def select_average_reference(selection: dict, user: User = Depends(require('health:write'))):
+    u = _require_user_record(user.id)
+    current = store.latest_measurement(user.id)
+    group_id = selection.get('group_id')
+    if group_id is not None and group_id not in [g['id'] for g in _average_for(u, current)['groups']]:
+        raise HTTPException(422, '현재 측정에 지원되는 비교군을 선택하세요.')
+    store.save_preference(user.id, 'average_reference_group', group_id)
+    return _average_for(u, current)
 
 
 @router.get('/body-map/comparison')
@@ -238,7 +260,7 @@ def progress(user: User = Depends(require('measurement:read'))):
         d=date.fromisoformat(w.date);key=(d-__import__('datetime').timedelta(days=d.weekday())).isoformat()
         row=weeks.setdefault(key,{'date':key,'total':0,'completed':0});row['total']+=1;row['completed']+=int(w.completed)
     for row in weeks.values():row['completion']=round(row['completed']/row['total']*100,1)
-    return {'workout_weeks':sorted(weeks.values(),key=lambda w:w['date']),'measurements': items, 'workout_count': len(workouts),
+    return {'average_comparison': _average_for(_require_user_record(user.id), items[-1]) if items else None, 'workout_weeks':sorted(weeks.values(),key=lambda w:w['date']),'measurements': items, 'workout_count': len(workouts),
             'completed_workout_count': sum(1 for w in workouts if w.completed)}
 
 
@@ -251,7 +273,7 @@ def health_agent_analyze(user: User = Depends(require('agent:chat'))):
         raise HTTPException(404, '분석할 측정 데이터가 없습니다. 먼저 체성분 데이터를 등록해 주세요.')
     previous = store.previous_measurement(user.id, current.id)
     ranges = _ranges_for(u)
-    analysis = health_agent.analyze(u, current, previous, ranges)
+    analysis = health_agent.analyze(u, current, previous, ranges, average=_average_for(u, current))
     store.add_analysis(analysis)
     return analysis
 
@@ -263,6 +285,7 @@ def health_agent_chat(req: HealthAgentChatRequest, user: User = Depends(require(
     profile = store.get_profile(user.id)
     context = {'latest_measurement': latest.model_dump(mode='json') if latest else None,
                'profile': profile.model_dump(mode='json') if profile else None,
+               'average_comparison': _average_for(u, latest) if latest else None,
                'comparison':cmp.full_comparison(store.previous_measurement(user.id,latest.id),latest,{}) if latest else None,
                'routine':store.latest_routine(user.id).model_dump(mode='json') if store.latest_routine(user.id) else None}
     reply = health_agent.chat(u, req.message, context)
@@ -300,6 +323,8 @@ def list_exercise_routines(user: User = Depends(require('routine:read'))):
             reason = '새 측정값이 등록되었습니다. 운동 계획을 다시 생성하세요.'
         elif profile and routine.input_snapshot.get('profile') and routine.input_snapshot['profile'] != profile.model_dump(mode='json'):
             reason = '운동 프로필이 변경되었습니다. 변경된 조건으로 계획을 다시 생성하세요.'
+        elif measurement and routine.input_snapshot.get('reference_group_id') != _average_for(_require_user_record(user.id), measurement)['selected_group_id']:
+            reason = '비교군 기준이 변경되었습니다. 같은 기준으로 운동 이유를 보려면 계획을 다시 생성하세요.'
         result.append({**routine.model_dump(mode='json'), 'needs_review': bool(reason), 'review_reason': reason})
     return result
 
@@ -324,7 +349,8 @@ def generate_exercise_routine(user: User = Depends(require('routine:write'))):
     try:
         routine = build_deterministic_routine(user.id, measurement, profile, change_note=change_note,
             previous_measurement=previous_measurement, previous_routine=previous_routine,
-            workouts=store.list_workouts(user.id), user=store.get_user(user.id))
+            workouts=store.list_workouts(user.id), user=store.get_user(user.id),
+            average=_average_for(_require_user_record(user.id), measurement))
     except PlanBlocked as exc:
         raise HTTPException(409, str(exc))
 
@@ -357,6 +383,73 @@ def get_exercise_routine(routine_id: str, user: User = Depends(require('routine:
     return r
 
 
+def _replacement_context(routine_id, exercise_id, user):
+    from .exercise_catalog import CATALOG
+    from .exercise_engine import _limitations
+    routine = store.get_routine(routine_id)
+    if not routine or routine.user_id != user.id:
+        raise HTTPException(404, '본인의 루틴을 선택하세요.')
+    current = store.latest_routine(user.id)
+    if not current or current.id != routine.id:
+        raise HTTPException(409, '새 루틴이 있습니다. 목록을 새로고침하세요.')
+    status = next(r for r in list_exercise_routines(user) if r['id'] == routine_id)
+    if status['needs_review']:
+        raise HTTPException(409, status['review_reason'])
+    profile, measurement = store.get_profile(user.id), store.latest_measurement(user.id)
+    if not profile or not measurement:
+        raise HTTPException(422, '측정값과 운동 프로필을 먼저 등록하세요.')
+    # Reuse full adult screening and recent-pain gate; replacements never bypass it.
+    try:
+        build_deterministic_routine(user.id, measurement, profile, previous_routine=routine,
+            workouts=store.list_workouts(user.id), user=store.get_user(user.id))
+        constraints = _limitations(profile)
+    except PlanBlocked as exc:
+        raise HTTPException(409, str(exc))
+    source = next((e for e in routine.exercises if e.exercise_id == exercise_id), None)
+    item = next((m for m in CATALOG if source and m['id'] == source.motion_id), None)
+    if not item:
+        raise HTTPException(404, '교체할 운동이 없습니다.')
+    used = {e.motion_id for e in routine.exercises if e.day_number == source.day_number}
+    candidates = [m for m in CATALOG if m['id'] not in used and m['pattern'] == item['pattern']
+        and m['dose_type'] == source.dose_type and m['auto_recommend'] and m['easy']
+        and set(m['equipment']) <= set(profile.available_equipment)
+        and not set(m['avoid']) & constraints and profile.exercise_location in m['locations']
+        and (profile.training_mode != 'bodyweight' or not m['equipment'])
+        and not (profile.exercise_location == 'outdoor' and m['id'] in ('sit_stand','wall_push','march'))]
+    return routine, source, candidates
+
+
+@router.get('/exercise-routines/{routine_id}/alternatives/{exercise_id}')
+def exercise_alternatives(routine_id: str, exercise_id: str, user: User = Depends(require('routine:write'))):
+    _, _, candidates = _replacement_context(routine_id, exercise_id, user)
+    return [{'id':m['id'], 'name':m['name'], 'equipment':m['equipment']} for m in candidates]
+
+
+@router.post('/exercise-routines/{routine_id}/replace/{exercise_id}/{replacement_id}')
+def replace_exercise(routine_id: str, exercise_id: str, replacement_id: str, user: User = Depends(require('routine:write'))):
+    routine, source, candidates = _replacement_context(routine_id, exercise_id, user)
+    item = next((m for m in candidates if m['id'] == replacement_id), None)
+    if not item:
+        raise HTTPException(422, '현재 조건에 맞는 대체 운동을 선택하세요.')
+    changed = source.model_copy(update=dict(exercise_id=f'd{source.day_number}-{item["id"]}',
+        motion_id=item['id'], exercise_name=item['name'], equipment=item['equipment'],
+        training_type=item['training_type'], instructions=item['instructions'], cautions=item['cautions'],
+        target_regions=item['regions'], hold_seconds=item.get('hold_seconds'),
+        reps=item['reps'] if source.dose_type == 'hold' else source.reps,
+        reason='사용자가 선택한 같은 움직임 유형의 쉬운 대체 운동입니다. 이전 시간·세트 계획을 유지했습니다.'))
+    result = routine.model_copy(deep=True)
+    result.id, result.created_at = new_id('ROUTINE'), now()
+    result.exercises = [changed if e.exercise_id == exercise_id else e for e in result.exercises]
+    result.input_snapshot['replaces_routine_id'] = routine.id
+    result.progression = f'{source.exercise_name} → {item["name"]} 교체. 과거 운동 기록은 원래 루틴에 보관합니다.'
+    try:
+        store.add_routine(result, expected_latest=routine.id)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc))
+    audit.record(user.id, 'routine_exercise_replaced', {'routine_id':result.id}, user_id=user.id, role=user.role)
+    return result
+
+
 # --- Workouts --------------------------------------------------------------------------------------
 @router.post('/workouts')
 def create_workout(req: WorkoutLogCreateRequest, user: User = Depends(require('workout:write'))):
@@ -364,12 +457,13 @@ def create_workout(req: WorkoutLogCreateRequest, user: User = Depends(require('w
         logged_date = date.fromisoformat(req.date)
     except ValueError:
         raise HTTPException(422, '운동 날짜를 확인하세요.')
-    if logged_date > date.today():
+    from .workout_rules import today_in_zone, created_day, completion
+    if logged_date > today_in_zone(req.time_zone):
         raise HTTPException(422, '미래 운동 기록은 저장할 수 없습니다.')
     routine = store.get_routine(req.routine_id) if req.routine_id else None
     if routine is None or routine.user_id != user.id:
         raise HTTPException(404, '본인의 운동 루틴을 선택하세요.')
-    if logged_date < date.fromisoformat(routine.created_at[:10]):
+    if logged_date < created_day(routine.created_at, req.time_zone):
         raise HTTPException(422, '루틴 생성 전 날짜로 기록할 수 없습니다.')
     matching = [e for e in routine.exercises if
                 (e.exercise_id == req.routine_exercise_id if req.routine_exercise_id else e.exercise_name == req.exercise_name)
@@ -377,13 +471,28 @@ def create_workout(req: WorkoutLogCreateRequest, user: User = Depends(require('w
     if len(matching) != 1:
         raise HTTPException(422, '루틴의 운동과 Day를 정확히 선택하세요.')
     exercise = matching[0]
-    payload = req.model_dump()
+    payload = req.model_dump(exclude={'expected_revision'})
     payload.update(exercise_name=exercise.exercise_name, day_number=exercise.day_number,
-                   routine_exercise_id=exercise.exercise_id)
-    # Stable key + INSERT OR REPLACE: retries and feedback edits do not inflate completion rate.
+                   routine_exercise_id=exercise.exercise_id, exercise_catalog_id=exercise.motion_id)
+    if req.set_records:
+        if exercise.dose_type != 'reps':
+            raise HTTPException(422, '시간 기준 운동은 세트별 중량·횟수 대신 운동 시간을 기록하세요.')
+        payload.update(sets_completed=len(req.set_records), reps_completed=', '.join(str(s.reps) for s in req.set_records))
+    if req.timed_sets_seconds and exercise.dose_type != 'hold':
+        raise HTTPException(422, '유지시간 기록은 유지 운동에만 사용하세요.')
+    status = completion(req, exercise)
+    payload.update(completion_status=status, completed=status == 'completed')
+    if exercise.dose_type == 'hold':
+        payload.update(sets_completed=len(req.timed_sets_seconds), performed_seconds=sum(req.timed_sets_seconds))
+    # Stable logical identity, mutation replay and optimistic revision checks.
     key = f'{user.id}|{routine.id}|{logged_date}|{exercise.day_number}|{exercise.exercise_id or exercise.exercise_name}'
     w = WorkoutLog(id='WORKOUT-' + hashlib.sha256(key.encode()).hexdigest()[:24], user_id=user.id, created_at=now(), **payload)
-    store.add_workout(w)
+    from .store import WorkoutConflict
+    try:
+        w = store.add_workout(w, expected_revision=req.expected_revision)
+    except WorkoutConflict as conflict:
+        raise HTTPException(409, {'message':'다른 기기에서 변경된 기록이 있습니다. 저장할 기록을 선택하세요.',
+                                  'current':conflict.current.model_dump(mode='json') if conflict.current else None})
     audit.record(user.id, 'workout_logged', {'workout_id': w.id, 'routine_id': w.routine_id, 'completed': w.completed},
                  user_id=user.id, role=user.role)
     return w

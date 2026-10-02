@@ -1,5 +1,6 @@
 import React, { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { createBrowserRouter, createRoutesFromElements, RouterProvider, Outlet, Route, Navigate } from 'react-router-dom';
+import UnsavedChangesGuard from './shared/components/UnsavedChangesGuard.jsx';
 import Layout from './shared/components/Layout.jsx';
 
 const DiagnosticsPage = lazy(() => import('./health/pages/DiagnosticsPage.jsx'));
@@ -27,11 +28,10 @@ const AdminPage = lazy(() => import('./health/pages/AdminPage.jsx'));
 
 const ConnectionsPage = lazy(() => import('./health/pages/ConnectionsPage.jsx'));
 
-export default function App() {
-  return (
-    <BrowserRouter>
-      <Layout>
-        <Suspense fallback={<p role="status">화면을 불러오는 중입니다.</p>}><Routes>
+function AppShell(){return <><UnsavedChangesGuard/><Layout><Suspense fallback={<p role="status">화면을 불러오는 중입니다.</p>}><Outlet/></Suspense></Layout></>;}
+let router;
+export default function App(){
+ if(!router)router=createBrowserRouter(createRoutesFromElements(<Route element={<AppShell/>}>
           <Route path="/" element={<Navigate to="/health" replace />} />
           <Route path="/health/diagnostics" element={<DiagnosticsPage />} />
           <Route path="/health/subscription" element={<SubscriptionPage />} />
@@ -52,8 +52,6 @@ export default function App() {
           <Route path="/health/profile" element={<ProfilePage />} />
           <Route path="/health-center" element={<CounselorDashboardPage />} />
           <Route path="*" element={<Navigate to="/health" replace />} />
-        </Routes></Suspense>
-      </Layout>
-    </BrowserRouter>
-  );
+ </Route>));
+ return <RouterProvider router={router}/>;
 }

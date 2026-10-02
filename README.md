@@ -167,3 +167,11 @@ See [release readiness](docs/APP_STORE_RELEASE_READINESS.md) for verified result
 ## Production upgrade
 
 [Current upgrade readiness](docs/PRODUCTION_READINESS.md): inline exercise previews, twelve pose analyzers, adaptive history, session offline queue, reference provenance and explicit database migrations. See [database operations](docs/DATABASE_OPERATIONS.md), [mobile release](docs/MOBILE_RELEASE.md), [billing](docs/BILLING.md) and [security/privacy](docs/SECURITY_AND_PRIVACY.md).
+
+## Cohort average overlay and guided workouts
+
+`/health/body` now offers same-viewer lean/fat average overlays, numeric kg/% comparisons, provenance, layer controls and interpolation. Real cohort means are never inferred from device percentages or segment sums; production excludes demo references. Workout Mode records each exercise and stops on pain. See [implementation and verification boundaries](docs/AVERAGE_OVERLAY_UPGRADE.md).
+
+### 출시 보완 및 운동 분류 (2026-10-01)
+
+운동 라이브러리는 맨몸 42종 / 장비 32종(총 74종)을 제공하며, 프로필에서 맨몸 전용 또는 보유 장비 우선 루틴을 선택할 수 있습니다. 미전송 기록은 계정별 암호화 저장, 재로그인 복구, 수정 충돌 확인을 지원합니다. 구현 범위와 실제 외부 검증이 필요한 항목은 [출시 보완 현황](docs/LAUNCH_COMPLETION.md), 운영·백업·스토어 검증 절차는 [운영 인수 기준](docs/RELEASE_OPERATIONS.md)을 확인하세요. 테스트 통과를 실기기 검증이나 스토어 출시 완료로 해석하지 않습니다.

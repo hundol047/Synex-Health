@@ -2,7 +2,8 @@ import React,{createContext,useContext,useEffect,useState} from 'react';
 import { Capacitor } from '@capacitor/core';
 import { setAccessToken,configureRefresh } from '../lib/session.js';
 import {clearLocalAccount} from '../lib/accountLifecycle.js';
-import { api } from '../lib/api.js';
+import {bindOfflineAccount,offlineState} from '../lib/offline.js';
+import { api,BASE,getDemoUser } from '../lib/api.js';
 const AuthContext=createContext({demo:true,role:'student'});
 export const useAuth=()=>useContext(AuthContext);
 const b64=bytes=>btoa(String.fromCharCode(...bytes)).replaceAll('+','-').replaceAll('/','_').replaceAll('=','');
@@ -26,8 +27,8 @@ export default function AuthBoundary({children}){
   const health=await api('/api/health/status');
   setReviewEnabled(health.review_login===true);
   if(health.demo&&import.meta.env.VITE_RELEASE_BUILD==='true')throw Error('운영 서버 인증 설정이 올바르지 않습니다.');
-  if(health.demo){setAuth({demo:true,role:'student'});return;}
-  const me=await api('/api/health/profile');setAuth({demo:false,role:me.role});
+  if(health.demo){await bindOfflineAccount(getDemoUser(),BASE);setAuth({demo:true,role:'student'});return;}
+  const me=await api('/api/health/profile');await bindOfflineAccount(me.id,BASE);setAuth({demo:false,role:me.role});
  }catch(e){if(e.status===401){setAuth({demo:false,login:true});}else setError(e.message);}}
  async function callback(url){
   const received=new URL(url),target=new URL(redirect());
@@ -60,7 +61,7 @@ export default function AuthBoundary({children}){
  },[]);
  async function login(){setPending(true);setError('');try{
   const config=schools.find(c=>c.school_id===school);
-  if(schools.length&&!config)throw Error('로그인할 학교를 선택하세요.');
+  if(schools.length&&!config&&!import.meta.env.VITE_OIDC_ISSUER)throw Error('로그인할 학교를 선택하세요.');
   if(config&&config.redirect_url!==redirect())throw Error('현재 앱의 로그인 redirect URL이 학교 설정과 다릅니다.');
   const info=await discovery(config),client=config?.client_id||import.meta.env.VITE_OIDC_CLIENT_ID;
   if(!client)throw Error('로그인 클라이언트 설정이 필요합니다.');
@@ -69,6 +70,6 @@ export default function AuthBoundary({children}){
   const url=new URL(info.authorization_endpoint);url.search=new URLSearchParams({response_type:'code',client_id:client,redirect_uri:redirect(),scope:import.meta.env.VITE_OIDC_REFRESH==='true'?'openid profile offline_access':'openid profile',state,code_challenge:challenge,code_challenge_method:'S256'}).toString();
   if(native){const {Browser}=await import('@capacitor/browser');await Browser.open({url:url.href});setPending(false);}else location.assign(url.href);
  }catch(e){setError(e.message);setPending(false);}}
- if(auth&&!auth.login)return <AuthContext.Provider value={{...auth,logout:async()=>{try{await api('/api/auth/logout',{});}finally{await clearLocalAccount();setAuth({demo:false,login:true});}}}}>{children}</AuthContext.Provider>;
- return <main className="health-main"><section className="membership-hero"><span className="eyebrow">SYNEX HEALTH</span><h1>나의 건강 기록을 안전하게</h1><p>학교 계정으로 로그인하여 건강 기록과 구독을 연결합니다.</p></section><section className="card">{error&&<p role="alert">{error}</p>}{schools.length>0&&<label>학교 로그인 <select value={school} onChange={e=>setSchool(e.target.value)}><option value="">학교 선택</option>{schools.map(s=><option key={s.school_id} value={s.school_id}>{s.school_id}</option>)}</select></label>}{reviewEnabled&&<form onSubmit={async e=>{e.preventDefault();setPending(true);try{const r=await api('/api/auth/review',{username:reviewName,password:reviewPassword});setAccessToken(r.access_token);setReviewPassword('');await load();}catch(err){setError(err.message);}finally{setPending(false);}}}><h2>App Review · 심사 계정</h2><label>심사 ID<input autoComplete="username" value={reviewName} onChange={e=>setReviewName(e.target.value)}/></label><label>비밀번호<input type="password" autoComplete="current-password" value={reviewPassword} onChange={e=>setReviewPassword(e.target.value)}/></label><button className="btn" disabled={pending}>심사 로그인</button></form>}{auth?.login?<button className="btn btn-primary" disabled={pending} onClick={login}>{pending?'로그인 중…':'학교 계정으로 로그인'}</button>:<><p>서버 연결을 확인하고 있습니다.</p><button className="btn" onClick={load}>다시 연결</button></>}</section></main>;
+ if(auth&&!auth.login)return <AuthContext.Provider value={{...auth,logout:async()=>{if((offlineState().pending||offlineState().drafts)&&!window.confirm('미전송 또는 진행 중 임시 기록이 있습니다. 로그아웃하면 이 기기의 미전송·진행 중 기록이 삭제됩니다. 먼저 전송하는 것을 권장합니다. 그래도 로그아웃할까요?'))return;try{await api('/api/auth/logout',{});}finally{await clearLocalAccount();setAuth({demo:false,login:true});}}}}>{children}</AuthContext.Provider>;
+ return <main className="health-main"><section className="membership-hero"><span className="eyebrow">SYNEX HEALTH</span><h1>나의 건강 기록을 안전하게</h1><p>내 계정으로 로그인하여 건강 기록을 연결하세요. 학교 연동은 선택할 수 있습니다.</p></section><section className="card">{error&&<p role="alert">{error}</p>}{schools.length>0&&<label>학교 로그인 <select value={school} onChange={e=>setSchool(e.target.value)}><option value="">일반 계정 로그인</option>{schools.map(s=><option key={s.school_id} value={s.school_id}>{s.school_id}</option>)}</select></label>}{reviewEnabled&&<form onSubmit={async e=>{e.preventDefault();setPending(true);try{const r=await api('/api/auth/review',{username:reviewName,password:reviewPassword});setAccessToken(r.access_token);setReviewPassword('');await load();}catch(err){setError(err.message);}finally{setPending(false);}}}><h2>App Review · 심사 계정</h2><label>심사 ID<input autoComplete="username" value={reviewName} onChange={e=>setReviewName(e.target.value)}/></label><label>비밀번호<input type="password" autoComplete="current-password" value={reviewPassword} onChange={e=>setReviewPassword(e.target.value)}/></label><button className="btn" disabled={pending}>심사 로그인</button></form>}{auth?.login?<button className="btn btn-primary" disabled={pending} onClick={login}>{pending?'로그인 중…':school?'학교 계정으로 로그인':'내 계정으로 로그인'}</button>:<><p>서버 연결을 확인하고 있습니다.</p><button className="btn" onClick={load}>다시 연결</button></>}</section></main>;
 }

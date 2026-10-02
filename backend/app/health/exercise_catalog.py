@@ -67,16 +67,30 @@ CATALOG.append({**movement('wall_hinge','벽 터치 힙 힌지','hinge',['하체
 CATALOG.append({**movement('seated_calf','앉아서 뒤꿈치 들기','accessory',['하체'],[],['ankle'],['의자에 앉아 발바닥 앞부분으로 지지합니다.','뒤꿈치를 올렸다 천천히 내립니다.'], '반동을 피하고 통증 없는 범위에서 수행하세요.'), 'english_name':'Seated calf raise','category':'Legs'})
 CATALOG.append({**movement('brisk_walk','활기찬 걷기','cardio',['전신'],[],['knee', 'hip', 'ankle'],['평탄한 곳에서 평소보다 조금 빠르게 걷습니다.','문장으로 대화가 가능한 속도를 유지합니다.'], '반동을 피하고 통증 없는 범위에서 수행하세요.'), 'english_name':'Brisk walking','category':'Cardio'})
 
+from .exercise_expansion import expanded_movements
+CATALOG.extend(expanded_movements(movement))
+
 _CATEGORY={'squat':'Legs','push':'Chest','pull':'Back','hinge':'Glutes','core':'Core','cardio':'Cardio','accessory':'Arms','mobility':'Mobility'}
 _ENGLISH={'sit_stand':'Sit to stand','squat':'Bodyweight squat','wall_push':'Wall push-up','pushup':'Knee push-up','band_row':'Band row','scapular':'Scapular retraction','bridge':'Glute bridge','hinge':'Hip hinge','bird_dog':'Bird dog','dead_bug':'Supine heel tap','curl':'Dumbbell curl','calf':'Supported calf raise','walk':'Walking','march':'Seated march'}
 for m in CATALOG:
     m.setdefault('english_name',_ENGLISH.get(m['id'],m['id']))
     m.setdefault('category',_CATEGORY[m['pattern']])
-    m.update(korean_name=m['name'],target_muscle=m['regions'],secondary_muscle=['몸통 안정화'],difficulty='beginner' if m['easy'] else 'intermediate',contraindications=m['avoid'],motion_id=m['id'],estimated_duration=180,sets=1 if m['easy'] else 2,reps='8–12',rest=60)
+    m.update(korean_name=m['name'],target_muscle=m['regions'],secondary_muscle=['몸통 안정화'],difficulty=m.get('difficulty','beginner' if m['easy'] else 'intermediate'),contraindications=m['avoid'],motion_id=m['id'],estimated_duration=180,sets=1 if m['easy'] else 2,reps=m.get('reps','8–12'),rest=60)
 _MUSCLES={'Chest':('대흉근','상완삼두근'),'Back':('광배근·승모근','상완이두근'),'Shoulder':('삼각근','승모근'),'Arms':('상완이두근·상완삼두근','전완근'),'Core':('복부·척추 주변 안정근','둔근'),'Glutes':('둔근','햄스트링'),'Legs':('대퇴사두근·햄스트링','둔근'),'Cardio':('전신','하체'),'Mobility':('동작 부위의 가동성','몸통 안정근'),'Stretching':('동작 부위의 유연성','주변 연부조직')}
 for m in CATALOG:
     m['target_muscle'],m['secondary_muscle']=[[_MUSCLES[m['category']][0]],[_MUSCLES[m['category']][1]]]
     if m['id'] in ('calf','seated_calf','calf_stretch'):m['target_muscle']=['종아리 근육']
     if m['id']=='hamstring_stretch':m['target_muscle']=['햄스트링']
     if m['id']=='triceps_extension':m['target_muscle']=['상완삼두근']
+PORTABLE_EQUIPMENT={'dumbbell','band','barbell','bench','safety_rack','rope_handle'}
+for m in CATALOG:
+    m['training_type']='equipment' if m['equipment'] else 'bodyweight'
+    m['locations']=['home','gym','outdoor'] if set(m['equipment']) <= PORTABLE_EQUIPMENT else ['gym']
+    m.setdefault('auto_recommend',True)
+    m.setdefault('dose_type','duration' if m['pattern'] in ('cardio','mobility') else 'reps')
+    if m['id']=='plank':m.update(dose_type='hold',reps='10–20초 유지',hold_seconds=20)
+    if m['id']=='leg_extension':m['target_muscle']=['대퇴사두근']
+    if m['id']=='seated_leg_curl':m['target_muscle']=['햄스트링']
+    if m['id']=='single_calf':m['target_muscle']=['종아리 근육']
+    if m['id']=='cable_pushdown':m['target_muscle']=['상완삼두근']
 BY_ID={m['id']:m for m in CATALOG}

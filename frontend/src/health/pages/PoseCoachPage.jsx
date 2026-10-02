@@ -1,27 +1,9 @@
-import {createPoseRunner} from '../components/exercise/poseRunner.js';
-import React,{useRef,useEffect,useState} from 'react';
-import {api} from '../../shared/lib/api.js';
+import React from 'react';
+import {useSearchParams} from 'react-router-dom';
 import {Card} from '../../shared/components/ui.jsx';
-import {createExercisePoseAnalyzer,POSE_EXERCISES} from '../components/exercise/poseCoach.js';
+import {POSE_EXERCISES} from '../components/exercise/poseCoach.js';
+import CameraCoaching from '../components/exercise/CameraCoaching.jsx';
 export default function PoseCoachPage(){
- const video=useRef(),resources=useRef({}),generation=useRef(0),[exercise,setExercise]=useState('squat'),[running,setRunning]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[result,setResult]=useState(null),[consent,setConsent]=useState(false);
- function stop(){generation.current++;cancelAnimationFrame(resources.current.frame);video.current?.cancelVideoFrameCallback?.(resources.current.videoFrame);resources.current.worker?.postMessage({type:'close'});resources.current.worker?.terminate();clearInterval(resources.current.entitlementTimer);resources.current.stream?.getTracks().forEach(t=>t.stop());resources.current.detector?.close();resources.current={};if(video.current)video.current.srcObject=null;setRunning(false);setBusy(false);}
- useEffect(()=>{const hide=()=>{if(document.hidden)stop();};document.addEventListener('visibilitychange',hide);return()=>{stop();document.removeEventListener('visibilitychange',hide);};},[]);
- async function start(){stop();const id=generation.current;setBusy(true);setError('');try{
-  await api('/api/advanced/pose');
-  if(!navigator.mediaDevices?.getUserMedia)throw Error('HTTPS 카메라 지원 환경에서 이용하세요.');
-  const model=import.meta.env.VITE_POSE_MODEL_URL||'/pose/pose_landmarker_lite.task';
-  const asset=await fetch(model,{method:'HEAD'});if(!asset.ok||!(asset.headers.get('content-type')||'').includes('octet-stream'))throw Error('자세 추정 모델이 설치되지 않았습니다. 운영자에게 모델 설치를 요청하세요.');
-  if(!model)throw Error('자세 추정 모델이 아직 설치되지 않았습니다. 카메라는 켜지지 않습니다.');
-  const detector=await createPoseRunner(model);
-  if(id!==generation.current){detector.close();return;}resources.current.detector=detector;
-  const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:640,height:480},audio:false});
-  if(id!==generation.current){stream.getTracks().forEach(t=>t.stop());return;}
-  resources.current.entitlementTimer=setInterval(()=>api('/api/advanced/pose').catch(()=>{stop();setError('구독 권한을 확인할 수 없어 자세 분석을 중지했습니다.');}),60000);
-  resources.current.stream=stream;video.current.srcObject=stream;await video.current.play();
-  const coach=createExercisePoseAnalyzer(exercise);let last=0;setRunning(true);
-  const loop=async time=>{if(id!==generation.current)return;try{if(time-last>100&&video.current.readyState>=2){const inferenceStart=performance.now();const out=await detector.detectForVideo(video.current,time);if(id!==generation.current)return;video.current.dataset.execution=detector.execution;video.current.dataset.inferenceMs=(performance.now()-inferenceStart).toFixed(1);setResult(coach.update(out.landmarks[0]?.map(p=>({...p,y:p.y*video.current.videoHeight/video.current.videoWidth})),time));last=time;}if(video.current.requestVideoFrameCallback)resources.current.videoFrame=video.current.requestVideoFrameCallback(loop);else resources.current.frame=requestAnimationFrame(loop);}catch{stop();setError('자세 추정이 중단되었습니다. 다시 시작해 주세요.');}};
-  if(video.current.requestVideoFrameCallback)resources.current.videoFrame=video.current.requestVideoFrameCallback(loop);else resources.current.frame=requestAnimationFrame(loop);
- }catch(e){if(id===generation.current){stop();setError(e.message);}}finally{if(id===generation.current)setBusy(false);}}
- return <Card title="Pose Coach"><label>분석할 운동<select value={exercise} disabled={running||busy} onChange={e=>{stop();setResult(null);setExercise(e.target.value);}}>{Object.entries(POSE_EXERCISES).map(([id,c])=><option key={id} value={id}>{c.label}</option>)}</select></label><p>영상은 기기에서 처리하며 서버에 저장하거나 업로드하지 않습니다. 12종 운동의 횟수 또는 유지 시간과 설명용 피드백을 지원합니다. 카메라 기반 자세 추정은 운동 보조용이며 의료적 평가나 정밀 관절각 측정이 아닙니다. 카메라 각도에 따라 오차가 크며 의료 판단에 사용할 수 없습니다.</p><label><input type="checkbox" checked={consent} onChange={e=>{setConsent(e.target.checked);if(!e.target.checked)stop();}}/> 카메라의 기기 내 자세 분석에 동의합니다.</label><video ref={video} muted playsInline style={{width:'100%',maxHeight:440,background:'#142031',borderRadius:16}}/><div className="motion-controls"><button className="btn btn-primary" disabled={!consent||busy||running} onClick={start}>{busy?'준비 중…':'카메라 시작'}</button><button className="btn btn-ghost" onClick={stop}>중지 · 카메라 끄기</button></div>{error&&<p role="alert">{error}</p>}{result&&<div role="status"><h3>{result.seconds!=null?`${result.seconds}초 유지`:`${result.reps}회`}</h3><p>{result.feedback}</p><p>인식 신뢰도 {Math.round(result.confidence*100)}% · 관찰 가동범위 {result.range_of_motion??'—'}° · 좌우 각도 차이 {result.left_right_balance??'—'}°</p>{[...(result.warnings||[]),...(result.corrections||[])].map(t=><p key={t}>{t}</p>)}<p>추정 관절각 {result.angle??'—'}°</p></div>}</Card>;
+ const [params,setParams]=useSearchParams(),requested=params.get('motion'),motion=Object.hasOwn(POSE_EXERCISES,requested)?requested:'squat';
+ return <Card title="카메라 코칭 · 원할 때만 피드백"><label>따라 할 운동<select value={motion} onChange={e=>setParams({motion:e.target.value},{replace:true})}>{Object.entries(POSE_EXERCISES).map(([id,c])=><option key={id} value={id}>{c.label}</option>)}</select></label><CameraCoaching key={motion} motion={motion}/></Card>;
 }

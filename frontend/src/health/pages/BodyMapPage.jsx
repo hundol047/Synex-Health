@@ -1,10 +1,11 @@
 import React from 'react';
-import { HealthAPI } from '../../shared/lib/api.js';
+import { HealthAPI, api } from '../../shared/lib/api.js';
 import { Card, Skeleton, ErrorState, EmptyState } from '../../shared/components/ui.jsx';
 import BodyMapWorkspace from '../components/body3d/BodyMapWorkspace.jsx';
 import { useApiData } from '../lib/useApiData.js';
 
 export default function BodyMapPage() {
+  const routines = useApiData(() => HealthAPI.listRoutines(), []);
   const { data, loading, error, reload } = useApiData(() => HealthAPI.bodyMapLatest(), []);
 
   return (
@@ -19,7 +20,7 @@ export default function BodyMapPage() {
       ) : error ? (
         <ErrorState message={error.message} onRetry={reload} />
       ) : (
-        <BodyMapWorkspace comparisonData={data} />
+        <BodyMapWorkspace comparisonData={data} routine={routines.data?.[0]} onGroupChange={async group_id=>{await api('/api/body-map/reference-group',{group_id},{method:'PUT'});await Promise.all([reload(),routines.reload()]);}} />
       )}
     </Card>
   );

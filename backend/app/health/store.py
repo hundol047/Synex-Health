@@ -27,6 +27,12 @@ def now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+class WorkoutConflict(ValueError):
+    def __init__(self, current):
+        self.current = current
+        super().__init__('Workout revision conflict')
+
+
 class HealthStore:
     def __init__(self, path=None, migrate=False):
         self.database=None
@@ -191,9 +197,13 @@ class HealthStore:
         return ExerciseProfile.model_validate_json(row[0]) if row else None
 
     # --- Routines --------------------------------------------------------------------------------
-    def add_routine(self, r: ExerciseRoutine) -> ExerciseRoutine:
+    def add_routine(self, r: ExerciseRoutine, expected_latest=None) -> ExerciseRoutine:
         with self.connect() as db:
+            # Serialize plan publication per account in SQLite and PostgreSQL.
+            db.execute('UPDATE users SET name=name WHERE id=?', (r.user_id,))
             prior=db.execute('SELECT id,payload FROM routines WHERE user_id=? ORDER BY created_at DESC LIMIT 1',(r.user_id,)).fetchone()
+            if expected_latest is not None and (not prior or prior[0] != expected_latest):
+                raise ValueError('새 루틴이 있습니다. 목록을 새로고침하세요.')
             db.execute('INSERT OR REPLACE INTO routines VALUES (?,?,?,?)', (r.id, r.user_id, r.model_dump_json(), r.created_at))
             history={'old_routine':json.loads(prior[1]) if prior else None,'new_routine':r.model_dump(mode='json'),'reason':r.progression,'measurements':r.input_snapshot,'workout_adherence':r.input_snapshot.get('adherence')}
             db.execute('INSERT OR IGNORE INTO adaptive_history VALUES (?,?,?,?,?,?)',(r.id,r.user_id,prior[0] if prior else None,r.id,json.dumps(history),r.created_at))
@@ -214,9 +224,28 @@ class HealthStore:
         return items[0] if items else None
 
     # --- Workouts ------------------------------------------------------------------------------
-    def add_workout(self, w: WorkoutLog) -> WorkoutLog:
+    def add_workout(self, w: WorkoutLog, expected_revision=None) -> WorkoutLog:
+        # Compare-and-swap works across SQLite/PostgreSQL workers; no read-then-overwrite.
         with self.connect() as db:
-            db.execute('INSERT OR REPLACE INTO workouts VALUES (?,?,?,?)', (w.id, w.user_id, w.date, w.model_dump_json()))
+            row = db.execute('SELECT payload FROM workouts WHERE id=? AND user_id=?', (w.id,w.user_id)).fetchone()
+            current = WorkoutLog.model_validate_json(row[0]) if row else None
+            if current and w.mutation_id and current.mutation_id == w.mutation_id:
+                return current  # lost HTTP response: retry is not another edit
+            if expected_revision is not None and expected_revision != (current.revision if current else 0):
+                raise WorkoutConflict(current)
+            w.revision = current.revision + 1 if current else 1
+            if current:
+                result = db.execute('UPDATE workouts SET payload=?,date=? WHERE id=? AND user_id=? AND payload=?',
+                                    (w.model_dump_json(),w.date,w.id,w.user_id,row[0]))
+            else:
+                result = db.execute('INSERT INTO workouts (id,user_id,date,payload) VALUES (?,?,?,?) ON CONFLICT (id) DO NOTHING',
+                                    (w.id,w.user_id,w.date,w.model_dump_json()))
+            if result.rowcount != 1:
+                latest = db.execute('SELECT payload FROM workouts WHERE id=? AND user_id=?',(w.id,w.user_id)).fetchone()
+                record = WorkoutLog.model_validate_json(latest[0]) if latest else None
+                if record and w.mutation_id and record.mutation_id == w.mutation_id:
+                    return record
+                raise WorkoutConflict(record)
         return w
 
     def list_workouts(self, user_id: str) -> list[WorkoutLog]:

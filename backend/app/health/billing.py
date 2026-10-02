@@ -34,9 +34,13 @@ def account(uid):
     return row[0], json.loads(row[1])
 
 
-def save(uid, payload):
+def save(uid, payload, expected=None):
     with store.connect() as db:
-        db.execute('UPDATE billing_accounts SET payload=? WHERE user_id=?', (json.dumps(payload), uid))
+        if expected is None:
+            db.execute('UPDATE billing_accounts SET payload=? WHERE user_id=?', (json.dumps(payload), uid))
+            return True
+        result=db.execute('UPDATE billing_accounts SET payload=? WHERE user_id=? AND payload=?', (json.dumps(payload),uid,json.dumps(expected)))
+        return result.rowcount==1
 
 
 def timestamp(value):
@@ -50,7 +54,8 @@ def timestamp(value):
 
 def refresh(uid):
     """Never trust customer IDs, plan names or receipts submitted by the client."""
-    cid, _ = account(uid)
+    cid, before = account(uid)
+    requested_at=time.time()
     try:
         response = httpx.get('https://api.revenuecat.com/v1/subscribers/' + quote(cid, safe=''),
                             headers={'Authorization': 'Bearer ' + os.environ['REVENUECAT_SECRET_KEY']}, timeout=10)
@@ -72,10 +77,11 @@ def refresh(uid):
                'trial' if active and subscription.get('period_type')=='trial' else 'active' if active else 'free')
         payload = {'source': 'revenuecat', 'active': active, 'state':state,'expires_at': access_until,
                    'will_renew': active and not subscription.get('unsubscribe_detected_at') and not subscription.get('billing_issues_detected_at'),
-                   'store': subscription.get('store'), 'product': product, 'verified_at': time.time()}
+                   'store': subscription.get('store'), 'product': product, 'verified_at': requested_at}
     except (httpx.HTTPError, ValueError, KeyError, TypeError, AttributeError):
         raise HTTPException(503, '결제 상태 확인이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.')
-    save(uid, payload)
+    if not save(uid, payload, expected=before):
+        raise HTTPException(503, '결제 상태가 다른 요청에서 갱신되었습니다. 다시 확인해 주세요.')
     return payload
 
 

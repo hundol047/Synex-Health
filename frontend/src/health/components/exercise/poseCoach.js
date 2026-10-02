@@ -56,17 +56,24 @@ export class MovementCoach {
 
 // Every analyzer instance owns its phase, ROM and timing; unknown frames never infer corrections.
 export class ExercisePoseAnalyzer {
- constructor(id){this.id=id;this.engine=new MovementCoach(id);this.min=Infinity;this.max=-Infinity;this.lastRep=0;this.repAt=null;this.tempo=null;}
+ constructor(id){this.id=id;this.engine=new MovementCoach(id);this.phases=new TemporalPhases(id);this.min=Infinity;this.max=-Infinity;this.lastRep=0;this.repAt=null;this.tempo=null;}
  update(points,time){
-  const result=this.engine.update(points,time),c=this.engine.config;
+  const c=this.engine.config;
+  const inFrame=c.joints.every(i=>points?.[i]&&Number.isFinite(points[i].x)&&Number.isFinite(points[i].y)&&points[i].x>=0&&points[i].x<=1&&points[i].y>=0&&points[i].y<=1);
+  if(!inFrame)points=[];
+  if(this.phases.lastTime!=null&&(time<=this.phases.lastTime||time-this.phases.lastTime>500))this.engine.previousTime=null;
+  const result=this.engine.update(points,time);
   const detected=result.phase!=='unknown';
   const visibleJoints=c.joints.filter(i=>points?.[i]&&(points[i].visibility??0)>=.7);
   const confidence=detected?Math.min(...c.joints.map(i=>points[i].visibility??0)):0;
   const left=detected?jointAngle(...c.joints.slice(0,3).map(i=>points[i])):null;
   const right=detected?jointAngle(...c.joints.slice(3).map(i=>points[i])):null;
-  const angle=left!=null&&right!=null?(left+right)/2:null;
+  let angle=left!=null&&right!=null?(c.minimum?Math.min(left,right):(left+right)/2):null;
+  if(c.overhead&&angle>c.up&&!(points[15].y<points[11].y&&points[16].y<points[12].y))angle=(c.down+c.up)/2;
   if(angle!=null){this.min=Math.min(this.min,angle);this.max=Math.max(this.max,angle);}
-  if(!detected)this.repAt=null;
+  if(!detected){this.repAt=null;this.min=Infinity;this.max=-Infinity;}
+  const temporal=this.phases.update(angle,time,confidence);
+  if(!c.hold)result.reps=temporal.reps;
   if(result.reps>this.lastRep){this.tempo=this.repAt==null?null:(time-this.repAt)/1000;this.repAt=time;this.lastRep=result.reps;}
   const warnings=[],corrections=[];
   if(detected&&Math.abs(left-right)>20){warnings.push('화면상 좌우 움직임 차이가 보입니다. 카메라 각도도 확인하세요.');}
@@ -74,10 +81,39 @@ export class ExercisePoseAnalyzer {
    const align=jointAngle(points[11],points[23],points[27]);
    if([11,23,27].every(i=>(points[i]?.visibility??0)>=.7)&&align!=null&&align<150)corrections.push('화면상 어깨·골반·발목 정렬을 확인하세요.');
   }
-  if(detected&&this.id==='bent_row')corrections.push('상체를 고정하고 팔꿈치를 몸통 쪽으로 당기는지 확인하세요.');
-  if(detected&&this.id==='curl')corrections.push('팔꿈치 위치를 유지하고 몸통 반동을 줄이세요.');
-  return {...result,detected,confidence,visible_joints:visibleJoints,range_of_motion:detected&&Number.isFinite(this.min)?Math.round(this.max-this.min):null,tempo:this.tempo,left_right_balance:detected?Math.round(Math.abs(left-right)):null,warnings,corrections,completion_state:detected?(c.hold?'holding':result.reps?'repetition_recorded':'in_progress'):'tracking_lost'};
+
+  return {...result,...temporal,detected,confidence,visible_joints:visibleJoints,range_of_motion:detected&&Number.isFinite(this.min)?Math.round(this.max-this.min):null,tempo:this.tempo,left_right_balance:detected?Math.round(Math.abs(left-right)):null,warnings,corrections,completion_state:detected?(c.hold?result.phase:result.reps?'repetition_recorded':'in_progress'):'tracking_lost'};
  }
 }
 export const ANALYZERS=Object.fromEntries(Object.keys(POSE_EXERCISES).map(id=>[id,class extends ExercisePoseAnalyzer{constructor(){super(id);}}]));
 export function createExercisePoseAnalyzer(id){if(!ANALYZERS[id])throw Error('Unsupported exercise');return new ANALYZERS[id]();}
+
+// Exercise-specific temporal hysteresis. Tracking loss invalidates the current repetition.
+export const CAMERA_DIRECTIONS={squat:'측면 또는 45도',lunge:'측면 또는 45도',push_up:'측면',plank:'측면',shoulder_press:'정면 또는 45도',curl:'정면',hip_hinge:'측면',lateral_raise:'정면',bent_row:'측면 또는 45도',front_raise:'측면',side_lunge:'정면',glute_bridge:'측면'};
+const LOW_START=new Set(['shoulder_press','lateral_raise','front_raise','glute_bridge']);
+const CONCENTRIC_FIRST=new Set(['shoulder_press','curl','lateral_raise','bent_row','front_raise','glute_bridge']);
+export class TemporalPhases{
+ constructor(id){this.id=id;this.reps=0;this.phase='start';this.lastTime=null;this.stableAt=null;this.repAt=null;this.extremeAt=null;this.armed=false;this.duration=null;}
+ reset(){this.phase='start';this.stableAt=null;this.repAt=null;this.extremeAt=null;this.armed=false;this.duration=null;}
+ update(angle,time,confidence){
+  const c=POSE_EXERCISES[this.id];
+  if(confidence<.7||angle==null||!Number.isFinite(time)){this.reset();this.lastTime=null;return {movement_phase:'unknown',reps:this.reps,rep_seconds:null};}
+  if(this.lastTime!=null&&(time<=this.lastTime||time-this.lastTime>500))this.reset();
+  this.lastTime=time;
+  if(c.hold)return {movement_phase:angle>=c.up?'holding':'start',reps:0,rep_seconds:null};
+  const t=Math.max(0,Math.min(1,LOW_START.has(this.id)?(angle-c.down)/(c.up-c.down):(c.up-angle)/(c.up-c.down)));
+  const outward=CONCENTRIC_FIRST.has(this.id)?'concentric':'eccentric',inward=CONCENTRIC_FIRST.has(this.id)?'eccentric':'concentric';
+  if(!this.armed){if(t<.12){this.stableAt??=time;if(time-this.stableAt>=150)this.armed=true;}else this.stableAt=null;}
+  else if(this.phase==='start'||this.phase==='completion'){
+   if(t>.2){this.phase=outward;this.repAt=time;this.extremeAt=null;}
+  }else if(this.phase===outward){
+   if(t>.85){this.extremeAt??=time;if(time-this.extremeAt>=120)this.phase='bottom';}else this.extremeAt=null;
+   if(t<.12){this.phase='start';this.repAt=null;}
+  }else if(this.phase==='bottom'&&t<.75)this.phase=inward;
+  else if(this.phase===inward&&t<.12){
+   if(time-this.repAt>=650){this.reps++;this.duration=(time-this.repAt)/1000;this.phase='completion';}else this.phase='start';
+   this.repAt=null;
+  }
+  return {movement_phase:this.phase,reps:this.reps,rep_seconds:this.duration};
+ }
+}

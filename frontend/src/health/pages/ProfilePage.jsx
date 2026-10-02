@@ -1,5 +1,8 @@
+import {saveProfileChanges} from '../lib/saveProfileChanges.js';
+import {registerDraftNavigation} from '../../shared/lib/draftNavigation.js';
+import {EQUIPMENT_LABELS} from '../lib/exerciseLabels.js';
 import { Link } from 'react-router-dom';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import MeasurementEntry from '../components/MeasurementEntry.jsx';
 import SchoolSelector from '../components/SchoolSelector.jsx';
 import { HealthAPI } from '../../shared/lib/api.js';
@@ -26,13 +29,7 @@ const LOCATION_OPTIONS = [
   { value: 'outdoor', label: '실외' },
 ];
 
-const EQUIPMENT_OPTIONS = [
-  { value: 'dumbbell', label: '덤벨' },
-  { value: 'barbell', label: '바벨' },
-  { value: 'machine', label: '머신' },
-  { value: 'band', label: '밴드' },
-  { value: 'none', label: '맨몸운동' },
-];
+const EQUIPMENT_OPTIONS = Object.entries(EQUIPMENT_LABELS).filter(([value])=>value!=='none').map(([value,label])=>({value,label}));
 
 const SAFETY_FIELDS = [
   { key: 'safety_chest_pain', label: '최근 심한 흉통이 있었나요?' },
@@ -50,9 +47,12 @@ function fromCsv(text) {
 }
 
 export default function ProfilePage() {
+  const [dirty,setDirty]=useState(false),guard=useRef(Symbol());
+  useEffect(()=>registerDraftNavigation(guard.current,dirty,()=>Promise.resolve(),'저장하지 않은 프로필·안전 문진 변경이 있습니다. 변경을 버리고 이동할까요?'),[dirty]);
   const profile = useApiData(() => HealthAPI.getProfile(), []);
   const exercise = useApiData(() => HealthAPI.getExerciseProfile(), []);
 
+  const confirmedHealth=useRef(null);
   const [heightInput, setHeightInput] = useState('');
   const [gender,setGender]=useState('unspecified');
   const [form, setForm] = useState(null);
@@ -65,6 +65,7 @@ export default function ProfilePage() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
+    if(profile.data)confirmedHealth.current={height:profile.data.height,gender:profile.data.gender};
     if (profile.data?.height != null) setHeightInput(String(profile.data.height));
     setGender(profile.data?.gender||'unspecified');
   }, [profile.data]);
@@ -92,15 +93,15 @@ export default function ProfilePage() {
     setSaved(false);
     try {
       const heightNum = heightInput === '' ? null : Number(heightInput);
-      if (profile.data && (heightNum !== profile.data.height || gender !== profile.data.gender)) {
-        await HealthAPI.updateProfile({ height: heightNum, gender });
-      }
-      await HealthAPI.updateExerciseProfile({
+      const current=confirmedHealth.current||profile.data;
+      const health=current&&(heightNum!==current.height||gender!==current.gender)?{height:heightNum,gender}:null;
+      await saveProfileChanges(HealthAPI,health,{
         experience_level: form.experience_level,
         goal: form.goal,
         days_per_week: Number(form.days_per_week) || 1,
         minutes_per_session: Number(form.minutes_per_session) || 10,
         exercise_location: form.exercise_location,
+        training_mode: form.training_mode || 'mixed',
         available_equipment: [...equipmentSet],
         limitations: fromCsv(limitationsText),
         preferences: fromCsv(preferencesText),
@@ -109,10 +110,9 @@ export default function ProfilePage() {
         safety_breathlessness: !!form.safety_breathlessness,
         safety_acute_injury: !!form.safety_acute_injury,
         safety_medical_restriction: !!form.safety_medical_restriction,
-      });
-      setSaved(true);
-      profile.reload();
-      exercise.reload();
+      },value=>{confirmedHealth.current=value;});
+      setDirty(false);setSaved(true);
+      await Promise.all([profile.reload(),exercise.reload()]);
     } catch (error) {
       setSaveError(error);
     } finally {
@@ -127,10 +127,10 @@ export default function ProfilePage() {
 
   return (
     <>
-      <section className="card"><h2>나의 건강 메뉴</h2><div className="membership-actions"><Link className="btn btn-ghost" to="/health/goals">목표</Link><Link className="btn btn-ghost" to="/health/library">운동 라이브러리</Link><Link className="btn btn-ghost" to="/health/pose">카메라 자세 코치</Link><Link className="btn btn-ghost" to="/health/connections">기기·알림 연동</Link><Link className="btn btn-ghost" to="/health/privacy">개인정보 관리</Link></div><div className="membership-actions"><Link className="btn btn-ghost" to="/health/workout">운동 기록</Link><Link className="btn btn-ghost" to="/health/progress">변화 추적</Link><Link className="btn btn-ghost" to="/health/comparison">측정 비교</Link><Link className="btn btn-ghost" to="/health/agent">AI 코치</Link><Link className="btn btn-ghost" to="/health/report">월별 리포트</Link></div></section>
+      <section className="card"><h2>나의 건강 메뉴</h2><div className="membership-actions"><Link className="btn btn-ghost" to="/health/goals">목표</Link><Link className="btn btn-ghost" to="/health/subscription">멤버십</Link><Link className="btn btn-ghost" to="/health/library">운동 라이브러리</Link><Link className="btn btn-ghost" to="/health/pose">카메라 자세 코치</Link><Link className="btn btn-ghost" to="/health/connections">기기·알림 연동</Link><Link className="btn btn-ghost" to="/health/privacy">개인정보 관리</Link></div><div className="membership-actions"><Link className="btn btn-ghost" to="/health/workout">운동 기록</Link><Link className="btn btn-ghost" to="/health/progress">변화 추적</Link><Link className="btn btn-ghost" to="/health/comparison">측정 비교</Link><Link className="btn btn-ghost" to="/health/agent">AI 코치</Link><Link className="btn btn-ghost" to="/health/report">월별 리포트</Link></div></section>
       <SchoolSelector profile={profile.data} onSaved={profile.reload}/>
       <MeasurementEntry />
-      <Card title="내 정보">
+      <div onChangeCapture={()=>{setDirty(true);setSaved(false);}}><fieldset disabled={saving} style={{border:0,padding:0,minWidth:0}}><Card title="내 정보">
         <div className="profile-grid">
           <div>
             <label className="field-label">이름</label>
@@ -175,6 +175,7 @@ export default function ProfilePage() {
             <input id="minutes-input" type="number" min={10} max={180} className="text-input" value={form.minutes_per_session}
               onChange={(e) => setForm({ ...form, minutes_per_session: e.target.value })} />
           </div>
+          <div><label className="field-label" htmlFor="training-mode">운동 방식</label><select id="training-mode" className="text-input" value={form.training_mode||'mixed'} onChange={e=>setForm({...form,training_mode:e.target.value})}><option value="mixed">장비와 맨몸 함께</option><option value="bodyweight">맨몸운동만</option><option value="equipment">헬스장·장비 운동 우선</option></select></div>
           <div>
             <label className="field-label" htmlFor="location-select">운동 장소</label>
             <select id="location-select" className="text-input" value={form.exercise_location} onChange={(e) => setForm({ ...form, exercise_location: e.target.value })}>
@@ -184,7 +185,7 @@ export default function ProfilePage() {
         </div>
 
         <div style={{ marginTop: 14 }}>
-          <label className="field-label">이용 가능한 운동 기구</label>
+          <label className="field-label">실제로 이용할 수 있는 운동 기구</label><p className="muted">맨몸운동만 선택하면 기구 설정과 관계없이 맨몸으로 구성합니다. 머신은 이용할 종류를 각각 선택하세요.</p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
             {EQUIPMENT_OPTIONS.map((o) => (
               <label key={o.value} className={`chip-checkbox ${equipmentSet.has(o.value) ? 'checked' : ''}`}>
@@ -225,7 +226,7 @@ export default function ProfilePage() {
 
       {saveError && <ErrorState message={saveError.message} onRetry={save} />}
       {saved && <p className="muted">저장되었습니다.</p>}
-      <button className="btn btn-primary btn-block" onClick={save} disabled={saving}>{saving ? '저장 중...' : '저장하기'}</button>
+      <button className="btn btn-primary btn-block" onClick={save} disabled={saving}>{saving ? '저장 중...' : '저장하기'}</button></fieldset></div>
     </>
   );
 }

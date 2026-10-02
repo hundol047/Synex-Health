@@ -155,6 +155,12 @@ class BodyCompositionCreateRequest(MeasurementValidation):
 
 # --- Reference ranges --------------------------------------------------------------------------
 class ReferenceRange(BaseModel):
+    source_url: Optional[str] = None
+    license_note: Optional[str] = None
+    reviewed_by: Optional[str] = None
+    reviewed_at: Optional[str] = None
+    measurement_method: Optional[str] = None
+    compatible_device_names: list[str] = Field(default_factory=list)
     model_config = ConfigDict(allow_inf_nan=False)
     id: str
     gender: str  # 'male' | 'female' | 'any'
@@ -174,7 +180,29 @@ class ReferenceRange(BaseModel):
     effective_date: Optional[str] = None
     unit: str = 'kg'
     interpretation: str = '설명용 참고 범위이며 진단 기준이 아닙니다.'
-    source: str = 'demo'  # 'demo' unless an admin has registered a real reference dataset
+    source: str = 'demo'  # never used in production average comparisons
+    dataset_id: Optional[str] = None
+    reference_population: Optional[str] = None
+    sample_size: Optional[int] = Field(default=None, gt=0)
+    bmi_min: Optional[float] = Field(default=None, gt=0)
+    bmi_max: Optional[float] = Field(default=None, gt=0)
+    weight_min: Optional[float] = Field(default=None, gt=0)
+    weight_max: Optional[float] = Field(default=None, gt=0)
+    skeletal_muscle_mean: Optional[float] = Field(default=None, gt=0)
+    body_fat_mean: Optional[float] = Field(default=None, ge=0)
+
+    @model_validator(mode='after')
+    def valid_reference(self):
+        for lo, hi in [('age_min','age_max'), ('height_min','height_max'), ('bmi_min','bmi_max'),
+                       ('weight_min','weight_max'), ('lean_lower','lean_upper'), ('fat_lower','fat_upper')]:
+            a, b = getattr(self, lo), getattr(self, hi)
+            if a is not None and b is not None and a > b:
+                raise ValueError('Reference lower bound exceeds upper bound')
+        for key in ('lean_mean','fat_mean','lean_lower','lean_upper','fat_lower','fat_upper'):
+            v = getattr(self,key)
+            if v is not None and v < 0: raise ValueError('Negative reference mass')
+        if self.effective_date: date.fromisoformat(self.effective_date)
+        return self
 
 
 # --- Exercise profile / routines ----------------------------------------------------------------
@@ -184,6 +212,7 @@ class ExerciseProfile(BaseModel):
     goal: Goal = Goal.GENERAL_HEALTH
     days_per_week: int = Field(default=3, ge=1, le=7)
     minutes_per_session: int = Field(default=40, ge=10, le=180)
+    training_mode: Literal['mixed','bodyweight','equipment'] = 'mixed'
     exercise_location: Literal['gym', 'home', 'outdoor'] = 'gym'  # 'gym' | 'home' | 'outdoor'
     available_equipment: list[str] = Field(default_factory=list)
     limitations: list[str] = Field(default_factory=list)
@@ -197,6 +226,10 @@ class ExerciseProfile(BaseModel):
 
 
 class RoutineExercise(BaseModel):
+    training_type: str = 'bodyweight'
+    equipment: list[str] = Field(default_factory=list)
+    dose_type: str = 'reps'
+    hold_seconds: Optional[int] = None
     exercise_id: Optional[str] = None
     motion_id: Optional[str] = None
     instructions: list[str] = Field(default_factory=list)
@@ -235,7 +268,38 @@ class ExerciseRoutine(BaseModel):
 
 
 # --- Workout log -------------------------------------------------------------------------------
+class WorkoutSet(BaseModel):
+    # External load only; bodyweight and unknown load remain null, never inferred.
+    weight_kg: Optional[float] = Field(default=None, ge=0, le=1000, allow_inf_nan=False)
+    reps: int = Field(ge=0, le=1000)
+    kind: Literal['working', 'warmup'] = 'working'
+
+
 class WorkoutLog(BaseModel):
+    completion_status: Optional[Literal['not_started','partial','completed','stopped']] = None
+    time_zone: str = Field(default='UTC', max_length=80)
+    performed_seconds: Optional[float] = Field(default=None, ge=0, le=86400, allow_inf_nan=False)
+    timed_sets_seconds: list[float] = Field(default_factory=list, max_length=100)
+
+    @field_validator('time_zone')
+    @classmethod
+    def valid_zone(cls, value):
+        from .workout_rules import workout_zone
+        workout_zone(value)
+        return value
+
+    @field_validator('timed_sets_seconds')
+    @classmethod
+    def valid_times(cls, values):
+        import math
+        if any(not math.isfinite(v) or v < 0 or v > 86400 for v in values) or sum(values) > 86400:
+            raise ValueError('시간 기록은 0–86400초 범위여야 합니다.')
+        return values
+
+    exercise_catalog_id: Optional[str] = None
+    set_records: list[WorkoutSet] = Field(default_factory=list, max_length=100)
+    revision: int = Field(default=1, ge=1)
+    mutation_id: Optional[str] = None
     rpe: Optional[int] = Field(default=None,ge=1,le=10)
     pain: Optional[int] = Field(default=None,ge=0,le=10)
     pose_evaluation: Optional[dict] = None
@@ -257,6 +321,28 @@ class WorkoutLog(BaseModel):
 
 
 class WorkoutLogCreateRequest(BaseModel):
+    time_zone: str = Field(default='UTC', max_length=80)
+    performed_seconds: Optional[float] = Field(default=None, ge=0, le=86400, allow_inf_nan=False)
+    timed_sets_seconds: list[float] = Field(default_factory=list, max_length=100)
+
+    @field_validator('time_zone')
+    @classmethod
+    def valid_zone(cls, value):
+        from .workout_rules import workout_zone
+        workout_zone(value)
+        return value
+
+    @field_validator('timed_sets_seconds')
+    @classmethod
+    def valid_times(cls, values):
+        import math
+        if any(not math.isfinite(v) or v < 0 or v > 86400 for v in values) or sum(values) > 86400:
+            raise ValueError('시간 기록은 0–86400초 범위여야 합니다.')
+        return values
+
+    set_records: list[WorkoutSet] = Field(default_factory=list, max_length=100)
+    expected_revision: int = Field(default=0, ge=0)
+    mutation_id: Optional[str] = Field(default=None, max_length=80)
     rpe: Optional[int] = Field(default=None,ge=1,le=10)
     pain: Optional[int] = Field(default=None,ge=0,le=10)
     pose_evaluation: Optional[dict] = None

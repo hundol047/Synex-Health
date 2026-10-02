@@ -22,5 +22,8 @@ sys.path.insert(0,str(root/'backend'))
 from app.services.release_config import validate_production
 try:validate_production(dict(os.environ,APP_ENV='production'))
 except RuntimeError as e:failures.append(str(e))
+evidence=os.getenv('RELEASE_EVIDENCE_MANIFEST')
+if not evidence:failures.append('RELEASE_EVIDENCE_MANIFEST: real device, deletion, restore and operations evidence required')
+else:check([sys.executable,'scripts/verify-release-evidence.py',evidence,'--launch-mode',os.getenv('LAUNCH_MODE','free')],root)
 print('\n'.join(['RELEASE BLOCKED']+failures) if failures else 'Repository checks passed; native archive/device/store gates remain separate.')
 sys.exit(bool(failures))
