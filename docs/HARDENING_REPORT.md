@@ -27,11 +27,11 @@ IMPLEMENTED / NOT DEVICE VERIFIED. Twelve analyzer instances retained. All frame
 
 ## Android
 
-EXTERNAL SETUP REQUIRED. Local `assembleDebug` attempted and failed because Android SDK is absent; Java17 also falls below the intended Java21 toolchain. Existing CI debug APK build/upload retained. New manual release workflow runs only with real signing/config; missing configuration is explicitly skipped. Target device matrix contains NOT TESTED, never a fabricated PASS.
+VERIFIED for CI debug build only: GitHub Actions run 37131281596 built assembleDebug successfully in 2m39s and uploaded APK artifact 11276877280. Local `assembleDebug` failed because Android SDK is absent; Java17 also falls below the intended Java21 toolchain. Physical-device verification remains EXTERNAL SETUP REQUIRED. New manual release workflow runs only with real signing/config; missing configuration is explicitly skipped. Target device matrix contains NOT TESTED, never a fabricated PASS.
 
 ## iOS
 
-EXTERNAL SETUP REQUIRED. `npx cap sync` succeeded; no local Xcode/archive/Validate App/TestFlight/signature or physical iPhone test. Existing simulator build CI retained; it does not certify release/device readiness.
+VERIFIED for unsigned simulator compile only: macOS GitHub Actions run 37131281596 successfully executed xcodebuild for iphonesimulator with CODE_SIGNING_ALLOWED=NO. `npx cap sync` also succeeded. No local Xcode/archive/Validate App/TestFlight/signature or physical iPhone test. Signed release and device validation remain EXTERNAL SETUP REQUIRED.
 
 ## Offline
 
@@ -66,3 +66,14 @@ IMPLEMENTED / NOT DEVICE VERIFIED: Pose thresholds, 2D occlusion/angle sensitivi
 ### Final local browser result
 
 VERIFIED: all 12 Playwright scenarios passed (47.8s) on local Chrome154, including 3D overlays/selection/mobile, fake-camera permission/lifecycle, encrypted pending close/reopen/single sync, draft restore, and new low-power numeric preservation. Agent-browser also confirmed page content/no reported page errors. These are browser/synthetic-camera checks, not physical-device evidence.
+
+### Final remote CI evidence
+
+VERIFIED for implementation commit `375fb14c0afdb98eb8c95f70196a5c5156447d10`:
+
+- [Verify Synex Health run 37131281596](https://github.com/hundol047/Synex-Health/actions/runs/37131281596): backend, frontend, browser (12 passed), postgres (including real restore), android-compile, ios-compile and container-release all succeeded.
+- [Dependency audit run 37131281675](https://github.com/hundol047/Synex-Health/actions/runs/37131281675): succeeded; backend no findings, npm no high/critical findings (moderate findings documented above).
+- [Android debug APK artifact 11276877280](https://github.com/hundol047/Synex-Health/actions/runs/37131281596/artifacts/11276877280): uploaded, 32,494,535-byte artifact archive. Requires GitHub access; this is debug, not a signed store release.
+- [Review PR #5](https://github.com/hundol047/Synex-Health/pull/5) contains the tested implementation. Main was not changed: automatic approval review rejected direct main publication. A separate review branch was accepted. Main merge requires explicit user approval.
+
+This evidence records the implementation commit, not a blanket claim about physical devices, real payments or subsequent report-only commit checks.
