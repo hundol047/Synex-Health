@@ -64,6 +64,11 @@ jobs:
         working-directory: backend
       - run: PYTHONPATH=. python scripts/verify_postgres.py
         working-directory: backend
+      - run: sudo apt-get update && sudo apt-get install -y postgresql-client-16
+      - run: python scripts/verify_postgres_restore.py
+        working-directory: backend
+        env:
+          SYNEX_DISPOSABLE_DB: 'true'
 
   browser:
     runs-on: ubuntu-latest

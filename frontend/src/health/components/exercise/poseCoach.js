@@ -1,3 +1,4 @@
+import {REQUIRED_LANDMARKS,trackingQuality,evaluateRules} from './poseRules.js';
 // Angles/phase thresholds are conservative product heuristics, not clinical assessment.
 export function jointAngle(a,b,c){
  if(!a||!b||!c)return null;
@@ -84,7 +85,9 @@ export class ExercisePoseAnalyzer {
  constructor(id){this.id=id;this.engine=new MovementCoach(id);this.phases=new TemporalPhases(id);this.min=Infinity;this.max=-Infinity;this.lastRep=0;this.repAt=null;this.tempo=null;}
  update(points,time,aspectRatio=1){
   const c=this.engine.config;
-  const required=this.id==='plank'?[...c.joints,13,14]:c.joints;
+  const required=REQUIRED_LANDMARKS[this.id];
+  const tracking=trackingQuality(points,this.id);
+  if(['LOW','LOST'].includes(tracking.level))points=[];
   const inFrame=required.every(i=>points?.[i]&&Number.isFinite(points[i].x)&&Number.isFinite(points[i].y)&&points[i].x>=0&&points[i].x<=1&&points[i].y>=0&&points[i].y<=1);
   if(!inFrame||!Number.isFinite(aspectRatio)||aspectRatio<=0)points=[];
   else points=points.map(p=>p?({...p,y:p.y*aspectRatio}):p);
@@ -92,7 +95,7 @@ export class ExercisePoseAnalyzer {
   const result=this.engine.update(points,time);
   const detected=result.phase!=='unknown';
   const visibleJoints=c.joints.filter(i=>points?.[i]&&(points[i].visibility??0)>=.7);
-  const confidence=detected?Math.min(...c.joints.map(i=>points[i].visibility??0)):0;
+  const confidence=detected?tracking.confidence:0;
   const left=detected?jointAngle(...c.joints.slice(0,3).map(i=>points[i])):null;
   const right=detected?jointAngle(...c.joints.slice(3).map(i=>points[i])):null;
   let angle=left!=null&&right!=null?(c.minimum?Math.min(left,right):(left+right)/2):null;
@@ -113,7 +116,12 @@ export class ExercisePoseAnalyzer {
    if([11,23,27].every(i=>reliable(points[i])&&points[i].x>=0&&points[i].x<=1&&points[i].y>=0&&points[i].y<=aspectRatio)&&align!=null&&align<150)corrections.push('화면상 어깨·골반·발목 정렬을 확인하세요.');
   }
 
-  return {...result,...temporal,detected,confidence,visible_joints:visibleJoints,range_of_motion:detected&&Number.isFinite(this.min)?Math.round(this.max-this.min):null,tempo:this.tempo,left_right_balance:detected?Math.round(Math.abs(left-right)):null,warnings,corrections,completion_state:detected?(c.hold?result.phase:result.reps?'repetition_recorded':'in_progress'):'tracking_lost'};
+  const rules=detected?evaluateRules(this.id,points,jointAngle,this.previousMetrics):{metrics:{},corrections:[],warnings:[]};
+  this.previousMetrics=detected?rules.metrics:null;
+  corrections.push(...rules.corrections);warnings.push(...rules.warnings);
+  const phaseNames={squat:{start:'standing',eccentric:'descending',bottom:'bottom',concentric:'ascending',completion:'completed'},lunge:{start:'start',eccentric:'descend',bottom:'bottom',concentric:'rise',completion:'completed'},push_up:{start:'top',eccentric:'descending',bottom:'bottom',concentric:'rising',completion:'completed'}};
+  const phase=phaseNames[this.id]?.[temporal.movement_phase]??result.phase;
+  return {...result,...temporal,phase,repetition_count:temporal.reps,hold_seconds:result.seconds??null,alignment_state:this.id==='plank'?(result.phase==='holding'?'aligned':'uncertain'):null,tracking_quality:tracking.level,metrics:rules.metrics,detected,confidence,visible_joints:visibleJoints,range_of_motion:detected&&Number.isFinite(this.min)?Math.round(this.max-this.min):null,tempo:this.tempo,left_right_balance:detected?Math.round(Math.abs(left-right)):null,warnings,corrections,completion_state:detected?(c.hold?result.phase:result.reps?'repetition_recorded':'in_progress'):'tracking_lost'};
  }
 }
 export const ANALYZERS=Object.fromEntries(Object.keys(POSE_EXERCISES).map(id=>[id,class extends ExercisePoseAnalyzer{constructor(){super(id);}}]));

@@ -230,6 +230,8 @@ class HealthStore:
             row = db.execute('SELECT payload FROM workouts WHERE id=? AND user_id=?', (w.id,w.user_id)).fetchone()
             current = WorkoutLog.model_validate_json(row[0]) if row else None
             if current and w.mutation_id and current.mutation_id == w.mutation_id:
+                if current.request_checksum and current.request_checksum != w.request_checksum:
+                    raise WorkoutConflict(current)
                 return current  # lost HTTP response: retry is not another edit
             if expected_revision is not None and expected_revision != (current.revision if current else 0):
                 raise WorkoutConflict(current)
@@ -244,6 +246,8 @@ class HealthStore:
                 latest = db.execute('SELECT payload FROM workouts WHERE id=? AND user_id=?',(w.id,w.user_id)).fetchone()
                 record = WorkoutLog.model_validate_json(latest[0]) if latest else None
                 if record and w.mutation_id and record.mutation_id == w.mutation_id:
+                    if record.request_checksum and record.request_checksum != w.request_checksum:
+                        raise WorkoutConflict(record)
                     return record
                 raise WorkoutConflict(record)
         return w

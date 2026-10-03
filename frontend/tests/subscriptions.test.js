@@ -23,3 +23,9 @@ it('uses server verification after restore instead of trusting SDK entitlement',
  expect(await restore({mode:'revenuecat',customer_id:'opaque-A'})).toEqual({active:false});
  expect(api).toHaveBeenCalledWith('/api/billing/sync',{});
 });
+it('blocks purchase offerings and calls when product configuration is incomplete',async()=>{
+ const {storePackages,buyPackage}=await import('../src/shared/lib/subscriptions.js');
+ expect(await storePackages({mode:'revenuecat',customer_id:'id'})).toEqual([]);
+ await expect(buyPackage({mode:'revenuecat',customer_id:'id'},{})).rejects.toThrow('설정');
+ const {Purchases}=await import('@revenuecat/purchases-capacitor');expect(Purchases.purchasePackage).not.toHaveBeenCalled();
+});

@@ -45,7 +45,7 @@ export async function api(path, body, { method, signal, headers, offlineRetry=fa
     throw err;
   }
   if (response.status === 204) return null;
-  const data=await response.json();if(workout&&!offlineRetry&&requestEpoch===offlineEpoch())await acknowledgeWorkout(body);if(m==='GET'&&requestEpoch===offlineEpoch())cacheResponse(path,data);return data;
+  const data=await response.json();if(workout&&!offlineRetry&&requestEpoch===offlineEpoch())await acknowledgeWorkout(body);if(m==='GET'&&requestEpoch===offlineEpoch())await cacheResponse(path,data);return data;
 }
 
 export const HealthAPI = {

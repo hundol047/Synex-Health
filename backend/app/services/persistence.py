@@ -40,7 +40,13 @@ class Database:
         if not url.startswith('postgresql+psycopg://'):raise ValueError('DATABASE_URL must use postgresql+psycopg://')
         self.schema=schema
         if schema and schema not in ('health_auth','health_audit'):raise ValueError('Unknown schema')
-        self.engine=create_engine(url,pool_pre_ping=True,pool_size=5,max_overflow=5,hide_parameters=True)
+        def setting(name,default,minimum=0):
+            value=int(os.getenv(name,str(default)))
+            if not minimum<=value<=3600:raise ValueError(f'{name} out of range')
+            return value
+        self.engine=create_engine(url,pool_pre_ping=True,
+            pool_size=setting('DB_POOL_SIZE',5,1),max_overflow=setting('DB_MAX_OVERFLOW',5),
+            pool_timeout=setting('DB_POOL_TIMEOUT',30,1),pool_recycle=setting('DB_POOL_RECYCLE',1800,1),hide_parameters=True)
     @contextmanager
     def connect(self):
         with self.engine.begin() as connection:

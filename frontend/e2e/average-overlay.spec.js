@@ -17,6 +17,8 @@ test('same viewer renders both meshes, opacity/selection/camera/mobile and origi
  await page.getByRole('button',{name:'후면',exact:true}).click();
  await expect.poll(async()=>(await stats(page)).layers.find(l=>l.name==='reference-average').opacity).toBe(.7);
  await page.getByRole('button',{name:'정면',exact:true}).click();
+ // Demand rendering updates projected hit targets on the next frame after the preset.
+ await expect.poll(async()=>(await stats(page)).layers.find(l=>l.name==='my-muscle').regionPixels.RIGHT_ARM).toEqual(initial.layers.find(l=>l.name==='my-muscle').regionPixels.RIGHT_ARM);
  const target=(await stats(page)).layers.find(l=>l.name==='my-muscle').regionPixels.RIGHT_ARM;const canvasBox=await page.locator('canvas').boundingBox();await page.mouse.click(canvasBox.x+target[0],canvasBox.y+target[1]);
  await expect(page.getByRole('table')).toContainText('오른팔');
  await expect(page.getByRole('table').locator('tr.selected')).toContainText('오른팔');

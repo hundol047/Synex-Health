@@ -19,12 +19,20 @@ export async function purchaseSDK(status) {
   configuredUser = status.customer_id;
   return Purchases;
 }
+export function purchaseReady(status){
+ const key=Capacitor.getPlatform()==='ios'?import.meta.env.VITE_REVENUECAT_IOS_KEY:import.meta.env.VITE_REVENUECAT_ANDROID_KEY;
+ return !!(key&&status?.purchase_config?.ready&&status.purchase_config.apple_product_id&&status.purchase_config.google_product_id&&status.purchase_config.entitlement_id);
+}
 export async function storePackages(status) {
+  if(!purchaseReady(status))return [];
   const sdk = await purchaseSDK(status);
   const offerings = await sdk.getOfferings();
-  return (offerings.current?.availablePackages || []).filter(p => ['MONTHLY','ANNUAL'].includes(p.packageType));
+  return (offerings.current?.availablePackages || []).filter(p => ['MONTHLY','ANNUAL'].includes(p.packageType)&&p.product.identifier===(Capacitor.getPlatform()==='ios'?status.purchase_config.apple_product_id:status.purchase_config.google_product_id));
 }
 export async function buyPackage(status, selected) {
+  if(!purchaseReady(status))throw Error('결제 상품과 권한 설정이 필요합니다.');
+  const expected=Capacitor.getPlatform()==='ios'?status.purchase_config.apple_product_id:status.purchase_config.google_product_id;
+  if(selected?.product?.identifier!==expected)throw Error('등록되지 않은 상품입니다.');
   const sdk = await purchaseSDK(status);
   await sdk.purchasePackage({aPackage:selected});
   return BillingAPI.sync();

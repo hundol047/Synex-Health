@@ -472,6 +472,8 @@ def create_workout(req: WorkoutLogCreateRequest, user: User = Depends(require('w
         raise HTTPException(422, '루틴의 운동과 Day를 정확히 선택하세요.')
     exercise = matching[0]
     payload = req.model_dump(exclude={'expected_revision'})
+    import json
+    payload['request_checksum']=hashlib.sha256(json.dumps(req.model_dump(mode='json'),sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()).hexdigest()
     payload.update(exercise_name=exercise.exercise_name, day_number=exercise.day_number,
                    routine_exercise_id=exercise.exercise_id, exercise_catalog_id=exercise.motion_id)
     if req.set_records:
@@ -544,6 +546,7 @@ def _days_since(iso_date: str) -> int:
 @router.get('/counselor/students/{student_id}')
 def counselor_student_detail(student_id: str, user: User = Depends(require('roster:read'))):
     u = _require_student_access(user, student_id)
+    audit.record(student_id,'counselor_access',{},user_id=user.id,role=user.role)
     current = store.latest_measurement(student_id)
     previous = store.previous_measurement(student_id, current.id) if current else None
     ranges = _ranges_for(u)
@@ -583,4 +586,6 @@ def create_reference_range(r: ReferenceRange, user: User = Depends(require('refe
     if os.getenv('AUTH_MODE','demo')!='demo' or os.getenv('APP_ENV')=='production':
         if r.source=='demo' or not r.publication or not r.version or not r.effective_date:raise HTTPException(422,'실제 기준의 출처·간행물·버전·적용일이 필요합니다.')
     if r.age_min>r.age_max or any(lo is not None and hi is not None and lo>hi for lo,hi in [(r.lean_lower,r.lean_upper),(r.fat_lower,r.fat_upper)]):raise HTTPException(422,'참고 범위의 상·하한을 확인하세요.')
-    return store.add_reference_range(r)
+    result=store.add_reference_range(r)
+    audit.record(user.id,'reference_dataset_change',{'reference_id':r.id},user_id=user.id,role=user.role)
+    return result

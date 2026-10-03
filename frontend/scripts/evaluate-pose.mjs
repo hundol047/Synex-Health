@@ -14,7 +14,7 @@ export function evaluate(dataset) {
   const coach=createExercisePoseAnalyzer(s.exercise);
   for(const frame of s.frames){
    if(!Number.isFinite(frame.time_ms)||frame.time_ms<=previous||!Array.isArray(frame.landmarks))throw Error('Frames need strictly increasing time_ms and landmarks');
-   previous=frame.time_ms;last=coach.update(frame.landmarks,frame.time_ms);detected+=Number(last.detected);
+   previous=frame.time_ms;last=coach.update(frame.landmarks,frame.time_ms,s.aspect_ratio??1);detected+=Number(last.detected);
    if(frame.expected_visible===false)unknownCorrections+=(last.corrections?.length||0);
   }
   const error=Math.abs((hold?last.seconds||0:last.reps)-expected);

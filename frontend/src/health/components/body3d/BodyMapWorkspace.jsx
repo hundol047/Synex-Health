@@ -6,7 +6,7 @@ import SegmentDetailPanel from './SegmentDetailPanel.jsx';
 import ReferenceSource,{cohortLabel} from './ReferenceSource.jsx';
 import ExercisePreview from '../exercise/ExercisePreview.jsx';
 import {colorsForMode,SEGMENT_LABEL_KO,STATUS_COLORS} from '../../lib/bodyMapColors.js';
-import {valuesFor,referenceValues,comparisonRows,signed} from './overlayMath.js';
+import {valuesFor,referenceValues,comparisonRows,signed,MODEL_NOTICE} from './overlayMath.js';
 
 const MODES=[['my','My Body · 내 몸'],['average','Average Compare · 기준 비교'],['previous','Previous Compare · 이전 비교'],['balance','Left / Right · 좌우'],['range','Range View · 참고 범위']];
 export default function BodyMapWorkspace({comparisonData,height=480,defaultMode='average',routine,onGroupChange}){
@@ -71,6 +71,7 @@ export default function BodyMapWorkspace({comparisonData,height=480,defaultMode=
    {comparisonMode&&row&&<div className="overlay-tooltip" role="status"><strong>{SEGMENT_LABEL_KO[row.segment]}</strong><span>You {row.user_value??'—'} kg · {referenceLabel} {row.reference_value??'—'} kg</span><span>{signed(row.difference_kg)} kg · {signed(row.difference_percent)}%</span></div>}
   </div></SceneBoundary>
   {mode==='range'&&<div className="overlay-legend">{[['within','기준 범위'],['above','기준보다 높음'],['below','기준보다 낮음'],['far_below','큰 차이']].map(([s,t])=><span key={s}><i style={{background:STATUS_COLORS[s]}}/>{t}</span>)}</div>}
+  <p className="muted">{MODEL_NOTICE}</p>
   <p className="muted">{label}을 기반으로 한 시각적 근사 표현입니다. 개별 근육의 실제 질량·모양이나 건강 상태를 뜻하지 않습니다. 표시 형상은 제한된 변형 범위를 사용하므로 정확한 차이는 kg·%로 확인하세요.</p>
   <div className="compare-region-buttons" aria-label="비교 부위 선택">{rows.map(r=><button key={r.segment} className={`btn ${selected===r.segment?'btn-primary':'btn-ghost'}`} aria-pressed={selected===r.segment} onClick={()=>select(r.segment)}>{SEGMENT_LABEL_KO[r.segment]}</button>)}</div>
   {comparisonMode&&<>

@@ -276,6 +276,7 @@ class WorkoutSet(BaseModel):
 
 
 class WorkoutLog(BaseModel):
+    request_checksum: Optional[str] = None
     completion_status: Optional[Literal['not_started','partial','completed','stopped']] = None
     time_zone: str = Field(default='UTC', max_length=80)
     performed_seconds: Optional[float] = Field(default=None, ge=0, le=86400, allow_inf_nan=False)

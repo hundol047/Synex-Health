@@ -6,7 +6,7 @@ from app.health.schemas import ReferenceRange,Segment,ExerciseRoutine,WorkoutLog
 
 def test_migration_repeat_history_atomic_and_concurrent(tmp_path):
     s=HealthStore(tmp_path/'health.sqlite');HealthStore(tmp_path/'health.sqlite')
-    with s.connect() as db:assert db.execute('SELECT MAX(version) FROM schema_migrations').fetchone()[0]==3
+    with s.connect() as db:assert db.execute('SELECT MAX(version) FROM schema_migrations').fetchone()[0]==__import__('app.health.migrations',fromlist=['VERSION']).VERSION
     first=ExerciseRoutine(id='r1',user_id='u',goal='First');s.add_routine(first)
     second=ExerciseRoutine(id='r2',user_id='u',goal='Second',progression='Reduced load');s.add_routine(second)
     with s.connect() as db:

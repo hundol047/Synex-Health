@@ -31,6 +31,8 @@ def establish(req: SessionRequest, response: Response, user: User = Depends(get_
     # Privileged accounts retain IdP token verification on every request.
     if req.remember and user.role != 'student':
         raise HTTPException(403, '관리 계정은 로그인 유지 기능을 사용할 수 없습니다.')
+    from .audit import AuditStore
+    AuditStore().record(user.id,'login',{'transport':req.transport},user_id=user.id,role=user.role)
     clear_session(response, synex_health_auth_session)
     if not req.remember: return {'remembered': False}
     session = 'synex-session.' + secrets.token_urlsafe(32)
