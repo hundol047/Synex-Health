@@ -63,6 +63,7 @@ def export_data(user:User=Depends(require('health:read'))):
     with store.connect() as db:
         analyses=[json.loads(r[0]) for r in db.execute('SELECT payload FROM analyses WHERE user_id=?',(user.id,))]
         history=[dict(id=r[0],school_id=r[1],shared=bool(r[2]),created_at=r[3]) for r in db.execute('SELECT id,school_id,shared,created_at FROM consent_history WHERE user_id=? ORDER BY created_at',(user.id,))]
+    audit.record(user.id,'data_export',{},user_id=user.id,role=user.role)
     return {'profile':store.get_user(user.id),'measurements':store.list_measurements(user.id),'analyses':analyses,'exercise_profile':store.get_profile(user.id),'routines':store.list_routines(user.id),'workouts':store.list_workouts(user.id),'goal':goal(user),'adaptive_history':adaptive_history(100,0,user),'sharing_history':history,'exported_at':now()}
 
 class DeleteRequest(BaseModel):
@@ -153,6 +154,7 @@ def provider_sync(user:User=Depends(require('measurement:write'))):
     except ProviderFailure as exc:
         store.save_preference(user.id,'inbody_sync',{**prior,'status':'error','last_attempt':now(),'error_code':str(exc)})
         raise HTTPException(503,'측정 서버 동기화 실패. 기존 데이터는 유지됩니다.') from None
+    audit.record(user.id,'provider_sync',{'provider':'inbody'},user_id=user.id,role=user.role)
     state=store.save_preference(user.id,'inbody_sync',{'status':'connected','last_attempt':now(),'last_sync_time':now()})
     if readings:_regenerate_after_measurement(user,store.latest_measurement(user.id).id)
     return {**state,'count':len(readings)}
@@ -211,7 +213,8 @@ def school_logins():
 @router.get('/exercise-catalog')
 def catalog(user:User=Depends(require('routine:read'))):
     from .exercise_catalog import CATALOG
-    return CATALOG
+    angles={'squat':'측면 또는 45도','lunge':'측면','push_up':'측면','plank':'측면','shoulder_press':'정면 또는 45도','curl':'정면 또는 45도','lateral_raise':'정면','bent_row':'측면 또는 45도','hip_hinge':'측면','glute_bridge':'측면','front_raise':'측면','side_lunge':'정면'}
+    return [{**item,'recommended_camera_angle':angles.get(item['id'])} for item in CATALOG]
 
 @router.get('/advanced/progress')
 def long_term_progress(user:User=Depends(require('measurement:read'))):
@@ -236,4 +239,4 @@ def diagnostics(user:User=Depends(require('health:read'))):
     import os
     with store.connect() as db:db.execute('SELECT 1').fetchone()
     from .billing import mode
-    return {'api':'reachable','auth':'authenticated','database':'reachable','database_kind':'postgresql' if store.database else 'sqlite','schema_version':3,'billing':mode(),'school':connection(user),'body_shape':'disabled'}
+    return {'api':'reachable','auth':'authenticated','database':'reachable','database_kind':'postgresql' if store.database else 'sqlite','schema_version':__import__('app.health.migrations',fromlist=['VERSION']).VERSION,'billing':mode(),'school':connection(user),'body_shape':'disabled'}

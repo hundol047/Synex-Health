@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
 from typing import Literal
 from ..services.auth import get_current_user, User
-from .router import store
+from .router import store, audit
 
 router = APIRouter(prefix='/api/billing', tags=['subscriptions'])
 
@@ -25,6 +25,14 @@ def mode():
     if value == 'revenuecat' and auth == 'oidc' and os.getenv('REVENUECAT_SECRET_KEY'):
         return 'revenuecat'
     return 'disabled'
+
+
+def purchase_config():
+    apple=os.getenv('APPLE_PRODUCT_ID','').strip()
+    google=os.getenv('GOOGLE_PRODUCT_ID','').strip()
+    entitlement=os.getenv('ENTITLEMENT_ID',os.getenv('REVENUECAT_ENTITLEMENT','')).strip()
+    return {'ready':bool(apple and google and entitlement and mode()=='revenuecat'),
+            'apple_product_id':apple,'google_product_id':google,'entitlement_id':entitlement}
 
 
 def account(uid):
@@ -61,14 +69,15 @@ def refresh(uid):
                             headers={'Authorization': 'Bearer ' + os.environ['REVENUECAT_SECRET_KEY']}, timeout=10)
         response.raise_for_status()
         subscriber = response.json()['subscriber']
-        entitlement = subscriber.get('entitlements', {}).get(os.getenv('REVENUECAT_ENTITLEMENT', 'plus'), {})
+        entitlement = subscriber.get('entitlements', {}).get(os.getenv('ENTITLEMENT_ID',os.getenv('REVENUECAT_ENTITLEMENT', 'plus')), {})
         product = entitlement.get('product_identifier')
         subscription = subscriber.get('subscriptions', {}).get(product, {})
         expiry = timestamp(entitlement.get('expires_date'))
         grace = timestamp(subscription.get('grace_period_expires_date'))
         access_until=max(expiry,grace)
         allowed = set(os.getenv('REVENUECAT_PRODUCTS', 'synex_plus_monthly,synex_plus_yearly').split(','))
-        sandbox_ok = not subscription.get('is_sandbox', False) or os.getenv('REVENUECAT_ALLOW_SANDBOX') == 'true'
+        environment='sandbox' if subscription.get('is_sandbox',False) else 'production'
+        sandbox_ok = environment=='production' or (os.getenv('APP_ENV')!='production' and os.getenv('REVENUECAT_ALLOW_SANDBOX')=='true')
         revoked = bool(subscription.get('refunded_at'))
         active = bool(product in allowed and access_until > time.time() and subscription and sandbox_ok and not revoked)
         state=('refunded' if revoked else 'grace_period' if active and grace>time.time() else
@@ -77,11 +86,13 @@ def refresh(uid):
                'trial' if active and subscription.get('period_type')=='trial' else 'active' if active else 'free')
         payload = {'source': 'revenuecat', 'active': active, 'state':state,'expires_at': access_until,
                    'will_renew': active and not subscription.get('unsubscribe_detected_at') and not subscription.get('billing_issues_detected_at'),
-                   'store': subscription.get('store'), 'product': product, 'verified_at': requested_at}
+                   'environment':environment,'store': subscription.get('store'), 'product': product, 'verified_at': requested_at}
     except (httpx.HTTPError, ValueError, KeyError, TypeError, AttributeError):
         raise HTTPException(503, '결제 상태 확인이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.')
     if not save(uid, payload, expected=before):
         raise HTTPException(503, '결제 상태가 다른 요청에서 갱신되었습니다. 다시 확인해 주세요.')
+    if before.get('state')!=payload['state'] or before.get('active')!=payload['active']:
+        audit.record(uid,'subscription_change',{'state':payload['state'],'environment':payload['environment']},user_id=uid)
     return payload
 
 
@@ -92,8 +103,9 @@ def status(uid, verify=False):
     current = mode()
     if current == 'revenuecat' and (verify or time.time() - payload.get('verified_at', 0) > 60):
         payload = refresh(uid)
-    active = bool(current != 'disabled' and payload.get('source') == current and payload.get('active') and payload.get('expires_at', 0) > time.time())
-    return {'mode': current, 'plan': 'plus' if active else 'free', 'active': active,
+    environment_ok=not (os.getenv('APP_ENV')=='production' and payload.get('environment')=='sandbox')
+    active = bool(environment_ok and current != 'disabled' and payload.get('source') == current and payload.get('active') and payload.get('expires_at', 0) > time.time())
+    return {'purchase_config':purchase_config(),'environment':payload.get('environment'),'mode': current, 'plan': 'plus' if active else 'free', 'active': active,
             'state':payload.get('state', 'active' if active and payload.get('will_renew') else 'cancelled' if active else 'free') if current!='disabled' else 'free',
             'expires_at': payload.get('expires_at') if active else None,
             'will_renew': bool(active and payload.get('will_renew')), 'store': payload.get('store') if active else None,
@@ -150,6 +162,11 @@ def webhook(body: dict, authorization: str = Header(default='')):
         raise HTTPException(422, 'Invalid event')
     if event.get('type') == 'TEST':
         return {'ok': True}
+    event_id=event.get('id')
+    if not isinstance(event_id,str) or not 1<=len(event_id)<=200:
+        raise HTTPException(422,'Event ID required')
+    with store.connect() as db:
+        if db.execute('SELECT event_id FROM billing_webhook_events WHERE event_id=?',(event_id,)).fetchone():return {'ok':True,'duplicate':True}
     ids = [event.get('app_user_id'), event.get('original_app_user_id')]
     for key in ('aliases', 'transferred_from', 'transferred_to'):
         if isinstance(event.get(key), list):
@@ -161,6 +178,8 @@ def webhook(body: dict, authorization: str = Header(default='')):
             row = db.execute('SELECT user_id FROM billing_accounts WHERE customer_id=?', (cid,)).fetchone()
         if row:
             refresh(row[0])
+    with store.connect() as db:
+        db.execute('INSERT OR IGNORE INTO billing_webhook_events VALUES (?,?,?)',(event_id,str(event.get('type','unknown')),datetime.now(timezone.utc).isoformat()))
     return {'ok': True}
 
 

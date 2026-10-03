@@ -45,6 +45,6 @@ export function morphPositions(base,m,profile){
 }
 export function measurementDeltas(previous,current){
   if(!previous||!current)return [];
-  const delta=(a,b)=>a==null||b==null?null:Math.round((b-a)*100)/100;
+  const delta=(a,b)=>!Number.isFinite(a)||!Number.isFinite(b)?null:Math.round((b-a)*100)/100;
   return [...['weight','skeletal_muscle_mass','body_fat_percentage'].map(key=>({key,value:delta(previous[key],current[key])})),...REGIONS.slice(1).flatMap(region=>['lean_mass_kg','fat_mass_kg'].map(key=>({key:`${region}.${key}`,value:delta(previous.segments?.find(s=>s.segment===region)?.[key],current.segments?.find(s=>s.segment===region)?.[key])})))];
 }

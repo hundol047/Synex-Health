@@ -175,3 +175,7 @@ See [release readiness](docs/APP_STORE_RELEASE_READINESS.md) for verified result
 ### 출시 보완 및 운동 분류 (2026-10-01)
 
 운동 라이브러리는 맨몸 42종 / 장비 32종(총 74종)을 제공하며, 프로필에서 맨몸 전용 또는 보유 장비 우선 루틴을 선택할 수 있습니다. 미전송 기록은 계정별 암호화 저장, 재로그인 복구, 수정 충돌 확인을 지원합니다. 구현 범위와 실제 외부 검증이 필요한 항목은 [출시 보완 현황](docs/LAUNCH_COMPLETION.md), 운영·백업·스토어 검증 절차는 [운영 인수 기준](docs/RELEASE_OPERATIONS.md)을 확인하세요. 테스트 통과를 실기기 검증이나 스토어 출시 완료로 해석하지 않습니다.
+
+### Production hardening (2026-10-03)
+
+See [hardening report](docs/HARDENING_REPORT.md) and [current readiness](docs/PRODUCTION_READINESS.md) for bounded 3D morphs, twelve movement rules/calibration, encrypted restart persistence, sandbox-isolated billing and verified disposable PostgreSQL recovery. Physical devices, real pose accuracy and actual store payments remain externally unverified.

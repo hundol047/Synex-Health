@@ -472,7 +472,8 @@ def test_webhook_auth_and_reordered_events(client, monkeypatch):
     assert client.post('/api/billing/webhook/revenuecat',json=event).status_code == 401
     called=[]
     monkeypatch.setattr(billing,'refresh',lambda uid:called.append(uid))
-    for kind in ['RENEWAL','EXPIRATION','RENEWAL']:
+    for index,kind in enumerate(['RENEWAL','EXPIRATION','RENEWAL']):
+        event['event']['id']=f'reordered-{index}'
         event['event']['type']=kind
         assert client.post('/api/billing/webhook/revenuecat',json=event,headers={'Authorization':'Bearer hook-secret'}).status_code == 200
     assert called == ['student-jimin']*3

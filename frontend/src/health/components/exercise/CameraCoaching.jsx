@@ -1,3 +1,4 @@
+import {PoseCalibration} from './poseRules.js';
 import React,{useEffect,useRef,useState,lazy,Suspense} from 'react';
 import {claimCamera} from './cameraLease.js';
 import {api} from '../../../shared/lib/api.js';
@@ -57,7 +58,7 @@ export default function CameraCoaching({motion='squat',paused=false}){
    const detector=await createPoseRunner(model,{signal:r.abort.signal});if(!active()){detector.close();return;}
    r.detector=detector;clearTimeout(r.prepareTimer);
    r.timer=setInterval(()=>api('/api/advanced/pose').catch(()=>{if(active()){stopAnalysis();setError('분석 권한을 확인할 수 없어 피드백을 껐습니다. 카메라는 계속 볼 수 있습니다.');}}),60000);
-   const coach=createExercisePoseAnalyzer(motion);let last=-Infinity;
+   const coach=createExercisePoseAnalyzer(motion),calibration=new PoseCalibration();let last=-Infinity;
    const watch=()=>{clearTimeout(r.staleTimer);r.staleTimer=setTimeout(()=>{if(active()){stopAnalysis();setError('새 분석 결과가 없어 피드백을 중지했습니다. 카메라 상태를 확인하고 다시 켜 주세요.');}},3000);};
    watch();
    const schedule=()=>{if(!active())return;if(video.current.requestVideoFrameCallback)r.videoFrame=video.current.requestVideoFrameCallback(loop);else r.frame=requestAnimationFrame(loop);};
@@ -68,7 +69,8 @@ export default function CameraCoaching({motion='squat',paused=false}){
       const out=await detector.detectForVideo(video.current,time);if(!active())return;
       const raw=out.landmarks?.[0]||[],w=video.current.videoWidth||640,h=video.current.videoHeight||480;
       const visible=POSE_EXERCISES[motion].joints.every(i=>raw[i]&&raw[i].x>=0&&raw[i].x<=1&&raw[i].y>=0&&raw[i].y<=1);
-      const next=coach.update(visible?raw:[],time,h/w);
+      const calibrated=calibration.update(out.landmarks,time);
+      const next=calibrated.ready?coach.update(visible?raw:[],time,h/w):{...coach.update([],time,h/w),feedback:calibrated.message,calibration:calibrated.progress};
       const message=next.corrections?.[0]||next.warnings?.[0]||next.feedback;
       watch();setResult({...next,message});setPoints(next.detected?raw:[]);setSize([w,h]);last=time;
       if(voiceRef.current&&time-speechAt.current>10000&&window.speechSynthesis&&typeof SpeechSynthesisUtterance!=='undefined'){
@@ -92,6 +94,7 @@ export default function CameraCoaching({motion='squat',paused=false}){
   <div className="coach-preferences"><label><input type="checkbox" role="switch" checked={feedback} disabled={!running||paused} onChange={e=>e.target.checked?startAnalysis():stopAnalysis()}/> 자세 피드백 받기</label><label><input type="checkbox" checked={voice} disabled={!feedback||preparing||!window.speechSynthesis} onChange={e=>{voiceRef.current=e.target.checked;setVoice(e.target.checked);speechAt.current=-Infinity;if(!e.target.checked)window.speechSynthesis?.cancel();}}/> 음성으로도 듣기</label></div>
   <p className="muted">피드백은 기본 꺼짐입니다. 켜면 기기 내 자세 분석과 관절선을 표시합니다. 끄면 분석·음성 안내를 멈추고 카메라만 보여줍니다.</p>
   {feedback&&<div className="coach-feedback" role="status" aria-live="polite"><strong>{preparing?'피드백 준비 중…':result?.message||'전신이 화면에 들어오도록 서 주세요.'}</strong>{result&&<p>{result.detected?(result.seconds!=null?`${result.seconds}초 유지`:`${result.reps}회 관찰`):'추적 불확실 · 자세 판정 보류'}</p>}</div>}
+  {result?.detected&&<dl aria-label="자세 분석 요소"><dt>ROM</dt><dd>{result.range_of_motion??'—'}° 관찰 범위</dd><dt>Tempo</dt><dd>{result.rep_seconds!=null?`${result.rep_seconds}초/회`:'측정 중'}</dd><dt>Balance</dt><dd>{result.left_right_balance??'—'}° 화면상 차이</dd><dt>Tracking</dt><dd>{result.tracking_quality}</dd></dl>}
   {error&&<p role="alert">{error}</p>}
   <details><summary>촬영 준비와 개인정보</summary><p>전신이 보이도록 휴대폰을 고정하고 약 2–3m 떨어져 화각에 맞게 조정하세요. 녹화·영상 저장·서버 전송을 하지 않습니다. 피드백 설정은 저장하지 않으며 다시 열면 꺼져 있습니다.</p><p>시범과 내 동작은 자동 동기화되지 않습니다. 안내는 관절 추적에 따른 참고이며 자세의 안전성이나 의료적 상태를 판정하지 않습니다. 추정 횟수는 운동 기록에 자동 저장하지 않습니다.</p></details>
  </section>;

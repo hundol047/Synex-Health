@@ -54,3 +54,16 @@ it('enumerates encrypted drafts for archived routines within the active account 
  expect(await offline.listWorkoutDrafts()).toEqual([expect.objectContaining({scope:'record:old:exercise',value:expect.objectContaining({patch:{memo:'보관 기록'}})})]);
  await offline.bindOfflineAccount('other-owner');expect(await offline.listWorkoutDrafts()).toEqual([]);
 });
+it('restores encrypted response snapshots after reload but never accepts auth paths',async()=>{
+ await offline.bindOfflineAccount('snapshot-owner');
+ await offline.cacheResponse('/api/body-composition/latest',{weight:71.25});await offline.cacheResponse('/api/auth/token',{token:'do-not-cache'});
+ offline.lockOffline();vi.resetModules();const fresh=await import('../src/shared/lib/offline.js');await fresh.bindOfflineAccount('snapshot-owner');
+ expect(fresh.cachedResponse('/api/body-composition/latest')).toEqual({weight:71.25});expect(fresh.cachedResponse('/api/auth/token')).toBeUndefined();
+ await fresh.clearOffline();await fresh.bindOfflineAccount('snapshot-owner');expect(fresh.cachedResponse('/api/body-composition/latest')).toBeUndefined();await fresh.clearOffline();
+});
+it('persists checksum, client identity, revision and failed/conflict states',async()=>{
+ await offline.bindOfflineAccount('state-owner');await offline.queueWorkout(body());
+ let r=offline.offlineState().entries[0];expect(r.status).toBe('PENDING');expect(r.checksum).toMatch(/^[a-f0-9]{64}$/);expect(r.client_id).toBe(r.body.mutation_id);expect(r.revision).toBe(0);expect(r.created_at).toBeTruthy();
+ await expect(offline.syncWorkouts(async()=>{expect(offline.offlineState().entries[0].status).toBe('SYNCING');throw Error('offline');})).rejects.toThrow();
+ expect(offline.offlineState().entries[0].status).toBe('FAILED');
+});
