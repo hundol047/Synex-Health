@@ -132,11 +132,16 @@ def provider_status(user:User=Depends(require('health:read'))):
     adapter=inbody(store)
     state=store.preference(user.id,'inbody_sync',{})
     mapping=store.preference(user.id,'inbody_mapping',{})
-    ready=adapter.configured() and bool(mapping.get('subject'))
-    return {'status':state.get('status','pending') if ready else 'not_connected','last_sync_time':state.get('last_sync_time'),'message':'공식 계약 adapter 설정됨. 동기화 성공 전까지 연결을 확인하세요.' if ready else '공식 API 계약 adapter와 외부 계정 매핑이 필요합니다. 수동/CSV 입력을 이용하세요.'}
+    u=_require_user_record(user.id)
+    membership=store.preference(user.id,'membership',{})
+    mapped=bool(mapping.get('subject') and mapping.get('school_id')==u.school_id and membership.get('verified') and membership.get('school_id')==u.school_id)
+    ready=adapter.configured() and mapped
+    operational='DISCONNECTED' if not adapter.configured() else 'ERROR' if state.get('status')=='error' else 'SYNCED' if ready and state.get('status')=='connected' else 'MAPPED' if ready else 'AUTHENTICATED' if state.get('authenticated_at') else 'CONFIGURED'
+    latest=store.latest_measurement(user.id)
+    return {'operational_state':operational,'last_measurement_date':latest.measurement_date if latest else None,'sync_policy':{'manual_refresh':'available','app_login':'available on explicit request','scheduled_server':'scripts/sync_inbody.py','webhook':'EXTERNAL SETUP REQUIRED'},'status':state.get('status','pending') if ready else 'not_connected','last_sync_time':state.get('last_sync_time'),'message':'공식 계약 adapter 설정됨. 동기화 성공 전까지 연결을 확인하세요.' if ready else '공식 API 계약 adapter와 외부 계정 매핑이 필요합니다. 수동/CSV 입력을 이용하세요.'}
 
 @router.post('/integrations/inbody/sync')
-def provider_sync(user:User=Depends(require('measurement:write'))):
+def provider_sync(user:User=Depends(require('measurement:write')), trigger:Literal['manual_refresh','app_login','scheduled_server']='manual_refresh'):
     from .providers.configured import inbody
     from .providers.inbody import ProviderFailure
     from .providers.base import ProviderNotConfigured
@@ -148,26 +153,43 @@ def provider_sync(user:User=Depends(require('measurement:write'))):
         raise HTTPException(501,'학교 인증과 공식 외부 계정 매핑이 아직 연결되지 않았습니다.')
     prior=store.preference(user.id,'inbody_sync',{})
     adapter=inbody(store)
+    from datetime import datetime,timezone
+    import time,math
+    retry_remaining=math.ceil(prior.get('retry_not_before',0)-time.time())
+    if retry_remaining>0:raise HTTPException(429,'공급자 요청 제한 대기 중입니다.',headers={'Retry-After':str(retry_remaining)})
+    if prior.get('last_attempt'):
+        try:
+            at=datetime.fromisoformat(prior['last_attempt'].replace('Z','+00:00'))
+            if at.tzinfo is None:at=at.replace(tzinfo=timezone.utc)
+            if (datetime.now(timezone.utc)-at).total_seconds()<60:raise HTTPException(429,'동기화 요청 간 최소 60초를 기다려 주세요.',headers={'Retry-After':'60'})
+        except ValueError:pass
+    store.save_preference(user.id,'inbody_sync',{**prior,'last_attempt':now(),'trigger':trigger})
     try:readings=adapter.sync(user.id,mapping['subject'])
     except ProviderNotConfigured:
         store.save_preference(user.id,'inbody_sync',{**prior,'status':'not_connected','last_attempt':now()});raise
     except ProviderFailure as exc:
-        store.save_preference(user.id,'inbody_sync',{**prior,'status':'error','last_attempt':now(),'error_code':str(exc)})
+        store.save_preference(user.id,'inbody_sync',{**prior,'status':'error','last_attempt':now(),'error_code':str(exc),'retry_not_before':time.time()+max(60,exc.retry_after)})
         raise HTTPException(503,'측정 서버 동기화 실패. 기존 데이터는 유지됩니다.') from None
     audit.record(user.id,'provider_sync',{'provider':'inbody'},user_id=user.id,role=user.role)
-    state=store.save_preference(user.id,'inbody_sync',{'status':'connected','last_attempt':now(),'last_sync_time':now()})
+    state=store.save_preference(user.id,'inbody_sync',{'status':'connected','authenticated_at':now(),'last_attempt':now(),'last_sync_time':now(),'trigger':trigger})
     if readings:_regenerate_after_measurement(user,store.latest_measurement(user.id).id)
     return {**state,'count':len(readings)}
 
 class ProviderMapping(BaseModel):
     school_id:str
+    school_user_id:str=Field(min_length=1,max_length=200)
     subject:str=Field(min_length=1,max_length=200)
 
 @router.put('/admin/users/{uid}/inbody-mapping')
 def set_provider_mapping(uid:str,req:ProviderMapping,user:User=Depends(require('user:admin'))):
     u=_require_user_record(uid)
     if req.school_id!=u.school_id:raise HTTPException(422,'사용자의 소속 학교와 일치해야 합니다.')
-    store.save_preference(uid,'inbody_mapping',req.model_dump())
+    if not req.school_user_id.strip():raise HTTPException(422,'검증된 학교 사용자 ID가 필요합니다.')
+    for other in store.list_students():
+        prior=store.preference(other.id,'inbody_mapping',{})
+        if other.id!=uid and prior.get('school_id')==req.school_id and (prior.get('subject')==req.subject or prior.get('school_user_id')==req.school_user_id):raise HTTPException(409,'이미 다른 사용자에게 매핑된 기관 계정입니다.')
+    store.save_preference(uid,'inbody_sync',{'status':'pending'})
+    store.save_preference(uid,'inbody_mapping',{**req.model_dump(),'verified_by':user.id,'verified_at':now()})
     audit.record(uid,'provider_mapping_updated',{'school_id':req.school_id},user_id=user.id,role=user.role)
     return {'status':'pending'}
 
@@ -198,7 +220,21 @@ def admin_dashboard(user:User=Depends(require('user:admin'))):
     with store.connect() as db:
         users=[{'id':r[0],'name':r[1],'role':r[2],'school_id':r[3]} for r in db.execute('SELECT id,name,role,school_id FROM users')]
         subscriptions=[{'user_id':r[0],'source':json.loads(r[1]).get('source'),'expires_at':json.loads(r[1]).get('expires_at')} for r in db.execute('SELECT user_id,payload FROM billing_accounts')]
-    return {'schools':list(_school_directory().values()),'users':users,'school_requests':store.list_school_requests(),'subscriptions':subscriptions,'providers':{'inbody':'not_connected','biogram':'not_connected'},'references':store.list_reference_ranges(),'system':{'database':'ok'}}
+    from .pilot import readiness
+    release=readiness(store)
+    overview=[]
+    from ..services.school_oidc import configurations
+    try:sso_schools={c['school_id'] for c in configurations()};sso_error=False
+    except HTTPException:sso_schools=set();sso_error=True
+    for sid,school in _school_directory().items():
+        students=[u for u in store.list_students() if u.school_id==sid]
+        shared=[u for u in students if u.share_with_center]
+        from .router import _days_since
+        configured=release['checks']['InBody']!='DISCONNECTED'
+        sync_states=[store.preference(u.id,'inbody_sync',{}).get('status') for u in students]
+        school_provider='DISCONNECTED' if not configured else 'ERROR' if 'error' in sync_states else 'SYNCED' if 'connected' in sync_states else 'CONFIGURED'
+        overview.append({'school_id':sid,'name':school['name'],'students':len(students),'consented':len(shared),'recent_measurements':sum(bool((m:=store.latest_measurement(u.id)) and _days_since(m.measurement_date)<=30) for u in shared),'unsynced':sum(not store.preference(u.id,'inbody_sync',{}).get('last_sync_time') for u in students),'sync_errors':sum(store.preference(u.id,'inbody_sync',{}).get('status')=='error' for u in students),'provider':school_provider,'reference_versions':sorted({r.version for r in store.list_reference_ranges() if r.version and __import__('app.health.reference',fromlist=['production_eligible']).production_eligible(r)}),'sso':'ERROR' if sso_error else 'CONFIGURED' if sid in sso_schools else 'NOT CONFIGURED'})
+    return {'school_overview':overview,'release':release,'schools':list(_school_directory().values()),'users':users,'school_requests':store.list_school_requests(),'subscriptions':subscriptions,'providers':{'inbody':release['checks']['InBody'],'biogram':'not_connected'},'references':store.list_reference_ranges(),'system':{'database':'ok'}}
 
 @router.get('/auth/config')
 def login_configuration():
@@ -239,4 +275,19 @@ def diagnostics(user:User=Depends(require('health:read'))):
     import os
     with store.connect() as db:db.execute('SELECT 1').fetchone()
     from .billing import mode
-    return {'api':'reachable','auth':'authenticated','database':'reachable','database_kind':'postgresql' if store.database else 'sqlite','schema_version':__import__('app.health.migrations',fromlist=['VERSION']).VERSION,'billing':mode(),'school':connection(user),'body_shape':'disabled'}
+    from .pilot import readiness
+    release=readiness(store)
+    return {'release':release,'build_commit':os.getenv('BUILD_COMMIT','NOT SET'),'api':'reachable','auth':'authenticated','database':'reachable','database_kind':'postgresql' if store.database else 'sqlite','schema_version':__import__('app.health.migrations',fromlist=['VERSION']).VERSION,'billing':mode(),'school':connection(user),'body_shape':'disabled'}
+
+
+class ManualWorkflow(BaseModel):
+    school_id:str
+    evidence_url:str
+
+@router.put('/admin/pilot/manual-workflow')
+def approve_manual_workflow(req:ManualWorkflow,user:User=Depends(require('user:admin'))):
+    from urllib.parse import urlparse
+    if req.school_id not in _school_directory() or urlparse(req.evidence_url).scheme!='https':raise HTTPException(422,'실제 학교와 HTTPS 검증 근거가 필요합니다.')
+    store.save_preference('__system__','verified_manual_workflow',{**req.model_dump(),'reviewed_by':user.id,'reviewed_at':now()})
+    audit.record(user.id,'manual_workflow_review',{'school_id':req.school_id},user_id=user.id,role=user.role)
+    return {'status':'recorded','notice':'검증 근거 기록이며 외부 API 연결을 의미하지 않습니다.'}

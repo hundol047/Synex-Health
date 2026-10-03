@@ -15,7 +15,8 @@
     "predev": "node scripts/prepare-pose.mjs",
     "pose:setup": "node scripts/install-pose-model.mjs && node scripts/prepare-pose.mjs",
     "build:release": "node scripts/build-release.mjs",
-    "native:configure": "node scripts/configure-native.mjs"
+    "native:configure": "node scripts/configure-native.mjs",
+    "pose:evaluate": "node scripts/validate-external-pose.mjs"
   },
   "dependencies": {
     "@aparajita/capacitor-secure-storage": "8.0.1",
@@ -23,6 +24,7 @@
     "@capacitor/app": "^8.1.1",
     "@capacitor/browser": "^8.0.4",
     "@capacitor/core": "^8.5.2",
+    "@capacitor/device": "^8.0.3",
     "@capacitor/ios": "^8.5.2",
     "@capacitor/local-notifications": "^8.3.1",
     "@capacitor/push-notifications": "^8.1.2",

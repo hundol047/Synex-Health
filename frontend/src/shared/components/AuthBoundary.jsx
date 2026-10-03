@@ -34,6 +34,7 @@ export default function AuthBoundary({children}){
   if(health.demo&&import.meta.env.VITE_RELEASE_BUILD==='true')throw Error('운영 서버 인증 설정이 올바르지 않습니다.');
   if(health.demo){await bindOfflineAccount(getDemoUser(),BASE);setAuth({demo:true,role:'student'});return;}
   const me=await api('/api/health/profile');await bindOfflineAccount(me.id,BASE);setAuth({demo:false,role:me.role});
+  if(me.role==='student')void api('/api/integrations/inbody').then(async status=>{if(!status)return;const last=Date.parse(status.last_sync_time||'');if(['MAPPED','SYNCED','ERROR'].includes(status.operational_state)&&(!Number.isFinite(last)||Date.now()-last>=6*60*60*1000))await api('/api/integrations/inbody/sync?trigger=app_login',{});}).catch(e=>{if(e.status!==429)setNotice('건강센터 데이터를 가져오지 못했습니다. 기존 기록은 계속 사용할 수 있습니다.');});
  }catch(e){if(e.status===401){setAuth({demo:false,login:true});}else setError(e.message);}}
  async function callback(url){
   const received=new URL(url),target=new URL(redirect());

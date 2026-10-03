@@ -1,6 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import { api } from './api.js';
 let configuredUser;
+export const billingSDKStatus=()=>configuredUser?'configured — purchase verification separate':'not configured';
 export const BillingAPI = {
   plans: () => api('/api/billing/plans'),
   status: () => api('/api/billing/subscription'),

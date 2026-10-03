@@ -13,3 +13,7 @@ For each actual test record commit, APK SHA256, device/OS build, tester, date an
 Diagnostics records contiguous rendered-frame FPS, CPU render submission time (not GPU time), mesh/vertex count, overlay/fallback. Target >=30 FPS, critical floor 20 FPS; these are rendering targets, unrelated to medical accuracy. Idle demand rendering is not a benchmark. Record manual low-power mode and sustained active low-FPS fallback.
 
 `ci.yml` preserves assembleDebug and APK upload. `android-release.yml` is manual, uses actual signing secrets and release configuration, and explicitly skips if missing. No debug key is used for release. Signing/build success does not certify store publication.
+
+## Physical evidence records
+
+See [combined QA report](DEVICE_QA_REPORT.md) and `validation/device/evidence.template.json` for the required per-test evidence format. No physical execution was performed for this upgrade. All new physical checks: **NOT TESTED**. Record actual OS/device/build, tester/date/commit and redacted evidence links; simulator compilation is not device evidence.

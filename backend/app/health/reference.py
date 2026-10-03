@@ -21,15 +21,16 @@ def production_eligible(r):
     except ValueError:
         return False
     url=urlparse(r.source_url or '')
-    return (r.source.strip().lower() not in ('demo','mock','placeholder') and r.gender in ('male','female')
+    return (bool(r.source.strip()) and r.source.strip().lower() not in ('demo','mock','placeholder') and r.gender in ('male','female')
             and r.unit=='kg' and 18 <= r.age_min <= r.age_max <= 120
             and url.scheme=='https' and bool(url.hostname) and reviewed<=date.today() and effective<=date.today()
             and bool(r.dataset_id and r.reference_population and r.publication and r.sample_size and r.version
+                     and r.country and r.measurement_device and r.measurement_device in r.compatible_device_names
                      and r.license_note and r.reviewed_by and r.measurement_method and r.compatible_device_names))
 
 
 def metadata(r):
-    return {'source_url':r.source_url,'measurement_method':r.measurement_method,'compatible_device_names':r.compatible_device_names,
+    return {'country':r.country,'measurement_device':r.measurement_device,'license':r.license_note,'reviewed_by':r.reviewed_by,'reviewed_at':r.reviewed_at,'source_url':r.source_url,'measurement_method':r.measurement_method,'compatible_device_names':r.compatible_device_names,
             'dataset_id': r.dataset_id, 'reference_population': r.reference_population,
             'reference_source': r.source, 'publication': r.publication, 'sample_size': r.sample_size,
             'sex': r.gender, 'age_range': [r.age_min, r.age_max],
@@ -40,7 +41,8 @@ def metadata(r):
 
 def average_comparison(user, measurement, references):
     unavailable = {'available': False, 'selected_group_id': None, 'groups': [],
-                   'message': '현재 조건에 맞는 비교군 데이터가 충분하지 않습니다.'}
+                   'message': '비교 가능한 검증 데이터가 없습니다.'}
+    if os.getenv('REFERENCE_COMPARISON_ENABLED')=='false':return unavailable
     if not measurement or user.gender not in ('male', 'female'): return unavailable
     age = None
     if user.birth_date:
@@ -51,13 +53,16 @@ def average_comparison(user, measurement, references):
     height = measurement.height or user.height
     bmi = measurement.bmi
     if bmi is None and measurement.weight and height: bmi = measurement.weight / (height / 100) ** 2
-    strict = os.getenv('APP_ENV') == 'production' or os.getenv('AUTH_MODE', 'demo') != 'demo'
+    strict = os.getenv('PILOT_MODE')=='true' or os.getenv('APP_ENV') == 'production' or os.getenv('AUTH_MODE', 'demo') != 'demo'
     buckets = {}
+    incompatible=False
     for r in references:
         if r.gender != user.gender or r.unit != 'kg': continue
         meta = metadata(r)
         if strict and not production_eligible(r): continue
-        if r.compatible_device_names and measurement.device_name.casefold().strip() not in {n.casefold().strip() for n in r.compatible_device_names}: continue
+        if (r.compatible_device_names and measurement.device_name.casefold().strip() not in {n.casefold().strip() for n in r.compatible_device_names}) or (measurement.measurement_method and r.measurement_method and measurement.measurement_method.casefold().strip()!=r.measurement_method.casefold().strip()):
+            incompatible=True
+            continue
         if r.effective_date and r.effective_date > date.today().isoformat(): continue
         values = [(age,r.age_min,r.age_max), (height,r.height_min,r.height_max),
                   (bmi,r.bmi_min,r.bmi_max), (measurement.weight,r.weight_min,r.weight_max)]
@@ -88,7 +93,7 @@ def average_comparison(user, measurement, references):
                 not any(v is not None for v in g['metadata']['height_range']),
                 not any(v is not None for v in g['metadata']['BMI_range']+g['metadata']['weight_range']),g['id']))
     return {'available': bool(groups), 'selected_group_id': groups[0]['id'] if groups else None,
-            'groups': groups, 'message': None if groups else unavailable['message']}
+            'groups': groups, 'message': None if groups else '현재 측정 장비와 비교 데이터의 측정 방식이 달라 평균 비교를 제공하지 않습니다.' if incompatible else unavailable['message']}
 
 
 def selected_group(comparison):

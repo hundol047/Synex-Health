@@ -14,7 +14,7 @@ test('encrypted draft survives closed page and guards app navigation before resu
  await expect(card.getByText('기기에 임시 저장됨',{exact:true})).toBeVisible();
  await confirmAction(page,false,()=>page.locator('.health-bottom-nav a[href="/health/profile"]').click());await expect(page).toHaveURL(/\/health\/workout$/);
  await confirmAction(page,true,()=>page.locator('.health-bottom-nav a[href="/health/profile"]').click());await expect(page).toHaveURL(/\/health\/profile$/);
- await page.goBack();await expect(page.getByLabel('1세트 중량 kg',{exact:true})).toHaveValue('18');
+ await expect(page.locator('#height-input')).toBeVisible();await page.goBack();await expect(page).toHaveURL(/\/health\/workout$/);await expect(page.getByLabel('1세트 중량 kg',{exact:true})).toHaveValue('18');
  await page.close();page=await context.newPage();await page.goto('/health/workout');await expect(page.getByLabel('1세트 횟수',{exact:true})).toHaveValue('7');
  const restored=page.locator('.exercise-card').filter({has:page.getByLabel('1세트 중량 kg',{exact:true})});
  await confirmAction(page,true,()=>restored.getByRole('button',{name:'임시 입력 버리기',exact:true}).click());
