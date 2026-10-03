@@ -58,3 +58,17 @@ def test_reference_method_mismatch_blocks(monkeypatch):
     monkeypatch.setenv('PILOT_MODE','true')
     u,m,r=fixture_data();m=m.model_copy(update={'measurement_method':'DXA'})
     result=average_comparison(u,m,[r]);assert not result['available'];assert '측정 방식' in result['message']
+
+def test_provider_long_retry_after_never_retries_early(monkeypatch):
+    import httpx
+    from app.health.providers.inbody import InBodyProvider,ProviderFailure
+    monkeypatch.setenv('INBODY_API_BASE_URL','https://contract.example.test')
+    monkeypatch.setenv('INBODY_API_KEY','test-key')
+    class Contract:
+        def request(self,subject):return '/test',{}
+    requests=[]
+    def handler(req):
+        requests.append(req);return httpx.Response(429,headers={'Retry-After':'3600'})
+    with httpx.Client(transport=httpx.MockTransport(handler)) as http:
+        with pytest.raises(ProviderFailure) as error:InBodyProvider(object(),Contract(),http).sync('test-user','test-subject')
+    assert len(requests)==1 and error.value.retry_after==3600

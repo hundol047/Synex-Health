@@ -154,6 +154,9 @@ def provider_sync(user:User=Depends(require('measurement:write')), trigger:Liter
     prior=store.preference(user.id,'inbody_sync',{})
     adapter=inbody(store)
     from datetime import datetime,timezone
+    import time,math
+    retry_remaining=math.ceil(prior.get('retry_not_before',0)-time.time())
+    if retry_remaining>0:raise HTTPException(429,'공급자 요청 제한 대기 중입니다.',headers={'Retry-After':str(retry_remaining)})
     if prior.get('last_attempt'):
         try:
             at=datetime.fromisoformat(prior['last_attempt'].replace('Z','+00:00'))
@@ -165,7 +168,7 @@ def provider_sync(user:User=Depends(require('measurement:write')), trigger:Liter
     except ProviderNotConfigured:
         store.save_preference(user.id,'inbody_sync',{**prior,'status':'not_connected','last_attempt':now()});raise
     except ProviderFailure as exc:
-        store.save_preference(user.id,'inbody_sync',{**prior,'status':'error','last_attempt':now(),'error_code':str(exc)})
+        store.save_preference(user.id,'inbody_sync',{**prior,'status':'error','last_attempt':now(),'error_code':str(exc),'retry_not_before':time.time()+max(60,exc.retry_after)})
         raise HTTPException(503,'측정 서버 동기화 실패. 기존 데이터는 유지됩니다.') from None
     audit.record(user.id,'provider_sync',{'provider':'inbody'},user_id=user.id,role=user.role)
     state=store.save_preference(user.id,'inbody_sync',{'status':'connected','authenticated_at':now(),'last_attempt':now(),'last_sync_time':now(),'trigger':trigger})

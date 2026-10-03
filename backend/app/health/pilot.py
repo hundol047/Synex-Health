@@ -30,7 +30,7 @@ def readiness(store,env=None):
     try:validate_production({**dict(e),'PILOT_MODE':'true'});configuration_valid=True
     except RuntimeError:configuration_valid=False
     users=store.list_students()
-    mapped=any(store.preference(u.id,'membership',{}).get('verified') and store.preference(u.id,'inbody_mapping',{}).get('school_id')==u.school_id and store.preference(u.id,'inbody_mapping',{}).get('school_user_id') for u in users)
+    mapped=any(u.school_id and store.preference(u.id,'membership',{}).get('verified') and store.preference(u.id,'membership',{}).get('school_id')==u.school_id for u in users)
     manual=store.preference('__system__','verified_manual_workflow',{})
     manual_ready=bool(manual.get('reviewed_by') and manual.get('evidence_url') and manual.get('school_id'))
     provider_synced=any(store.preference(u.id,'inbody_sync',{}).get('status')=='connected' for u in users)

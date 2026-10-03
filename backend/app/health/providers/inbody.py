@@ -16,7 +16,9 @@ class Contract(Protocol):
     def normalize(self, raw: dict) -> tuple[str, dict]: ...
 
 class ProviderFailure(RuntimeError):
-    pass
+    def __init__(self,message,retry_after=0):
+        super().__init__(message)
+        self.retry_after=retry_after
 
 class InBodyProvider(HealthDataProvider):
     name = 'inbody'
@@ -61,10 +63,13 @@ class InBodyProvider(HealthDataProvider):
                     if attempt==2:raise ProviderFailure('timeout') from None
                     self.sleep(.25*2**attempt);continue
                 if r.status_code==429 or r.status_code>=500:
-                    if attempt==2:raise ProviderFailure('rate_limited' if r.status_code==429 else 'unavailable')
-                    try:delay=max(.25,float(r.headers.get('Retry-After','.5')))
-                    except ValueError:delay=.5
-                    if delay>2:raise ProviderFailure('rate_limited_retry_later')
+                    retry=r.headers.get('Retry-After','60' if r.status_code==429 else '.5')
+                    try:delay=max(.25,float(retry))
+                    except ValueError:
+                        from email.utils import parsedate_to_datetime
+                        try:delay=max(.25,parsedate_to_datetime(retry).timestamp()-time.time())
+                        except (ValueError,TypeError,OverflowError):delay=60
+                    if attempt==2 or delay>2:raise ProviderFailure('rate_limited_retry_later' if r.status_code==429 else 'unavailable',retry_after=delay)
                     self.sleep(delay);continue
                 if r.status_code!=200:raise ProviderFailure('authorization_or_contract_error')
                 try:
