@@ -6,9 +6,11 @@ from datetime import date
 def device_evidence(path, platform, commit=None):
     try:
         rows=json.loads(Path(path).read_text())['tests']
+        if not isinstance(rows,list):return 'NOT TESTED'
         required={'camera','pose','offline','notifications','billing','health','my_body','average_overlay','previous_compare','interpolation','wireframe','section_view'}
         passed=set()
         for r in rows:
+            if not isinstance(r,dict):continue
             if r.get('platform')!=platform or r.get('physical_device') is not True:continue
             if not all(r.get(k) for k in ('date','tester','device','OS','app_version','commit_sha','evidence_url')):continue
             if date.fromisoformat(r['date'])>date.today():continue
