@@ -1,0 +1,9 @@
+{
+  "tests": [{
+    "date": null, "tester": null, "platform": "android", "physical_device": false,
+    "device": null, "OS": null, "app_version": null, "build_number": null,
+    "commit_sha": null, "test": "camera", "result": "NOT TESTED", "notes": "Template only",
+    "evidence_url": null, "screenshot_url": null, "log_url": null,
+    "fps": null, "pose_fps": null, "billing_environment": null
+  }]
+}

@@ -8,24 +8,7 @@ from app.health.schemas import ReferenceRange
 from app.health.reference import production_eligible,metadata
 
 
-def validate(data):
-    rows=[ReferenceRange.model_validate(r) for r in data['references']]
-    if not rows:raise ValueError('No reference records supplied')
-    ids=set();groups={}
-    for row in rows:
-        if row.id in ids:raise ValueError('Duplicate record ID')
-        ids.add(row.id)
-        if not production_eligible(row):raise ValueError(f'{row.id}: provenance, permission, review, units or dates are incomplete')
-        if row.lean_mean is None and row.fat_mean is None:raise ValueError(f'{row.id}: no published mean')
-        group=json.dumps(metadata(row),sort_keys=True)
-        segments=groups.setdefault(group,set())
-        if row.segment in segments:raise ValueError('Duplicate segment within cohort')
-        segments.add(row.segment)
-        for field in ('lean','fat'):
-            mean,lo,hi=(getattr(row,f'{field}_{x}') for x in ('mean','lower','upper'))
-            if mean is not None and ((lo is not None and mean<lo) or (hi is not None and mean>hi)):
-                raise ValueError(f'{row.id}: mean outside supplied bounds')
-    return rows
+from app.health.reference_validation import validate
 
 
 def main():

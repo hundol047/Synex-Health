@@ -31,3 +31,12 @@ evaluation-data/
 release-evidence/
 *.age
 *.dump
+
+# Never commit participant video or raw images
+validation/**/*.mp4
+validation/**/*.mov
+validation/**/*.webm
+validation/**/*.avi
+validation/**/*.jpg
+validation/**/*.png
+validation/**/*report.json

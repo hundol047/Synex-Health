@@ -4,7 +4,7 @@ export function normalizeSets(rows) {
  return rows.map(row=>{
   const reps=Number(row.reps),weight=row.weight_kg===''||row.weight_kg==null?null:Number(row.weight_kg);
   if(row.reps===''||row.reps==null||!Number.isInteger(reps)||reps<0||reps>1000||weight!==null&&(!Number.isFinite(weight)||weight<0||weight>1000))throw Error('각 세트의 횟수(0–1000)와 중량(0–1000kg)을 확인하세요. 중량 미입력은 미기록으로 남습니다.');
-  return {reps,weight_kg:weight,kind:row.kind==='warmup'?'warmup':'working'};
+  return {...(row.rpe!=null?{rpe:Number(row.rpe)}:{}),...(row.pain!=null?{pain:Number(row.pain)}:{}),reps,weight_kg:weight,kind:row.kind==='warmup'?'warmup':'working'};
  });
 }
 export const exerciseKey=w=>w.exercise_catalog_id||w.exercise_name;

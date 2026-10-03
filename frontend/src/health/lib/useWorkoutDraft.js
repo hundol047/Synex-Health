@@ -21,7 +21,12 @@ export function useWorkoutDraft(scope,value,dirty,onRestore){
    catch(e){blocked.current=true;setError(e.message);throw e;}
   });chain.current.catch(()=>{});
  },[scope,encoded,dirty,ready]);
- const flush=useCallback(()=>blocked.current?Promise.reject(Error('임시 저장에 실패했습니다. 입력을 확인하세요.')):chain.current,[scope]);
+ const flush=useCallback(()=>{
+  if(blocked.current)return Promise.reject(Error('임시 저장에 실패했습니다. 입력을 확인하세요.'));
+  const latest=currentValue.current,epoch=offlineEpoch();
+  if(latest!==last.current){last.current=latest;chain.current=chain.current.then(async()=>{if(epoch!==offlineEpoch())throw Error('계정이 변경되었습니다.');token.current=await saveDraft(scope,JSON.parse(latest),token.current);setSavedEncoded(latest);}).catch(e=>{blocked.current=true;setError(e.message);throw e;});chain.current.catch(()=>{});}
+  return chain.current;
+ },[scope]);
  useEffect(()=>registerDraftNavigation(identity.current,dirty,flush,undefined,'/health/workout'),[dirty,flush]);
  async function clear(){skip.current=true;try{await chain.current.catch(()=>{});await removeDraft(scope,token.current);token.current=null;last.current=currentValue.current;blocked.current=false;chain.current=Promise.resolve();setStatus('');setError('');}finally{skip.current=false;}}
  return {ready,status:ready&&dirty&&!error&&encoded!==savedEncoded?'기기에 임시 저장 중…':status,error,flush,clear};

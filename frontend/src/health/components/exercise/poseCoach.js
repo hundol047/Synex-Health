@@ -1,3 +1,5 @@
+import {POSE_EXERCISES,POSE_VERSIONS} from './poseThresholds.js';
+export {POSE_EXERCISES} from './poseThresholds.js';
 import {REQUIRED_LANDMARKS,trackingQuality,evaluateRules} from './poseRules.js';
 // Angles/phase thresholds are conservative product heuristics, not clinical assessment.
 export function jointAngle(a,b,c){
@@ -45,20 +47,6 @@ export class SquatCoach{
  }
 }
 
-export const POSE_EXERCISES={
- squat:{label:'스쿼트',joints:[23,25,27,24,26,28],down:110,up:155},
- lunge:{label:'런지',joints:[23,25,27,24,26,28],down:110,up:155,minimum:true},
- push_up:{label:'푸시업',joints:[11,13,15,12,14,16],down:100,up:155},
- plank:{label:'플랭크',joints:[11,23,27,12,24,28],hold:true,up:155,minimum:true},
- shoulder_press:{label:'숄더 프레스',joints:[11,13,15,12,14,16],down:100,up:155,overhead:true},
- curl:{label:'컬',joints:[11,13,15,12,14,16],down:65,up:145},
- hip_hinge:{label:'힙힌지',joints:[11,23,25,12,24,26],down:110,up:155},
- lateral_raise:{label:'레터럴 레이즈',joints:[23,11,13,24,12,14],down:30,up:75},
- bent_row:{label:'벤트오버 로우',joints:[11,13,15,12,14,16],down:85,up:145},
- front_raise:{label:'프런트 레이즈',joints:[23,11,15,24,12,16],down:30,up:75},
- side_lunge:{label:'사이드 런지',joints:[23,25,27,24,26,28],down:115,up:155,minimum:true},
- glute_bridge:{label:'글루트 브리지',joints:[11,23,25,12,24,26],down:125,up:160},
-};
 export class MovementCoach {
  constructor(id='squat'){this.id=id;this.config=POSE_EXERCISES[id];if(!this.config)throw Error('Unsupported movement');this.reps=0;this.phase='ready';this.last=0;this.lowAt=0;this.holdSince=null;this.holdMs=0;this.previousTime=null;}
  update(points,time){const c=this.config;
@@ -121,7 +109,7 @@ export class ExercisePoseAnalyzer {
   corrections.push(...rules.corrections);warnings.push(...rules.warnings);
   const phaseNames={squat:{start:'standing',eccentric:'descending',bottom:'bottom',concentric:'ascending',completion:'completed'},lunge:{start:'start',eccentric:'descend',bottom:'bottom',concentric:'rise',completion:'completed'},push_up:{start:'top',eccentric:'descending',bottom:'bottom',concentric:'rising',completion:'completed'}};
   const phase=phaseNames[this.id]?.[temporal.movement_phase]??result.phase;
-  return {...result,...temporal,phase,repetition_count:temporal.reps,hold_seconds:result.seconds??null,alignment_state:this.id==='plank'?(result.phase==='holding'?'aligned':'uncertain'):null,tracking_quality:tracking.level,metrics:rules.metrics,detected,confidence,visible_joints:visibleJoints,range_of_motion:detected&&Number.isFinite(this.min)?Math.round(this.max-this.min):null,tempo:this.tempo,left_right_balance:detected?Math.round(Math.abs(left-right)):null,warnings,corrections,completion_state:detected?(c.hold?result.phase:result.reps?'repetition_recorded':'in_progress'):'tracking_lost'};
+  return {...POSE_VERSIONS,...result,...temporal,phase,repetition_count:temporal.reps,hold_seconds:result.seconds??null,alignment_state:this.id==='plank'?(result.phase==='holding'?'aligned':'uncertain'):null,tracking_quality:tracking.level,metrics:rules.metrics,detected,confidence,visible_joints:visibleJoints,range_of_motion:detected&&Number.isFinite(this.min)?Math.round(this.max-this.min):null,tempo:this.tempo,left_right_balance:detected?Math.round(Math.abs(left-right)):null,warnings,corrections,completion_state:detected?(c.hold?result.phase:result.reps?'repetition_recorded':'in_progress'):'tracking_lost'};
  }
 }
 export const ANALYZERS=Object.fromEntries(Object.keys(POSE_EXERCISES).map(id=>[id,class extends ExercisePoseAnalyzer{constructor(){super(id);}}]));

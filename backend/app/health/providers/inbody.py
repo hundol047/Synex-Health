@@ -62,8 +62,9 @@ class InBodyProvider(HealthDataProvider):
                     self.sleep(.25*2**attempt);continue
                 if r.status_code==429 or r.status_code>=500:
                     if attempt==2:raise ProviderFailure('rate_limited' if r.status_code==429 else 'unavailable')
-                    try:delay=min(2,max(.25,float(r.headers.get('Retry-After','.5'))))
+                    try:delay=max(.25,float(r.headers.get('Retry-After','.5')))
                     except ValueError:delay=.5
+                    if delay>2:raise ProviderFailure('rate_limited_retry_later')
                     self.sleep(delay);continue
                 if r.status_code!=200:raise ProviderFailure('authorization_or_contract_error')
                 try:

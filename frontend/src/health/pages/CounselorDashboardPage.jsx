@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { HealthAPI } from '../../shared/lib/api.js';
+import { HealthAPI,api } from '../../shared/lib/api.js';
 import { Card, Skeleton, ErrorState, EmptyState, Badge, Disclaimer } from '../../shared/components/ui.jsx';
 import BodyMapWorkspace from '../components/body3d/BodyMapWorkspace.jsx';
 import { useApiData } from '../lib/useApiData.js';
@@ -45,6 +45,7 @@ function StudentDetail({ studentId, onClose }) {
         아래 내용은 AI가 작성한 참고용 요약이며 의학적 진단이 아닙니다. 상담사의 판단과 직접 작성한 메모로 보완해 주세요.
       </Disclaimer>
 
+      <nav aria-label="학생 상세 이동"><a href="#student-3d">3D 비교 · 측정 변화</a> · <a href="#student-workouts">운동 루틴 · 수행 · 최근 통증</a> · <a href="#student-notes">상담 기록</a></nav><div id="student-3d"/>
       {d.comparison ? (
         <div style={{ marginTop: 14 }}>
           <BodyMapWorkspace comparisonData={d.comparison} height={340} />
@@ -61,12 +62,12 @@ function StudentDetail({ studentId, onClose }) {
       )}
 
       <div style={{ marginTop: 14 }}>
-        <h3>루틴 / 운동 기록</h3>
+        <h3 id="student-workouts">루틴 / 운동 기록</h3><ul>{d.workouts?.slice(0,10).map(w=><li key={w.id}>{w.date} · {w.exercise_name} · {w.sets_completed}세트 · 통증 {w.pain??'미기록'}</li>)}</ul>
         <p className="muted">루틴 {d.routines?.length ?? 0}건 · 운동 기록 {d.workouts?.length ?? 0}건</p>
       </div>
 
       <div style={{ marginTop: 18 }}>
-        <h3>상담사 메모</h3>
+        <h3 id="student-notes">상담사 메모</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
           {(actualNotes || []).length === 0 && <p className="muted">작성된 메모가 없습니다.</p>}
           {(actualNotes || []).map((n) => (
@@ -93,7 +94,9 @@ function StudentDetail({ studentId, onClose }) {
 }
 
 export default function CounselorDashboardPage() {
-  const students = useApiData(() => HealthAPI.counselorStudents(), []);
+  const [searchInput,setSearchInput]=useState('');
+  const [query,setQuery]=useState(''),[recent,setRecent]=useState('');
+  const students = useApiData(() => api('/api/counselor/students?q='+encodeURIComponent(query)+(recent?'&recent='+recent:'')), [query,recent]);
   const [selectedId, setSelectedId] = useState(null);
 
   if (students.loading) return <Card><Skeleton height={260} /></Card>;
@@ -103,7 +106,7 @@ export default function CounselorDashboardPage() {
 
   return (
     <>
-      <Card title="학생 관리">
+      <Card title="학생 관리"><form onSubmit={e=>{e.preventDefault();setQuery(searchInput);}}><label>이름 / 학번 일부<input value={searchInput} onChange={e=>setSearchInput(e.target.value)}/></label><button className="btn btn-secondary">검색</button></form><label>최근 30일 측정<select value={recent} onChange={e=>setRecent(e.target.value)}><option value="">전체</option><option value="true">측정 있음</option><option value="false">측정 없음</option></select></label>
         <Disclaimer>
           본인에게 배정된 학교에서 공유에 동의한 학생만 표시됩니다. 아래 지표는 참고용 요약입니다. 의학적 진단이 아니며, 필요 시 학생과의 상담 및 재측정을 안내해 주세요.
         </Disclaimer>
@@ -126,7 +129,7 @@ export default function CounselorDashboardPage() {
                 {list.map((s) => (
                   <tr key={s.id} style={{ borderTop: '1px solid var(--line)', cursor: 'pointer' }} onClick={() => setSelectedId(s.id)}>
                     <td style={{ padding: '10px 8px', fontWeight: 700 }}>
-                      {s.name}
+                      {s.name}<p>{s.operational_flags?.join(' · ')}</p>
                       {s.needs_remeasurement && <span style={{ marginLeft: 6 }}><Badge tone="warning">재측정 필요</Badge></span>}
                     </td>
                     <td style={{ padding: '10px 8px' }}>{s.latest_measurement_date || '측정되지 않음'}</td>
