@@ -42,13 +42,13 @@ export default function WorkoutMode({routine,exercises,workouts=[],onSaved,onClo
  function navigate(next,fromSave=false){
   if(next<0||next>=exercises.length||(busy&&!fromSave))return;
   setExerciseDrafts(old=>({...old,[index]:{poseEvaluation,sets,setRows,reps,weight,rpe,pain,elapsedMs:elapsed(),timerSeconds,timedSets,performedSeconds,restUntil}}));
-  const saved=exerciseDrafts[next]||{};setPoseEvaluation(saved.poseEvaluation||null);setIndex(next);setSets(saved.sets||0);setSetRows(saved.setRows||[]);setReps(saved.reps||'');setWeight(saved.weight||'');setRpe(saved.rpe||'');setPain(saved.pain||'0');setTimerSeconds(saved.timerSeconds||0);setTimedSets(saved.timedSets||[]);setPerformedSeconds(saved.performedSeconds||0);setRestUntil(saved.restUntil||null);setElapsedMs(saved.elapsedMs||0);clock.current={start:Date.now()-(saved.elapsedMs||0),pausedAt:Date.now(),pausedMs:0};setPaused(true);
+  const saved=exerciseDrafts[next]||{};setPoseEvaluation(saved.poseEvaluation||null);setIndex(next);setSets(saved.sets||0);setSetRows(saved.setRows||[]);setReps(saved.reps||'');setWeight(saved.weight||'');setRpe(saved.rpe||'');setPain(saved.pain||'0');setTimerSeconds(saved.timerSeconds||0);setTimedSets(saved.timedSets||[]);setPerformedSeconds(saved.performedSeconds||0);setRestUntil(saved.restUntil||(fromSave?restUntil:null));setElapsedMs(saved.elapsedMs||0);clock.current={start:Date.now()-(saved.elapsedMs||0),pausedAt:Date.now(),pausedMs:0};setPaused(true);
  }
  const exercise=exercises[index];
  const nextPreview=sets<(exercise?.sets||1)?exercise:exercises[index+1];
  const previous=exercise?previousWorkout(workouts,exercise,localDate()):null;
  function notify(message){if(vibration)navigator.vibrate?.(100);if(voice&&'speechSynthesis' in window){speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(message));}}
- useEffect(()=>{if(!restUntil)return;const tick=()=>{const seconds=Math.max(0,Math.ceil((restUntil-Date.now())/1000));setRemaining(seconds);if(!seconds){setRestUntil(null);notify('휴식이 끝났습니다.');}};tick();const id=setInterval(tick,250);return()=>clearInterval(id);},[restUntil,voice,vibration]);
+ useEffect(()=>{if(!restUntil||finished)return;const tick=()=>{const seconds=Math.max(0,Math.ceil((restUntil-Date.now())/1000));setRemaining(seconds);if(!seconds){setRestUntil(null);notify('휴식이 끝났습니다.');}};tick();const id=setInterval(tick,250);return()=>clearInterval(id);},[restUntil,voice,vibration,finished]);
  useEffect(()=>()=>{window.speechSynthesis?.cancel();navigator.vibrate?.(0);},[]);
  function completeSet(){if(!draft.ready||paused||restUntil||busy||sets>=(exercise.sets||1))return;
  if((exercise.dose_type||'reps')==='reps'){
@@ -56,7 +56,7 @@ export default function WorkoutMode({routine,exercises,workouts=[],onSaved,onClo
  }
  if(exercise.dose_type==='hold'){if(timerSeconds<=0){setError('먼저 유지시간을 측정하세요.');return;}setTimedSets(old=>[...old,timerSeconds]);setTimerSeconds(0);}
  if(exercise.dose_type==='duration'){if(timerSeconds<=0){setError('먼저 운동 시간을 측정하세요.');return;}setPerformedSeconds(timerSeconds);setTimerSeconds(0);}
- const next=sets+1;setSets(next);notify('세트를 완료했습니다.');if(next<(exercise.sets||1))setRestUntil(Date.now()+(exercise.rest_seconds||60)*1000);}
+ const next=sets+1;setSets(next);notify('세트를 완료했습니다.');setRestUntil(Date.now()+(exercise.rest_seconds??60)*1000);}
  async function save(){if(busy||!draft.ready)return;if(Number(pain)>0)pause();setBusy(true);setError('');try{
   const set_records=normalizeSets(setRows);
   const stopping=Number(pain)>0;

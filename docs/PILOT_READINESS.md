@@ -22,8 +22,8 @@ Validate the provider contract in institutional staging; map Synex user ↔ scho
 
 ## Local verification evidence
 
-- Backend: 156 tests passed (isolated test data, 7 existing dependency warnings).
-- Frontend: 193 tests passed; npm ci, pose:setup, production web build and cap sync passed.
+- Backend: 157 tests passed (isolated test data, 7 existing dependency warnings).
+- Frontend: 194 tests passed; npm ci, pose:setup, production web build and cap sync passed.
 - Pose evaluation: NO EXTERNAL VALIDATION DATA; no accuracy figures generated.
 - PostgreSQL: schema migration, optimistic concurrency, 20 independent writes, rollback and actual backup/drop/restore checksum passed in a disposable local database.
 - Local Android assembleDebug: blocked by missing Android SDK. GitHub Actions supplies SDK 36; CI results are reported on the pull request.
@@ -32,3 +32,5 @@ Validate the provider contract in institutional staging; map Synex user ↔ scho
 First full CI evidence: [Verify run 37134258523](https://github.com/hundol047/Synex-Health/actions/runs/37134258523) passed all seven jobs (backend, frontend, browser, PostgreSQL restore, container release, Android debug, iOS simulator). [Dependency audit 37134258511](https://github.com/hundol047/Synex-Health/actions/runs/37134258511) passed. This proves automated builds/tests only. Check the latest head checks on [PR #6](https://github.com/hundol047/Synex-Health/pull/6) for the final sync-policy follow-ups.
 
 The final provider check preserves long Retry-After delays across requests rather than retrying early. The school-mapping gate accepts verified institutional membership for the reviewed manual workflow; an InBody external subject is required only for InBody sync. Login sync makes one conditional request after real student authentication, at most once per six-hour successful-sync interval; manual/server requests share the server cooldown. Webhook activation remains blocked pending the official vendor contract.
+
+Final review separates school SSO configuration from health-center provider connectivity and scopes provider sync state to each school. Workout rest now continues between exercises as well as between sets, with a regression test for the last-set transition.

@@ -12,3 +12,13 @@ it('resumes restored sets with expired absolute rest deadline instead of restart
  render(<WorkoutMode routine={{id:'r'}} exercises={[exercise]} onSaved={()=>{}} onClose={()=>{}}/>);
  expect(await screen.findByText('진행 중인 운동이 있습니다.')).toBeTruthy();fireEvent.click(screen.getByRole('button',{name:'이어하기'}));await waitFor(()=>expect(screen.getByRole('button',{name:'세트 완료'}).disabled).toBe(false));expect(screen.queryByText('휴식 건너뛰기')).toBeNull();
 });
+it('keeps the last-set rest deadline while advancing to the next exercise',async()=>{
+ mocks.saved=null;
+ render(<WorkoutMode routine={{id:'r'}} exercises={[{...exercise,sets:1,motion_id:'squat'},{...exercise,exercise_id:'lunge',exercise_name:'Lunge',motion_id:'lunge'}]} onSaved={()=>{}} onClose={()=>{}}/>);
+ fireEvent.change(screen.getByLabelText('이번 세트 반복 횟수'),{target:{value:'10'}});
+ fireEvent.click(screen.getByRole('button',{name:'세트 완료'}));
+ expect(screen.getByLabelText('다음 동작 미리보기')).toBeTruthy();
+ fireEvent.click(screen.getByRole('button',{name:'완료 기록 · 다음 운동'}));
+ await screen.findByText('운동 따라하기 · 2 / 2');
+ expect(screen.getByRole('button',{name:'휴식 건너뛰기'})).toBeTruthy();
+});

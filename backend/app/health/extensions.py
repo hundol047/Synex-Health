@@ -223,11 +223,17 @@ def admin_dashboard(user:User=Depends(require('user:admin'))):
     from .pilot import readiness
     release=readiness(store)
     overview=[]
+    from ..services.school_oidc import configurations
+    try:sso_schools={c['school_id'] for c in configurations()};sso_error=False
+    except HTTPException:sso_schools=set();sso_error=True
     for sid,school in _school_directory().items():
         students=[u for u in store.list_students() if u.school_id==sid]
         shared=[u for u in students if u.share_with_center]
         from .router import _days_since
-        overview.append({'school_id':sid,'name':school['name'],'students':len(students),'consented':len(shared),'recent_measurements':sum(bool((m:=store.latest_measurement(u.id)) and _days_since(m.measurement_date)<=30) for u in shared),'unsynced':sum(not store.preference(u.id,'inbody_sync',{}).get('last_sync_time') for u in students),'sync_errors':sum(store.preference(u.id,'inbody_sync',{}).get('status')=='error' for u in students),'provider':release['checks']['InBody'],'reference_versions':sorted({r.version for r in store.list_reference_ranges() if r.version and __import__('app.health.reference',fromlist=['production_eligible']).production_eligible(r)}),'sso':school.get('integration_status','not_connected')})
+        configured=release['checks']['InBody']!='DISCONNECTED'
+        sync_states=[store.preference(u.id,'inbody_sync',{}).get('status') for u in students]
+        school_provider='DISCONNECTED' if not configured else 'ERROR' if 'error' in sync_states else 'SYNCED' if 'connected' in sync_states else 'CONFIGURED'
+        overview.append({'school_id':sid,'name':school['name'],'students':len(students),'consented':len(shared),'recent_measurements':sum(bool((m:=store.latest_measurement(u.id)) and _days_since(m.measurement_date)<=30) for u in shared),'unsynced':sum(not store.preference(u.id,'inbody_sync',{}).get('last_sync_time') for u in students),'sync_errors':sum(store.preference(u.id,'inbody_sync',{}).get('status')=='error' for u in students),'provider':school_provider,'reference_versions':sorted({r.version for r in store.list_reference_ranges() if r.version and __import__('app.health.reference',fromlist=['production_eligible']).production_eligible(r)}),'sso':'ERROR' if sso_error else 'CONFIGURED' if sid in sso_schools else 'NOT CONFIGURED'})
     return {'school_overview':overview,'release':release,'schools':list(_school_directory().values()),'users':users,'school_requests':store.list_school_requests(),'subscriptions':subscriptions,'providers':{'inbody':release['checks']['InBody'],'biogram':'not_connected'},'references':store.list_reference_ranges(),'system':{'database':'ok'}}
 
 @router.get('/auth/config')

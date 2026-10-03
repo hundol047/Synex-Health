@@ -72,3 +72,10 @@ def test_provider_long_retry_after_never_retries_early(monkeypatch):
     with httpx.Client(transport=httpx.MockTransport(handler)) as http:
         with pytest.raises(ProviderFailure) as error:InBodyProvider(object(),Contract(),http).sync('test-user','test-subject')
     assert len(requests)==1 and error.value.retry_after==3600
+
+def test_center_connection_does_not_claim_school_sso(client,monkeypatch):
+    monkeypatch.setenv('SCHOOL_OIDC_CONFIG','[]')
+    response=client.get('/api/admin/dashboard',headers={'X-Synex-Demo-User':'admin-demo'})
+    assert response.status_code==200
+    assert response.json()['school_overview']
+    assert all(s['sso']=='NOT CONFIGURED' and s['provider']=='DISCONNECTED' for s in response.json()['school_overview'])
