@@ -66,7 +66,7 @@ export default function BodyMapWorkspace({comparisonData,height=480,defaultMode=
    </div></details>
   </>}
   {!comparisonMode&&<BodyTools {...{layer,setLayer,slice,setSlice}}/>}
-  <SceneBoundary><div className="overlay-viewer"><BodyScene measurement={aMeasurement||current} profile={comparisonData?.body_profile} gender={comparisonData?.body_profile?.gender||'unspecified'} height={height} layer={layer} slice={slice}
+  <SceneBoundary><div className="overlay-viewer"><BodyScene performanceMode={slice.enabled?'section_view':options.interpolate?'interpolation':mode==='previous'?'previous_compare':mode==='average'?(options.referenceStyle==='wireframe'?'wireframe':'average_overlay'):'my_body'} measurement={aMeasurement||current} profile={comparisonData?.body_profile} gender={comparisonData?.body_profile?.gender||'unspecified'} height={height} layer={layer} slice={slice}
     segmentColors={mode==='range'?colorsForMode(comparisonData,'reference'):mode==='balance'?colorsForMode(comparisonData,'balance'):{}} overlay={overlay} selectedSegment={hovered||selected||(highlight?sorted[0]?.segment:null)} onSelect={select} onHover={setHovered}/>
    {comparisonMode&&row&&<div className="overlay-tooltip" role="status"><strong>{SEGMENT_LABEL_KO[row.segment]}</strong><span>You {row.user_value??'—'} kg · {referenceLabel} {row.reference_value??'—'} kg</span><span>{signed(row.difference_kg)} kg · {signed(row.difference_percent)}%</span></div>}
   </div></SceneBoundary>

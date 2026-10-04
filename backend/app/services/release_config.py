@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 
 def validate_production(env=None):
     e=os.environ if env is None else env
-    if e.get('APP_ENV','development')!='production':return
+    if e.get('APP_ENV','development')!='production' and e.get('PILOT_MODE')!='true':return
     failures=[]
     if e.get('AUTH_MODE')!='oidc':failures.append('AUTH_MODE must be oidc')
     if not e.get('DATABASE_URL','').startswith('postgresql+psycopg://'):failures.append('PostgreSQL DATABASE_URL required')

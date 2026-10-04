@@ -45,3 +45,18 @@ with store.connect() as db:
  assert db.execute('SELECT checksum FROM migration_history WHERE version=?',(4,)).fetchone()[0]
  db.execute('DELETE FROM workouts WHERE user_id=?',(uid,))
 print('PostgreSQL 20 independent writes, rollback, repeated migration passed')
+
+# Ownership must remain unique across schools even under simultaneous admin writes.
+map_ids=['ci-mapping-one','ci-mapping-two']
+with store.connect() as db:
+ for mapped_uid in map_ids:db.execute('DELETE FROM preferences WHERE user_id=?',(mapped_uid,))
+def assign_subject(mapped_uid):
+ try:
+  store.assign_inbody_mapping(mapped_uid,{'school_id':mapped_uid,'school_user_id':mapped_uid,'subject':'ci-shared-subject'})
+  return True
+ except ValueError:return False
+with ThreadPoolExecutor(max_workers=2) as pool:
+ assert sorted(pool.map(assign_subject,map_ids))==[False,True]
+with store.connect() as db:
+ for mapped_uid in map_ids:db.execute('DELETE FROM preferences WHERE user_id=?',(mapped_uid,))
+print('PostgreSQL cross-school provider mapping concurrency passed')

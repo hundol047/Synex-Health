@@ -129,6 +129,7 @@ class BodyCompositionMeasurement(MeasurementValidation):
     visceral_fat_level: Optional[float] = None
     smi: Optional[float] = None
     device_name: str = ''
+    measurement_method: Optional[str] = None
     source: str = 'manual'  # provider name: mock | manual | csv | inbody | biogram
     segments: list[SegmentMeasurement] = Field(default_factory=list)
     created_at: str = Field(default_factory=_now)
@@ -149,12 +150,15 @@ class BodyCompositionCreateRequest(MeasurementValidation):
     visceral_fat_level: Optional[float] = None
     smi: Optional[float] = None
     device_name: str = ''
+    measurement_method: Optional[str] = None
     source: str = 'manual'
     segments: list[SegmentMeasurement] = Field(default_factory=list)
 
 
 # --- Reference ranges --------------------------------------------------------------------------
 class ReferenceRange(BaseModel):
+    country: Optional[str] = None
+    measurement_device: Optional[str] = None
     source_url: Optional[str] = None
     license_note: Optional[str] = None
     reviewed_by: Optional[str] = None
@@ -269,6 +273,8 @@ class ExerciseRoutine(BaseModel):
 
 # --- Workout log -------------------------------------------------------------------------------
 class WorkoutSet(BaseModel):
+    rpe: Optional[float] = Field(default=None, ge=1, le=10)
+    pain: Optional[float] = Field(default=None, ge=0, le=10)
     # External load only; bodyweight and unknown load remain null, never inferred.
     weight_kg: Optional[float] = Field(default=None, ge=0, le=1000, allow_inf_nan=False)
     reps: int = Field(ge=0, le=1000)

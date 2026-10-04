@@ -9,7 +9,7 @@ def fixture_data():
         segments=[{'segment':'RIGHT_LEG','lean_mass_kg':7.1,'fat_mass_kg':2.4}])
     reference=ReferenceRange(id='r',gender='female',age_min=20,age_max=24,height_min=155,height_max=170,
         segment='RIGHT_LEG',lean_mean=7.8,fat_mean=2.0,source='study',dataset_id='study-1',
-        source_url='https://research.example.org/study',license_note='Synthetic test permission only',reviewed_by='test reviewer',reviewed_at='2025-01-01',measurement_method='BIA segmental lean mass',compatible_device_names=['Test BIA'],reference_population='Female adults',sample_size=1200,publication='Registered study',version='1',effective_date='2025-01-01')
+        source_url='https://research.example.org/study',license_note='Synthetic test permission only',reviewed_by='test reviewer',reviewed_at='2025-01-01',country='KR',measurement_device='Test BIA',measurement_method='BIA segmental lean mass',compatible_device_names=['Test BIA'],reference_population='Female adults',sample_size=1200,publication='Registered study',version='1',effective_date='2025-01-01')
     return user,measurement,reference
 
 

@@ -507,11 +507,14 @@ def list_workouts(user: User = Depends(require('workout:read'))):
 
 # --- Counselor -------------------------------------------------------------------------------------
 @router.get('/counselor/students')
-def counselor_students(user: User = Depends(require('roster:read'))):
+def counselor_students(user: User = Depends(require('roster:read')), q: str = '', recent: bool | None = None):
     students = [s for s in store.list_students() if _can_access_student(user, s)]
     out = []
     for s in students:
+        mapping=store.preference(s.id,'inbody_mapping',{})
+        if q and q.casefold() not in s.name.casefold() and q.casefold() not in mapping.get('school_user_id','').casefold():continue
         current = store.latest_measurement(s.id)
+        if recent is not None and recent != bool(current and _days_since(current.measurement_date)<=30):continue
         previous = store.previous_measurement(s.id, current.id) if current else None
         workouts = store.list_workouts(s.id)
         routine = store.latest_routine(s.id)
@@ -531,7 +534,7 @@ def counselor_students(user: User = Depends(require('roster:read'))):
                      'skeletal_muscle_mass': current.skeletal_muscle_mass if current else None,
                      'body_fat_percentage': current.body_fat_percentage if current else None,
                      'body_fat_percentage_delta': cmp.top_level_deltas(previous, current).get('body_fat_percentage_delta') if current else None,
-                     'routine_completion_percent': completion, 'needs_remeasurement': needs_remeasurement})
+                     'operational_flags':(["측정 데이터 오래됨"] if current and _days_since(current.measurement_date)>56 else [])+(["좌우 차이 큼 · 재측정으로 확인"] if current and any(abs(v['diff_percent'] or 0)>15 for v in cmp.left_right_balance(current).values()) else [])+(["재측정 필요"] if needs_remeasurement else [])+(["최근 통증 기록 있음"] if any(w.pain and _days_since(w.date)<=30 for w in workouts) else [])+(["최근 운동 수행률 낮음"] if completion is not None and completion<50 else []),'routine_completion_percent': completion, 'needs_remeasurement': needs_remeasurement})
     return out
 
 
@@ -583,8 +586,10 @@ def list_reference_ranges(user: User = Depends(require('reference_range:write'))
 
 @router.post('/admin/reference-ranges')
 def create_reference_range(r: ReferenceRange, user: User = Depends(require('reference_range:write'))):
-    if os.getenv('AUTH_MODE','demo')!='demo' or os.getenv('APP_ENV')=='production':
-        if r.source=='demo' or not r.publication or not r.version or not r.effective_date:raise HTTPException(422,'실제 기준의 출처·간행물·버전·적용일이 필요합니다.')
+    if os.getenv('AUTH_MODE','demo')!='demo' or os.getenv('APP_ENV')=='production' or os.getenv('PILOT_MODE')=='true':
+        from .reference_validation import validate
+        try:validate({'references':[old.model_dump() for old in store.list_reference_ranges() if old.dataset_id==r.dataset_id and old.id!=r.id]+[r.model_dump()]})
+        except ValueError as e:raise HTTPException(422,str(e)) from None
     if r.age_min>r.age_max or any(lo is not None and hi is not None and lo>hi for lo,hi in [(r.lean_lower,r.lean_upper),(r.fat_lower,r.fat_upper)]):raise HTTPException(422,'참고 범위의 상·하한을 확인하세요.')
     result=store.add_reference_range(r)
     audit.record(user.id,'reference_dataset_change',{'reference_id':r.id},user_id=user.id,role=user.role)

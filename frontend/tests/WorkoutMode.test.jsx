@@ -1,3 +1,4 @@
+vi.mock('../src/health/lib/useWorkoutDraft.js',()=>({useWorkoutDraft:()=>({ready:true,flush:async()=>{},clear:async()=>{}})}));
 import React from 'react';
 import {it,expect,vi} from 'vitest';
 import {render,screen} from '@testing-library/react';
