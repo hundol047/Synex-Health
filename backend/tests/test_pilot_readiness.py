@@ -79,3 +79,75 @@ def test_center_connection_does_not_claim_school_sso(client,monkeypatch):
     assert response.status_code==200
     assert response.json()['school_overview']
     assert all(s['sso']=='NOT CONFIGURED' and s['provider']=='DISCONNECTED' for s in response.json()['school_overview'])
+
+
+def test_mapping_is_unique_across_schools_and_normalized(client):
+    from app.health.router import store
+    first=store.get_user('student-jimin')
+    second=first.model_copy(update={'id':'other-school-student','school_id':'other-school'})
+    store.upsert_user(second)
+    admin={'X-Synex-Demo-User':'admin-demo'}
+    payload={'school_id':first.school_id,'school_user_id':' school-1 ','subject':' external-1 '}
+    assert client.put(f'/api/admin/users/{first.id}/inbody-mapping',json=payload,headers=admin).status_code==200
+    assert store.preference(first.id,'inbody_mapping')['subject']=='external-1'
+    response=client.put(f'/api/admin/users/{second.id}/inbody-mapping',json={**payload,'school_id':second.school_id,'subject':'external-1'},headers=admin)
+    assert response.status_code==409
+    assert store.preference(second.id,'inbody_mapping') is None
+    assert client.put(f'/api/admin/users/{first.id}/inbody-mapping',json={**payload,'subject':'   '},headers=admin).status_code==422
+
+
+def test_simultaneous_mapping_cannot_claim_same_subject(tmp_path):
+    from concurrent.futures import ThreadPoolExecutor
+    from app.health.store import HealthStore
+    store=HealthStore(tmp_path/'mapping.sqlite')
+    def assign(uid):
+        try:
+            store.assign_inbody_mapping(uid,{'subject':'shared','school_id':uid,'school_user_id':uid})
+            return True
+        except ValueError:return False
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        assert sorted(pool.map(assign,['one','two']))==[False,True]
+
+
+def qa_rows():
+    from datetime import date
+    tests=('camera','pose','offline','notifications','billing','health','my_body','average_overlay','previous_compare','interpolation','wireframe','section_view')
+    return [dict(test=t,platform='android',physical_device=True,date=date.today().isoformat(),tester='qa-reviewer',device='physical-test-device',OS='Android',app_version='test',commit_sha='current',evidence_url='https://qa.institution.edu/redacted',result='PASS') for t in tests]
+
+
+def test_evidence_rejects_conflicting_failure_and_wrong_build(tmp_path):
+    path=tmp_path/'evidence.json';rows=qa_rows()
+    path.write_text(json.dumps({'tests':rows}))
+    assert device_evidence(path,'android','current')=='VERIFIED'
+    assert device_evidence(path,'android','other')=='NOT TESTED'
+    path.write_text(json.dumps({'tests':rows+[{**rows[0],'result':'FAIL'}]}))
+    assert device_evidence(path,'android','current')=='PARTIAL'
+    path.write_text(json.dumps({'tests':[{**r,'evidence_url':'not-a-link'} for r in rows]}))
+    assert device_evidence(path,'android','current')=='NOT TESTED'
+
+
+def test_stale_sync_and_unrelated_manual_school_cannot_pass_gate(client,monkeypatch):
+    from app.health.router import store
+    from types import SimpleNamespace
+    from app.health.providers import configured
+    monkeypatch.setattr(configured,'inbody',lambda _:SimpleNamespace(configured=lambda:True))
+    store.save_preference('student-jimin','membership',{'verified':False})
+    store.save_preference('student-jimin','inbody_sync',{'status':'connected','last_sync_time':'2026-01-01'})
+    store.save_preference('__system__','verified_manual_workflow',{'school_id':'unrelated','reviewed_by':'reviewer','reviewed_at':'2026-01-01','evidence_url':'https://qa.institution.edu/manual'})
+    report=readiness(store,{})
+    assert report['checks']['InBody']=='CONFIGURED'
+    assert report['checks']['Provider workflow']=='EXTERNAL SETUP REQUIRED'
+    assert not report['pilot_ready']
+
+
+def test_configured_auth_requires_current_acceptance_evidence(client,tmp_path):
+    from app.health.router import store
+    from datetime import date
+    env={'AUTH_MODE':'oidc','BUILD_COMMIT':'current'}
+    assert readiness(store,env)['checks']['Authentication']=='EXTERNAL SETUP REQUIRED'
+    path=tmp_path/'acceptance.json'
+    row=dict(test='Authentication',date=date.today().isoformat(),tester='operator',evidence_url='https://qa.institution.edu/login',commit_sha='current',result='PASS')
+    path.write_text(json.dumps({'tests':[row]}));env['PILOT_ACCEPTANCE_EVIDENCE']=str(path)
+    assert readiness(store,env)['checks']['Authentication']=='VERIFIED'
+    path.write_text(json.dumps({'tests':[row,{**row,'result':'FAIL'}]}))
+    assert readiness(store,env)['checks']['Authentication']=='EXTERNAL SETUP REQUIRED'

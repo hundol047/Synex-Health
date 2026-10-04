@@ -100,6 +100,27 @@ class HealthStore:
             db.execute('INSERT OR REPLACE INTO preferences VALUES (?,?,?)',(uid,kind,json.dumps(value)))
         return value
 
+    def assign_inbody_mapping(self, uid, mapping):
+        """Serialize global provider subject ownership and clear stale sync atomically."""
+        with self.connect() as db:
+            if self.database:
+                db.execute("SELECT pg_advisory_xact_lock(?)", (73820146,))
+            else:
+                db.execute('BEGIN IMMEDIATE')
+            rows = db.execute("SELECT user_id,payload FROM preferences WHERE kind='inbody_mapping'").fetchall()
+            for other, payload in rows:
+                prior = json.loads(payload)
+                if other != uid and (
+                    prior.get('subject', '').strip() == mapping['subject'] or
+                    (prior.get('school_id') == mapping['school_id'] and
+                     prior.get('school_user_id', '').strip() == mapping['school_user_id'])
+                ):
+                    raise ValueError('이미 다른 사용자에게 매핑된 기관 계정입니다.')
+            db.execute('INSERT OR REPLACE INTO preferences VALUES (?,?,?)',
+                       (uid, 'inbody_mapping', json.dumps(mapping)))
+            db.execute('INSERT OR REPLACE INTO preferences VALUES (?,?,?)',
+                       (uid, 'inbody_sync', json.dumps({'status': 'pending'})))
+
     @contextmanager
     def connect(self):
         if self.database:

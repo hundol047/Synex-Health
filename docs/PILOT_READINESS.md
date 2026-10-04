@@ -34,3 +34,11 @@ First full CI evidence: [Verify run 37134258523](https://github.com/hundol047/Sy
 The final provider check preserves long Retry-After delays across requests rather than retrying early. The school-mapping gate accepts verified institutional membership for the reviewed manual workflow; an InBody external subject is required only for InBody sync. Login sync makes one conditional request after real student authentication, at most once per six-hour successful-sync interval; manual/server requests share the server cooldown. Webhook activation remains blocked pending the official vendor contract.
 
 Final review separates school SSO configuration from health-center provider connectivity and scopes provider sync state to each school. Workout rest now continues between exercises as well as between sets, with a regression test for the last-set transition.
+
+## Pre-merge evidence guard review
+
+InBody external subjects are unique across all schools for the configured provider. Administrator mapping writes are serialized in a database transaction (including PostgreSQL), normalize surrounding whitespace, and invalidate the old sync state atomically. School IDs alone do not establish verified membership; revoked memberships cannot supply successful-sync evidence to the gate.
+
+Configuration alone does not verify deployed authentication, database access or operator/legal readiness. Set `PILOT_ACCEPTANCE_EVIDENCE` to an operator-reviewed JSON file outside git with a `tests` array. Each record requires `test` (Authentication, Database, Privacy, Terms or Support), `date` (ISO date), `tester`, `commit_sha` matching `BUILD_COMMIT`, an HTTPS `evidence_url` to redacted institutional evidence, and `result: PASS`. Test actual OIDC login and PostgreSQL read/write; have the operator approve the published legal pages and contact process. Missing or contradictory evidence blocks readiness. These records are attestations, not automated certification.
+
+Physical QA similarly rejects contradictory results for the same tested build. Resolve a failure with a reviewed replacement evidence set retaining the original in the institutional audit archive; adding another PASS must not conceal an outstanding FAIL. A manual workflow must name a school with current verified membership. Historical connected flags alone never count as current provider mapping evidence.

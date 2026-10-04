@@ -184,12 +184,10 @@ class ProviderMapping(BaseModel):
 def set_provider_mapping(uid:str,req:ProviderMapping,user:User=Depends(require('user:admin'))):
     u=_require_user_record(uid)
     if req.school_id!=u.school_id:raise HTTPException(422,'사용자의 소속 학교와 일치해야 합니다.')
-    if not req.school_user_id.strip():raise HTTPException(422,'검증된 학교 사용자 ID가 필요합니다.')
-    for other in store.list_students():
-        prior=store.preference(other.id,'inbody_mapping',{})
-        if other.id!=uid and prior.get('school_id')==req.school_id and (prior.get('subject')==req.subject or prior.get('school_user_id')==req.school_user_id):raise HTTPException(409,'이미 다른 사용자에게 매핑된 기관 계정입니다.')
-    store.save_preference(uid,'inbody_sync',{'status':'pending'})
-    store.save_preference(uid,'inbody_mapping',{**req.model_dump(),'verified_by':user.id,'verified_at':now()})
+    mapping={**req.model_dump(),'subject':req.subject.strip(),'school_user_id':req.school_user_id.strip(),'verified_by':user.id,'verified_at':now()}
+    if not mapping['subject'] or not mapping['school_user_id']:raise HTTPException(422,'검증된 학교 사용자 ID와 외부 계정이 필요합니다.')
+    try:store.assign_inbody_mapping(uid,mapping)
+    except ValueError as exc:raise HTTPException(409,str(exc)) from None
     audit.record(uid,'provider_mapping_updated',{'school_id':req.school_id},user_id=user.id,role=user.role)
     return {'status':'pending'}
 
