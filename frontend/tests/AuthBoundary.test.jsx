@@ -80,3 +80,11 @@ it.each([true,false])('exchanges the verified login for a session only when opte
   expect(sessionStorage.getItem('synex-pkce')).toBeNull();
  }finally{fetch.mockRestore();setAccessToken('');}
 });
+it('loads login settings on WebViews without AbortSignal.timeout',async()=>{
+ const timeout=AbortSignal.timeout;
+ Object.defineProperty(AbortSignal,'timeout',{value:undefined,configurable:true});
+ try{
+  render(<AuthBoundary/>);
+  await screen.findByText(/계정 로그인 연결을 준비 중/);
+ }finally{Object.defineProperty(AbortSignal,'timeout',{value:timeout,configurable:true});}
+});

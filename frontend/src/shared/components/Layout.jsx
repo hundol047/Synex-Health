@@ -30,8 +30,8 @@ export default function Layout({ children }) {
     window.addEventListener('online',update);window.addEventListener('offline',update);
     update();
     let back;
-    const ready=Capacitor.getPlatform()==='android' ? import('@capacitor/app').then(({App})=>App.addListener('backButton',({canGoBack})=>{if(canGoBack)history.back();else App.minimizeApp();})).then(h=>{back=h;}) : Promise.resolve();
-    return()=>{window.removeEventListener('synex-offline-change',pending);window.removeEventListener('synex-cache-used',cache);window.removeEventListener('online',update);window.removeEventListener('offline',update);ready.then(()=>back?.remove());};
+    const ready=Capacitor.getPlatform()==='android' ? import('@capacitor/app').then(({App})=>App.addListener('backButton',({canGoBack})=>{if(canGoBack)history.back();else App.minimizeApp().catch(()=>setSyncError('앱을 최소화하지 못했습니다. 기기의 홈 버튼을 이용해 주세요.'));})).then(h=>{back=h;}).catch(()=>setSyncError('기기 뒤로 가기 연결을 사용할 수 없습니다. 화면 메뉴를 이용해 주세요.')) : Promise.resolve();
+    return()=>{window.removeEventListener('synex-offline-change',pending);window.removeEventListener('synex-cache-used',cache);window.removeEventListener('online',update);window.removeEventListener('offline',update);ready.then(()=>back?.remove()).catch(()=>{});};
   },[]);
   const auth = useAuth();
   const demoUser = getDemoUser();

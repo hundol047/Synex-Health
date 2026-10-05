@@ -229,3 +229,10 @@ small{font-size:.8125rem}
 .workout-mode h2, .workout-mode h3 { color: #15253c; }
 .workout-mode .exercise-card-top { flex-wrap: wrap; }
 .workout-mode [role=status] { line-height: 1.6; }
+
+/* Intro actions belong to the viewport, not the variable-height step text. */
+.onboarding-page{min-height:100vh;min-height:100dvh;padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))}
+.onboarding-page .onboarding{width:100%;margin:8vh auto 0;overflow-wrap:anywhere}
+.onboarding-actions{position:fixed;z-index:40;bottom:0;left:0;right:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:12px;width:100%;max-width:672px;margin:0 auto;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));background:#fff;border-top:1px solid var(--line)}
+.onboarding-actions .btn{width:100%;height:52px;min-width:0;transition:none}
+@media(max-height:500px){.onboarding-page .onboarding{margin-top:0}}

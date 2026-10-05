@@ -68,10 +68,14 @@ export default function AuthBoundary({children}){
  }
  async function loadSettings(){
   setSettingsLoaded(false);setSettingsError('');setSchoolSettingsError('');
-  const [general,schoolList]=await Promise.allSettled([
-   api('/api/auth/config',undefined,{signal:AbortSignal.timeout(10000)}),
-   api('/api/auth/schools',undefined,{signal:AbortSignal.timeout(10000)})
-  ]);
+  // AbortSignal.timeout is absent on older Android/iOS WebViews.
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),10000);
+  let general,schoolList;
+  try{[general,schoolList]=await Promise.allSettled([
+   api('/api/auth/config',undefined,{signal:controller.signal}),
+   api('/api/auth/schools',undefined,{signal:controller.signal})
+  ]);}finally{clearTimeout(timer);}
   if(general.status==='fulfilled')setProvider(general.value.provider);
   else{setProvider(null);setSettingsError('일반 로그인 설정을 불러오지 못했습니다. 다시 시도해 주세요.');}
   if(schoolList.status==='fulfilled')setSchools(schoolList.value);
@@ -84,8 +88,8 @@ export default function AuthBoundary({children}){
   let handle;
   const expired=()=>{setAccessToken('');clearRememberedSession().catch(()=>setNotice('저장된 로그인 정보를 지우지 못했습니다. 기기 상태를 확인하세요.'));setAuth({demo:false,login:true});};
   window.addEventListener('synex-session-expired',expired);
-  const listener=native?import('@capacitor/app').then(({App})=>App.addListener('appUrlOpen',({url})=>callback(url))).then(h=>{handle=h;}):Promise.resolve();
-  return()=>{listener.then(()=>handle?.remove());window.removeEventListener('synex-session-expired',expired);};
+  const listener=native?import('@capacitor/app').then(({App})=>App.addListener('appUrlOpen',({url})=>callback(url))).then(h=>{handle=h;}).catch(()=>setNotice('앱 로그인 연결을 초기화하지 못했습니다. 앱을 완전히 종료한 뒤 다시 시도해 주세요.')):Promise.resolve();
+  return()=>{listener.then(()=>handle?.remove()).catch(()=>{});window.removeEventListener('synex-session-expired',expired);};
  },[]);
  async function login(){setPending(true);setError('');try{
   const selected=school?schools.find(c=>c.school_id===school):provider;
