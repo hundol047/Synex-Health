@@ -1,3 +1,4 @@
+import {BUILD_LABEL,UI_REVISION} from '../lib/buildInfo.js';
 import PendingWorkouts from './PendingWorkouts.jsx';
 import { useAuth } from './AuthBoundary.jsx';
 import React, { useEffect, useState } from 'react';
@@ -52,7 +53,7 @@ export default function Layout({ children }) {
       <header className="health-topbar">
         <div className="health-brand">
           <span className="health-brand-icon">SH</span>
-          Synex <span style={{ color: 'var(--blue)' }}>Health</span>
+          Synex <span style={{ color: 'var(--blue)' }}>Health</span><small className="build-badge" title={UI_REVISION}>{BUILD_LABEL} · v2</small>
         </div>
         <nav className="health-desktop-nav">
           {nav.map(({ to, label, end }) => (

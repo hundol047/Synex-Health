@@ -125,6 +125,19 @@ jobs:
         working-directory: frontend
       - run: chmod +x gradlew && ./gradlew assembleDebug --no-daemon
         working-directory: frontend/android
+      - name: Verify the APK contains the fixed UI and this build ID
+        run: |
+          python - <<'PY'
+          import glob, os, zipfile
+          path=glob.glob('frontend/android/app/build/outputs/apk/debug/*.apk')[0]
+          with zipfile.ZipFile(path) as apk:
+              scripts=b'\\n'.join(apk.read(n) for n in apk.namelist() if n.startswith('assets/public/') and n.endswith('.js'))
+              styles=b'\\n'.join(apk.read(n) for n in apk.namelist() if n.startswith('assets/public/') and n.endswith('.css'))
+          assert b'bottom-actions-v2' in scripts, 'Wrong UI revision in APK'
+          assert os.environ['VITE_BUILD_COMMIT'][:8].encode() in scripts, 'Wrong commit in APK'
+          assert b'.workout-bottom-actions' in styles, 'Fixed dock CSS missing in APK'
+          print('APK contains bottom-actions-v2, viewport dock CSS and current commit')
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: android-debug-${{ github.sha }}

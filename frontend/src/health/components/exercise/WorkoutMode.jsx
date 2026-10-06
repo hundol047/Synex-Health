@@ -1,3 +1,4 @@
+import {secureUUID} from '../../../shared/lib/uuid.js';
 import BottomActions from '../../../shared/components/BottomActions.jsx';
 import MotionFigure from './MotionFigure.jsx';
 import {useWorkoutDraft} from '../../lib/useWorkoutDraft.js';
@@ -22,7 +23,7 @@ export default function WorkoutMode({routine,exercises,workouts=[],onSaved,onClo
  const [timerSeconds,setTimerSeconds]=useState(0),[timedSets,setTimedSets]=useState([]),[performedSeconds,setPerformedSeconds]=useState(0);
  const [recordZone,setRecordZone]=useState(()=>Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC');
  const [recordDate,setRecordDate]=useState(localDate),[baseRevisions,setBaseRevisions]=useState(()=>Object.fromEntries(exercises.map(e=>[e.exercise_id,workouts.find(w=>w.routine_id===routine.id&&w.date===localDate()&&w.routine_exercise_id===e.exercise_id)?.revision||0])));
- const [mutationIds,setMutationIds]=useState(()=>Object.fromEntries(exercises.map(e=>[e.exercise_id,crypto.randomUUID()])));
+ const [mutationIds,setMutationIds]=useState(()=>Object.fromEntries(exercises.map(e=>[e.exercise_id,secureUUID()])));
  const clock=useRef({start:Date.now(),pausedAt:null,pausedMs:0});
  const pause=useCallback(()=>{if(clock.current.pausedAt===null){clock.current.pausedAt=Date.now();setElapsedMs(Math.max(0,clock.current.pausedAt-clock.current.start-clock.current.pausedMs));setPaused(true);window.speechSynthesis?.cancel();}},[]);
  function resume(){const c=clock.current;if(c.pausedAt!==null){const gap=Date.now()-c.pausedAt;c.pausedMs+=gap;c.pausedAt=null;setResumePrompt(false);setPaused(false);}}
@@ -68,7 +69,7 @@ export default function WorkoutMode({routine,exercises,workouts=[],onSaved,onClo
   body.completion_status=workoutStatus(body,exercise);body.completed=body.completion_status==='completed';
   await draft.flush();
   const result=await HealthAPI.createWorkout(body);
-  setRecords(old=>[...old.filter(r=>r.routine_exercise_id!==exercise.exercise_id),{...result,pending_sync:!!result.pending_sync}]);setBaseRevisions(old=>({...old,[exercise.exercise_id]:result.revision||old[exercise.exercise_id]||0}));setMutationIds(old=>({...old,[exercise.exercise_id]:crypto.randomUUID()}));
+  setRecords(old=>[...old.filter(r=>r.routine_exercise_id!==exercise.exercise_id),{...result,pending_sync:!!result.pending_sync}]);setBaseRevisions(old=>({...old,[exercise.exercise_id]:result.revision||old[exercise.exercise_id]||0}));setMutationIds(old=>({...old,[exercise.exercise_id]:secureUUID()}));
   const savedIds=new Set([...records.map(r=>r.routine_exercise_id),exercise.exercise_id]);
   const next=exercises.findIndex((e,i)=>i>index&&!savedIds.has(e.exercise_id));
   const remainingIndex=next>=0?next:exercises.findIndex(e=>!savedIds.has(e.exercise_id));

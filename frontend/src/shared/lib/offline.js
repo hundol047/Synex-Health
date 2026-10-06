@@ -1,3 +1,4 @@
+import {secureUUID} from './uuid.js';
 import {nativeOfflineKey,removeNativeOfflineKey,offlineEncryptionStatus} from './offlineKey.js';
 // Only pending workout writes and unfinished workout drafts persist. Health response caches and auth tokens stay in memory.
 // AES-GCM + non-exportable CryptoKey protect stored bytes, not a compromised same-origin script.
@@ -41,7 +42,7 @@ async function keyFor(account) {
   const candidate = await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
   return transaction(['keys'],'readwrite',(tx,done) => {
     const store = tx.objectStore('keys'), read = store.get(account);
-    read.onsuccess = () => { const record = read.result || {key:candidate,id:crypto.randomUUID()}; if (!read.result) store.put(record,account); done(record); };
+    read.onsuccess = () => { const record = read.result || {key:candidate,id:secureUUID()}; if (!read.result) store.put(record,account); done(record); };
   });
 }
 // Re-encrypt legacy native records atomically, rejecting concurrent changes rather than losing them.
@@ -140,7 +141,7 @@ async function restoreSnapshots(ctx){
 export function cachedResponse(path) { return allowed.has(path) && cache.has(path) ? structuredClone(cache.get(path)) : undefined; }
 export function prepareWorkout(body) {
   const previous = (cachedResponse('/api/workouts') || []).find(w => identity(w) === identity(body));
-  return {...body,time_zone:body.time_zone||Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC',expected_revision:body.expected_revision ?? previous?.revision ?? 0,mutation_id:body.mutation_id || crypto.randomUUID()};
+  return {...body,time_zone:body.time_zone||Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC',expected_revision:body.expected_revision ?? previous?.revision ?? 0,mutation_id:body.mutation_id || secureUUID()};
 }
 export async function queueWorkout(body) {
   const ctx = active;
@@ -200,7 +201,7 @@ export async function resolvePending(id,revision) {
     const entry = (await readEntries(ctx)).find(e => e.id === id);
     if (!entry) return;
     entry.replacing=entry.body.mutation_id;
-    entry.body = {...entry.body,expected_revision:revision,mutation_id:crypto.randomUUID()}; entry.error = ''; entry.status='PENDING';entry.client_id=entry.body.mutation_id;entry.revision=revision;entry.checksum=await hash(JSON.stringify(entry.body));delete entry.conflict;
+    entry.body = {...entry.body,expected_revision:revision,mutation_id:secureUUID()}; entry.error = ''; entry.status='PENDING';entry.client_id=entry.body.mutation_id;entry.revision=revision;entry.checksum=await hash(JSON.stringify(entry.body));delete entry.conflict;
     await writeEntry(ctx,entry); entries = await readEntries(ctx); notify();
   });
 }
@@ -252,7 +253,7 @@ export async function loadDraft(scope) {
 export async function saveDraft(scope,value,expectedToken=null) {
  const ctx=active;if(!ctx?.key)throw Error('로그인·저장 공간을 확인하세요. 임시 저장되지 않았습니다.');
  return serial(async()=>{
-  const id=`${ctx.account}:draft:${await hash(scope)}`,token=crypto.randomUUID(),iv=crypto.getRandomValues(new Uint8Array(12));
+  const id=`${ctx.account}:draft:${await hash(scope)}`,token=secureUUID(),iv=crypto.getRandomValues(new Uint8Array(12));
   const data=await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:encode(id)},ctx.key,encode(JSON.stringify({...value,_draftScope:scope})));
   let conflict=false;
   try{await transaction(['keys','drafts'],'readwrite',tx=>{

@@ -243,3 +243,5 @@ small{font-size:.8125rem}
 .workout-bottom-actions .btn{margin:0;min-height:48px;min-width:0;white-space:normal;transition:none}
 .workout-bottom-actions .btn-primary{grid-column:1 / -1;min-height:52px}
 @media(min-width:900px){.workout-bottom-actions{bottom:0;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}}
+
+.build-badge{font-size:10px;color:var(--muted);font-weight:500;overflow-wrap:anywhere}
