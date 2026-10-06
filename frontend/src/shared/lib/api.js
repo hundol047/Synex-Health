@@ -1,6 +1,7 @@
+import {resolveApiBase} from './serverConfig.js';
 import {cacheResponse,cachedResponse,queueWorkout,syncWorkouts,clearOffline,offlineEpoch,prepareWorkout,acknowledgeWorkout} from './offline.js';
 import { getAccessToken,refreshAccessToken } from './session.js';
-export const BASE = import.meta.env.VITE_API_BASE || '';
+export const BASE = resolveApiBase();
 
 // Demo-mode identity switch (see backend/app/services/auth.py's get_current_user docstring):
 // X-Synex-Demo-User lets the same browser preview the student and counselor experiences without a
