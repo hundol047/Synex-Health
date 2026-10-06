@@ -46,3 +46,15 @@ describe('HomePage', () => {
     expect(screen.queryByTestId('body-scene-mock')).toBeNull();
   });
 });
+
+it('keeps the home screen usable when an old server has no measurement or comparison groups',async()=>{
+ mockFetch({
+  '/api/health/profile':{id:'student-jimin',name:'김지민',role:'student'},
+  '/api/body-composition/latest':null,
+  '/api/body-map/latest':{average_comparison:{}},
+  '/api/exercise-routines':[]
+ });
+ render(<MemoryRouter><HomePage/></MemoryRouter>);
+ expect(await screen.findByText('아직 측정 데이터가 없어요')).toBeTruthy();
+ expect(screen.getByText('1. 체성분 입력하기')).toBeTruthy();
+});

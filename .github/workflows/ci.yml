@@ -5,6 +5,10 @@ on:
   pull_request:
 permissions:
   contents: read
+env:
+  VITE_BUILD_COMMIT: ${{ github.sha }}
+  SYNEX_VERSION_CODE: ${{ github.run_number }}
+  SYNEX_VERSION_NAME: 1.0.${{ github.run_number }}
 jobs:
   backend:
     runs-on: ubuntu-latest
@@ -123,7 +127,7 @@ jobs:
         working-directory: frontend/android
       - uses: actions/upload-artifact@v4
         with:
-          name: android-debug-build
+          name: android-debug-${{ github.sha }}
           path: frontend/android/app/build/outputs/apk/debug/*.apk
 
   ios-compile:

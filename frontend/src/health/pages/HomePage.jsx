@@ -26,11 +26,11 @@ export default function HomePage() {
     }
   }, []);
 
-  const noMeasurement = measurement.error?.status === 404;
+  const noMeasurement = measurement.error?.status === 404 || (!measurement.loading && !measurement.error && !measurement.data);
   const deltas = bodyMap.data?.top_level_deltas;
   const name = profile.data?.name;
   const average=bodyMap.data?.average_comparison;
-  const group=average?.groups.find(g=>g.id===average.selected_group_id);
+  const group=average?.groups?.find(g=>g.id===average.selected_group_id);
   const total=group?.totals?.skeletal_muscle_mass;
   const overlay=group?{myValues:valuesFor(bodyMap.data?.measurement,'lean'),referenceValues:referenceValues(group,'lean'),metric:'lean',options:{showMy:true,showReference:true,myOpacity:.85,referenceOpacity:.35,referenceStyle:'wireframe',myStyle:'surface'}}:null;
 

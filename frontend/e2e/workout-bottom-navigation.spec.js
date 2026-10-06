@@ -1,0 +1,25 @@
+import {test,expect} from '@playwright/test';
+test('workout previous/next stay at the bottom while scrolling and changing exercises',async({page},info)=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.addInitScript(()=>localStorage.setItem('synex-onboarding-v1','done'));
+ await page.setViewportSize({width:390,height:844});await page.goto('/health/workout');
+ await page.getByRole('button',{name:/운동 따라하기/}).click();
+ const next=page.getByRole('button',{name:'다음 운동 · 입력 보관',exact:true});
+ const prev=page.getByRole('button',{name:'이전 운동',exact:true});
+ await expect(next).toBeVisible();
+ const anchor=await next.boundingBox();
+ const menu=await page.locator('.health-bottom-nav').boundingBox();
+ const dock=await page.locator('.workout-bottom-actions').boundingBox();
+ expect(dock.y+dock.height).toBeLessThanOrEqual(menu.y);
+ expect(menu.y-(dock.y+dock.height)).toBeLessThan(24);
+ await page.evaluate(()=>{document.querySelector('.health-main').style.transform='translateZ(0)';window.scrollTo(0,document.body.scrollHeight);});
+ expect(Math.abs((await next.boundingBox()).y-anchor.y)).toBeLessThan(1);
+ await next.click();await expect(page.getByRole('heading',{name:/운동 따라하기 · 2/})).toBeVisible();
+ expect(Math.abs((await next.boundingBox()).y-anchor.y)).toBeLessThan(1);
+ await prev.click();await expect(page.getByRole('heading',{name:/운동 따라하기 · 1/})).toBeVisible();
+ expect(Math.abs((await next.boundingBox()).y-anchor.y)).toBeLessThan(1);
+ const save=page.getByRole('button',{name:'완료 기록 · 다음 운동',exact:true});
+ await expect(save).toHaveAttribute('form','guided-workout-feedback');
+ await page.screenshot({path:info.outputPath('fixed-workout-navigation-390.png'),fullPage:false});
+ expect(errors).toEqual([]);
+});
