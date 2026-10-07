@@ -47,7 +47,7 @@ jobs:
           arch: x86_64
           profile: pixel_6
           disable-animations: true
-          script: cd frontend && node scripts/android-startup-check.mjs
+          script: cd frontend/android && ./gradlew connectedDebugAndroidTest --no-daemon
       - name: Verify personal mode inside the APK
         run: |
           python - <<'PY'
@@ -73,3 +73,8 @@ jobs:
         with:
           name: personal-screen-checks
           path: frontend/test-results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-native-test-results
+          path: frontend/android/app/build/outputs/androidTest-results
