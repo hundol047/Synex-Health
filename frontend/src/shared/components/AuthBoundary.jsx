@@ -1,3 +1,4 @@
+import {LOCAL_ONLY,LOCAL_ACCOUNT,LOCAL_NAMESPACE} from '../lib/localMode.js';
 import React,{createContext,useContext,useEffect,useState,useRef} from 'react';
 import {selectLoginConfig,validateLoginRequest,authorizationParameters} from '../lib/login.js';
 import { Capacitor } from '@capacitor/core';
@@ -22,6 +23,16 @@ async function discovery(config){
  return info;
 }
 export default function AuthBoundary({children}){
+ return LOCAL_ONLY?<DeviceBoundary>{children}</DeviceBoundary>:<ServerAuthBoundary>{children}</ServerAuthBoundary>;
+}
+function DeviceBoundary({children}){
+ const [ready,setReady]=useState(false),[error,setError]=useState('');
+ async function open(){setError('');try{await bindOfflineAccount(LOCAL_ACCOUNT,LOCAL_NAMESPACE);if(!offlineState().ready)throw Error(offlineState().storageError||'기기 저장소를 열 수 없습니다.');setReady(true);}catch(e){setError(e.message);}}
+ useEffect(()=>{open();},[]);
+ if(!ready)return <main className="health-main"><section className="card"><h1>이 폰에서 사용</h1><p>로그인 서버 없이 기기 내 암호화 저장소를 엽니다.</p>{error?<><p role="alert">{error}</p><button className="btn" onClick={open}>기기 저장소 다시 열기</button></>:<p role="status">기기 저장소 여는 중…</p>}</section></main>;
+ return <AuthContext.Provider value={{demo:false,local:true,role:'student'}}>{children}</AuthContext.Provider>;
+}
+function ServerAuthBoundary({children}){
  const [remember,setRemember]=useState(false),[notice,setNotice]=useState(''),[schoolSettingsError,setSchoolSettingsError]=useState('');
  const callbackRunning=useRef(false);
  const [reviewEnabled,setReviewEnabled]=useState(false),[reviewName,setReviewName]=useState(''),[reviewPassword,setReviewPassword]=useState('');

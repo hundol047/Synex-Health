@@ -1,3 +1,4 @@
+import {LOCAL_ONLY} from './shared/lib/localMode.js';
 import React, { lazy, Suspense } from 'react';
 import { createBrowserRouter, createRoutesFromElements, RouterProvider, Outlet, Route, Navigate } from 'react-router-dom';
 import UnsavedChangesGuard from './shared/components/UnsavedChangesGuard.jsx';
@@ -28,19 +29,20 @@ const AdminPage = lazy(() => import('./health/pages/AdminPage.jsx'));
 
 const ConnectionsPage = lazy(() => import('./health/pages/ConnectionsPage.jsx'));
 
+function ServerFeature(){return <section className="card"><h1>서버 연결이 필요한 기능입니다</h1><p>개인용 안드로이드 모드에서는 학교 상담·AI 대화·구독 결제·원격 리포트를 사용하지 않습니다. 내 체성분, 3D 인체, 운동 안내와 기록은 이 폰에서 이용할 수 있습니다.</p></section>;}
 function AppShell(){return <><UnsavedChangesGuard/><Layout><Suspense fallback={<p role="status">화면을 불러오는 중입니다.</p>}><Outlet/></Suspense></Layout></>;}
 let router;
 export default function App(){
  if(!router)router=createBrowserRouter(createRoutesFromElements(<Route element={<AppShell/>}>
           <Route path="/" element={<Navigate to="/health" replace />} />
-          <Route path="/health/diagnostics" element={<DiagnosticsPage />} />
-          <Route path="/health/subscription" element={<SubscriptionPage />} />
-          <Route path="/health/report" element={<MonthlyReportPage />} />
+          <Route path="/health/diagnostics" element={LOCAL_ONLY?<ServerFeature/>:<DiagnosticsPage />} />
+          <Route path="/health/subscription" element={LOCAL_ONLY?<ServerFeature/>:<SubscriptionPage />} />
+          <Route path="/health/report" element={LOCAL_ONLY?<ServerFeature/>:<MonthlyReportPage />} />
           <Route path="/health/goals" element={<GoalsPage />} />
           <Route path="/health/privacy" element={<PrivacyPage />} />
           <Route path="/health/library" element={<ExerciseLibraryPage />} />
-          <Route path="/health/pose" element={<PoseCoachPage />} />
-          <Route path="/health/admin" element={<AdminPage />} />
+          <Route path="/health/pose" element={LOCAL_ONLY?<ServerFeature/>:<PoseCoachPage />} />
+          <Route path="/health/admin" element={LOCAL_ONLY?<ServerFeature/>:<AdminPage />} />
           <Route path="/health/connections" element={<ConnectionsPage />} />
           <Route path="/health" element={<HomePage />} />
           <Route path="/health/body" element={<BodyMapPage />} />
@@ -48,9 +50,9 @@ export default function App(){
           <Route path="/health/routine" element={<RoutinePage />} />
           <Route path="/health/workout" element={<WorkoutPage />} />
           <Route path="/health/progress" element={<ProgressPage />} />
-          <Route path="/health/agent" element={<AgentChatPage />} />
+          <Route path="/health/agent" element={LOCAL_ONLY?<ServerFeature/>:<AgentChatPage />} />
           <Route path="/health/profile" element={<ProfilePage />} />
-          <Route path="/health-center" element={<CounselorDashboardPage />} />
+          <Route path="/health-center" element={LOCAL_ONLY?<ServerFeature/>:<CounselorDashboardPage />} />
           <Route path="*" element={<Navigate to="/health" replace />} />
  </Route>));
  return <RouterProvider router={router}/>;

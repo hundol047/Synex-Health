@@ -1,3 +1,4 @@
+import {LOCAL_ONLY} from '../../shared/lib/localMode.js';
 import React, { useEffect, useState } from 'react';
 import { HealthAPI,api } from '../../shared/lib/api.js';
 import { useApiData } from '../lib/useApiData.js';
@@ -31,15 +32,15 @@ export default function SchoolSelector({profile,onSaved}) {
         <option value="">선택하지 않음</option>{options.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
       </select></label>
     </div>
-    {current&&<div className="motion-intensity" style={{marginTop:14}}><strong>{current.name}</strong><p>{current.integration_message}</p><p>현재 이용: 수동 측정값 입력 · 학교별 상담 화면 / 공식 연동: 준비 필요</p></div>}
+    {current&&<div className="motion-intensity" style={{marginTop:14}}><strong>{current.name}</strong><p>{current.integration_message}</p><p>현재 이용: 수동 측정값 입력 · 공식 건강센터 연동: 미연결</p></div>}
     <label style={{display:'flex',gap:10,margin:'16px 0',fontSize:'.85rem',lineHeight:1.7}}>
-      <input type="checkbox" disabled={!selected} checked={share} onChange={e=>setShare(e.target.checked)}/>
-      선택한 학교에 관리자가 배정한 Synex Health 상담사에게 전체 체성분·운동 기록·AI 분석을 공유합니다. 해제하면 이후 조회가 차단됩니다.
+      <input type="checkbox" disabled={LOCAL_ONLY||!selected} checked={share} onChange={e=>setShare(e.target.checked)}/>
+      {LOCAL_ONLY?'기기 전용 모드에서는 학교 소속만 저장합니다. 건강센터에 기록을 공유하지 않습니다.':'선택한 학교의 Synex Health 상담사에게 건강 기록을 공유합니다. 해제하면 이후 조회가 차단됩니다.'}
     </label>
     {error&&<ErrorState message={error.message}/>}{message&&<p role="status">{message}</p>}
     <button type="button" className="btn btn-primary" onClick={save} disabled={saving||schools.loading||!!schools.error}>{saving?'처리 중...':'학교·공유 설정 저장'}</button>
-    <details style={{marginTop:18}}><summary>목록에 학교가 없나요?</summary><p className="muted">학교 추가 요청은 관리자 확인 대기 상태로 저장됩니다.</p>
+    {!LOCAL_ONLY&&<details style={{marginTop:18}}><summary>목록에 학교가 없나요?</summary><p className="muted">학교 추가 요청은 관리자 확인 대기 상태로 저장됩니다.</p>
       <div style={{display:'flex',gap:8}}><input aria-label="추가 요청 학교명" className="text-input" maxLength={100} value={requested} onChange={e=>setRequested(e.target.value)} placeholder="학교명·캠퍼스"/><button type="button" className="btn btn-secondary" disabled={saving||requested.trim().length<2} onClick={request}>추가 요청</button></div>
-    </details>
+    </details>}
   </Card>;
 }

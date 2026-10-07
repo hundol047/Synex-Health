@@ -1,3 +1,4 @@
+import {LOCAL_ONLY} from './localMode.js';
 import {resolveApiBase} from './serverConfig.js';
 import {cacheResponse,cachedResponse,queueWorkout,syncWorkouts,clearOffline,offlineEpoch,prepareWorkout,acknowledgeWorkout} from './offline.js';
 import { getAccessToken,refreshAccessToken } from './session.js';
@@ -18,6 +19,7 @@ export async function setDemoUser(id) {
 }
 
 export async function api(path, body, { method, signal, headers, offlineRetry=false } = {}) {
+  if(LOCAL_ONLY){const {localApi}=await import('./localApi.js');return localApi(path,body,{method,signal});}
   const requestEpoch=offlineEpoch();
   const m = method || (body === undefined ? 'GET' : 'POST');
   const workout = path === '/api/workouts' && m === 'POST';
@@ -88,4 +90,4 @@ export const HealthAPI = {
   healthStatus: () => api('/api/health/status'),
 };
 
-export const syncPendingWorkouts=()=>syncWorkouts(body=>api('/api/workouts',body,{offlineRetry:true}));
+export const syncPendingWorkouts=()=>LOCAL_ONLY?Promise.resolve():syncWorkouts(body=>api('/api/workouts',body,{offlineRetry:true}));

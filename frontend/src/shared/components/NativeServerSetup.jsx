@@ -1,3 +1,4 @@
+import {LOCAL_ONLY} from '../lib/localMode.js';
 import React,{useEffect,useRef,useState} from 'react';
 import {Capacitor} from '@capacitor/core';
 import {BASE} from '../lib/api.js';
@@ -6,7 +7,7 @@ import {BUILD_LABEL} from '../lib/buildInfo.js';
 export default function NativeServerSetup({children}){
  const [address,setAddress]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
  const active=useRef(null);useEffect(()=>()=>active.current?.abort(),[]);
- if(!Capacitor.isNativePlatform()||BASE)return children;
+ if(LOCAL_ONLY||!Capacitor.isNativePlatform()||BASE)return children;
  const release=import.meta.env.VITE_RELEASE_BUILD==='true';
  async function connect(){
   if(busy)return;setBusy(true);setError('');

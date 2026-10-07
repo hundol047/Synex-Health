@@ -1,5 +1,6 @@
 export function validateRelease(e){
  const errors=[];
+ if(e.VITE_LOCAL_ONLY==='true'&&e.VITE_RELEASE_BUILD==='true')errors.push('Device-only builds cannot be store releases');
  if(e.VITE_RELEASE_BUILD!=='true')return errors;
  for(const k of ['VITE_API_BASE','VITE_PRIVACY_URL','VITE_SUPPORT_URL','VITE_TERMS_URL']){
   try{const u=new URL(e[k]);if(u.protocol!=='https:'||/localhost|127\.0\.0\.1|\.example$|\.test$|(^|\.)example\.(com|org|net)$/.test(u.hostname))throw Error();}catch{errors.push(`${k}: real HTTPS URL required`);}

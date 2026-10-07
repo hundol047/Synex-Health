@@ -16,7 +16,8 @@
     "pose:setup": "node scripts/install-pose-model.mjs && node scripts/prepare-pose.mjs",
     "build:release": "node scripts/build-release.mjs",
     "native:configure": "node scripts/configure-native.mjs",
-    "pose:evaluate": "node scripts/validate-external-pose.mjs"
+    "pose:evaluate": "node scripts/validate-external-pose.mjs",
+    "android:local": "node scripts/build-android-local.mjs"
   },
   "dependencies": {
     "@aparajita/capacitor-secure-storage": "8.0.1",
