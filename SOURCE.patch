@@ -1,0 +1,487 @@
+diff --git a/docs/ANDROID_PERSONAL.md b/docs/ANDROID_PERSONAL.md
+index 0dec0fe..8117960 100644
+--- a/docs/ANDROID_PERSONAL.md
++++ b/docs/ANDROID_PERSONAL.md
+@@ -25,3 +25,11 @@ npm run android:local
+ 결과: `frontend/android/app/build/outputs/apk/debug/app-debug.apk`.
+ 
+ `npm run build`만 실행하면 기본 서버 모드입니다. 개인용 APK는 반드시 `npm run android:local`로 생성합니다. 스토어용 release와 `VITE_LOCAL_ONLY=true`를 동시에 설정하면 빌드 검증에서 거부합니다.
++
++## 첫 실행 저장소 복구
++
++안내의 마지막 `시작하기` 뒤에는 암호화 키와 기존 기록 복원이 모두 끝난 후 홈을 엽니다. DB 또는 기기 보안 저장소가 응답하지 않으면 요청별 8초 제한으로 대기를 종료하고 `기기 저장소 다시 열기`를 제공합니다. 화면 전체의 20초 제한이나 화면 종료 시에는 해당 초기화를 취소합니다. 같은 계정으로 재시도해도 실패 상태를 재사용하지 않고 저장소를 다시 엽니다.
++
++늦게 도착한 DB 연결은 닫고 취소된 트랜잭션은 중단합니다. 기기 암호화 키 쓰기가 아직 끝나지 않았다면 다른 키를 덮어쓰지 않습니다. 저장 완료 응답만 누락된 경우에는 같은 키가 저장돼 있는지 확인한 뒤 복구하며, 아직 저장되지 않았다면 원래 작업의 완료를 기다립니다. 이 복구 과정에서 기존 기록이나 키를 삭제하거나 평문 저장소로 전환하지 않습니다.
++
++회귀 테스트는 일시적 저장소 실패 후 재시도, 응답 없는 DB/네이티브 호출, 늦은 응답, 암호화 키 보존 및 재실행 후 기록 복원을 확인합니다. `npm test`와 `npx playwright test --config playwright.local.config.js`로 실행합니다.
+diff --git a/frontend/android/app/src/androidTest/java/com/synex/health/PersonalStartupTest.java b/frontend/android/app/src/androidTest/java/com/synex/health/PersonalStartupTest.java
+index 9487142..d8c0715 100644
+--- a/frontend/android/app/src/androidTest/java/com/synex/health/PersonalStartupTest.java
++++ b/frontend/android/app/src/androidTest/java/com/synex/health/PersonalStartupTest.java
+@@ -16,6 +16,13 @@ import static org.junit.Assert.*;
+ 
+ @RunWith(AndroidJUnit4.class)
+ public class PersonalStartupTest {
++    // Software-only cloud emulators can take minutes to initialize WebView.
++    // This changes only the test harness wait; app storage deadlines stay intact.
++    private long timeoutMultiplier() {
++        return Math.max(1, Long.parseLong(InstrumentationRegistry.getArguments()
++            .getString("timeoutMultiplier", "1")));
++    }
++
+     private String evaluate(ActivityScenario<MainActivity> scenario, String script) throws Exception {
+         AtomicReference<String> result = new AtomicReference<>();
+         CountDownLatch latch = new CountDownLatch(1);
+@@ -23,13 +30,13 @@ public class PersonalStartupTest {
+             WebView web = activity.getBridge().getWebView();
+             web.evaluateJavascript(script, value -> { result.set(value); latch.countDown(); });
+         });
+-        assertTrue("WebView did not answer JavaScript", latch.await(15, TimeUnit.SECONDS));
++        assertTrue("WebView did not answer JavaScript", latch.await(15 * timeoutMultiplier(), TimeUnit.SECONDS));
+         Object value = new JSONTokener(result.get()).nextValue();
+         return String.valueOf(value);
+     }
+ 
+     private void waitFor(ActivityScenario<MainActivity> scenario, String expression) throws Exception {
+-        long until = System.currentTimeMillis() + 45000;
++        long until = System.currentTimeMillis() + 45000 * timeoutMultiplier();
+         while (System.currentTimeMillis() < until) {
+             if ("true".equals(evaluate(scenario, expression))) return;
+             Thread.sleep(250);
+@@ -39,7 +46,7 @@ public class PersonalStartupTest {
+ 
+     @Test public void completesOnboardingAndRestoresNativeEncryptedKey() throws Exception {
+         Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+-        assertEquals("com.synex.health.personal", context.getPackageName());
++        assertEquals(InstrumentationRegistry.getArguments().getString("expectedPackage", "com.synex.health.personal"), context.getPackageName());
+         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+             waitFor(scenario, "!!document.querySelector('button')");
+             for (int i=0; i<6; i++) {
+diff --git a/frontend/e2e-local/device-only.spec.js b/frontend/e2e-local/device-only.spec.js
+index c402350..77638a0 100644
+--- a/frontend/e2e-local/device-only.spec.js
++++ b/frontend/e2e-local/device-only.spec.js
+@@ -1,4 +1,20 @@
+ import {test,expect} from '@playwright/test';
++test('first launch recovers from a temporary storage failure without erasing records',async({page})=>{
++ await page.addInitScript(()=>{
++  const open=indexedDB.open.bind(indexedDB);let first=true;
++  indexedDB.open=(...args)=>{
++   if(first){first=false;throw Error('기기 저장소가 잠시 사용 중입니다. 다시 시도하세요.');}
++   return open(...args);
++  };
++ });
++ await page.goto('/health');
++ for(let i=0;i<6;i++)await page.getByRole('button',{name:'다음',exact:true}).click();
++ await page.getByRole('button',{name:'시작하기',exact:true}).click();
++ await expect(page.getByRole('alert')).toContainText('잠시 사용 중');
++ await page.getByRole('button',{name:'기기 저장소 다시 열기'}).click();
++ await expect(page.getByText('내 기록은 이 기기에')).toBeVisible();
++ await expect(page.getByRole('heading',{name:'이 폰에서 사용'})).toHaveCount(0);
++});
+ test('personal mode opens without a server and restores records on restart',async({page,context})=>{
+  const requests=[],errors=[];page.on('request',r=>{if(new URL(r.url()).pathname.startsWith('/api/'))requests.push(r.url());});page.on('pageerror',e=>errors.push(e.message));
+  await page.addInitScript(()=>localStorage.setItem('synex-personal-onboarding-v1','done'));
+diff --git a/frontend/src/shared/components/AuthBoundary.jsx b/frontend/src/shared/components/AuthBoundary.jsx
+index f6795be..31dd2eb 100644
+--- a/frontend/src/shared/components/AuthBoundary.jsx
++++ b/frontend/src/shared/components/AuthBoundary.jsx
+@@ -27,19 +27,20 @@ export default function AuthBoundary({children}){
+ }
+ export function DeviceBoundary({children}){
+  const [ready,setReady]=useState(false),[error,setError]=useState('');
+- const attempt=useRef(0),timer=useRef(null);
++ const attempt=useRef(0),timer=useRef(null),controller=useRef(null);
+  async function open(){
+-  const current=++attempt.current;clearTimeout(timer.current);setError('');
+-  timer.current=setTimeout(()=>{if(attempt.current===current){attempt.current++;setError('기기 저장소의 응답이 늦어지고 있습니다. 다시 시도하거나 앱을 완전히 종료한 뒤 열어주세요.');}},20000);
++  const current=++attempt.current;clearTimeout(timer.current);controller.current?.abort();setError('');
++  const pending=new AbortController();controller.current=pending;
++  timer.current=setTimeout(()=>{if(attempt.current===current){attempt.current++;pending.abort();setError('기기 저장소의 응답이 늦어지고 있습니다. 다시 시도하거나 앱을 완전히 종료한 뒤 열어주세요.');}},20000);
+   try{
+-   await bindOfflineAccount(LOCAL_ACCOUNT,LOCAL_NAMESPACE);
++   await bindOfflineAccount(LOCAL_ACCOUNT,LOCAL_NAMESPACE,{signal:pending.signal});
+    if(attempt.current!==current)return;
+    if(!offlineState().ready)throw Error(offlineState().storageError||'기기 저장소를 열 수 없습니다.');
+    setReady(true);
+   }catch(e){if(attempt.current===current)setError(e.message);}
+   finally{if(attempt.current===current)clearTimeout(timer.current);}
+  }
+- useEffect(()=>{open();return()=>{attempt.current++;clearTimeout(timer.current);};},[]);
++ useEffect(()=>{open();return()=>{attempt.current++;clearTimeout(timer.current);controller.current?.abort();};},[]);
+  if(!ready)return <main className="health-main"><section className="card"><h1>이 폰에서 사용</h1><p>로그인 서버 없이 기기 내 암호화 저장소를 엽니다.</p>{error?<><p role="alert">{error}</p><button className="btn" onClick={open}>기기 저장소 다시 열기</button></>:<p role="status">기기 저장소 여는 중…</p>}</section></main>;
+  return <AuthContext.Provider value={{demo:false,local:true,role:'student'}}>{children}</AuthContext.Provider>;
+ }
+diff --git a/frontend/src/shared/lib/offline.js b/frontend/src/shared/lib/offline.js
+index 33c2e95..350b2c6 100644
+--- a/frontend/src/shared/lib/offline.js
++++ b/frontend/src/shared/lib/offline.js
+@@ -1,5 +1,6 @@
+ import {secureUUID} from './uuid.js';
+ import {nativeOfflineKey,removeNativeOfflineKey,offlineEncryptionStatus} from './offlineKey.js';
++import {storageWait} from './storageWait.js';
+ // Only pending workout writes and unfinished workout drafts persist. Health response caches and auth tokens stay in memory.
+ // AES-GCM + non-exportable CryptoKey protect stored bytes, not a compromised same-origin script.
+ const cache = new Map();
+@@ -15,40 +16,47 @@ const entryId = async (ctx,body) => `${ctx.account}:${await hash(identity(body))
+ const channel = typeof window !== 'undefined' && window.BroadcastChannel ? new window.BroadcastChannel('synex-account-lifecycle') : null;
+ if(channel)channel.onmessage=({data})=>{if(data?.action==='logout'&&data.account===active?.account)window.dispatchEvent(new Event('synex-session-expired'));};
+ const identity = b => JSON.stringify([b.routine_id,b.date,b.day_number,b.routine_exercise_id || b.exercise_name]);
+-function database() {
+-  return new Promise((resolve,reject) => {
++function database(options) {
++  let expired=false;
++  return storageWait(()=>new Promise((resolve,reject) => {
+     if (!globalThis.indexedDB || !globalThis.crypto?.subtle) return reject(Error('암호화 기록 저장을 지원하지 않는 환경입니다.'));
+     const request = indexedDB.open('synex-workout-outbox-v1',3);
+     request.onupgradeneeded = () => {
++      if(expired){request.transaction.abort();return;}
+       if(!request.result.objectStoreNames.contains('keys'))request.result.createObjectStore('keys');
+       for(const name of ['records','drafts','snapshots'])if(!request.result.objectStoreNames.contains(name))request.result.createObjectStore(name,{keyPath:'id'}).createIndex('account','account');
+     };
+-    request.onsuccess = () => resolve(request.result);
++    request.onsuccess = () => {
++      if(expired){request.result.close();return;}
++      request.result.onversionchange=()=>request.result.close();
++      resolve(request.result);
++    };
+     request.onerror = () => reject(request.error);
+-  });
++    request.onblocked = () => {expired=true;reject(Error('다른 화면에서 기기 저장소를 사용 중입니다. 다른 앱 화면을 닫고 다시 시도하세요.'));};
++  }),{...options,cancel:()=>{expired=true;}});
+ }
+-async function transaction(stores,mode,action) {
+-  const db = await database();
+-  try { return await new Promise((resolve,reject) => {
+-    const tx = db.transaction(stores,mode); let value;
++async function transaction(stores,mode,action,options) {
++  const db = await database(options);let tx;
++  try { return await storageWait(()=>new Promise((resolve,reject) => {
++    tx = db.transaction(stores,mode); let value;
+     tx.oncomplete = () => resolve(value); tx.onerror = tx.onabort = () => reject(tx.error || Error('기기 저장 실패'));
+     action(tx, result => { value = result; });
+-  }); } finally { db.close(); }
++  }),{...options,cancel:()=>{try{tx?.abort();}catch{/* Already completed. */}}}); } finally { db.close(); }
+ }
+-async function keyFor(account) {
+-  const existing=await transaction(['keys'],'readonly',(tx,done)=>{const q=tx.objectStore('keys').get(account);q.onsuccess=()=>done(q.result);});
+-  const native=await nativeOfflineKey(account,existing);
+-  if(native){if(native.legacyKey)await migrateNativeRows(account,existing,native);else await transaction(['keys'],'readwrite',tx=>tx.objectStore('keys').put({id:native.id,native:true},account));return native;}
++async function keyFor(account,options) {
++  const existing=await transaction(['keys'],'readonly',(tx,done)=>{const q=tx.objectStore('keys').get(account);q.onsuccess=()=>done(q.result);},options);
++  const native=await nativeOfflineKey(account,existing,options);
++  if(native){if(native.legacyKey)await migrateNativeRows(account,existing,native,options);else await transaction(['keys'],'readwrite',tx=>tx.objectStore('keys').put({id:native.id,native:true},account),options);return native;}
+   const candidate = await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+   return transaction(['keys'],'readwrite',(tx,done) => {
+     const store = tx.objectStore('keys'), read = store.get(account);
+     read.onsuccess = () => { const record = read.result || {key:candidate,id:secureUUID()}; if (!read.result) store.put(record,account); done(record); };
+-  });
++  },options);
+ }
+ // Re-encrypt legacy native records atomically, rejecting concurrent changes rather than losing them.
+-async function migrateNativeRows(account,existing,native){
++async function migrateNativeRows(account,existing,native,options){
+  const names=['records','drafts','snapshots'];
+- const rows=await transaction(names,'readonly',(tx,done)=>{const all={};let pending=names.length;for(const name of names){const q=tx.objectStore(name).index('account').getAll(account);q.onsuccess=()=>{all[name]=q.result;if(--pending===0)done(all);};}});
++ const rows=await transaction(names,'readonly',(tx,done)=>{const all={};let pending=names.length;for(const name of names){const q=tx.objectStore(name).index('account').getAll(account);q.onsuccess=()=>{all[name]=q.result;if(--pending===0)done(all);};}},options);
+  const encrypted={};
+  for(const name of names)encrypted[name]=await Promise.all(rows[name].map(async row=>{
+   const aad=encode(row.id),bytes=await crypto.subtle.decrypt({name:'AES-GCM',iv:row.iv,additionalData:aad},native.legacyKey,row.data),iv=crypto.getRandomValues(new Uint8Array(12));
+@@ -64,12 +72,12 @@ async function migrateNativeRows(account,existing,native){
+     if(--pending===0){for(const store of names)for(const row of encrypted[store])tx.objectStore(store).put(row);tx.objectStore('keys').put({id:native.id,native:true},account);}
+    };}
+   };
+- });
++ },options);
+ }
+-async function readEntries(ctx) {
++async function readEntries(ctx,options) {
+   const rows = await transaction(['records'],'readonly',(tx,done) => {
+     const read = tx.objectStore('records').index('account').getAll(ctx.account); read.onsuccess = () => done(read.result);
+-  });
++  },options);
+   return Promise.all(rows.map(async row => {
+     const bytes = await crypto.subtle.decrypt({name:'AES-GCM',iv:row.iv,additionalData:encode(row.id)},ctx.key,row.data);
+     const entry=JSON.parse(new TextDecoder().decode(bytes));
+@@ -99,22 +107,24 @@ async function removeEntry(ctx,entry) {
+     read.onsuccess = () => { if (read.result?.mutation === entry.body.mutation_id) store.delete(entry.id); };
+   });
+ }
+-export async function bindOfflineAccount(userId,namespace='') {
++export async function bindOfflineAccount(userId,namespace='',options={}) {
+   if (!userId) throw Error('기록을 저장할 로그인 계정이 필요합니다.');
+   const account = await hash(`${namespace}|${userId}`);
+-  if (active?.account === account) return;
++  if (active?.account === account && active.key) return;
+   lockOffline();
+   const version = epoch;
+   await serial(async () => {
+     try {
+-      const stored=await keyFor(account);
++      if(options.signal?.aborted)return;
++      const stored=await keyFor(account,options);
+       const ctx = {account,key:stored.key,keyId:stored.id};
+-      const restored = await readEntries(ctx);
+-      if (version !== epoch) return;
+-      active = ctx; entries = restored; storageError = '';
+-      await restoreSnapshots(ctx);
+-      draftCount=await transaction(['drafts'],'readonly',(tx,done)=>{const q=tx.objectStore('drafts').index('account').count(account);q.onsuccess=()=>done(q.result);});
+-    } catch { if (version === epoch) { active={account,key:null,keyId:null}; storageError = '기기에 기록을 보관할 수 없습니다. 저장 공간과 브라우저 설정을 확인하세요.'; } }
++      const restored = await readEntries(ctx,options);
++      const snapshots=await restoreSnapshots(ctx,options);
++      const count=await transaction(['drafts'],'readonly',(tx,done)=>{const q=tx.objectStore('drafts').index('account').count(account);q.onsuccess=()=>done(q.result);},options);
++      if (version !== epoch || options.signal?.aborted) return;
++      active = ctx; entries = restored; storageError = '';draftCount=count;
++      for(const [path,data] of snapshots)cache.set(path,data);
++    } catch(e) { if (version === epoch) { active={account,key:null,keyId:null}; storageError = e.message || '기기에 기록을 보관할 수 없습니다. 저장 공간과 브라우저 설정을 확인하세요.'; } }
+     notify();
+   });
+ }
+@@ -130,13 +140,15 @@ export async function cacheResponse(path,data) {
+   await transaction(['keys','snapshots'],'readwrite',tx=>{const q=tx.objectStore('keys').get(ctx.account);q.onsuccess=()=>{if(active!==ctx||q.result?.id!==ctx.keyId){tx.abort();return;}tx.objectStore('snapshots').put({id,account:ctx.account,iv,data:encrypted});};});
+  }).catch(()=>{if(active===ctx){storageError='최근 데이터의 기기 저장에 실패했습니다.';notify();}});
+ }
+-async function restoreSnapshots(ctx){
+- const rows=await transaction(['snapshots'],'readonly',(tx,done)=>{const q=tx.objectStore('snapshots').index('account').getAll(ctx.account);q.onsuccess=()=>done(q.result);});
++async function restoreSnapshots(ctx,options){
++ const rows=await transaction(['snapshots'],'readonly',(tx,done)=>{const q=tx.objectStore('snapshots').index('account').getAll(ctx.account);q.onsuccess=()=>done(q.result);},options);
++ const snapshots=[];
+  for(const row of rows){
+   const bytes=await crypto.subtle.decrypt({name:'AES-GCM',iv:row.iv,additionalData:encode(row.id)},ctx.key,row.data);
+   const saved=JSON.parse(new TextDecoder().decode(bytes));
+-  if(active===ctx&&allowed.has(saved.path)&&Date.now()-saved.saved_at<7*86400000)cache.set(saved.path,saved.data);
++  if(allowed.has(saved.path)&&Date.now()-saved.saved_at<7*86400000)snapshots.push([saved.path,saved.data]);
+  }
++ return snapshots;
+ }
+ export function cachedResponse(path) { return allowed.has(path) && cache.has(path) ? structuredClone(cache.get(path)) : undefined; }
+ export function prepareWorkout(body) {
+diff --git a/frontend/src/shared/lib/offlineKey.js b/frontend/src/shared/lib/offlineKey.js
+index 51f46f7..fc691d1 100644
+--- a/frontend/src/shared/lib/offlineKey.js
++++ b/frontend/src/shared/lib/offlineKey.js
+@@ -1,21 +1,37 @@
+ import {secureUUID} from './uuid.js';
+ import {Capacitor} from '@capacitor/core';
++import {storageWait} from './storageWait.js';
++// A native write cannot be cancelled. Retain its completion so retry cannot
++// replace a key while an earlier write may still arrive at Android Keystore.
++const keyWrites=new Map();
+ export const offlineEncryptionStatus=()=>({provider:Capacitor.isNativePlatform()?'os_secure_storage':'indexeddb_nonexportable_key',state:'configured_not_verified'});
+-async function vault(){
+- const {SecureStorage,KeychainAccess}=await import('@aparajita/capacitor-secure-storage');
+- await SecureStorage.setSynchronize(false);
+- await SecureStorage.setDefaultKeychainAccess(KeychainAccess.whenUnlockedThisDeviceOnly);
++async function vault(options){
++ const {SecureStorage,KeychainAccess}=await storageWait(()=>import('@aparajita/capacitor-secure-storage'),options);
++ await storageWait(()=>SecureStorage.setSynchronize(false),options);
++ await storageWait(()=>SecureStorage.setDefaultKeychainAccess(KeychainAccess.whenUnlockedThisDeviceOnly),options);
+  // Capacitor proxies expose a callable property for every name, including `then`.
+  // Returning a proxy from an async function makes Promise assimilation hang.
+  return {store:SecureStorage};
+ }
+-export async function nativeOfflineKey(account,existing){
++export async function nativeOfflineKey(account,existing,options){
+  if(!Capacitor.isNativePlatform())return null;
+  // Legacy IndexedDB keys are used only to re-encrypt existing rows before activation.
+- const {store}=await vault(),name=`synex.offline-key.${account}`;
+- let saved=await store.get(name);
++ const {store}=await vault(options),name=`synex.offline-key.${account}`;
++ let saved=await storageWait(()=>store.get(name),options);
++ const pending=keyWrites.get(name);
++ if(pending){
++  // The OS may have saved the key even when its completion callback was lost.
++  // A matching read is safe: any late write contains these same key bytes.
++  if(!saved){await storageWait(()=>pending.promise,options);saved=await storageWait(()=>store.get(name),options);}
++  if(saved?.id!==pending.value.id||saved?.bytes?.length!==32||pending.value.bytes.some((b,i)=>saved.bytes[i]!==b))throw Error('기기 암호화 키 저장을 확인할 수 없습니다. 앱을 완전히 종료한 뒤 다시 열어주세요.');
++ }
+  if(existing?.native&&(!saved||saved.id!==existing.id))throw Error('기기 암호화 키를 복구할 수 없습니다.');
+- if(!saved){saved={id:secureUUID(),bytes:Array.from(crypto.getRandomValues(new Uint8Array(32)))};await store.set(name,saved);}
++ if(!saved){
++  saved={id:secureUUID(),bytes:Array.from(crypto.getRandomValues(new Uint8Array(32)))};
++  const write=store.set(name,saved);keyWrites.set(name,{promise:write,value:saved});
++  write.then(()=>keyWrites.delete(name),()=>keyWrites.delete(name));
++  await storageWait(()=>write,options);
++ }
+  const key=await crypto.subtle.importKey('raw',new Uint8Array(saved.bytes),'AES-GCM',false,['encrypt','decrypt']);
+  return {key,id:saved.id,native:true,legacyKey:existing?.key};
+ }
+diff --git a/frontend/tests/DeviceBoundary.test.jsx b/frontend/tests/DeviceBoundary.test.jsx
+index b77124c..3524d52 100644
+--- a/frontend/tests/DeviceBoundary.test.jsx
++++ b/frontend/tests/DeviceBoundary.test.jsx
+@@ -11,6 +11,7 @@ it('stops indefinite startup, ignores late completion, and retries only into ver
+   render(<DeviceBoundary><h1>내 기록</h1></DeviceBoundary>);
+   await act(async()=>{vi.advanceTimersByTime(20000);});
+   expect(screen.getByRole('alert').textContent).toContain('응답이 늦어지고');
++  expect(state.bind.mock.calls.at(-1)[2].signal.aborted).toBe(true);
+   state.ready=true;await act(async()=>resolve());
+   expect(screen.queryByRole('heading',{name:'내 기록'})).toBeNull();
+   state.bind.mockResolvedValueOnce();
+@@ -18,6 +19,12 @@ it('stops indefinite startup, ignores late completion, and retries only into ver
+   expect(screen.getByRole('heading',{name:'내 기록'})).toBeTruthy();
+  }finally{vi.useRealTimers();}
+ });
++it('cancels the pending storage operation when the startup screen unmounts',()=>{
++ state.ready=false;state.bind.mockImplementationOnce(()=>new Promise(()=>{}));
++ const view=render(<DeviceBoundary/>);
++ const signal=state.bind.mock.calls.at(-1)[2].signal;
++ expect(signal.aborted).toBe(false);view.unmount();expect(signal.aborted).toBe(true);
++});
+ it('does not admit a user when storage initialization rejects',async()=>{
+  state.ready=false;state.bind.mockRejectedValueOnce(Error('기기 키 잠김'));
+  render(<DeviceBoundary><h1>내 기록</h1></DeviceBoundary>);
+diff --git a/frontend/src/shared/lib/storageWait.js b/frontend/src/shared/lib/storageWait.js
+new file mode 100644
+index 0000000..46463df
+--- /dev/null
++++ b/frontend/src/shared/lib/storageWait.js
+@@ -0,0 +1,16 @@
++// Native bridge and IndexedDB requests can fail without delivering a callback.
++// Bound the wait, and consume late rejections without treating them as success.
++export function storageWait(operation,{signal,timeout=8000,message='기기 저장소의 응답이 늦어지고 있습니다. 다시 시도하거나 앱을 완전히 종료한 뒤 열어주세요.',cancel=()=>{}}={}){
++ return new Promise((resolve,reject)=>{
++  let settled=false;
++  const finish=(error,value)=>{
++   if(settled)return;settled=true;clearTimeout(timer);signal?.removeEventListener('abort',abort);
++   if(error)reject(error);else resolve(value);
++  };
++  const abort=()=>{try{cancel();}finally{finish(new DOMException('저장소 열기가 취소되었습니다.','AbortError'));}};
++  const timer=setTimeout(()=>{try{cancel();}finally{finish(Error(message));}},timeout);
++  signal?.addEventListener('abort',abort,{once:true});
++  if(signal?.aborted){abort();return;}
++  try{Promise.resolve(operation()).then(value=>finish(null,value),error=>finish(error));}catch(error){finish(error);}
++ });
++}
+diff --git a/frontend/tests/NativeStorageStartup.test.js b/frontend/tests/NativeStorageStartup.test.js
+new file mode 100644
+index 0000000..48911e1
+--- /dev/null
++++ b/frontend/tests/NativeStorageStartup.test.js
+@@ -0,0 +1,73 @@
++import 'fake-indexeddb/auto';
++import {webcrypto} from 'node:crypto';
++import {it,expect,vi,beforeEach,afterEach} from 'vitest';
++const {values,get,set,configured}=vi.hoisted(()=>({values:new Map(),get:vi.fn(),set:vi.fn(),configured:vi.fn()}));
++vi.mock('@capacitor/core',()=>({Capacitor:{isNativePlatform:()=>true}}));
++vi.mock('@aparajita/capacitor-secure-storage',()=>({KeychainAccess:{whenUnlockedThisDeviceOnly:'device'},SecureStorage:{setSynchronize:async()=>{},setDefaultKeychainAccess:configured,get,set,remove:async k=>values.delete(k)}}));
++import * as offline from '../src/shared/lib/offline.js';
++beforeEach(()=>{
++ vi.stubGlobal('crypto',webcrypto);
++ get.mockReset().mockImplementation(async k=>values.get(k));
++ set.mockReset().mockImplementation(async(k,v)=>values.set(k,v));
++ configured.mockReset().mockResolvedValue();
++});
++afterEach(()=>{offline.lockOffline();vi.useRealTimers();vi.unstubAllGlobals();});
++
++it('releases the initialization queue when the native bridge never answers a read',async()=>{
++ vi.useFakeTimers({toFake:['setTimeout','clearTimeout']});
++ get.mockImplementationOnce(()=>new Promise(()=>{}));
++ const first=offline.bindOfflineAccount('native-read-timeout');
++ await vi.waitFor(()=>expect(get).toHaveBeenCalled());
++ await vi.advanceTimersByTimeAsync(8000);await first;
++ expect(offline.offlineState().ready).toBe(false);
++ expect(offline.offlineState().storageError).toContain('응답이 늦어지고');
++ vi.useRealTimers();await offline.bindOfflineAccount('native-read-timeout');
++ expect(offline.offlineState().ready).toBe(true);
++ await offline.saveLocalDocument({saved:true});
++ offline.lockOffline();await offline.bindOfflineAccount('native-read-timeout');
++ expect(await offline.loadLocalDocument()).toEqual({saved:true});await offline.clearOffline();
++});
++
++it('never replaces a native key when a timed-out write is still in flight',async()=>{
++ vi.useFakeTimers({toFake:['setTimeout','clearTimeout']});let finish;
++ set.mockImplementationOnce((k,v)=>new Promise(resolve=>{finish=()=>{values.set(k,v);resolve();};}));
++ const first=offline.bindOfflineAccount('native-write-timeout');
++ await vi.waitFor(()=>expect(set).toHaveBeenCalledTimes(1));
++ await vi.advanceTimersByTimeAsync(8000);await first;
++ const original=set.mock.calls[0][1];
++ const second=offline.bindOfflineAccount('native-write-timeout');
++ // Wait until retry has passed IndexedDB and entered the secure storage bridge.
++ await vi.waitFor(()=>expect(configured).toHaveBeenCalledTimes(2));
++ await vi.advanceTimersByTimeAsync(8000);await second;
++ expect(offline.offlineState().ready).toBe(false);expect(set).toHaveBeenCalledTimes(1);
++ finish();vi.useRealTimers();await offline.bindOfflineAccount('native-write-timeout');
++ expect(offline.offlineState().ready).toBe(true);
++ expect(set).toHaveBeenCalledTimes(1);expect([...values.values()]).toContainEqual(original);
++ await offline.clearOffline();
++});
++
++it('cancels startup work and ignores a late native response after retry',async()=>{
++ let late;get.mockImplementationOnce(()=>new Promise(resolve=>{late=resolve;}));
++ const controller=new AbortController();
++ const first=offline.bindOfflineAccount('native-cancel','',{signal:controller.signal});
++ await vi.waitFor(()=>expect(get).toHaveBeenCalled());controller.abort();await first;
++ expect(offline.offlineState().ready).toBe(false);
++ await offline.bindOfflineAccount('native-cancel');expect(offline.offlineState().ready).toBe(true);
++ const calls=set.mock.calls.length;late(null);await Promise.resolve();
++ expect(set).toHaveBeenCalledTimes(calls);
++ await offline.saveLocalDocument({afterRetry:true});await offline.clearOffline();
++});
++
++it('recovers the persisted key when Android saves it but loses the write callback',async()=>{
++ vi.useFakeTimers({toFake:['setTimeout','clearTimeout']});
++ set.mockImplementationOnce((k,v)=>{values.set(k,v);return new Promise(()=>{});});
++ const first=offline.bindOfflineAccount('native-lost-write-callback');
++ await vi.waitFor(()=>expect(set).toHaveBeenCalledTimes(1));
++ await vi.advanceTimersByTimeAsync(8000);await first;
++ expect(offline.offlineState().ready).toBe(false);
++ vi.useRealTimers();await offline.bindOfflineAccount('native-lost-write-callback');
++ expect(offline.offlineState().ready).toBe(true);expect(set).toHaveBeenCalledTimes(1);
++ await offline.saveLocalDocument({preserved:true});
++ offline.lockOffline();await offline.bindOfflineAccount('native-lost-write-callback');
++ expect(await offline.loadLocalDocument()).toEqual({preserved:true});await offline.clearOffline();
++});
+diff --git a/frontend/tests/StorageStartup.test.js b/frontend/tests/StorageStartup.test.js
+new file mode 100644
+index 0000000..bebdf24
+--- /dev/null
++++ b/frontend/tests/StorageStartup.test.js
+@@ -0,0 +1,47 @@
++import 'fake-indexeddb/auto';
++import {webcrypto} from 'node:crypto';
++import {it,expect,vi,afterEach} from 'vitest';
++import * as offline from '../src/shared/lib/offline.js';
++
++afterEach(()=>{vi.restoreAllMocks();vi.unstubAllGlobals();vi.useRealTimers();offline.lockOffline();});
++
++it('actually reopens storage for the same account after a failed first attempt',async()=>{
++ vi.stubGlobal('crypto',webcrypto);
++ const open=vi.spyOn(indexedDB,'open').mockImplementationOnce(()=>{throw Error('storage temporarily unavailable');});
++ await offline.bindOfflineAccount('retry-owner');
++ expect(offline.offlineState().ready).toBe(false);
++ await offline.bindOfflineAccount('retry-owner');
++ expect(open.mock.calls.length).toBeGreaterThan(1);
++ expect(offline.offlineState().ready).toBe(true);
++ await offline.saveLocalDocument({profile:{name:'복구 후 저장'}});
++ offline.lockOffline();await offline.bindOfflineAccount('retry-owner');
++ expect(await offline.loadLocalDocument()).toEqual({profile:{name:'복구 후 저장'}});
++ await offline.clearOffline();
++});
++
++it('a blocked database open settles and a late connection closes without poisoning retry',async()=>{
++ vi.stubGlobal('crypto',webcrypto);vi.useFakeTimers();
++ const request={};const close=vi.fn();
++ const open=vi.spyOn(indexedDB,'open').mockImplementationOnce(()=>request);
++ const attempt=offline.bindOfflineAccount('blocked-owner');
++ await vi.waitFor(()=>expect(open).toHaveBeenCalled());
++ await vi.advanceTimersByTimeAsync(8000);
++ await attempt;
++ expect(offline.offlineState().ready).toBe(false);
++ request.result={close};request.onsuccess();expect(close).toHaveBeenCalled();
++ vi.useRealTimers();await offline.bindOfflineAccount('blocked-owner');
++ expect(offline.offlineState().ready).toBe(true);
++ await offline.clearOffline();
++});
++
++it('aborts an unresponsive transaction so the retry queue can continue',async()=>{
++ vi.stubGlobal('crypto',webcrypto);vi.useFakeTimers({toFake:['setTimeout','clearTimeout']});
++ const stalled={objectStore:()=>({get:()=>({})}),abort:vi.fn()};
++ const transaction=vi.spyOn(IDBDatabase.prototype,'transaction').mockReturnValueOnce(stalled);
++ const first=offline.bindOfflineAccount('transaction-timeout');
++ await vi.waitFor(()=>expect(transaction).toHaveBeenCalled());
++ await vi.advanceTimersByTimeAsync(8000);await first;
++ expect(stalled.abort).toHaveBeenCalled();expect(offline.offlineState().ready).toBe(false);
++ vi.useRealTimers();await offline.bindOfflineAccount('transaction-timeout');
++ expect(offline.offlineState().ready).toBe(true);await offline.clearOffline();
++});
