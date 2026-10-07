@@ -8,7 +8,7 @@ const safety=['safety_chest_pain','safety_fainting','safety_breathlessness','saf
 const now=()=>new Date().toISOString();
 export const localDate=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
 const fail=(message,status=422)=>{throw Object.assign(Error(message),{status});};
-const initial=()=>({version:1,profile:{id:LOCAL_ACCOUNT,name:'나',role:'student',gender:'unspecified',height:null,school_id:null,share_with_center:false},exercise:{user_id:LOCAL_ACCOUNT,experience_level:'BEGINNER',goal:'GENERAL_HEALTH',days_per_week:3,minutes_per_session:20,training_mode:'bodyweight',exercise_location:'home',available_equipment:[],limitations:[],preferences:[],...Object.fromEntries(safety.map(k=>[k,false]))},measurements:[],routines:[],workouts:[],history:[],goal:null});
+const initial=()=>({version:1,profile:{id:LOCAL_ACCOUNT,name:'',role:'student',gender:'unspecified',height:null,school_id:null,share_with_center:false},exercise:{user_id:LOCAL_ACCOUNT,experience_level:'BEGINNER',goal:'GENERAL_HEALTH',days_per_week:3,minutes_per_session:20,training_mode:'bodyweight',exercise_location:'home',available_equipment:[],limitations:[],preferences:[],...Object.fromEntries(safety.map(k=>[k,false]))},measurements:[],routines:[],workouts:[],history:[],goal:null});
 const numeric=(v,min,max,label)=>{if(typeof v!=='number'||!Number.isFinite(v)||v<min||v>max)fail(`${label}: ${min}–${max} 범위의 숫자를 입력하세요.`);};
 const latest=s=>[...s.measurements].sort((a,b)=>a.measurement_date.localeCompare(b.measurement_date)||a.created_at.localeCompare(b.created_at)).at(-1);
 function measured(s){const m=latest(s);if(!m)fail('체성분 측정값을 먼저 입력하세요.',404);return m;}
@@ -28,7 +28,7 @@ function body(s){
 export function generateLocalRoutine(s){
  const p=s.exercise,m=measured(s),recent=s.workouts.filter(w=>Date.now()-Date.parse(w.date)<7*86400000);
  if(safety.some(k=>p[k])||p.limitations.length||recent.some(w=>(w.pain??0)>=4||(w.set_records||[]).some(x=>(x.pain??0)>=4)))fail('건강센터 또는 의료전문가와 상담 후 운동계획을 설정하세요.',409);
- const bmi=m.height?m.weight/(m.height/100)**2:null;
+ const height=m.height||s.profile.height;const bmi=height?m.weight/(height/100)**2:null;
  const previous=[...s.measurements].filter(x=>x.measurement_date<m.measurement_date).sort((a,b)=>a.measurement_date.localeCompare(b.measurement_date)).at(-1);
  const muscleDown=previous&&m.skeletal_muscle_mass<previous.skeletal_muscle_mass;
  const gentle=p.experience_level==='BEGINNER'||(bmi!=null&&bmi<18.5)||muscleDown||recent.some(w=>(w.rpe??0)>=8);
@@ -55,7 +55,7 @@ export function localApi(path,b,{method,signal}={}){
  const execute=async()=>{if(signal?.aborted)throw new DOMException('Aborted','AbortError');const s=await loadLocalDocument()||initial(),m=method||(b===undefined?'GET':'POST'),url=new URL(path,'https://device.invalid'),p=url.pathname;let result,write=false;
  const save=x=>{result=x;write=true;};
  if(p==='/api/health/status')result={status:'ok',service:'synex-health',demo:false,local:true};
- else if(p==='/api/health/profile'){if(m==='PUT'){if(b.height!=null)numeric(b.height,50,250,'키');if(b.gender&&!['male','female','unspecified'].includes(b.gender))fail('성별 값이 잘못되었습니다.');s.profile={...s.profile,height:b.height??s.profile.height,gender:b.gender||s.profile.gender};review(s);save(s.profile);}else result=s.profile;}
+ else if(p==='/api/health/profile'){if(m==='PUT'){if(b.height!=null)numeric(b.height,50,250,'키');if(b.gender&&!['male','female','unspecified'].includes(b.gender))fail('성별 값이 잘못되었습니다.');if(b.name!=null&&(typeof b.name!=='string'||b.name.length>30))fail('이름은 30자 이내로 입력하세요.');s.profile={...s.profile,...(b.name!=null?{name:b.name.trim()}:{}),height:b.height??s.profile.height,gender:b.gender||s.profile.gender};review(s);save(s.profile);}else result=s.profile;}
  else if(p==='/api/exercise-profile'){if(m==='PUT'){const next={...s.exercise,...b};numeric(next.days_per_week,1,7,'운동 일수');if(!Number.isInteger(next.days_per_week))fail('운동 일수는 정수입니다.');numeric(next.minutes_per_session,10,180,'운동 시간');if(!['BEGINNER','INTERMEDIATE','ADVANCED'].includes(next.experience_level)||!['mixed','bodyweight','equipment'].includes(next.training_mode)||!['home','gym','outdoor'].includes(next.exercise_location))fail('운동 설정이 잘못되었습니다.');for(const k of ['available_equipment','limitations','preferences'])if(!Array.isArray(next[k])||next[k].some(x=>typeof x!=='string'))fail('운동 조건을 확인하세요.');s.exercise=next;review(s);save(next);}else result=s.exercise;}
  else if(p==='/api/schools')result=schools;
  else if(p==='/api/health/school-connection')result={verified:false,integration_status:'기기 전용 · 미연결'};

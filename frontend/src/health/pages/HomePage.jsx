@@ -1,3 +1,4 @@
+import {LOCAL_ONLY} from '../../shared/lib/localMode.js';
 import React, { useCallback, useState, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { HealthAPI } from '../../shared/lib/api.js';
@@ -38,7 +39,7 @@ export default function HomePage() {
     <>
       <div>
         <h1>{profile.loading ? <Skeleton height={28} width={220} /> : `안녕하세요${name ? `, ${name}님` : ''}`}</h1>
-        <p className="muted" style={{ marginTop: 4 }}>오늘도 건강한 하루가 될 거예요.</p>
+        <p className="muted" style={{ marginTop: 4 }}>{LOCAL_ONLY?'기록을 쌓고, 몸의 변화를 확인하세요.':'오늘도 건강한 하루가 될 거예요.'}</p>
       </div>
 
       <Card title="오늘은 여기서 시작하세요">

@@ -1,3 +1,4 @@
+import {LOCAL_ONLY} from '../../shared/lib/localMode.js';
 import React from 'react';
 import { HealthAPI, api } from '../../shared/lib/api.js';
 import { Card, Skeleton, ErrorState, EmptyState } from '../../shared/components/ui.jsx';
@@ -20,7 +21,7 @@ export default function BodyMapPage() {
       ) : error ? (
         <ErrorState message={error.message} onRetry={reload} />
       ) : (
-        <BodyMapWorkspace comparisonData={data} routine={routines.data?.[0]} onGroupChange={async group_id=>{await api('/api/body-map/reference-group',{group_id},{method:'PUT'});await Promise.all([reload(),routines.reload()]);}} />
+        <BodyMapWorkspace defaultMode={LOCAL_ONLY?'my':'average'} comparisonData={data} routine={routines.data?.[0]} onGroupChange={async group_id=>{await api('/api/body-map/reference-group',{group_id},{method:'PUT'});await Promise.all([reload(),routines.reload()]);}} />
       )}
     </Card>
   );

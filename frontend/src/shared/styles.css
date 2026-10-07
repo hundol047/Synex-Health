@@ -245,3 +245,10 @@ small{font-size:.8125rem}
 @media(min-width:900px){.workout-bottom-actions{bottom:0;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}}
 
 .build-badge{font-size:10px;color:var(--muted);font-weight:500;overflow-wrap:anywhere}
+
+/* Personal Android screens: calm hierarchy and touch-friendly fields. */
+.device-mode-label{font-size:12px;font-weight:600;color:#45605b;background:#edf5f1;border:1px solid #d6e6de;border-radius:20px;padding:5px 11px;white-space:nowrap}
+.device-storage-note{display:flex;gap:11px;align-items:flex-start;padding:14px 16px;border-radius:14px;background:#f3f7f5;border:1px solid #e1e9e4;color:#344d43}
+.device-storage-note strong{font-size:13px;font-weight:600}.device-storage-note p{font-size:12px;margin:3px 0 0;color:#68796f;line-height:1.6}.device-storage-dot{width:7px;height:7px;flex-shrink:0;background:#6e9982;border-radius:50%;margin-top:6px}
+.device-personal .card{box-shadow:none;border-color:#e1e6ec}.device-personal .text-input{min-height:48px;border-radius:10px}.device-personal .field-label{font-size:13px;margin-bottom:8px}.device-personal .membership-actions{gap:8px}.device-personal .membership-actions .btn{font-size:13px;min-height:44px}
+@media(max-width:600px){.device-personal .health-main{gap:18px}.device-personal .health-topbar{padding-bottom:12px}.device-personal h1{font-size:25px;letter-spacing:-.025em}.device-personal .card{border-radius:18px;padding:20px}.device-personal .card h2{font-size:18px}.device-personal .measurement-grid{gap:14px}.device-personal .profile-grid{gap:14px}.device-personal .health-bottom-nav a{font-size:11px}.device-personal .workout-hero{background:#edf3f8;border-radius:18px}}
