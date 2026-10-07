@@ -14,7 +14,7 @@ async function run(path,body,method='DELETE'){
   if(method==='DELETE'&&!fullDelete&&(offlineState().pending||offlineState().drafts)){setMessage('미전송 기록을 전송하거나 삭제하고, 진행 중 임시 입력도 정리한 뒤 삭제하세요.');return;}
   const r=await api(path,body,{method});clearResponseCache();setMessage(r.notice||'처리되었습니다.');
   if(path.endsWith('/account')){await clearLocalAccount();location.replace('/health');}
-  else {if(fullDelete){await clearOffline();await bindOfflineAccount(LOCAL_ONLY?LOCAL_ACCOUNT:exportData.data.profile.id,LOCAL_ONLY?LOCAL_NAMESPACE:BASE);}await exportData.reload();}
+  else {if(fullDelete&&LOCAL_ONLY){await clearWorkoutDrafts();}else if(fullDelete){await clearOffline();await bindOfflineAccount(LOCAL_ONLY?LOCAL_ACCOUNT:exportData.data.profile.id,LOCAL_ONLY?LOCAL_NAMESPACE:BASE);}await exportData.reload();}
  }catch(e){setMessage(e.message);}finally{setBusy(false);}
 }
 async function download(){try{const data=await api('/api/privacy/export'),blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='synex-my-health-data.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(e){setMessage(e.message);}}

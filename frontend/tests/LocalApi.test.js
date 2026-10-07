@@ -11,12 +11,13 @@ it('works without any HTTP and persists actual entries through reopening',async(
  const fetch=vi.fn(()=>{throw Error('HTTP forbidden');});vi.stubGlobal('fetch',fetch);
  await expect(localApi('/api/body-composition/latest')).rejects.toMatchObject({status:404});
  await localApi('/api/health/profile',{height:165,gender:'female'},{method:'PUT'});
+ await localApi('/api/health/school',{school_id:'yonsei-mirae',share_with_center:false},{method:'PUT'});
  const m=await localApi('/api/body-composition',measurement);const r=await localApi('/api/exercise-routines/generate',{});
  expect(r.exercises.length).toBeGreaterThan(0);expect(r.input_snapshot.muscle_kg).toBe(24);
  const record={date:'2026-01-01',exercise_name:r.exercises[0].exercise_name,routine_id:r.id,routine_exercise_id:r.exercises[0].exercise_id,mutation_id:'once',pain:0,completed:true};
  await localApi('/api/workouts',record);await localApi('/api/workouts',record);
  lockOffline();await bindOfflineAccount(LOCAL_ACCOUNT,LOCAL_NAMESPACE);
- expect((await localApi('/api/health/profile')).gender).toBe('female');expect((await localApi('/api/body-composition/latest')).id).toBe(m.id);
+ expect((await localApi('/api/health/profile')).gender).toBe('female');expect((await localApi('/api/health/profile')).school_id).toBe('yonsei-mirae');expect((await localApi('/api/body-composition/latest')).id).toBe(m.id);
  expect(await localApi('/api/workouts')).toHaveLength(1);expect(fetch).not.toHaveBeenCalled();
  const db=await new Promise(resolve=>{const q=indexedDB.open('synex-workout-outbox-v1');q.onsuccess=()=>resolve(q.result);});
  const rows=await new Promise(resolve=>{const q=db.transaction('snapshots').objectStore('snapshots').getAll();q.onsuccess=()=>resolve(q.result);});db.close();expect(JSON.stringify(rows)).not.toContain('female');
