@@ -38,7 +38,7 @@ jobs:
       - name: Verify personal mode inside the APK
         run: |
           python - <<'PY'
-          import json, os, zipfile
+          import json, os, zipfile, subprocess
           with zipfile.ZipFile('frontend/android/app/build/outputs/apk/debug/app-debug.apk') as apk:
               marker=json.loads(apk.read('assets/public/release-config.json'))
               assert marker['localOnly'] is True and marker['release'] is False
@@ -46,7 +46,10 @@ jobs:
               scripts=b'\n'.join(apk.read(n) for n in apk.namelist() if n.startswith('assets/public/') and n.endswith('.js'))
               assert b'device-basic-v1' in scripts
               assert os.environ['VITE_BUILD_COMMIT'][:8].encode() in scripts
-          print('Verified personal mode, local algorithm and current build ID')
+          badging=subprocess.check_output([os.environ['ANDROID_HOME']+'/build-tools/36.0.0/aapt','dump','badging','frontend/android/app/build/outputs/apk/debug/app-debug.apk'],text=True)
+          assert "name='com.synex.health.personal'" in badging
+          assert 'Synex Health 개인용' in badging
+          print('Verified personal mode, package ID, app label, local algorithm and current build ID')
           PY
       - uses: actions/upload-artifact@v4
         with:

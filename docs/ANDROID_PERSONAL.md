@@ -10,7 +10,7 @@
 
 ## 설치 파일
 
-GitHub Actions의 `Android Personal APK (no deployment)` 실행에서 APK ZIP을 받습니다. ZIP을 풀어 `app-debug.apk`를 폰에 옮겨 설치합니다. 앱 ID는 `com.synex.health.personal`로 기존 앱과 분리됩니다. Play Store 등록/웹 배포를 수행하지 않습니다. 이 브랜치는 root/frontend `vercel.json`에서 자동 배포가 비활성화되어 있습니다.
+GitHub Actions의 `Android Personal APK (no deployment)` 실행에서 APK ZIP을 받습니다. ZIP을 풀어 `app-debug.apk`를 폰에 옮겨 설치합니다. 앱 이름은 `Synex Health 개인용`, ID는 `com.synex.health.personal`로 기존 앱과 구분됩니다. Play Store 등록/웹 배포를 수행하지 않습니다. 이 브랜치는 root/frontend `vercel.json`에서 자동 배포가 비활성화되어 있습니다.
 
 ## Windows에서 직접 APK 생성
 
