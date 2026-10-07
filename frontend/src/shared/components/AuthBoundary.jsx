@@ -25,10 +25,21 @@ async function discovery(config){
 export default function AuthBoundary({children}){
  return LOCAL_ONLY?<DeviceBoundary>{children}</DeviceBoundary>:<ServerAuthBoundary>{children}</ServerAuthBoundary>;
 }
-function DeviceBoundary({children}){
+export function DeviceBoundary({children}){
  const [ready,setReady]=useState(false),[error,setError]=useState('');
- async function open(){setError('');try{await bindOfflineAccount(LOCAL_ACCOUNT,LOCAL_NAMESPACE);if(!offlineState().ready)throw Error(offlineState().storageError||'기기 저장소를 열 수 없습니다.');setReady(true);}catch(e){setError(e.message);}}
- useEffect(()=>{open();},[]);
+ const attempt=useRef(0),timer=useRef(null);
+ async function open(){
+  const current=++attempt.current;clearTimeout(timer.current);setError('');
+  timer.current=setTimeout(()=>{if(attempt.current===current){attempt.current++;setError('기기 저장소의 응답이 늦어지고 있습니다. 다시 시도하거나 앱을 완전히 종료한 뒤 열어주세요.');}},20000);
+  try{
+   await bindOfflineAccount(LOCAL_ACCOUNT,LOCAL_NAMESPACE);
+   if(attempt.current!==current)return;
+   if(!offlineState().ready)throw Error(offlineState().storageError||'기기 저장소를 열 수 없습니다.');
+   setReady(true);
+  }catch(e){if(attempt.current===current)setError(e.message);}
+  finally{if(attempt.current===current)clearTimeout(timer.current);}
+ }
+ useEffect(()=>{open();return()=>{attempt.current++;clearTimeout(timer.current);};},[]);
  if(!ready)return <main className="health-main"><section className="card"><h1>이 폰에서 사용</h1><p>로그인 서버 없이 기기 내 암호화 저장소를 엽니다.</p>{error?<><p role="alert">{error}</p><button className="btn" onClick={open}>기기 저장소 다시 열기</button></>:<p role="status">기기 저장소 여는 중…</p>}</section></main>;
  return <AuthContext.Provider value={{demo:false,local:true,role:'student'}}>{children}</AuthContext.Provider>;
 }
