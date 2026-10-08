@@ -1,11 +1,15 @@
 import * as THREE from 'three';
 import { samplePose, MOTIONS } from './motions.js';
 import {bodyweightPoseJoints} from './bodyweightRig.js';
+import {standingCatalogPose} from './standingCatalogRig.js';
+import {floorCatalogPose} from './floorCatalogRig.js';
+import {equipmentCatalogPose} from './equipmentCatalogRig.js';
 // Rest joints in the CC0 mesh coordinate system. Segment transforms are blended at joints.
 export const REST=[[0,.94,.035],[0,1.42,.025],[0,1.66,.025],[.185,1.42,.02],[.325,1.25,.04],[.445,1.105,.13],[-.185,1.42,.02],[-.325,1.25,.04],[-.445,1.105,.13],[.1,.90,.035],[.14,.52,.05],[.19,.1,.035],[-.1,.90,.035],[-.14,.52,.05],[-.19,.1,.035],[.19,.04,.20],[-.19,.04,.20],[.565,.965,.25],[-.565,.965,.25]];
 export const BONES=[[0,1],[1,2],[3,4],[4,5],[6,7],[7,8],[9,10],[10,11],[12,13],[13,14],[11,15],[14,16],[5,17],[8,18]];
 export function poseJoints(id,t,rest=REST){
  const bodyweight=bodyweightPoseJoints(id,t,rest);if(bodyweight)return bodyweight;
+ const authored=standingCatalogPose(id,t,rest)||floorCatalogPose(id,t,rest)||equipmentCatalogPose(id,t,rest);if(authored)return authored;
  const p=samplePose(id,t);if(!p)return rest;
  const front=MOTIONS[id].view.includes('정면');
  const point=(i,side=0)=>front?[(170-p[i][0])*.007,(306-p[i][1])*.007,side*.05]:[side,(306-p[i][1])*.007,(p[i][0]-170)*.007];
@@ -70,24 +74,36 @@ export function calibratePalmRoll(base,weights,rest=REST){
 // Original implementation of the published algorithm (Kavan et al., 2008).
 export function deformSurface(base,weights,joints,target,rest=REST,ground=true){
  const transforms=BONES.map(([a,b],index)=>{
-  const rotation=new THREE.Quaternion().setFromUnitVectors(vec(rest[b]).sub(vec(rest[a])).normalize(),vec(joints[b]).sub(vec(joints[a])).normalize());
+  const authored=joints.boneRotations?.[index];
+  const rotation=authored?new THREE.Quaternion().fromArray(authored).normalize():new THREE.Quaternion().setFromUnitVectors(vec(rest[b]).sub(vec(rest[a])).normalize(),vec(joints[b]).sub(vec(joints[a])).normalize());
+  const roll=index===0?joints.bodyRoll:index===1?(joints.headRoll??joints.bodyRoll):0;
+  if(roll)rotation.premultiply(new THREE.Quaternion().setFromAxisAngle(vec(joints[b]).sub(vec(joints[a])).normalize(),roll));
   if(index>=12&&joints.handRoll?.[index-12])rotation.premultiply(new THREE.Quaternion().setFromAxisAngle(vec(joints[b]).sub(vec(joints[a])).normalize(),joints.handRoll[index-12]));
   const t=vec(joints[a]).sub(vec(rest[a]).applyQuaternion(rotation));
   const dual=new THREE.Quaternion(t.x,t.y,t.z,0).multiply(rotation);
   return {real:rotation.toArray(),dual:dual.toArray().map(v=>v*.5)};
  });
- const v=new THREE.Vector3(),q=new THREE.Quaternion(),d=new THREE.Quaternion(),translation=new THREE.Quaternion();
+ const v=new THREE.Vector3(),q=new THREE.Quaternion(),d=new THREE.Quaternion(),translation=new THREE.Quaternion(),conjugate=new THREE.Quaternion();
+ const spineAxis=joints.spineFlex?vec(joints[1]).sub(vec(joints[0])):null;
+ const spineLengthSquared=spineAxis?Math.max(1e-8,spineAxis.lengthSq()):1;
  for(let i=0;i<weights.length;i++){
-  const real=[0,0,0,0],dual=[0,0,0,0],anchor=transforms[weights[i][0]?.[0]||0].real;
+  let rx=0,ry=0,rz=0,rw=0,dx=0,dy=0,dz=0,dw=0;
+  const anchor=transforms[weights[i][0]?.[0]||0].real;
   for(const [bone,w] of weights[i]){
-   const tr=transforms[bone],sign=tr.real.reduce((n,x,k)=>n+x*anchor[k],0)<0?-1:1;
-   for(let k=0;k<4;k++){real[k]+=tr.real[k]*w*sign;dual[k]+=tr.dual[k]*w*sign;}
+   const tr=transforms[bone],r=tr.real,du=tr.dual;
+   const factor=w*(r[0]*anchor[0]+r[1]*anchor[1]+r[2]*anchor[2]+r[3]*anchor[3]<0?-1:1);
+   rx+=r[0]*factor;ry+=r[1]*factor;rz+=r[2]*factor;rw+=r[3]*factor;
+   dx+=du[0]*factor;dy+=du[1]*factor;dz+=du[2]*factor;dw+=du[3]*factor;
   }
-  const length=Math.hypot(...real);
+  const length=Math.hypot(rx,ry,rz,rw);
   if(length<1e-8){for(let k=0;k<3;k++)target[i*3+k]=base[i*3+k];continue;}
-  q.fromArray(real.map(x=>x/length));d.fromArray(dual.map(x=>x/length));
-  translation.copy(d).multiply(q.clone().conjugate());
+  q.set(rx/length,ry/length,rz/length,rw/length);d.set(dx/length,dy/length,dz/length,dw/length);
+  translation.copy(d).multiply(conjugate.copy(q).conjugate());
   v.fromArray(base,i*3).applyQuaternion(q);v.x+=2*translation.x;v.y+=2*translation.y;v.z+=2*translation.z;v.toArray(target,i*3);
+  if(joints.spineFlex){
+   const trunkWeight=weights[i].find(([bone])=>bone===0)?.[1]||0;
+   if(trunkWeight){const u=THREE.MathUtils.clamp(((v.x-joints[0][0])*spineAxis.x+(v.y-joints[0][1])*spineAxis.y+(v.z-joints[0][2])*spineAxis.z)/spineLengthSquared,0,1);target[i*3+1]+=trunkWeight*joints.spineFlex*Math.sin(Math.PI*u);}
+  }
  }
  if(ground){let floor=Infinity;for(let i=1;i<target.length;i+=3)floor=Math.min(floor,target[i]);for(let i=1;i<target.length;i+=3)target[i]+=.015-floor;}
  return target;

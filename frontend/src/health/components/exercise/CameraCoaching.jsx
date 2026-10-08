@@ -1,4 +1,4 @@
-import React,{useEffect,useRef,useState} from 'react';
+import React,{useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {Camera,CameraOff,SwitchCamera,Play,PersonStanding} from 'lucide-react';
 import {recordPoseDiagnostics} from '../../lib/poseDiagnostics.js';
 import {TRACKING_LABELS} from './poseThresholds.js';
@@ -31,6 +31,7 @@ function cameraError(e){
 }
 export default function CameraCoaching({motion='squat',paused=false,onEvaluation,immersive=false}){
  const video=useRef(null),stream=useRef(null),cameraVersion=useRef(0),analysisVersion=useRef(0),resources=useRef({}),voiceRef=useRef(false),speechAt=useRef(-Infinity),releaseCamera=useRef(null);
+ const previousMotion=useRef(motion);
  const [running,setRunning]=useState(false),[busy,setBusy]=useState(false),[feedback,setFeedback]=useState(false),[preparing,setPreparing]=useState(false),[voice,setVoice]=useState(false),[error,setError]=useState(''),[result,setResult]=useState(null),[points,setPoints]=useState([]),[size,setSize]=useState([640,480]),[layout,setLayout]=useState('split'),[facing,setFacing]=useState('user');
  const guide=getBodyweightGuide(motion),label=guide?.label||POSE_EXERCISES[motion]?.label||'운동';
  function stopAnalysis(){
@@ -43,6 +44,14 @@ export default function CameraCoaching({motion='squat',paused=false,onEvaluation
   if(video.current)video.current.srcObject=null;setRunning(false);setBusy(false);
  }
  useEffect(()=>{const hide=()=>{if(document.hidden)stopCamera();};document.addEventListener('visibilitychange',hide);return()=>{stopCamera();document.removeEventListener('visibilitychange',hide);};},[]);
+ useLayoutEffect(()=>{
+  if(previousMotion.current===motion)return;
+  previousMotion.current=motion;
+  // Preserve the expensive WebGL instructor while opening a fresh, opted-out
+  // camera session. Old permission/inference results are invalidated before
+  // the new exercise can be painted with the preceding exercise's feedback.
+  stopCamera();setError('');setFacing('user');setLayout('split');
+ },[motion]);
  useEffect(()=>{if(paused)stopCamera();},[paused]);
  async function startCamera({analyze=false,nextFacing=facing}={}){
   stopCamera();releaseCamera.current=claimCamera(stopCamera);setError('');setBusy(true);setFacing(nextFacing);const version=cameraVersion.current;

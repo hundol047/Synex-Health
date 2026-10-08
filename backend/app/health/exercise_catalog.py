@@ -36,7 +36,7 @@ CATALOG = [
 
 
 # Additional catalog entries: authored guidance, not individual medical prescriptions.
-CATALOG.append({**movement('lunge','제자리 런지','squat',['하체'],[],['knee', 'hip', 'ankle'],['발을 앞뒤로 벌리고 양쪽 무릎을 편안한 범위로 굽힙니다.','앞 무릎을 발 방향으로 유지하며 올라옵니다.'], '반동을 피하고 통증 없는 범위에서 수행하세요.'), 'english_name':'Lunge','category':'Legs'})
+CATALOG.append({**movement('lunge','교대 런지','squat',['하체'],[],['knee', 'hip', 'ankle'],['발을 골반 너비로 두고 한 발을 뒤로 딛습니다.','앞 무릎을 발 방향으로 유지하며 몸을 편안한 범위로 낮춥니다.','앞발로 바닥을 밀어 돌아온 뒤 반대쪽도 반복합니다.'], '반동을 피하고 통증 없는 범위에서 수행하세요.'), 'english_name':'Lunge','category':'Legs'})
 CATALOG.append({**movement('shoulder_press','덤벨 숄더 프레스','push',['상체'],['dumbbell'],['shoulder', 'back'],['가벼운 덤벨을 귀 옆에서 머리 위로 올립니다.','허리를 젖히지 않고 천천히 내립니다.'], '반동을 피하고 통증 없는 범위에서 수행하세요.'), 'english_name':'Shoulder press','category':'Shoulder'})
 CATALOG.append({**movement('lateral_raise','덤벨 레터럴 레이즈','accessory',['상체'],['dumbbell'],['shoulder'],['팔꿈치를 살짝 굽히고 팔을 옆으로 듭니다.','어깨 높이를 넘기지 않고 천천히 내립니다.'], '반동을 피하고 통증 없는 범위에서 수행하세요.'), 'english_name':'Lateral raise','category':'Shoulder'})
 CATALOG.append({**movement('plank','팔꿈치 플랭크','core',['몸통'],[],['shoulder', 'back'],['팔꿈치를 어깨 아래 두고 몸통을 편안한 일직선으로 유지합니다.','숨을 참지 말고 짧게 유지한 뒤 쉽니다.'], '반동을 피하고 통증 없는 범위에서 수행하세요.'), 'english_name':'Forearm plank','category':'Core'})
@@ -74,7 +74,7 @@ _CATEGORY={'squat':'Legs','push':'Chest','pull':'Back','hinge':'Glutes','core':'
 _ENGLISH={'sit_stand':'Sit to stand','squat':'Bodyweight squat','wall_push':'Wall push-up','pushup':'Knee push-up','band_row':'Band row','scapular':'Scapular retraction','bridge':'Glute bridge','hinge':'Hip hinge','bird_dog':'Bird dog','dead_bug':'Supine heel tap','curl':'Dumbbell curl','calf':'Supported calf raise','walk':'Walking','march':'Seated march'}
 for m in CATALOG:
     m.setdefault('english_name',_ENGLISH.get(m['id'],m['id']))
-    m.setdefault('category',_CATEGORY[m['pattern']])
+    m.setdefault('category','Legs' if m['id'] == 'calf' else _CATEGORY[m['pattern']])
     m.update(korean_name=m['name'],target_muscle=m['regions'],secondary_muscle=['몸통 안정화'],difficulty=m.get('difficulty','beginner' if m['easy'] else 'intermediate'),contraindications=m['avoid'],motion_id=m['id'],estimated_duration=180,sets=1 if m['easy'] else 2,reps=m.get('reps','8–12'),rest=60)
 _MUSCLES={'Chest':('대흉근','상완삼두근'),'Back':('광배근·승모근','상완이두근'),'Shoulder':('삼각근','승모근'),'Arms':('상완이두근·상완삼두근','전완근'),'Core':('복부·척추 주변 안정근','둔근'),'Glutes':('둔근','햄스트링'),'Legs':('대퇴사두근·햄스트링','둔근'),'Cardio':('전신','하체'),'Mobility':('동작 부위의 가동성','몸통 안정근'),'Stretching':('동작 부위의 유연성','주변 연부조직')}
 for m in CATALOG:

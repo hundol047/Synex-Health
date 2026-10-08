@@ -12,7 +12,8 @@ test('mobile catalog separates bodyweight/gym, filters equipment, and opens a ma
  await expect(page.locator('.exercise-card')).toHaveCount(1);
  await page.getByRole('button',{name:'레그 프레스 동작 보기'}).click();
  await expect(page.getByRole('heading',{name:'준비부터 마무리까지'})).toBeVisible();
- await expect(page.getByRole('button',{name:'기구·지지점 2D 안내'})).toBeDisabled();
+ await expect(page.locator('canvas')).toHaveAttribute('data-exercise-rendered','leg_press');
+ await expect(page.getByRole('button',{name:'동작 재생',exact:true})).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await page.screenshot({path:info.outputPath('gym-library-390.png'),fullPage:true});expect(errors).toEqual([]);
 });

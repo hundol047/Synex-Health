@@ -47,6 +47,26 @@ it('camera stop cancels a pending permission request and closes the late stream'
  const pending=deferred();getMedia.mockReturnValueOnce(pending.promise);render(<CameraCoaching/>);fireEvent.click(screen.getByRole('button',{name:'카메라 켜기'}));fireEvent.click(screen.getByRole('button',{name:'카메라 끄기'}));
  await act(async()=>pending.resolve(media));expect(track.stop).toHaveBeenCalledTimes(1);expect(screen.getByRole('switch').disabled).toBe(true);
 });
+it('changing the exercise closes camera and inference without remounting the demonstration session',async()=>{
+ const evaluated=vi.fn(),pending=deferred();detector.detectForVideo.mockReturnValueOnce(pending.promise);
+ const view=render(<CameraCoaching motion="squat" onEvaluation={evaluated}/>);await camera();await enable();
+ let inflight;act(()=>{inflight=[...frames.values()].at(-1)(500);});
+ view.rerender(<CameraCoaching motion="lunge" onEvaluation={evaluated}/>);
+ expect(track.stop).toHaveBeenCalledTimes(1);expect(detector.close).toHaveBeenCalledTimes(1);
+ expect(screen.getByRole('switch').checked).toBe(false);expect(screen.getByRole('switch').disabled).toBe(true);
+ expect(screen.getByText('3D 시범 · lunge')).toBeTruthy();
+ await act(async()=>{pending.resolve({landmarks:[]});await inflight;});
+ expect(evaluated).not.toHaveBeenCalled();expect(screen.queryByRole('status')).toBeNull();
+ expect(getMedia).toHaveBeenCalledTimes(1);
+});
+it('changing the exercise invalidates a pending permission request and closes its late stream',async()=>{
+ const pending=deferred();getMedia.mockReturnValueOnce(pending.promise);
+ const view=render(<CameraCoaching motion="squat"/>);fireEvent.click(screen.getByRole('button',{name:'카메라 켜기'}));
+ view.rerender(<CameraCoaching motion="plank"/>);
+ await act(async()=>pending.resolve(media));
+ expect(track.stop).toHaveBeenCalledTimes(1);expect(createPoseRunner).not.toHaveBeenCalled();
+ expect(screen.getByRole('switch').disabled).toBe(true);expect(screen.getByRole('button',{name:'카메라 켜기'}).disabled).toBe(false);
+});
 it('analysis failure preserves preview and allows retry; leaving releases camera and detector',async()=>{
  api.mockRejectedValueOnce(Error('분석 권한 없음'));const view=render(<CameraCoaching/>);await camera();fireEvent.click(screen.getByRole('switch'));await screen.findByRole('alert');expect(screen.getByRole('switch').checked).toBe(false);expect(track.stop).not.toHaveBeenCalled();
  await enable();view.unmount();expect(detector.close).toHaveBeenCalledTimes(1);expect(track.stop).toHaveBeenCalledTimes(1);

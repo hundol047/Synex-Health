@@ -31,10 +31,12 @@ test('bodyweight coach opens from home without a server and keeps equal phone pa
   await expectDemonstrationContained(page);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  }
+ const demonstrationCanvas=await page.locator('.coach-example canvas').elementHandle();
  for(const motion of ['squat','lunge','side_lunge','push_up','plank','hip_hinge','glute_bridge']){
   await page.getByLabel('따라 할 운동').selectOption(motion);
   await expect(page.locator('.coach-example')).toHaveAttribute('aria-label',`위 화면 · ${BODYWEIGHT_EXERCISES[motion].label} 운동 시범`);
   await expect(page.locator('.coach-example canvas')).toBeVisible();
+  expect(await page.locator('.coach-example canvas').evaluate((canvas,original)=>canvas===original,demonstrationCanvas)).toBe(true);
   await expect(page.getByLabel('현재 시범 안내')).toBeVisible();
   await expect(page.locator('.coach-camera-empty')).toBeVisible();
   await expectDemonstrationContained(page);

@@ -1,17 +1,21 @@
-import React,{useEffect,useRef,useState} from 'react';
-import MotionFigure from './MotionFigure.jsx';
-// The existing motion catalog and SVG renderer are shared with the detail viewer.
-export default function ExercisePreview({exercise,onOpen}){
- const ref=useRef(null),[progress,setProgress]=useState(0);
- useEffect(()=>{
-  const media=window.matchMedia?.('(prefers-reduced-motion: reduce)');
-  let visible=false,frame=0,last=0,phase=0;
-  const tick=time=>{if(time-last>=1000/12){phase=(phase+Math.min(time-last,100)/6000)%1;setProgress(phase);last=time;}frame=requestAnimationFrame(tick);};
-  const update=()=>{cancelAnimationFrame(frame);if(visible&&!document.hidden&&!media?.matches){last=performance.now();frame=requestAnimationFrame(tick);}};
-  const observer=typeof IntersectionObserver!=='undefined'?new IntersectionObserver(([entry])=>{visible=entry.isIntersecting;update();},{threshold:.1}):null;
-  if(observer)observer.observe(ref.current); // Unsupported browsers retain the still preview.
-  document.addEventListener('visibilitychange',update);media?.addEventListener?.('change',update);
-  return ()=>{observer?.disconnect();cancelAnimationFrame(frame);document.removeEventListener('visibilitychange',update);media?.removeEventListener?.('change',update);};
- },[exercise.motion_id]);
- return <button ref={ref} className="exercise-preview" onClick={onOpen} type="button" aria-label={`${exercise.exercise_name} 자세히 보기`} data-testid="exercise-preview"><MotionFigure exercise={exercise} progress={progress}/><span>동작 미리보기</span></button>;
+import React, { lazy, Suspense, useState } from 'react';
+import { Play } from 'lucide-react';
+import { getMotionGuide } from './motionGuide.js';
+import './exercise-experience.css';
+const ThumbnailFallback = lazy(() => import('./ExerciseThumbnailFallback.jsx'));
+
+// Bundled screenshots use the actual standard instructor and equipment.
+// Browsing the 74 cards starts no WebGL contexts and no animation loops.
+export function ExerciseThumbnail({ exercise }) {
+  const id = exercise.motion_id, [failedId, setFailedId] = useState(null);
+  const name = exercise.exercise_name || exercise.name;
+  if (!getMotionGuide(id)) return <span className="exercise-preview-unavailable">동작 안내 준비 중</span>;
+  if (failedId === id) return <Suspense fallback={<span className="exercise-preview-unavailable">대표 자세 준비 중</span>}><ThumbnailFallback exercise={exercise}/></Suspense>;
+  return <img key={id} className="exercise-thumbnail" src={`${import.meta.env.BASE_URL}exercise-thumbnails/${id}.webp`} alt={`${name} 대표 자세`} width="280" height="270" loading="lazy" decoding="async" onError={() => setFailedId(id)}/>;
+}
+
+export default function ExercisePreview({ exercise, onOpen }) {
+  return <button className="exercise-preview exercise-studio-preview" onClick={onOpen} type="button" aria-label={`${exercise.exercise_name || exercise.name} 자세히 보기`} data-testid="exercise-preview">
+    <ExerciseThumbnail exercise={exercise}/><span><Play size={11} fill="currentColor"/> {getMotionGuide(exercise.motion_id) ? '3D 동작 보기' : '시범 준비 중'}</span>
+  </button>;
 }
