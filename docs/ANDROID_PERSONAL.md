@@ -35,3 +35,12 @@ npm run android:local
 늦게 도착한 DB 연결은 닫고 취소된 트랜잭션은 중단합니다. 기기 암호화 키 쓰기가 아직 끝나지 않았다면 다른 키를 덮어쓰지 않습니다. 저장 완료 응답만 누락된 경우에는 같은 키가 저장돼 있는지 확인한 뒤 복구하며, 아직 저장되지 않았다면 원래 작업의 완료를 기다립니다. 이 복구 과정에서 기존 기록이나 키를 삭제하거나 평문 저장소로 전환하지 않습니다.
 
 회귀 테스트는 일시적 저장소 실패 후 재시도, 응답 없는 DB/네이티브 호출, 늦은 응답, 암호화 키 보존 및 재실행 후 기록 복원을 확인합니다. `npm test`와 `npx playwright test --config playwright.local.config.js`로 실행합니다.
+
+## InBody mannequin update
+
+The personal build now opens a translucent composition mannequin at
+`/health/body`, with actual result-sheet inputs and optional torso girths,
+separate bone/mineral records, and eligible adult literature muscle comparison.
+See [PERSONAL_MANNEQUIN.md](PERSONAL_MANNEQUIN.md) for shape limits, source
+verification depth and offline validation. Keep the installed storagefix
+application ID/signing key and increase the version code for updates.

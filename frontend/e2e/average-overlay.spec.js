@@ -7,7 +7,7 @@ const stats=page=>page.locator('[data-overlay]').evaluate(el=>JSON.parse(el.data
 
 test('same viewer renders both meshes, opacity/selection/camera/mobile and original range mode',async({page},info)=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
- await page.goto('/health/body');
+ await page.goto('/health/body');await page.getByRole('button',{name:/Average Compare/}).click();
  await expect(page.getByRole('button',{name:/Average Compare/})).toBeVisible();
  await expect.poll(async()=>{try{return (await stats(page)).layers.length;}catch{return 0;}},{timeout:30000}).toBe(2);
  const initial=await stats(page);expect(initial.layers.map(l=>l.name).sort()).toEqual(['my-muscle','reference-average']);
@@ -53,13 +53,13 @@ test('reference-unavailable retains body; numeric fixture changes volume with sa
  const fixture=structuredClone(raw);const g=fixture.average_comparison.groups[0];
  const leg=fixture.measurement.segments.find(s=>s.segment==='RIGHT_LEG');leg.lean_mass_kg=7.1;g.segments.RIGHT_LEG.lean.reference_value=7.8;
  await page.route('**/api/body-map/latest',r=>r.fulfill({json:fixture}));
- await page.goto('/health/body');await expect(page.getByRole('table')).toContainText('-9.0');
+ await page.goto('/health/body');await page.getByRole('button',{name:/Average Compare/}).click();await expect(page.getByRole('table')).toContainText('-9.0');
  await expect.poll(async()=>{try{return (await stats(page)).layers.length;}catch{return 0;}}).toBe(2);
  const layers=(await stats(page)).layers;expect(layers.find(l=>l.name==='reference-average').regions.RIGHT_LEG.depth).toBeGreaterThan(layers.find(l=>l.name==='my-muscle').regions.RIGHT_LEG.depth);
  await page.locator('.overlay-viewer').screenshot({path:info.outputPath('fixture-two-volumes.png')});
  await page.unroute('**/api/body-map/latest');
  await page.route('**/api/body-map/latest',r=>r.fulfill({json:{...raw,average_comparison:{available:false,groups:[]}}}));
- await page.reload();
+ await page.reload();await page.getByRole('button',{name:/Average Compare/}).click();
  await expect(page.getByRole('status').filter({hasText:'현재 조건에 맞는 비교군'})).toBeVisible();
  await expect(page.locator('canvas')).toBeVisible();
  expect(await page.getByRole('table').innerText()).not.toContain('NaN');

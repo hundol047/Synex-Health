@@ -5,6 +5,7 @@ import { HealthAPI } from '../../shared/lib/api.js';
 import { Card, StatTile, Skeleton, EmptyState, ErrorState, DemoBadge, Disclaimer } from '../../shared/components/ui.jsx';
 import ReferenceSource from '../components/body3d/ReferenceSource.jsx';
 import {signed,valuesFor,referenceValues} from '../components/body3d/overlayMath.js';
+import {publishedMuscleReference} from '../lib/publishedMuscleReference.js';
 const BodyScene=lazy(()=>import('../components/body3d/BodyScene.jsx'));
 import { colorsForMode } from '../lib/bodyMapColors.js';
 import { useApiData } from '../lib/useApiData.js';
@@ -33,6 +34,7 @@ export default function HomePage() {
   const average=bodyMap.data?.average_comparison;
   const group=average?.groups?.find(g=>g.id===average.selected_group_id);
   const total=group?.totals?.skeletal_muscle_mass;
+  const published=publishedMuscleReference(measurement.data,{...bodyMap.data?.body_profile,birth_date:profile.data?.birth_date});
   const overlay=group?{myValues:valuesFor(bodyMap.data?.measurement,'lean'),referenceValues:referenceValues(group,'lean'),metric:'lean',options:{showMy:true,showReference:true,myOpacity:.85,referenceOpacity:.35,referenceStyle:'wireframe',myStyle:'surface'}}:null;
 
   return (
@@ -46,7 +48,7 @@ export default function HomePage() {
         {measurement.loading||routines.loading?<Skeleton height={70}/>:routines.error?<ErrorState message={routines.error.message} onRetry={routines.reload}/>:measurement.error&&!noMeasurement?<ErrorState message={measurement.error.message} onRetry={measurement.reload}/>:<>
         <p>{noMeasurement?'체성분을 입력하면 내 변화와 운동 계획을 확인할 수 있어요.':routines.data?.[0]?.needs_review?'측정값이나 운동 조건이 바뀌었어요. 계획을 먼저 갱신하세요.':!routines.data?.length?'운동 방식과 이용할 기구를 정하고 첫 계획을 만들어 보세요.':'준비된 운동을 하나씩 따라 하고 오늘의 기록을 남겨 보세요.'}</p>
         <Link className="btn btn-primary" to={noMeasurement?'/health/profile':!routines.data?.length||routines.data?.[0]?.needs_review?'/health/routine':'/health/workout'}>{noMeasurement?'1. 체성분 입력하기':routines.data?.[0]?.needs_review?'변경된 조건으로 계획 갱신':!routines.data?.length?'2. 내 운동 계획 만들기':'3. 오늘 운동 시작하기'}</Link></>}
-        <div className="motion-controls"><Link className="btn btn-secondary" to="/health/pose">맨몸운동 카메라 코치</Link><Link to="/health/library">맨몸·헬스장 운동 찾기</Link><Link to="/health/progress">내 기록과 변화 보기</Link></div>
+        <div className="motion-controls"><Link className="btn btn-secondary" to="/health/pose">맨몸운동 카메라 코치</Link><Link className="btn btn-secondary" to="/health/body">내 3D 마네킹 보기</Link><Link to="/health/library">맨몸·헬스장 운동 찾기</Link><Link to="/health/progress">내 기록과 변화 보기</Link></div>
       </Card>
 
       {measurement.loading ? (
@@ -89,7 +91,7 @@ export default function HomePage() {
           {bodyMap.loading ? (
             <Skeleton height={200} />
           ) : bodyMap.data ? (
-            <><p>내 골격근량 {measurement.data?.skeletal_muscle_mass??'—'} kg · 비교군 평균 {total?.reference_value??'자료 없음'}{total?.reference_value!=null?' kg':''}</p>{total?.difference_kg!=null&&<p>{signed(total.difference_kg)} kg · {signed(total.difference_percent)}%</p>}<button type="button" className="btn btn-secondary" aria-expanded={showPreview} onClick={()=>setShowPreview(v=>!v)}>{showPreview?'3D 미리보기 닫기':'3D 미리보기 열기'}</button>{showPreview&&<Suspense fallback={<Skeleton height={200}/>}><BodyScene overlay={overlay} gender={bodyMap.data.body_profile?.gender} profile={bodyMap.data.body_profile} measurement={bodyMap.data.measurement} segmentColors={{}} height={200} interactive={false} /></Suspense>}<ReferenceSource group={group}/></>
+            <>{LOCAL_ONLY&&<p>문헌 평균 골격근량 {published.available?`${published.value}kg (${profile.data?.gender==='female'?'성인 여성':'성인 남성'} · MRI 연구)`:"프로필의 성별·생년월일 설정 후 비교"}</p>}<p>내 골격근량 {measurement.data?.skeletal_muscle_mass??'—'} kg {!LOCAL_ONLY&&<>· 비교군 평균 {total?.reference_value??'자료 없음'}{total?.reference_value!=null?' kg':''}</>}</p>{total?.difference_kg!=null&&<p>{signed(total.difference_kg)} kg · {signed(total.difference_percent)}%</p>}<button type="button" className="btn btn-secondary" aria-expanded={showPreview} onClick={()=>setShowPreview(v=>!v)}>{showPreview?'3D 미리보기 닫기':'3D 미리보기 열기'}</button>{showPreview&&<Suspense fallback={<Skeleton height={200}/>}><BodyScene overlay={LOCAL_ONLY?null:overlay} mannequin={LOCAL_ONLY?{options:{showMy:true,showReference:false,myOpacity:.6}}:null} gender={bodyMap.data.body_profile?.gender} profile={bodyMap.data.body_profile} measurement={bodyMap.data.measurement} segmentColors={{}} height={200} interactive={false} /></Suspense>}{!LOCAL_ONLY&&<ReferenceSource group={group}/>}</>
           ) : (
             <p className="muted">표시할 데이터가 없습니다.</p>
           )}

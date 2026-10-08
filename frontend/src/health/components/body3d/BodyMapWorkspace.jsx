@@ -1,6 +1,7 @@
 import React,{useMemo,useState} from 'react';
 import {Link} from 'react-router-dom';
 import BodyScene from './BodyScene.jsx';
+import CompositionMannequin from './CompositionMannequin.jsx';
 import BodyTools from './BodyTools.jsx';
 import SegmentDetailPanel from './SegmentDetailPanel.jsx';
 import ReferenceSource,{cohortLabel} from './ReferenceSource.jsx';
@@ -8,7 +9,7 @@ import ExercisePreview from '../exercise/ExercisePreview.jsx';
 import {colorsForMode,SEGMENT_LABEL_KO,STATUS_COLORS} from '../../lib/bodyMapColors.js';
 import {valuesFor,referenceValues,comparisonRows,signed,MODEL_NOTICE} from './overlayMath.js';
 
-const MODES=[['my','My Body · 내 몸'],['average','Average Compare · 기준 비교'],['previous','Previous Compare · 이전 비교'],['balance','Left / Right · 좌우'],['range','Range View · 참고 범위']];
+const MODES=[['mannequin','내 체성분 마네킹'],['my','My Body · 내 몸'],['average','Average Compare · 기준 비교'],['previous','Previous Compare · 이전 비교'],['balance','Left / Right · 좌우'],['range','Range View · 참고 범위']];
 export default function BodyMapWorkspace({comparisonData,height=480,defaultMode='average',routine,onGroupChange}){
  const [mode,setMode]=useState(defaultMode==='reference'?'average':defaultMode),[metric,setMetric]=useState('lean');
  const [layer,setLayer]=useState('body'),[slice,setSlice]=useState({enabled:false,axis:'horizontal',position:0});
@@ -41,6 +42,7 @@ export default function BodyMapWorkspace({comparisonData,height=480,defaultMode=
  }).filter((ex,i,arr)=>arr.findIndex(v=>v.motion_id===ex.motion_id)===i).slice(0,3);
  return <section className="comparison-workspace" aria-label="신체 비교">
   <nav className="compare-tabs" aria-label="3D 비교 모드">{MODES.map(([id,name])=><button key={id} aria-pressed={mode===id} className={`btn ${mode===id?'btn-primary':'btn-ghost'}`} onClick={()=>{setMode(id);setHovered(null);change('interpolate',false);}}>{name}</button>)}</nav>
+  {mode==='mannequin'?<SceneBoundary><CompositionMannequin comparisonData={comparisonData} height={Math.max(540,height)}/></SceneBoundary>:<>
   <div className="motion-controls" aria-label="측정 항목">{[['lean','Muscle · 제지방'],['fat','Fat · 체지방']].map(([id,name])=><button key={id} className="btn btn-secondary" aria-pressed={metric===id} onClick={()=>setMetric(id)}>{name}</button>)}</div>
   {mode==='average'&&<>
    <div className="compare-summary"><span>{pair==='previous-average'?'이전 측정':'현재 측정'} · {aMeasurement?.measurement_date||'측정 없음'}</span><h3>{metric==='fat'?'전체 체지방량':'전체 골격근량'}</h3><strong>{aMeasurement?.[metric==='fat'?'body_fat_mass':'skeletal_muscle_mass']??'—'} kg</strong><span>평균 {total?.reference_value??'—'} kg</span>{pair==='current-average'&&total?.difference_kg!=null&&<b>{signed(total.difference_kg)} kg · {signed(total.difference_percent)}%</b>}</div>
@@ -83,6 +85,7 @@ export default function BodyMapWorkspace({comparisonData,height=480,defaultMode=
   {selected&&<section className="segment-exercises"><h3>{SEGMENT_LABEL_KO[selected]} · 내 루틴의 관련 운동</h3>{recommended.length?recommended.map(ex=><div key={ex.motion_id}><ExercisePreview exercise={ex}/><Link to={`/health/routine#${ex.exercise_id}`}>{ex.exercise_name}</Link><p className="muted">{ex.reason}</p></div>):<p className="muted">현재 유효한 루틴에 관련 운동이 없습니다. <Link to="/health/routine">목표·경험·통증을 반영한 루틴 확인</Link></p>}</section>}
   {selected&&<button className="btn btn-ghost" onClick={()=>setDetails(true)}>원본 측정값 · 상세 보기</button>}
   <SegmentDetailPanel segment={details?selected:null} comparisonData={comparisonData} onClose={()=>setDetails(false)}/>
+ </>}
  </section>;
 }
 class SceneBoundary extends React.Component{

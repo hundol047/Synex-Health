@@ -56,6 +56,7 @@ export default function ProfilePage() {
   const confirmedHealth=useRef(null);
   const [heightInput, setHeightInput] = useState('');
   const [name,setName]=useState('');
+  const [birthDate,setBirthDate]=useState('');
   const [gender,setGender]=useState('unspecified');
   const [form, setForm] = useState(null);
   const [equipmentSet, setEquipmentSet] = useState(new Set());
@@ -67,9 +68,9 @@ export default function ProfilePage() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    if(profile.data)confirmedHealth.current={height:profile.data.height,gender:profile.data.gender};
+    if(profile.data)confirmedHealth.current={height:profile.data.height,gender:profile.data.gender,birth_date:profile.data.birth_date||null};
     if (profile.data?.height != null) setHeightInput(String(profile.data.height));
-    setGender(profile.data?.gender||'unspecified');setName(profile.data?.name||'');
+    setGender(profile.data?.gender||'unspecified');setName(profile.data?.name||'');setBirthDate(profile.data?.birth_date||'');
   }, [profile.data]);
 
   useEffect(() => {
@@ -96,7 +97,7 @@ export default function ProfilePage() {
     try {
       const heightNum = heightInput === '' ? null : Number(heightInput);
       const current=confirmedHealth.current||profile.data;
-      const health=current&&(heightNum!==current.height||gender!==current.gender||(LOCAL_ONLY&&name!==profile.data?.name))?{height:heightNum,gender,...(LOCAL_ONLY?{name}: {})}:null;
+      const health=current&&(heightNum!==current.height||gender!==current.gender||(LOCAL_ONLY&&(name!==profile.data?.name||(birthDate||null)!==current.birth_date)))?{height:heightNum,gender,...(LOCAL_ONLY?{name,birth_date:birthDate||null}: {})}:null;
       await saveProfileChanges(HealthAPI,health,{
         experience_level: form.experience_level,
         goal: form.goal,
@@ -144,7 +145,7 @@ export default function ProfilePage() {
           </div>
           <div>
             <label className="field-label">생년월일</label>
-            <p>{profile.data.birth_date || '측정되지 않음'}</p>
+            {LOCAL_ONLY?<><input aria-label="생년월일" className="text-input" type="date" min="1900-01-01" max={new Date().toISOString().slice(0,10)} value={birthDate} onChange={e=>setBirthDate(e.target.value)}/><p className="muted">측정일 기준 나이로 문헌 평균 대상 연령을 확인합니다.</p></>:<p>{profile.data.birth_date || '측정되지 않음'}</p>}
           </div>
           <div>
             <label className="field-label" htmlFor="height-input">키 (cm)</label>

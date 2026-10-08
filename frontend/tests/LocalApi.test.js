@@ -43,3 +43,13 @@ it('deletes device health data and fails visibly when storage is locked',async()
  expect((await loadLocalDocument()).measurements).toEqual([]);lockOffline();await expect(localApi('/api/health/profile')).rejects.toThrow('저장소');
  await bindOfflineAccount(LOCAL_ACCOUNT,LOCAL_NAMESPACE);
 });
+it('preserves body girths, bone/mineral fields and reference eligibility through encrypted restart',async()=>{
+ await expect(localApi('/api/health/profile',{birth_date:'2026-02-30'},{method:'PUT'})).rejects.toThrow('생년월일');
+ await localApi('/api/health/profile',{birth_date:'1996-01-01',gender:'female'},{method:'PUT'});
+ await expect(localApi('/api/body-composition',{...measurement,waist_circumference:0})).rejects.toThrow('허리둘레');
+ await expect(localApi('/api/body-composition',{...measurement,body_fat_percentage:90})).rejects.toThrow('합');
+ const values={...measurement,chest_circumference:90,waist_circumference:75,hip_circumference:96,bone_mass:2.4,mineral_mass:3};
+ await localApi('/api/body-composition',values);lockOffline();await bindOfflineAccount(LOCAL_ACCOUNT,LOCAL_NAMESPACE);
+ expect((await localApi('/api/body-map/latest')).body_profile.birth_date).toBe('1996-01-01');
+ expect((await localApi('/api/privacy/export')).measurements[0]).toMatchObject(values);
+});

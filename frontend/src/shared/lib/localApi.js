@@ -3,6 +3,7 @@ import schools from './localSchools.json';
 import {loadLocalDocument,saveLocalDocument} from './offline.js';
 import {secureUUID} from './uuid.js';
 import {LOCAL_ACCOUNT} from './localMode.js';
+import {ageAt} from '../../health/lib/publishedMuscleReference.js';
 const segments=['LEFT_ARM','RIGHT_ARM','TRUNK','LEFT_LEG','RIGHT_LEG'];
 const safety=['safety_chest_pain','safety_fainting','safety_breathlessness','safety_acute_injury','safety_medical_restriction'];
 const now=()=>new Date().toISOString();
@@ -16,6 +17,9 @@ function validateMeasurement(b){
  if(!/^\d{4}-\d{2}-\d{2}$/.test(b.measurement_date)||Number.isNaN(Date.parse(b.measurement_date))||new Date(b.measurement_date).toISOString().slice(0,10)!==b.measurement_date||b.measurement_date>localDate())fail('올바른 오늘 이전 측정일을 입력하세요.');
  numeric(b.weight,.1,500,'체중');numeric(b.skeletal_muscle_mass,0,b.weight,'골격근량');
  if(b.height!=null)numeric(b.height,50,250,'키');if(b.body_fat_percentage!=null)numeric(b.body_fat_percentage,0,100,'체지방률');
+ for(const [key,label] of [['chest_circumference','가슴둘레'],['waist_circumference','허리둘레'],['hip_circumference','엉덩이둘레']])if(b[key]!=null)numeric(b[key],30,250,label);
+ for(const [key,label] of [['bone_mass','추정 골량'],['mineral_mass','무기질량']])if(b[key]!=null)numeric(b[key],0,Math.min(20,b.weight),label);
+ if(b.body_fat_percentage!=null&&b.skeletal_muscle_mass+b.weight*b.body_fat_percentage/100>b.weight+.01)fail('골격근량과 체지방량의 합이 체중보다 큽니다. 결과지의 항목과 단위를 확인하세요.');
  const seen=new Set();for(const seg of b.segments||[]){if(!segments.includes(seg.segment)||seen.has(seg.segment))fail('측정 부위가 잘못되거나 중복되었습니다.');seen.add(seg.segment);for(const k of ['lean_mass_kg','fat_mass_kg','lean_reference_percent'])if(seg[k]!=null)numeric(seg[k],0,k.endsWith('_kg')?b.weight:1000,'부위 측정값');}
 }
 function review(s){for(const r of s.routines){r.needs_review=true;r.review_reason='측정값·운동 조건이 바뀌었습니다. 운동 전에 계획을 다시 생성하세요.';}}
@@ -23,7 +27,7 @@ function body(s){
  const m=measured(s),list=[...s.measurements].sort((a,b)=>a.measurement_date.localeCompare(b.measurement_date)||a.created_at.localeCompare(b.created_at)),prev=list.at(-2)||null;
  const delta=(a,b)=>a==null||b==null?null:Number((a-b).toFixed(2));
  const map=new Map((m.segments||[]).map(x=>[x.segment,x])),old=new Map((prev?.segments||[]).map(x=>[x.segment,x]));
- return {measurement:m,previous_measurement:prev,current_measurement_id:m.id,previous_measurement_id:prev?.id||null,body_profile:{gender:s.profile.gender,height_cm:m.height||s.profile.height,model_type:'illustrative_human',personal_scan:false},average_comparison:{groups:[],selected_group_id:null,selection_mode:'auto'},reference_comparison:Object.fromEntries(segments.map(id=>[id,{status:map.has(id)?'no_reference':'no_measurement'}])),top_level_deltas:Object.fromEntries(['weight','skeletal_muscle_mass','body_fat_percentage','body_fat_mass'].map(k=>[k+'_delta',delta(m[k],prev?.[k])])),left_right_balance:Object.fromEntries([['arm','LEFT_ARM','RIGHT_ARM'],['leg','LEFT_LEG','RIGHT_LEG']].map(([part,l,r])=>{const a=map.get(l)?.lean_mass_kg,b=map.get(r)?.lean_mass_kg;return [part,{left_kg:a??null,right_kg:b??null,diff_percent:a!=null&&b>0?Number(((a-b)/b*100).toFixed(1)):null}];})),segment_deltas:segments.map(id=>({segment:id,lean_mass_delta_kg:delta(map.get(id)?.lean_mass_kg,old.get(id)?.lean_mass_kg),fat_mass_delta_kg:delta(map.get(id)?.fat_mass_kg,old.get(id)?.fat_mass_kg)}))};
+ return {measurement:m,previous_measurement:prev,current_measurement_id:m.id,previous_measurement_id:prev?.id||null,body_profile:{gender:s.profile.gender,height_cm:m.height||s.profile.height,birth_date:s.profile.birth_date||null,model_type:'illustrative_human',personal_scan:false},average_comparison:{groups:[],selected_group_id:null,selection_mode:'auto'},reference_comparison:Object.fromEntries(segments.map(id=>[id,{status:map.has(id)?'no_reference':'no_measurement'}])),top_level_deltas:Object.fromEntries(['weight','skeletal_muscle_mass','body_fat_percentage','body_fat_mass'].map(k=>[k+'_delta',delta(m[k],prev?.[k])])),left_right_balance:Object.fromEntries([['arm','LEFT_ARM','RIGHT_ARM'],['leg','LEFT_LEG','RIGHT_LEG']].map(([part,l,r])=>{const a=map.get(l)?.lean_mass_kg,b=map.get(r)?.lean_mass_kg;return [part,{left_kg:a??null,right_kg:b??null,diff_percent:a!=null&&b>0?Number(((a-b)/b*100).toFixed(1)):null}];})),segment_deltas:segments.map(id=>({segment:id,lean_mass_delta_kg:delta(map.get(id)?.lean_mass_kg,old.get(id)?.lean_mass_kg),fat_mass_delta_kg:delta(map.get(id)?.fat_mass_kg,old.get(id)?.fat_mass_kg)}))};
 }
 export function generateLocalRoutine(s){
  const p=s.exercise,m=measured(s),recent=s.workouts.filter(w=>Date.now()-Date.parse(w.date)<7*86400000);
@@ -55,7 +59,7 @@ export function localApi(path,b,{method,signal}={}){
  const execute=async()=>{if(signal?.aborted)throw new DOMException('Aborted','AbortError');const s=await loadLocalDocument()||initial(),m=method||(b===undefined?'GET':'POST'),url=new URL(path,'https://device.invalid'),p=url.pathname;let result,write=false;
  const save=x=>{result=x;write=true;};
  if(p==='/api/health/status')result={status:'ok',service:'synex-health',demo:false,local:true};
- else if(p==='/api/health/profile'){if(m==='PUT'){if(b.height!=null)numeric(b.height,50,250,'키');if(b.gender&&!['male','female','unspecified'].includes(b.gender))fail('성별 값이 잘못되었습니다.');if(b.name!=null&&(typeof b.name!=='string'||b.name.length>30))fail('이름은 30자 이내로 입력하세요.');s.profile={...s.profile,...(b.name!=null?{name:b.name.trim()}:{}),height:Object.hasOwn(b,'height')?b.height:s.profile.height,gender:b.gender||s.profile.gender};review(s);save(s.profile);}else result=s.profile;}
+ else if(p==='/api/health/profile'){if(m==='PUT'){if(b.height!=null)numeric(b.height,50,250,'키');if(b.gender&&!['male','female','unspecified'].includes(b.gender))fail('성별 값이 잘못되었습니다.');if(b.name!=null&&(typeof b.name!=='string'||b.name.length>30))fail('이름은 30자 이내로 입력하세요.');if(b.birth_date!=null&&(b.birth_date<'1900-01-01'||ageAt(b.birth_date,localDate())==null))fail('올바른 오늘 이전 생년월일을 입력하세요.');s.profile={...s.profile,...(Object.hasOwn(b,'birth_date')?{birth_date:b.birth_date}:{}),...(b.name!=null?{name:b.name.trim()}:{}),height:Object.hasOwn(b,'height')?b.height:s.profile.height,gender:b.gender||s.profile.gender};review(s);save(s.profile);}else result=s.profile;}
  else if(p==='/api/exercise-profile'){if(m==='PUT'){const next={...s.exercise,...b};numeric(next.days_per_week,1,7,'운동 일수');if(!Number.isInteger(next.days_per_week))fail('운동 일수는 정수입니다.');numeric(next.minutes_per_session,10,180,'운동 시간');if(!['BEGINNER','INTERMEDIATE','ADVANCED'].includes(next.experience_level)||!['mixed','bodyweight','equipment'].includes(next.training_mode)||!['home','gym','outdoor'].includes(next.exercise_location))fail('운동 설정이 잘못되었습니다.');for(const k of ['available_equipment','limitations','preferences'])if(!Array.isArray(next[k])||next[k].some(x=>typeof x!=='string'))fail('운동 조건을 확인하세요.');s.exercise=next;review(s);save(next);}else result=s.exercise;}
  else if(p==='/api/schools')result=schools;
  else if(p==='/api/health/school-connection')result={verified:false,integration_status:'기기 전용 · 미연결'};
