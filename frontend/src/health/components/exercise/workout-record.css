@@ -100,3 +100,13 @@
 .set-record-editor > .btn {
  min-height: 44px;
 }
+
+/* Shared feedback keeps a plain white surface and clear blue focus. */
+.workout-feedback-fields{border-color:#dbe5f3;color:#172b4d}
+.workout-feedback-fields legend,.workout-feedback-grid>label,.set-record-row>strong,.set-record-row>label{color:#172b4d}
+.workout-feedback-grid .text-input,.set-record-row .text-input{background:#fff;border:1px solid #cbd5e1;border-radius:8px;color:#172b4d}
+.workout-feedback-grid .text-input:focus-visible,.set-record-row .text-input:focus-visible{border-color:#2563eb;outline:2px solid #bfdbfe;outline-offset:1px}
+.workout-feedback-grid>label:nth-child(2)>span{color:#9f1239}
+.workout-rpe-shortcuts .btn{background:#fff;border:1px solid #cbdcf2;color:#1d4ed8;box-shadow:none}
+.workout-rpe-shortcuts .btn[aria-pressed=true]{background:#2563eb;border-color:#2563eb;color:#fff}
+.set-record-editor .set-record-row{border-color:#dbe5f3}

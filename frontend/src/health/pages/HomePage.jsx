@@ -40,7 +40,7 @@ export default function HomePage() {
   const compositionMeasurement=bodyMap.data?.measurement||measurement.data;
   const published=publishedMuscleReference(compositionMeasurement,compositionProfile);
   const referenceMeasurement=useMemo(()=>published.available&&published.canOverlay?referenceMannequinMeasurement(compositionMeasurement,published.value):null,[compositionMeasurement,published.available,published.canOverlay,published.value]);
-  const previewMannequin=useMemo(()=>({referenceMeasurement,options:{showMy:true,showReference:!!referenceMeasurement,layout:'side-by-side',myOpacity:.38,referenceOpacity:.34}}),[referenceMeasurement]);
+  const previewMannequin=useMemo(()=>({referenceMeasurement,options:{showMy:true,showReference:!!referenceMeasurement,layout:'side-by-side',myOpacity:.66,referenceOpacity:.22}}),[referenceMeasurement]);
   const overlay=group?{myValues:valuesFor(bodyMap.data?.measurement,'lean'),referenceValues:referenceValues(group,'lean'),metric:'lean',options:{showMy:true,showReference:true,myOpacity:.85,referenceOpacity:.35,referenceStyle:'wireframe',myStyle:'surface'}}:null;
   const hasRoutine = !!routines.data?.length && !routines.data[0].needs_review;
   const nextStep = noMeasurement ? 0 : hasRoutine ? 2 : 1;

@@ -102,7 +102,7 @@ export function exerciseMaterials() {
     const top = THREE.MathUtils.smoothstep(height, .941, .961);
     const hem = gaussian(height, 0, .951, 0, .009, 1);
     const knit = (noise(x, y) - .5) * 3;
-    return [35 + 18 * top, 59 + 60 * top, 77 + 48 * top].map(channel => Math.round(channel * (1 - side * .035 - hem * .025) + knit * .22));
+    return [35 + 2 * top, 59 + 40 * top, 77 + 158 * top].map(channel => Math.round(channel * (1 - side * .035 - hem * .025) + knit * .22));
   }, true);
   const pores = localTexture(128, (x, y) => {
     const value = Math.round(232 + (noise(x, y) - .5) * 26);
@@ -120,7 +120,7 @@ export function exerciseMaterials() {
     new THREE.MeshPhysicalMaterial({ ...common, vertexColors: true, roughness: .78, roughnessMap: pores, bumpMap: pores, bumpScale: .002, clearcoat: 0, envMapIntensity: .7 }),
     new THREE.MeshStandardMaterial({ ...common, roughness: .9, map: tailored, normalMap: fabric, normalScale: new THREE.Vector2(.085, .085) }),
     new THREE.MeshStandardMaterial({ ...common, roughness: .94, map: tailored, normalMap: fabric, normalScale: new THREE.Vector2(.065, .065) }),
-    new THREE.MeshStandardMaterial({ ...common, color: '#dce3df', roughness: .84 }),
+    new THREE.MeshStandardMaterial({ ...common, color: '#f7faff', roughness: .84 }),
     new THREE.MeshStandardMaterial({ ...common, vertexColors: true, roughness: .9, bumpMap: hair, bumpScale: .0009, envMapIntensity: .55 }),
   ];
   let disposed = false;

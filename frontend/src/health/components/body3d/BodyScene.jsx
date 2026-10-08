@@ -30,7 +30,7 @@ export default function BodyScene({gender='unspecified',segmentColors,onSelect,s
     const damping=control.enableDamping;control.enableDamping=false;control.update();
     if(sharedCamera)sharedCamera.current.owner=sceneId;control.object.position.set(...positions[id]);control.target.set(0,0,0);control.update();control.enableDamping=damping;setView(id);
   }
-  return <div className={`body-scene ${mannequin?'mannequin-scene':''} ${paired?'mannequin-paired-scene':''}`} style={{height,position:'relative',borderRadius:'var(--radius)',overflow:'hidden',background:mannequin?'radial-gradient(ellipse at 50% 40%,#244457,#081826)':'radial-gradient(ellipse at 50% 40%,#fff,#edf0f3)'}}>
+  return <div className={`body-scene ${mannequin?'mannequin-scene':''} ${paired?'mannequin-paired-scene':''}`} style={{height,position:'relative',borderRadius:'var(--radius)',overflow:'hidden',background:mannequin?'radial-gradient(ellipse at 50% 40%,#fff,#eef5ff)':'radial-gradient(ellipse at 50% 40%,#fff,#edf0f3)'}}>
     {interactive&&<div style={{position:'absolute',top:10,left:10,zIndex:1,display:'flex',gap:4,flexWrap:'wrap'}}>
       {[['front','정면'],['back','후면'],['left','왼쪽'],['right','오른쪽']].map(([id,label])=><button type="button" aria-pressed={view===id} className={`btn ${view===id?'btn-primary':'btn-ghost'}`} style={{fontSize:'.72rem',padding:'6px 9px'}} key={id} onClick={()=>preset(id)}>{label}</button>)}
       <button className="btn btn-ghost" onClick={()=>preset('front')}>초기화</button>{!mannequin&&<><label>품질 <select aria-label="3D 품질" value={quality} onChange={e=>setQuality(e.target.value)}>{['High','Balanced','Low Power'].map(q=><option key={q}>{q}</option>)}</select></label><button className="btn btn-ghost" aria-pressed={lowPower} onClick={()=>setLowPower(v=>!v)}>저전력 모드 {lowPower?'켜짐':'꺼짐'}</button></>}
@@ -62,7 +62,7 @@ export default function BodyScene({gender='unspecified',segmentColors,onSelect,s
           onChange={()=>{if(canvas.current&&controls.current){if(sharedCamera&&sharedCamera.current.owner===sceneId)sharedCamera.current.position=controls.current.object.position.toArray();canvas.current.dataset.camera=controls.current.object.position.toArray().map(n=>n.toFixed(4)).join(',');}}}/>
       </Canvas>
     </Suspense>
-    {interactive&&<div style={{position:'absolute',bottom:10,left:0,right:0,textAlign:'center',pointerEvents:'none',fontSize:'.73rem',color:mannequin?'#a2bfce':'#536172'}}>드래그로 회전 · 두 손가락으로 확대 · 부위 터치로 선택</div>}
+    {interactive&&<div style={{position:'absolute',bottom:10,left:0,right:0,textAlign:'center',pointerEvents:'none',fontSize:'.73rem',color:mannequin?'#526c91':'#536172'}}>드래그로 회전 · 두 손가락으로 확대 · 부위 터치로 선택</div>}
   </div>;
 }
 
@@ -84,13 +84,13 @@ function RendererMonitor({performanceMode,quality,overlay,mannequin,canvas,lowPo
   if(perf.fallbackActive&&!lowPower)onSlow();
   let meshes=0,vertices=0;const layers=[];scene.traverse(o=>{if(o.isMesh){meshes++;vertices+=o.geometry?.attributes.position?.count||0;if(o.name==='my-muscle'||o.name==='reference-average'){
    const bounds=o.geometry.boundingBox,screenBounds=bounds?projectBounds(o,bounds,camera,size):undefined;
-   layers.push({name:o.name,opacity:o.material[1]?.opacity,wireframe:o.material[1]?.wireframe,geometryId:o.geometry.id,vertexCount:o.geometry.attributes.position.count,screenBounds,regions:o.geometry.userData.regions,regionPixels:import.meta.env.DEV?Object.fromEntries(Object.entries(o.geometry.userData.regions||{}).map(([key,r])=>{const v=o.localToWorld(new THREE.Vector3(...r.center)).project(camera);return [key,[(v.x+1)*size.width/2,(1-v.y)*size.height/2]];})):undefined});
+   layers.push({name:o.name,opacity:o.material[1]?.opacity,color:o.material[1]?.color?`#${o.material[1].color.getHexString()}`:undefined,wireframe:o.material[1]?.wireframe,geometryId:o.geometry.id,vertexCount:o.geometry.attributes.position.count,screenBounds,regions:o.geometry.userData.regions,regionPixels:import.meta.env.DEV?Object.fromEntries(Object.entries(o.geometry.userData.regions||{}).map(([key,r])=>{const v=o.localToWorld(new THREE.Vector3(...r.center)).project(camera);return [key,[(v.x+1)*size.width/2,(1-v.y)*size.height/2]];})):undefined});
   }}});
   const stats={performanceMode,quality,renderer:gl.getContext().getParameter(gl.getContext().RENDERER),webgl:gl.capabilities.isWebGL2?'WebGL 2':'WebGL 1',overlayAvailable:!!overlay,meshCount:meshes,vertices,...perf,fallbackActive:lowPower,overlayEnabled:!!overlay,mode:'contiguous demand frames; CPU render submission ms, not GPU time',geometryBuffers:gl.info.memory.geometries,layers};
   if(import.meta.env.DEV){stats.renderer=gl.getContext().getParameter(gl.getContext().RENDERER);if(canvas.current)canvas.current.dataset.overlay=JSON.stringify(stats);}
   // Record only render state, without body measurements, after the real draw.
   // This also verifies the two actual meshes in the packaged production app.
-  if(mannequin&&canvas.current)canvas.current.dataset.mannequin=JSON.stringify({layout:mannequin.options.layout,meshCount:meshes,layers:layers.map(({name,opacity,wireframe,geometryId,vertexCount,screenBounds})=>({name,opacity,wireframe,geometryId,vertexCount,screenBounds}))});
+  if(mannequin&&canvas.current)canvas.current.dataset.mannequin=JSON.stringify({layout:mannequin.options.layout,meshCount:meshes,layers:layers.map(({name,opacity,color,wireframe,geometryId,vertexCount,screenBounds})=>({name,opacity,color,wireframe,geometryId,vertexCount,screenBounds}))});
   recordRenderer(stats);
  },1);return null;
 }

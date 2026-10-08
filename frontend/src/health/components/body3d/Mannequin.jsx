@@ -27,15 +27,15 @@ export default function Mannequin({measurement,profile,referenceMeasurement,opti
  return <group name="composition-mannequin">
   {options.showReference&&reference&&<ComparisonBody offset={paired?.68*scale:0}>
    {options.skeleton&&(paired||!options.showMy)&&<MannequinSkeleton scale={scale}/>}
-   <Surface name="reference-average" positions={reference} color="#efbd81" opacity={options.referenceOpacity} wireframe={options.referenceWireframe} {...{selectedSegment,onSelect,onHover,clippingPlanes}}/>
-   {paired&&<Platform scale={scale} color="#bc8c59"/>}
+   <Surface name="reference-average" positions={reference} color="#789bcc" opacity={options.referenceOpacity} wireframe={options.referenceWireframe} {...{selectedSegment,onSelect,onHover,clippingPlanes}}/>
+   {paired&&<Platform scale={scale} color="#789bcc"/>}
   </ComparisonBody>}
   {options.showMy&&<ComparisonBody offset={paired?-.68*scale:0}>
    {options.skeleton&&<MannequinSkeleton scale={scale}/>}
-   <Surface name="my-muscle" positions={own} color="#48cfe1" opacity={options.myOpacity} {...{selectedSegment,onSelect,onHover,clippingPlanes}}/>
-   <Platform scale={scale} color="#7bb9c9"/>
+   <Surface name="my-muscle" positions={own} color="#2563eb" opacity={options.myOpacity} {...{selectedSegment,onSelect,onHover,clippingPlanes}}/>
+   <Platform scale={scale} color="#2563eb"/>
   </ComparisonBody>}
-  {!options.showMy&&reference&&<Platform scale={scale} color="#bc8c59"/>}
+  {!options.showMy&&reference&&<Platform scale={scale} color="#789bcc"/>}
  </group>;
 }
 // Offset each body along the camera's screen-right axis. They remain distinct
@@ -47,7 +47,7 @@ function ComparisonBody({offset,children}){
 }
 function Platform({scale,color}){
  return <>
-  <mesh position={[0,.002,0]} rotation={[-Math.PI/2,0,0]}><circleGeometry args={[.49*scale,64]}/><meshBasicMaterial color="#376071" transparent opacity={.13} depthWrite={false}/></mesh>
+  <mesh position={[0,.002,0]} rotation={[-Math.PI/2,0,0]}><circleGeometry args={[.49*scale,64]}/><meshBasicMaterial color={color} transparent opacity={.08} depthWrite={false}/></mesh>
   <mesh position={[0,.003,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[.49*scale,.494*scale,64]}/><meshBasicMaterial color={color} transparent opacity={.3} depthWrite={false}/></mesh>
  </>;
 }
@@ -65,7 +65,7 @@ function Surface({name,positions,color,opacity,wireframe=false,selectedSegment,o
  return <mesh name={name} geometry={geometry} renderOrder={name==='my-muscle'?2:1}
   onClick={e=>{if(e.delta>5)return;const r=region(e);if(r){e.stopPropagation();onSelect?.(r);}}}
   onPointerMove={e=>onHover?.(region(e))} onPointerOut={()=>onHover?.(null)}>
-  {names.map((r,i)=><meshPhysicalMaterial key={i} attach={`material-${i}`} color={selectedSegment===r?'#e5faff':color}
+  {names.map((r,i)=><meshPhysicalMaterial key={i} attach={`material-${i}`} color={selectedSegment===r?'#dbeafe':color}
    roughness={.42} metalness={0} clearcoat={.25} clearcoatRoughness={.4} emissive={color} emissiveIntensity={.04}
    transparent opacity={opacity*(selectedSegment&&r&&selectedSegment!==r?.4:1)} depthWrite={false} side={THREE.FrontSide}
    wireframe={wireframe} clippingPlanes={clippingPlanes} polygonOffset polygonOffsetFactor={name==='my-muscle'?-1:1}/>) }
@@ -73,7 +73,7 @@ function Surface({name,positions,color,opacity,wireframe=false,selectedSegment,o
 }
 function Bone({a,b,radius=.011}){
  const transform=useMemo(()=>{const start=new THREE.Vector3(...a),end=new THREE.Vector3(...b);return {position:start.clone().add(end).multiplyScalar(.5),length:start.distanceTo(end),quaternion:new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),end.sub(start).normalize())};},[a,b]);
- return <mesh position={transform.position} quaternion={transform.quaternion}><capsuleGeometry args={[radius,Math.max(.001,transform.length-2*radius),4,8]}/><meshStandardMaterial color="#d3e3e6" roughness={.5}/></mesh>;
+ return <mesh position={transform.position} quaternion={transform.quaternion}><capsuleGeometry args={[radius,Math.max(.001,transform.length-2*radius),4,8]}/><meshStandardMaterial color="#7895bf" roughness={.5}/></mesh>;
 }
 function MannequinSkeleton({scale}){
  const bones=[[[0,1.48,0],[0,1.02,0]],[[0,1.42,0],[.24,1.42,0]],[[0,1.42,0],[-.24,1.42,0]]];
@@ -84,8 +84,8 @@ function MannequinSkeleton({scale}){
  }
  return <group name="illustrative-skeleton" scale={scale}>
   {bones.map(([a,b],i)=><Bone key={i} a={a} b={b}/>)}
-  {joints.map((p,i)=><mesh key={i} position={p}><sphereGeometry args={[.016,10,8]}/><meshStandardMaterial color="#d3e3e6"/></mesh>)}
-  {[1.18,1.23,1.28,1.33,1.38].map((y,i)=><Line key={y} points={Array.from({length:25},(_,j)=>{const t=j/24*Math.PI*2;return [Math.cos(t)*(.12+i*.006),y+Math.sin(t)*.025,Math.sin(t)*.075];})} color="#d3e3e6" lineWidth={1.4}/>)}
-  <Line points={[[.13,1.03,0],[.11,.96,.035],[0,.94,.05],[-.11,.96,.035],[-.13,1.03,0],[0,1.01,-.06],[.13,1.03,0]]} color="#d3e3e6" lineWidth={3}/>
+  {joints.map((p,i)=><mesh key={i} position={p}><sphereGeometry args={[.016,10,8]}/><meshStandardMaterial color="#7895bf"/></mesh>)}
+  {[1.18,1.23,1.28,1.33,1.38].map((y,i)=><Line key={y} points={Array.from({length:25},(_,j)=>{const t=j/24*Math.PI*2;return [Math.cos(t)*(.12+i*.006),y+Math.sin(t)*.025,Math.sin(t)*.075];})} color="#7895bf" lineWidth={1.4}/>)}
+  <Line points={[[.13,1.03,0],[.11,.96,.035],[0,.94,.05],[-.11,.96,.035],[-.13,1.03,0],[0,1.01,-.06],[.13,1.03,0]]} color="#7895bf" lineWidth={3}/>
  </group>;
 }

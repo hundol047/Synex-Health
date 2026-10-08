@@ -10,7 +10,11 @@ The existing CC0 MakeHuman topology has smooth, bounded composition deformation
 and continuous torso-girth constraints. This translucent anatomical illustration
 is independent of the dressed exercise avatar. Fat and muscle affect different
 envelopes; height sets scale. Girth constraints use triangle/plane perimeter
-lengths. Rotation, zoom, region selection, opacity, reference layers and an
+lengths. The personal view and home preview use blue on white: the personal
+surface is blue at opacity 0.66 (34% transparent), and the literature-reference
+surface is pale blue at opacity 0.22 (78% transparent). They appear side by side
+by default, with matching labels and independently adjustable transparency.
+Rotation, zoom, region selection, opacity, reference layers and an
 illustrative skeleton are available. Demand rendering pauses in the background.
 
 This is **not a 3D scan or a validated anatomical reconstruction**. Composition

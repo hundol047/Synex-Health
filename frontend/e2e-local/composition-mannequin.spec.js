@@ -25,7 +25,7 @@ test('InBody inputs restore and render two distinct translucent mannequins offli
  await expect.poll(async()=>{try{return (await stats(page)).layers.length;}catch{return 0;}},{timeout:30000}).toBe(2);
  const initial=await stats(page);expect(initial.layers.map(l=>l.name).sort()).toEqual(['my-muscle','reference-average']);
  expect(initial.layout).toBe('side-by-side');await expectSeparatedBodies(page);
- expect(initial.layers.find(l=>l.name==='my-muscle').opacity).toBe(.38);expect(initial.layers.find(l=>l.name==='reference-average').opacity).toBe(.34);
+ expect(initial.layers.find(l=>l.name==='my-muscle')).toMatchObject({opacity:.66,color:'#2563eb'});expect(initial.layers.find(l=>l.name==='reference-average')).toMatchObject({opacity:.22,color:'#789bcc'});
  expect(initial.layers.every(l=>l.opacity>0&&l.opacity<1&&!l.wireframe)).toBe(true);
  await expect(page.locator('.mannequin-mass-comparison')).toContainText('33');await expect(page.locator('.mannequin-stats')).toContainText('추정 골량');await expect(page.locator('.mannequin-stats')).toContainText('3.7');
  await page.locator('.mannequin-scene').scrollIntoViewIfNeeded();await page.getByRole('button',{name:'후면',exact:true}).click();
@@ -34,7 +34,7 @@ test('InBody inputs restore and render two distinct translucent mannequins offli
  await page.getByText('투명도 · 골격 · 표현 설정').click();await page.getByLabel('내 마네킹 투명도').fill('80');await page.getByLabel('평균 마네킹 투명도').fill('75');await page.getByRole('button',{name:'후면',exact:true}).click();
  await expect.poll(async()=>(await stats(page)).layers.find(l=>l.name==='my-muscle').opacity).toBe(.2);await expect.poll(async()=>(await stats(page)).layers.find(l=>l.name==='reference-average').opacity).toBe(.25);
  await page.getByRole('checkbox',{name:/골격 구조 보기/}).check();await page.getByRole('button',{name:'정면',exact:true}).click();await expect.poll(async()=>(await stats(page)).meshCount).toBeGreaterThan(20);
- await page.getByRole('checkbox',{name:/골격 구조 보기/}).uncheck();await page.getByLabel('내 마네킹 투명도').fill('62');await page.getByLabel('평균 마네킹 투명도').fill('66');await page.getByText('투명도 · 골격 · 표현 설정').click();
+ await page.getByRole('checkbox',{name:/골격 구조 보기/}).uncheck();await page.getByLabel('내 마네킹 투명도').fill('34');await page.getByLabel('평균 마네킹 투명도').fill('78');await page.getByText('투명도 · 골격 · 표현 설정').click();
  for(const viewport of [{width:393,height:852},{width:360,height:640}]){
   await page.setViewportSize(viewport);await page.getByRole('button',{name:'정면',exact:true}).click();await expectSeparatedBodies(page);await page.locator('.mannequin-scene').evaluate(el=>el.scrollIntoView({block:'center'}));await page.waitForTimeout(400);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
@@ -51,6 +51,7 @@ test('InBody inputs restore and render two distinct translucent mannequins offli
  await expect(page.locator('.mannequin-stats')).toContainText('3.7');
  await page.goto('/health');await page.getByRole('button',{name:'3D 미리보기 열기',exact:true}).click();await expectSeparatedBodies(page);
  await expect(page.locator('.home-body-card .body-scene button')).toHaveCount(0);
+ const home=await stats(page);expect(home.layers.find(l=>l.name==='my-muscle')).toMatchObject({opacity:.66,color:'#2563eb'});expect(home.layers.find(l=>l.name==='reference-average')).toMatchObject({opacity:.22,color:'#789bcc'});
  expect(requests).toEqual([]);expect(errors).toEqual([]);
 });
 test('average appears only after actual eligible profile inputs and remains separate in 3D',async({page})=>{

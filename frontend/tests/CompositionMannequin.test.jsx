@@ -42,7 +42,7 @@ it('shows provenance and composition, toggles actual layers, and keeps own body 
  const user=userEvent.setup();const view=render(<MemoryRouter><CompositionMannequin comparisonData={{measurement,body_profile:profile}}/></MemoryRouter>);
  expect(screen.getByText('골격근량')).toBeTruthy();expect(screen.getByText(/전신 MRI/)).toBeTruthy();expect(scene.mock.lastCall[0].mannequin.referenceMeasurement.skeletal_muscle_mass).toBe(33);
  expect(screen.getByRole('button',{name:'나란히 비교',exact:true}).getAttribute('aria-pressed')).toBe('true');
- expect(scene.mock.lastCall[0].mannequin.options).toMatchObject({layout:'side-by-side',showMy:true,showReference:true,myOpacity:.38,referenceOpacity:.34});
+ expect(scene.mock.lastCall[0].mannequin.options).toMatchObject({layout:'side-by-side',showMy:true,showReference:true,myOpacity:.66,referenceOpacity:.22});
  expect(screen.getByText(/왼쪽은 내 몸, 오른쪽은 문헌 평균/)).toBeTruthy();
  await user.click(screen.getByRole('button',{name:'내 몸만',exact:true}));expect(scene.mock.lastCall[0].mannequin.options.showReference).toBe(false);
  await user.click(screen.getByText('투명도 · 골격 · 표현 설정'));await user.click(screen.getByRole('checkbox',{name:/골격 구조 보기/}));expect(scene.mock.lastCall[0].mannequin.options.skeleton).toBe(true);
@@ -55,7 +55,7 @@ it('shows provenance and composition, toggles actual layers, and keeps own body 
 it('higher displayed transparency makes both actual materials less opaque',async()=>{
  const user=userEvent.setup();render(<MemoryRouter><CompositionMannequin comparisonData={{measurement,body_profile:profile}}/></MemoryRouter>);
  await user.click(screen.getByText('투명도 · 골격 · 표현 설정'));
- expect(screen.getByLabelText('내 마네킹 투명도').value).toBe('62');expect(screen.getByLabelText('평균 마네킹 투명도').value).toBe('66');
+ expect(screen.getByLabelText('내 마네킹 투명도').value).toBe('34');expect(screen.getByLabelText('평균 마네킹 투명도').value).toBe('78');
  fireEvent.change(screen.getByLabelText('내 마네킹 투명도'),{target:{value:'80'}});fireEvent.change(screen.getByLabelText('평균 마네킹 투명도'),{target:{value:'75'}});
  expect(scene.mock.lastCall[0].mannequin.options).toMatchObject({myOpacity:.2,referenceOpacity:.25});
  expect(screen.getByText('내 몸 투명도 80%')).toBeTruthy();

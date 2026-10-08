@@ -1,10 +1,10 @@
 .coach-recording-actions{display:flex;align-items:center;gap:8px;margin-top:8px}
-.coach-capability-note{font-size:10px;line-height:1.4;color:#607b80;margin:0 0 6px}
-.coach-recording-actions .btn{min-height:44px;border-radius:10px;font-size:12px;gap:6px;flex:1;padding:8px}
+.coach-capability-note{font-size:10px;line-height:1.4;color:#64748b;margin:0 0 6px}
+.coach-recording-actions .btn{min-height:44px;border-radius:10px;font-size:12px;gap:6px;flex:1;padding:8px;box-shadow:none}
 .coach-recording-actions .coach-record-button{background:#bd413b;color:#fff;border-color:#bd413b;font-weight:700}
 .coach-recording-actions .coach-record-button.is-recording{background:#fff0ed;border-color:#bd413b;color:#9a332e}
-.coach-recording-meta{font-size:10px;line-height:1.4;color:#607b80;min-width:104px;flex:0 0 104px}
-.coach-recording-status{font-size:10px;line-height:1.5;color:#187f80;margin:5px 0 0;overflow-wrap:anywhere}
+.coach-recording-meta{font-size:10px;line-height:1.4;color:#64748b;min-width:104px;flex:0 0 104px}
+.coach-recording-status{font-size:10px;line-height:1.5;color:#2563eb;margin:5px 0 0;overflow-wrap:anywhere}
 .coach-recording-save-actions{display:flex;gap:6px;flex:1}
 .coach-recording-save-actions .btn{min-width:0}
 .coach-recording-save-actions .coach-discard{flex:0 0 44px;min-width:44px;padding:7px}
