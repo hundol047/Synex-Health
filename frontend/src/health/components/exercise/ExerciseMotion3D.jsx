@@ -8,6 +8,7 @@ import { exerciseAvatarGeometry, exerciseMaterials } from './exerciseAppearance.
 import ExerciseEquipment from './ExerciseEquipment.jsx';
 import { exerciseCameraPreset } from './exerciseCamera.js';
 import { calibrateGripScale, gripSurface } from './exerciseGrip.js';
+import { calibrateWallSupport } from './wallSupportCalibration.js';
 import { personalizedVertices, sportswear } from '../body3d/avatar.js';
 import { morphPositions, morphParameters } from '../body3d/morph.js';
 import { bindSurface, calibratePalmRoll, deformSurface, poseJoints, REST } from './rig.js';
@@ -59,6 +60,7 @@ function Athlete({ motion, progress, mirror, measurement, profile, compact }) {
     const flat = morphPositions(Float32Array.from(REST.flat()), measurement, profile);
     const rest = REST.map((_, i) => Array.from(flat.slice(i * 3, i * 3 + 3)));
     rest.handGripScale = calibrateGripScale(wear.positions, weights, rest);
+    rest.wallSupport = calibrateWallSupport(wear.positions, weights, rest);
     return { base: wear.positions, weights, rest, scale, palmRoll: calibratePalmRoll(wear.positions, weights, rest), geometry: exerciseAvatarGeometry(wear, scale), appearance: exerciseMaterials(), shoes: footwearAnchors(base) };
   }, [measurement, profile]);
   const joints = useMemo(() => {

@@ -29,11 +29,11 @@
       "name": "벽 푸시업",
       "file": "wall_push.webp",
       "phase": 0.43,
-      "view": "45",
+      "view": "side",
       "width": 508,
       "height": 430,
-      "bytes": 6760,
-      "sha256": "d5bcfaa6e400426fdc9d06690908bd6aa02babbf211572272e0d27f7298a2ac1"
+      "bytes": 5682,
+      "sha256": "5b476fa37c25a83d8820c71c0409113368682c602d7527c4679bf7520efedb35"
     },
     {
       "id": "pushup",
@@ -315,11 +315,11 @@
       "name": "벽 잡고 종아리 늘리기",
       "file": "calf_stretch.webp",
       "phase": 0.43,
-      "view": "45",
+      "view": "side",
       "width": 508,
       "height": 430,
-      "bytes": 6398,
-      "sha256": "0cf4d9cb5a0a9e5177791073a94f6dc9e31d62ae19bd171be18400eb7935364d"
+      "bytes": 6570,
+      "sha256": "fb45d82cbde3d923b42239454fcdb818f73ee620b98b8a94458b753201b07b9e"
     },
     {
       "id": "triceps_extension",
@@ -392,11 +392,11 @@
       "name": "좁게 벽 푸시업",
       "file": "close_wall_push.webp",
       "phase": 0.43,
-      "view": "45",
+      "view": "side",
       "width": 508,
       "height": 430,
-      "bytes": 6460,
-      "sha256": "85b623384d6e719cd799e34592ebc43dddc974d30cbc36825d3f41d86da6ac59"
+      "bytes": 5600,
+      "sha256": "891a79873f69ec661ce2d289c0bcea1c4a4c0a8bc817bd619dc6ed5d56a151ed"
     },
     {
       "id": "dumbbell_row",
@@ -458,11 +458,11 @@
       "name": "벽 터치 힙 힌지",
       "file": "wall_hinge.webp",
       "phase": 0.43,
-      "view": "45",
+      "view": "side",
       "width": 508,
       "height": 430,
-      "bytes": 7300,
-      "sha256": "b7f8037b42bf83a100b9c91275b09fbd309595aa6cc8052e462389104a2d0c64"
+      "bytes": 5970,
+      "sha256": "15d38bdffeccebc60c5a73d293ef06ad80c927b35809f4ce018039e5ef03d589"
     },
     {
       "id": "seated_calf",
@@ -513,11 +513,11 @@
       "name": "벽 기대 앉기",
       "file": "wall_sit.webp",
       "phase": 0,
-      "view": "45",
+      "view": "side",
       "width": 508,
       "height": 430,
-      "bytes": 8442,
-      "sha256": "55fcdeaf6da3a4334d8ea8ba1e8d41aab297b26b95feff0e788515756f5e91f9"
+      "bytes": 5712,
+      "sha256": "32549acdc60bc9066049d8c45841d76f1d1b334952c86127707dd00278387606"
     },
     {
       "id": "knee_side_plank",

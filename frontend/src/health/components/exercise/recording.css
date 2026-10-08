@@ -1,0 +1,16 @@
+.coach-recording-actions{display:flex;align-items:center;gap:8px;margin-top:8px}
+.coach-capability-note{font-size:10px;line-height:1.4;color:#607b80;margin:0 0 6px}
+.coach-recording-actions .btn{min-height:44px;border-radius:10px;font-size:12px;gap:6px;flex:1;padding:8px}
+.coach-recording-actions .coach-record-button{background:#bd413b;color:#fff;border-color:#bd413b;font-weight:700}
+.coach-recording-actions .coach-record-button.is-recording{background:#fff0ed;border-color:#bd413b;color:#9a332e}
+.coach-recording-meta{font-size:10px;line-height:1.4;color:#607b80;min-width:104px;flex:0 0 104px}
+.coach-recording-status{font-size:10px;line-height:1.5;color:#187f80;margin:5px 0 0;overflow-wrap:anywhere}
+.coach-recording-save-actions{display:flex;gap:6px;flex:1}
+.coach-recording-save-actions .btn{min-width:0}
+.coach-recording-save-actions .coach-discard{flex:0 0 44px;min-width:44px;padding:7px}
+.coach-feed .coach-recorded-video{transform:none!important;z-index:1;pointer-events:auto}
+.coach-recording-badge{position:absolute;z-index:2;right:10px;top:10px;background:#8e241fdd;color:#fff;padding:5px 8px;border-radius:6px;font-size:11px;font-variant-numeric:tabular-nums;pointer-events:none}
+.pose-coach-page .coach-recording-actions .btn{min-height:44px;font-size:11px}
+.pose-coach-page .coach-recording-actions{margin-top:7px}
+@media(max-width:380px){.coach-recording-actions{gap:6px}.coach-recording-meta{min-width:88px;flex-basis:88px;font-size:9px}.coach-recording-save-actions .btn{padding:7px 5px;gap:4px;font-size:10px}}
+@media(max-height:700px) and (orientation:portrait){.pose-coach-page{height:auto;min-height:100svh;overflow:visible}.pose-coach-page .camera-coaching-immersive{grid-template-rows:minmax(500px,1fr) auto}.pose-coach-page .coach-stage{min-height:500px}}

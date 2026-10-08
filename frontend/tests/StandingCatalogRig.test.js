@@ -6,6 +6,7 @@ import mesh from '../src/health/components/body3d/assets/human-mesh.json';
 import { personalizedVertices, sportswear } from '../src/health/components/body3d/avatar.js';
 import { morphPositions } from '../src/health/components/body3d/morph.js';
 import { standingCatalogPose as pose, STANDING_CATALOG_IDS } from '../src/health/components/exercise/standingCatalogRig.js';
+import { calibrateWallSupport } from '../src/health/components/exercise/wallSupportCalibration.js';
 
 const distance = (a, b) => Math.hypot(...a.map((value, index) => value - b[index]));
 const frames = Array.from({ length: 81 }, (_, i) => i / 80);
@@ -52,11 +53,15 @@ describe('standing and chair catalog anatomy', () => {
   it('faces actual hand surfaces toward the wall while keeping fingertips upright', () => {
     for (const gender of ['male', 'female']) {
       const base = Float32Array.from(mesh.profiles[gender], value => value * mesh.scale), weights = bindSurface(base);
+      const rest = REST.map(point => point.slice());
+      rest.wallSupport = calibrateWallSupport(base, weights, rest);
       for (const id of ['wall_push', 'close_wall_push', 'calf_stretch']) for (const t of [0, .5]) {
-        const current = pose(id, t, REST), surface = deformSurface(base, weights, current, new Float32Array(base.length), REST, false);
+        const current = pose(id, t, rest), surface = deformSurface(base, weights, current, new Float32Array(base.length), rest, false);
         for (const [bone, wrist, finger] of [[12, 5, 17], [13, 8, 18]]) {
           let closest = -Infinity;
-          for (let index = 0; index < weights.length; index++) if (weights[index].some(([b, weight]) => b === bone && weight > .8)) closest = Math.max(closest, surface[index * 3 + 2]);
+          // Wrist blend vertices belong to the contact skin too; checking only
+          // almost-rigid palm vertices missed the original wall penetration.
+          for (let index = 0; index < weights.length; index++) if (weights[index].some(([b, weight]) => b === bone && weight > .1)) closest = Math.max(closest, surface[index * 3 + 2]);
           expect(closest - current.equipment.wallZ, `${gender}/${id} palm penetration`).toBeLessThan(.025);
           expect(current.equipment.wallZ - closest, `${gender}/${id} palm gap`).toBeLessThan(.025);
           expect(current[finger][1] - current[wrist][1]).toBeGreaterThan(.2);

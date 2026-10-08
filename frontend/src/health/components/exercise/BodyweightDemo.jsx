@@ -24,7 +24,7 @@ export default function BodyweightDemo({ exerciseId, compact = true, paused = fa
     const renderInterval = 1000 / 24;
     const animate = time => {
       if (last != null && !document.hidden) {
-        progressRef.current = (progressRef.current + Math.min(time - last, 80) * speed / (exerciseId === 'lunge' || exerciseId === 'side_lunge' ? 10000 : 6000)) % 1;
+        progressRef.current = (progressRef.current + Math.min(time - last, 80) * speed / (guide.durationMs || (exerciseId === 'lunge' || exerciseId === 'side_lunge' ? 10000 : 6000))) % 1;
         const elapsed = time - renderedAt;
         if (elapsed + 1e-6 >= renderInterval) {
           setProgress(progressRef.current);

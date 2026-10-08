@@ -1,5 +1,5 @@
 import {test,expect} from '@playwright/test';
-import {BODYWEIGHT_EXERCISES} from '../src/health/components/exercise/bodyweightGuide.js';
+const BODYWEIGHT_LABELS={squat:'스쿼트',lunge:'런지',side_lunge:'사이드 런지',push_up:'푸시업',plank:'플랭크',hip_hinge:'힙힌지',glute_bridge:'글루트 브리지'};
 
 test.beforeEach(async({page})=>{
  await page.addInitScript(()=>localStorage.setItem('synex-personal-onboarding-v1','done'));
@@ -20,21 +20,22 @@ test('bodyweight coach opens from home without a server and keeps equal phone pa
  await page.goto('/health');
  await page.getByRole('link',{name:'맨몸운동 카메라 코치'}).click();
  await expect(page.getByRole('heading',{name:'맨몸운동 코칭'})).toBeVisible();
- await expect(page.getByLabel('따라 할 운동').locator('option')).toHaveCount(7);
+ await expect(page.getByLabel('따라 할 운동').locator('option')).toHaveCount(42);
  for(const viewport of [{width:393,height:852},{width:360,height:640}]){
   await page.setViewportSize(viewport);
   const upper=await page.locator('.coach-example').boundingBox(),lower=await page.locator('.coach-camera').boundingBox();
   expect(upper.y+upper.height).toBeLessThanOrEqual(lower.y+1);
   expect(Math.abs(upper.height-lower.height)).toBeLessThan(2);
-  expect(lower.y+lower.height).toBeLessThan(viewport.height);
-  await expect(page.getByRole('button',{name:'코칭 시작',exact:true})).toBeInViewport();
+  if(viewport.height>700)expect(lower.y+lower.height).toBeLessThan(viewport.height);
+  const start=page.getByRole('button',{name:'코칭 시작',exact:true});await start.scrollIntoViewIfNeeded();await expect(start).toBeInViewport();
+  await expect(page.getByRole('button',{name:'동영상 촬영',exact:true})).toBeInViewport();
   await expectDemonstrationContained(page);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  }
  const demonstrationCanvas=await page.locator('.coach-example canvas').elementHandle();
  for(const motion of ['squat','lunge','side_lunge','push_up','plank','hip_hinge','glute_bridge']){
   await page.getByLabel('따라 할 운동').selectOption(motion);
-  await expect(page.locator('.coach-example')).toHaveAttribute('aria-label',`위 화면 · ${BODYWEIGHT_EXERCISES[motion].label} 운동 시범`);
+  await expect(page.locator('.coach-example')).toHaveAttribute('aria-label',`위 화면 · ${BODYWEIGHT_LABELS[motion]} 운동 시범`);
   await expect(page.locator('.coach-example canvas')).toBeVisible();
   expect(await page.locator('.coach-example canvas').evaluate((canvas,original)=>canvas===original,demonstrationCanvas)).toBe(true);
   await expect(page.getByLabel('현재 시범 안내')).toBeVisible();

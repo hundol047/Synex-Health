@@ -1,5 +1,5 @@
 import {LOCAL_ONLY} from '../../shared/lib/localMode.js';
-import React, { useCallback, useState, lazy, Suspense } from 'react';
+import React, { useCallback, useMemo, useState, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, Camera, PersonStanding, Activity, ClipboardCheck, Dumbbell, Check } from 'lucide-react';
 import { HealthAPI } from '../../shared/lib/api.js';
@@ -7,6 +7,7 @@ import { Card, StatTile, Skeleton, EmptyState, ErrorState, DemoBadge, Disclaimer
 import ReferenceSource from '../components/body3d/ReferenceSource.jsx';
 import {signed,valuesFor,referenceValues} from '../components/body3d/overlayMath.js';
 import {publishedMuscleReference} from '../lib/publishedMuscleReference.js';
+import {referenceMannequinMeasurement} from '../components/body3d/mannequinMath.js';
 const BodyScene=lazy(()=>import('../components/body3d/BodyScene.jsx'));
 import { colorsForMode } from '../lib/bodyMapColors.js';
 import { useApiData } from '../lib/useApiData.js';
@@ -35,7 +36,11 @@ export default function HomePage() {
   const average=bodyMap.data?.average_comparison;
   const group=average?.groups?.find(g=>g.id===average.selected_group_id);
   const total=group?.totals?.skeletal_muscle_mass;
-  const published=publishedMuscleReference(measurement.data,{...bodyMap.data?.body_profile,birth_date:profile.data?.birth_date});
+  const compositionProfile=useMemo(()=>({...bodyMap.data?.body_profile,...profile.data}),[bodyMap.data?.body_profile,profile.data]);
+  const compositionMeasurement=bodyMap.data?.measurement||measurement.data;
+  const published=publishedMuscleReference(compositionMeasurement,compositionProfile);
+  const referenceMeasurement=useMemo(()=>published.available&&published.canOverlay?referenceMannequinMeasurement(compositionMeasurement,published.value):null,[compositionMeasurement,published.available,published.canOverlay,published.value]);
+  const previewMannequin=useMemo(()=>({referenceMeasurement,options:{showMy:true,showReference:!!referenceMeasurement,layout:'side-by-side',myOpacity:.38,referenceOpacity:.34}}),[referenceMeasurement]);
   const overlay=group?{myValues:valuesFor(bodyMap.data?.measurement,'lean'),referenceValues:referenceValues(group,'lean'),metric:'lean',options:{showMy:true,showReference:true,myOpacity:.85,referenceOpacity:.35,referenceStyle:'wireframe',myStyle:'surface'}}:null;
   const hasRoutine = !!routines.data?.length && !routines.data[0].needs_review;
   const nextStep = noMeasurement ? 0 : hasRoutine ? 2 : 1;
@@ -51,10 +56,10 @@ export default function HomePage() {
       {LOCAL_ONLY&&<div className="home-feature-grid">
         <Link className="home-feature home-feature-coach" to="/health/pose" aria-label="맨몸운동 카메라 코치">
           <div className="home-feature-top"><span className="home-feature-icon"><Camera size={24}/></span><ArrowUpRight size={20} aria-hidden="true"/></div>
-          <span className="home-feature-kicker">7가지 맨몸운동</span>
-          <strong>맨몸운동<br/>카메라 코치</strong>
-          <p>위에서 자세를 보고<br/>아래에서 직접 따라 하세요.</p>
-          <span className="home-feature-action">코칭 열기 <ArrowUpRight size={15}/></span>
+          <span className="home-feature-kicker">촬영 42종 · 실시간 교정 7종</span>
+          <strong>맨몸운동<br/>촬영·자세 교정</strong>
+          <p>위에서 운동 방법을 보고<br/>아래에서 내 동작을 촬영하세요.</p>
+          <span className="home-feature-action">촬영 열기 <ArrowUpRight size={15}/></span>
         </Link>
         <Link className="home-feature home-feature-body" to="/health/body" aria-label="내 3D 마네킹 보기">
           <div className="home-feature-top"><span className="home-feature-icon"><PersonStanding size={24}/></span><ArrowUpRight size={20} aria-hidden="true"/></div>
@@ -115,7 +120,7 @@ export default function HomePage() {
           {bodyMap.loading ? (
             <Skeleton height={200} />
           ) : bodyMap.data ? (
-            <>{LOCAL_ONLY&&<p>문헌 평균 골격근량 {published.available?`${published.value}kg (${profile.data?.gender==='female'?'성인 여성':'성인 남성'} · MRI 연구)`:"프로필의 성별·생년월일 설정 후 비교"}</p>}<p>내 골격근량 {measurement.data?.skeletal_muscle_mass??'—'} kg {!LOCAL_ONLY&&<>· 비교군 평균 {total?.reference_value??'자료 없음'}{total?.reference_value!=null?' kg':''}</>}</p>{total?.difference_kg!=null&&<p>{signed(total.difference_kg)} kg · {signed(total.difference_percent)}%</p>}<button type="button" className="btn btn-secondary" aria-expanded={showPreview} onClick={()=>setShowPreview(v=>!v)}>{showPreview?'3D 미리보기 닫기':'3D 미리보기 열기'}</button>{showPreview&&<Suspense fallback={<Skeleton height={200}/>}><BodyScene overlay={LOCAL_ONLY?null:overlay} mannequin={LOCAL_ONLY?{options:{showMy:true,showReference:false,myOpacity:.6}}:null} gender={bodyMap.data.body_profile?.gender} profile={bodyMap.data.body_profile} measurement={bodyMap.data.measurement} segmentColors={{}} height={200} interactive={false} /></Suspense>}{!LOCAL_ONLY&&<ReferenceSource group={group}/>}</>
+            <>{LOCAL_ONLY&&<p>문헌 평균 골격근량 {published.available?`${published.value}kg (${compositionProfile.gender==='female'?'성인 여성':'성인 남성'} · MRI 연구)`:"프로필의 성별·생년월일 설정 후 비교"}</p>}<p>내 골격근량 {measurement.data?.skeletal_muscle_mass??'—'} kg {!LOCAL_ONLY&&<>· 비교군 평균 {total?.reference_value??'자료 없음'}{total?.reference_value!=null?' kg':''}</>}</p>{total?.difference_kg!=null&&<p>{signed(total.difference_kg)} kg · {signed(total.difference_percent)}%</p>}<button type="button" className="btn btn-secondary" aria-expanded={showPreview} onClick={()=>setShowPreview(v=>!v)}>{showPreview?'3D 미리보기 닫기':'3D 미리보기 열기'}</button>{showPreview&&<Suspense fallback={<Skeleton height={200}/>}><BodyScene overlay={LOCAL_ONLY?null:overlay} mannequin={LOCAL_ONLY?previewMannequin:null} gender={compositionProfile.gender} profile={compositionProfile} measurement={compositionMeasurement} segmentColors={{}} height={LOCAL_ONLY?300:200} interactive={false} /></Suspense>}{LOCAL_ONLY&&showPreview&&<p className="muted">{referenceMeasurement?'왼쪽: 내 몸 · 오른쪽: 문헌 평균 골격근량 비교 모형':'내 몸의 3D 모형'}</p>}{LOCAL_ONLY&&!referenceMeasurement&&<Link to="/health/profile">평균 모형에 필요한 정보 입력</Link>}{!LOCAL_ONLY&&<ReferenceSource group={group}/>}</>
           ) : (
             <p className="muted">표시할 데이터가 없습니다.</p>
           )}

@@ -24,7 +24,7 @@ it('mounts one large viewer only after selection and replaces it when another ca
  const stage=screen.getByRole('region',{name:'선택한 운동 시범'});
  expect((await within(stage).findByTestId('selected-3d-stage')).textContent).toContain('squat');
  expect(screen.getAllByTestId('selected-3d-stage')).toHaveLength(1);
- expect(within(stage).getByRole('link',{name:'이 동작 카메라 코칭'}).getAttribute('href')).toBe('/health/pose?motion=squat');
+ expect(within(stage).getByRole('link',{name:'이 동작 촬영·자세 교정'}).getAttribute('href')).toBe('/health/pose?motion=squat');
  await u.click(within(stage).getByRole('button',{name:'동작 재생'}));
  await u.click(screen.getByRole('button',{name:'레그 프레스 동작 보기'}));
  expect(within(stage).getByTestId('selected-3d-stage').textContent).toContain('leg_press');

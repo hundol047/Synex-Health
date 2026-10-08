@@ -130,7 +130,10 @@ function Support({ r, spec }) {
 
 function Wall({ r, spec }) {
   const { h } = spec;
-  const z = spec.wallZ ?? (spec.kind === 'back_wall' ? -.20 : .54) * h;
+  const face = spec.wallZ ?? (spec.kind === 'back_wall' ? -.23 : .64) * h;
+  // Keep every part of the slab beyond its contact face. Treating wallZ as
+  // the slab center previously buried contact skin inside 1.4 cm of glass.
+  const z = face + (spec.kind === 'back_wall' ? -1 : 1) * .014 * h;
   return <group name="wall-contact-plane">
     <Box r={r} at={[0, .90 * h, z]} size={[1.2 * h, 1.80 * h, .028 * h]} material="glass"/>
     <Tube r={r} a={[-.6 * h, .018 * h, z]} b={[.6 * h, .018 * h, z]} radius={.013 * h} material="trim"/>

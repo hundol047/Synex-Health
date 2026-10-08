@@ -115,17 +115,32 @@ test('supported library movement opens the matching camera guide with an explici
  await page.getByRole('button',{name:'맨몸 힙 힌지 동작 보기',exact:true}).click();
  const stage=page.getByRole('region',{name:'선택한 운동 시범'});
  await expect(stage.locator('canvas')).toHaveAttribute('data-exercise-rendered','hinge');
- const cameraEntry=page.getByRole('link',{name:'이 동작 카메라 코칭',exact:true});
+ const cameraEntry=page.getByRole('link',{name:'이 동작 촬영·자세 교정',exact:true});
  await expect(cameraEntry).toBeInViewport();
  expect(await cameraEntry.evaluate(link=>{const rect=link.getBoundingClientRect(),top=document.elementFromPoint(rect.x+rect.width/2,rect.y+rect.height/2);return link===top||link.contains(top);})).toBe(true);
  await expect.poll(async()=>(await stage.locator('.exercise-library-stage-heading').boundingBox()).height).toBeLessThan(100);
  await expect(stage.getByRole('button',{name:'측면 운동 시범 보기',exact:true})).toBeInViewport();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await page.screenshot({path:info.outputPath('exercise-studio-bodyweight-393.png')});
- await page.getByRole('link',{name:'이 동작 카메라 코칭',exact:true}).click();
+ await page.getByRole('link',{name:'이 동작 촬영·자세 교정',exact:true}).click();
  await expect(page.getByRole('heading',{name:'맨몸운동 코칭'})).toBeVisible();
  await expect(page.getByLabel('따라 할 운동')).toHaveValue('hip_hinge');
  await expect(page.getByRole('button',{name:'코칭 시작',exact:true})).toBeVisible();
  expect(await page.evaluate(()=>window.__cameraRequests)).toBe(0);
  await expect(page.locator('body')).not.toHaveClass(/exercise-library-focus/);
+});
+
+test('the first bodyweight library movement offers filming without claiming unsupported correction',async({page})=>{
+ const modelRequests=[];page.on('request',r=>{if(/pose_landmarker|vision_wasm|\/api\//.test(r.url()))modelRequests.push(r.url());});
+ await page.emulateMedia({reducedMotion:'reduce'});
+ await page.addInitScript(()=>{window.__cameraRequests=0;Object.defineProperty(navigator,'mediaDevices',{configurable:true,value:{getUserMedia:async()=>{window.__cameraRequests++;throw new DOMException('denied','NotAllowedError');}}});});
+ await page.goto('/health/library');
+ await page.getByRole('button',{name:'의자 앉았다 일어나기 동작 보기',exact:true}).click();
+ const entry=page.getByRole('link',{name:'이 동작 동영상 촬영',exact:true});
+ await expect(entry).toBeInViewport();await expect(entry).toHaveAttribute('href','/health/pose?motion=sit_stand');await entry.click();
+ await expect(page.getByLabel('따라 할 운동')).toHaveValue('sit_stand');
+ await expect(page.locator('.coach-example canvas')).toHaveAttribute('data-exercise-rendered','sit_stand');
+ await expect(page.getByRole('button',{name:'동영상 촬영',exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:'실시간 교정 미지원'})).toBeDisabled();
+ expect(await page.evaluate(()=>window.__cameraRequests)).toBe(0);expect(modelRequests).toEqual([]);
 });

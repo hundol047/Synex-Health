@@ -2,6 +2,7 @@ import {useWorkoutDraft} from '../../lib/useWorkoutDraft.js';
 import {workoutStatus,WORKOUT_STATUS} from '../../lib/workoutStatus.js';
 import React,{useState} from 'react';
 import SetRecordEditor from './SetRecordEditor.jsx';
+import WorkoutFeedbackFields from './WorkoutFeedbackFields.jsx';
 import {normalizeSets} from '../../lib/workoutProgress.js';
 import {HealthAPI} from '../../../shared/lib/api.js';
 const optionalNumber=v=>v===''||v==null?null:Number(v);
@@ -48,11 +49,10 @@ export default function WorkoutRecordForm({exercise,routine,date,existing,previo
  {!rows.length&&(exercise.dose_type||'reps')==='reps'&&<div className="record-grid"><label>실제 세트<input className="text-input" type="number" min="0" max="100" step="1" value={value('sets_completed',0)} onChange={e=>field('sets_completed',e.target.value)}/></label>{(exercise.dose_type||'reps')==='reps'&&<label>실제 반복 횟수<input className="text-input" value={value('reps_completed')} maxLength="100" onChange={e=>field('reps_completed',e.target.value)}/></label>}</div>}
  {exercise.dose_type==='duration'&&<label>실제 수행 시간 (초)<input className="text-input" type="number" min="0" max="86400" step="1" value={value('performed_seconds',0)} onChange={e=>field('performed_seconds',e.target.value)}/></label>}
  {exercise.dose_type==='hold'&&<div><p>세트별 유지시간 · 목표 {exercise.hold_seconds??'—'}초</p>{value('timed_sets_seconds',[]).map((seconds,i)=><label key={i}>{i+1}세트 유지시간 (초)<input className="text-input" type="number" min="0" max="86400" step="1" value={seconds} onChange={e=>field('timed_sets_seconds',value('timed_sets_seconds',[]).map((v,j)=>i===j?e.target.value:v))}/></label>)}<button type="button" className="btn btn-secondary" disabled={value('timed_sets_seconds',[]).length>=100} onClick={()=>field('timed_sets_seconds',[...value('timed_sets_seconds',[]),0])}>시간 세트 추가</button></div>}
- <div className="record-grid"><label>오늘의 난이도<select className="text-input" value={difficulty} onChange={e=>field('difficulty',e.target.value)}><option value="easy">쉬웠어요</option><option value="moderate">적당했어요</option><option value="hard">어려웠어요</option><option value="pain">통증으로 중단</option></select></label>
- <label>통증 (0–10)<input className="text-input" type="number" min="0" max="10" step="1" required value={value('pain',0)} onChange={e=>field('pain',e.target.value)}/></label></div>
- <details className="record-extra"><summary>운동 시간·힘듦·메모 {existing?'(저장된 값 유지)':'추가하기'}</summary><div className="record-grid">
- <label>실제 운동 시간 (분)<input className="text-input" type="number" min="0" max="1440" step="0.1" value={value('actual_minutes')} onChange={e=>field('actual_minutes',e.target.value)}/></label>
- <label>운동 힘듦 (RPE 1–10)<input className="text-input" type="number" min="1" max="10" step="1" value={value('rpe')} onChange={e=>field('rpe',e.target.value)}/></label>
+ <WorkoutFeedbackFields rpe={value('rpe')} pain={value('pain',0)} onRpeChange={v=>field('rpe',v)} onPainChange={v=>field('pain',v)}/>
+ <label className="record-difficulty">오늘의 난이도<select className="text-input" value={difficulty} onChange={e=>field('difficulty',e.target.value)}><option value="easy">쉬웠어요</option><option value="moderate">적당했어요</option><option value="hard">어려웠어요</option><option value="pain">통증으로 중단</option></select></label>
+ <details className="record-extra"><summary>운동 시간·메모 {existing?'(저장된 값 유지)':'추가하기'}</summary><div className="record-grid">
+ <label className="record-wide">실제 운동 시간 (분)<input className="text-input" type="number" min="0" max="1440" step="0.1" value={value('actual_minutes')} onChange={e=>field('actual_minutes',e.target.value)}/></label>
  <label className="record-wide">메모<textarea className="text-input" rows="2" maxLength="2000" value={value('memo')} onChange={e=>field('memo',e.target.value)}/></label></div></details>
  </fieldset>
  {(difficulty==='pain'||pain>0)&&<p className="motion-cautions" role="status">운동을 중단하고 건강센터에 상담하세요. 통증 기록은 자동 증량을 차단합니다.</p>}

@@ -1,6 +1,7 @@
-import React,{useEffect,useMemo} from 'react';
+import React,{useEffect,useMemo,useRef} from 'react';
 import * as THREE from 'three';
 import {Line} from '@react-three/drei';
+import {useFrame,useThree} from '@react-three/fiber';
 import data from './assets/human-mesh.json';
 import {mannequinBase,mannequinPositions} from './mannequinMath.js';
 
@@ -22,17 +23,37 @@ export default function Mannequin({measurement,profile,referenceMeasurement,opti
  // regional lean kg to the literature reference. Only total SMM changes.
  const reference=useMemo(()=>referenceMeasurement?mannequinPositions(base,referenceMeasurement,profile,measurement?.segments||[]):null,[base,referenceMeasurement,profile,measurement?.segments]);
  const scale=(measurement?.height||profile?.height_cm||178)/178;
+ const paired=options.layout==='side-by-side'&&options.showMy&&options.showReference&&reference;
  return <group name="composition-mannequin">
-  {options.skeleton&&<MannequinSkeleton scale={scale}/>}
-  {options.showReference&&reference&&<Surface name="reference-average" positions={reference} color="#eab578" opacity={options.referenceOpacity} wireframe={options.referenceWireframe} {...{selectedSegment,onSelect,onHover,clippingPlanes}}/>}
-  {options.showMy&&<Surface name="my-muscle" positions={own} color="#42bed6" opacity={options.myOpacity} {...{selectedSegment,onSelect,onHover,clippingPlanes}}/>}
-  <mesh position={[0,.002,0]} rotation={[-Math.PI/2,0,0]}><circleGeometry args={[.49*scale,64]}/><meshBasicMaterial color="#376071" transparent opacity={.24} depthWrite={false}/></mesh>
-  <mesh position={[0,.003,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[.49*scale,.494*scale,64]}/><meshBasicMaterial color="#7bb9c9" transparent opacity={.4} depthWrite={false}/></mesh>
+  {options.showReference&&reference&&<ComparisonBody offset={paired?.68*scale:0}>
+   {options.skeleton&&(paired||!options.showMy)&&<MannequinSkeleton scale={scale}/>}
+   <Surface name="reference-average" positions={reference} color="#efbd81" opacity={options.referenceOpacity} wireframe={options.referenceWireframe} {...{selectedSegment,onSelect,onHover,clippingPlanes}}/>
+   {paired&&<Platform scale={scale} color="#bc8c59"/>}
+  </ComparisonBody>}
+  {options.showMy&&<ComparisonBody offset={paired?-.68*scale:0}>
+   {options.skeleton&&<MannequinSkeleton scale={scale}/>}
+   <Surface name="my-muscle" positions={own} color="#48cfe1" opacity={options.myOpacity} {...{selectedSegment,onSelect,onHover,clippingPlanes}}/>
+   <Platform scale={scale} color="#7bb9c9"/>
+  </ComparisonBody>}
+  {!options.showMy&&reference&&<Platform scale={scale} color="#bc8c59"/>}
  </group>;
+}
+// Offset each body along the camera's screen-right axis. They remain distinct
+// when the linked view rotates to the side, instead of hiding behind each other.
+function ComparisonBody({offset,children}){
+ const group=useRef(),{camera}=useThree();
+ useFrame(()=>{camera.updateMatrixWorld();if(group.current)group.current.position.setFromMatrixColumn(camera.matrixWorld,0).multiplyScalar(offset);},-1);
+ return <group ref={group} position={[offset,0,0]}>{children}</group>;
+}
+function Platform({scale,color}){
+ return <>
+  <mesh position={[0,.002,0]} rotation={[-Math.PI/2,0,0]}><circleGeometry args={[.49*scale,64]}/><meshBasicMaterial color="#376071" transparent opacity={.13} depthWrite={false}/></mesh>
+  <mesh position={[0,.003,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[.49*scale,.494*scale,64]}/><meshBasicMaterial color={color} transparent opacity={.3} depthWrite={false}/></mesh>
+ </>;
 }
 function Surface({name,positions,color,opacity,wireframe=false,selectedSegment,onSelect,onHover,clippingPlanes}){
  const geometry=useMemo(()=>{
-  const g=new THREE.BufferGeometry();g.setIndex(new THREE.BufferAttribute(sharedIndex,1));g.setAttribute('position',new THREE.BufferAttribute(positions,3));groups.forEach(v=>g.addGroup(v.start,v.count,v.materialIndex));g.computeVertexNormals();g.computeBoundingSphere();
+  const g=new THREE.BufferGeometry();g.setIndex(new THREE.BufferAttribute(sharedIndex,1));g.setAttribute('position',new THREE.BufferAttribute(positions,3));groups.forEach(v=>g.addGroup(v.start,v.count,v.materialIndex));g.computeVertexNormals();g.computeBoundingSphere();g.computeBoundingBox();
   if(import.meta.env.DEV){
    const regions={};for(let i=0;i<positions.length;i+=3){const key=names[data.regions[i/3]];if(!key)continue;const r=regions[key]||(regions[key]={count:0,depth:0,center:[0,0,0]});r.count++;r.depth+=Math.abs(positions[i+2]);for(let j=0;j<3;j++)r.center[j]+=positions[i+j];}
    for(const r of Object.values(regions)){r.depth/=r.count;r.center=r.center.map(v=>v/r.count);}g.userData.regions=regions;
@@ -45,7 +66,7 @@ function Surface({name,positions,color,opacity,wireframe=false,selectedSegment,o
   onClick={e=>{if(e.delta>5)return;const r=region(e);if(r){e.stopPropagation();onSelect?.(r);}}}
   onPointerMove={e=>onHover?.(region(e))} onPointerOut={()=>onHover?.(null)}>
   {names.map((r,i)=><meshPhysicalMaterial key={i} attach={`material-${i}`} color={selectedSegment===r?'#e5faff':color}
-   roughness={.3} metalness={.12} clearcoat={.8} clearcoatRoughness={.25} emissive={color} emissiveIntensity={.08}
+   roughness={.42} metalness={0} clearcoat={.25} clearcoatRoughness={.4} emissive={color} emissiveIntensity={.04}
    transparent opacity={opacity*(selectedSegment&&r&&selectedSegment!==r?.4:1)} depthWrite={false} side={THREE.FrontSide}
    wireframe={wireframe} clippingPlanes={clippingPlanes} polygonOffset polygonOffsetFactor={name==='my-muscle'?-1:1}/>) }
  </mesh>;

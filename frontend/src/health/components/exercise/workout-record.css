@@ -1,0 +1,102 @@
+/* The manual record and guided workout share the same effort/pain controls. */
+.workout-feedback-fields {
+ border: 0;
+ border-top: 1px solid var(--line);
+ margin: 16px 0 0;
+ padding: 12px 0 0;
+ min-inline-size: 0;
+ width: 100%;
+ box-sizing: border-box;
+}
+.workout-feedback-fields legend {
+ padding: 0 8px 0 0;
+ font-size: .85rem;
+ font-weight: 700;
+ color: var(--ink);
+}
+.workout-feedback-grid {
+ display: grid;
+ grid-template-columns: repeat(2, minmax(0, 1fr));
+ gap: 12px;
+}
+.workout-feedback-grid > label {
+ display: grid;
+ grid-template-rows: minmax(2.8em, auto) 48px;
+ gap: 6px;
+ min-width: 0;
+ margin: 0;
+ font-size: .85rem;
+ line-height: 1.4;
+}
+.workout-feedback-grid > label > span {
+ align-self: end;
+}
+.workout-feedback-grid .text-input {
+ width: 100%;
+ min-width: 0;
+ height: 48px;
+ min-height: 48px;
+ box-sizing: border-box;
+ font-size: 16px;
+}
+.workout-mode .workout-feedback-panel {
+ display: block;
+ border: 0;
+ padding: 0;
+ margin: 16px 0;
+}
+.workout-feedback-panel .workout-feedback-fields {
+ margin-top: 0;
+}
+.workout-rpe-shortcuts {
+ display: grid;
+ grid-template-columns: repeat(5, minmax(0, 1fr));
+ gap: 6px;
+ margin: 12px 0 0;
+}
+.workout-rpe-shortcuts .btn {
+ min-width: 0;
+ min-height: 44px;
+ padding: 8px 2px;
+ font-size: .75rem;
+}
+.workout-record-form .record-difficulty {
+ display: flex;
+ flex-direction: column;
+ gap: 6px;
+ font-size: .85rem;
+ margin-top: 16px;
+}
+.set-record-editor .set-record-row {
+ display: grid;
+ grid-template-columns: repeat(2, minmax(0, 1fr));
+ align-items: end;
+ gap: 10px 12px;
+ padding: 12px 0;
+ border-bottom: 1px solid var(--line);
+}
+.set-record-row > strong {
+ grid-column: 1 / -1;
+ font-size: .85rem;
+}
+.set-record-row > label {
+ display: flex;
+ flex-direction: column;
+ gap: 6px;
+ min-width: 0;
+ font-size: .85rem;
+}
+.set-record-row .text-input {
+ width: 100%;
+ min-width: 0;
+ min-height: 48px;
+ box-sizing: border-box;
+ font-size: 16px;
+}
+.set-record-row .btn {
+ min-height: 48px;
+ margin: 0;
+}
+.set-record-editor > .btn {
+ min-height: 44px;
+}

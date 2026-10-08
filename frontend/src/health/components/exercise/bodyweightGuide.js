@@ -1,5 +1,7 @@
 // Authored technique guidance for the bodyweight movements supported by pose analysis.
 // Demonstrations explain the movement; a person's comfortable range can differ.
+import catalog from '../../../shared/lib/localCatalog.json';
+import {cameraMotionId, getMotionGuide, motionPhase} from './motionGuide.js';
 export const BODYWEIGHT_EXERCISES = Object.freeze({
   squat: {
     label: '스쿼트', motionId: 'squat', target: '허벅지 · 엉덩이', view: '서서 하는 운동', cameraView: '측면 또는 45도', defaultView: '45',
@@ -45,11 +47,34 @@ export const BODYWEIGHT_EXERCISES = Object.freeze({
   },
 });
 
-export function getBodyweightGuide(id) { return BODYWEIGHT_EXERCISES[id] || null; }
+// Filming is available for every bodyweight demonstration. Pose analysis keeps
+// its separate, deliberately limited seven-movement eligibility map above.
+export const BODYWEIGHT_RECORDING_EXERCISES = Object.freeze(Object.fromEntries(
+  catalog.filter(exercise => exercise.training_type === 'bodyweight').map(exercise => {
+    const id = cameraMotionId(exercise.motion_id) || exercise.motion_id;
+    const motion = getMotionGuide(exercise.motion_id);
+    return [id, BODYWEIGHT_EXERCISES[id] || Object.freeze({
+      label: exercise.name, motionId: exercise.motion_id,
+      target: exercise.target_muscle.join(' · '),
+      view: motion.floor ? '바닥에서 하는 운동' : '서서 하는 운동',
+      cameraView: motion.defaultView === 'front' ? '정면' : motion.defaultView === 'side' ? '측면' : '측면 또는 45도',
+      defaultView: motion.defaultView, floor: motion.floor, hold: motion.kind === 'hold',
+      durationMs: motion.durationMs, steps: exercise.instructions,
+      cues: exercise.cautions, phases: motion.phases.map(phase => phase.cue),
+    })];
+  })
+));
+export function bodyweightRecordingMotionId(id) {
+  const normalized = cameraMotionId(id) || id;
+  return BODYWEIGHT_RECORDING_EXERCISES[normalized] ? normalized : null;
+}
+export function getBodyweightGuide(id) { return BODYWEIGHT_RECORDING_EXERCISES[bodyweightRecordingMotionId(id)] || null; }
 
 export function getBodyweightDemoPhase(id, progress = 0) {
   const guide = getBodyweightGuide(id);
   if (!guide) return null;
+  id = bodyweightRecordingMotionId(id);
+  if (!BODYWEIGHT_EXERCISES[id]) return motionPhase(guide.motionId, progress);
   if (guide.hold) return { index: 0, label: '유지 · 호흡', cue: guide.phases[0] };
   let t = Number.isFinite(progress) ? ((progress % 1) + 1) % 1 : 0;
   if (id === 'lunge' || id === 'side_lunge') t = (t * 2) % 1;

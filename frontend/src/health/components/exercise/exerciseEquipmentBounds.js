@@ -109,7 +109,8 @@ export function equipmentBounds(motion, joints = [], rest = [], heightScale) {
   switch (kind) {
     case 'chair': chair(); break;
     case 'wall': case 'back_wall': {
-      const z = s.wallZ ?? (kind === 'back_wall' ? -.20 : .54) * h;
+      const face = s.wallZ ?? (kind === 'back_wall' ? -.23 : .64) * h;
+      const z = face + (kind === 'back_wall' ? -1 : 1) * .014 * h;
       box([0, .90 * h, z], scaled([1.2, 1.80, .028], h));
       tube([-.6 * h, .018 * h, z], [.6 * h, .018 * h, z], .013 * h);
       for (const side of [-1, 1]) tube([side * .6 * h, .02 * h, z], [side * .6 * h, 1.80 * h, z], .012 * h);

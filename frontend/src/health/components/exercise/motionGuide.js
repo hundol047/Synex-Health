@@ -6,6 +6,7 @@ const alternating=new Set(['lunge','reverse_lunge','side_lunge','bird_dog','dead
 const floor=new Set(['bridge','single_bridge','pushup','full_pushup','plank','bird_dog','dead_bug','heel_slide','cat_cow','knee_side_plank','clamshell','prone_y','dumbbell_floor_press','dumbbell_bench_press','barbell_bench_press']);
 const frontal=new Set(['curl','hammer_curl','lateral_raise','shoulder_press','band_pull_apart','machine_hip_abduction','side_lunge','sumo_squat','step_touch','hip_abduction','cable_pallof']);
 const angledFloor=new Set(['prone_y','bird_dog','clamshell','knee_side_plank','dead_bug']);
+const wallSupported=new Set(['wall_push','close_wall_push','calf_stretch','wall_hinge','wall_sit']);
 
 // Catalogue IDs and camera-coach IDs deliberately remain distinct. Knee,
 // incline and machine variants are never advertised as full push-up analysis.
@@ -72,7 +73,7 @@ export const MOTION_GUIDES=Object.fromEntries(catalog.map(exercise=>{
     {label:verbs[2],cue:instructions.at(-1),start:.57,end:1},
   ];
   const durationMs=kind==='hold'?6000:kind==='alternating'?12000:id==='stationary_cycle'?3200:kind==='cyclic'?4000:7000;
-  return [id,{name:exercise.name,kind,durationMs,defaultView:angledFloor.has(id)?'45':frontal.has(id)?'front':floor.has(id)?'side':'45',floor:floor.has(id),phases}];
+  return [id,{name:exercise.name,kind,durationMs,defaultView:wallSupported.has(id)?'side':angledFloor.has(id)?'45':frontal.has(id)?'front':floor.has(id)?'side':'45',floor:floor.has(id),phases}];
 }));
 export const getMotionGuide=id=>MOTION_GUIDES[id]||null;
 export function motionPhase(id,progress=0){

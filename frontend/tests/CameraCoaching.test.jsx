@@ -163,3 +163,51 @@ it('shows camera placement guidance immediately even before the persistence wind
  const evaluated=vi.fn();render(<CameraCoaching motion="push_up" onEvaluation={evaluated}/>);await camera();await enable();await act(async()=>[...frames.values()].at(-1)(500));
  expect(screen.getByRole('status').textContent).toContain(message);expect(evaluated.mock.calls.at(-1)[0].corrections).toEqual([message]);
 });
+function recordingMock(){
+ let recorder;
+ class FakeRecorder {
+  static isTypeSupported=()=>true;
+  constructor(_stream,options){recorder=this;this.mimeType=options.mimeType;this.state='inactive';this.stop=vi.fn(()=>{this.state='inactive';});}
+  start(){this.state='recording';}
+ }
+ vi.stubGlobal('MediaRecorder',FakeRecorder);
+ vi.stubGlobal('URL',class extends URL{static createObjectURL=vi.fn(()=> 'blob:recorded-video');static revokeObjectURL=vi.fn();});
+ return ()=>recorder;
+}
+it('record button opens video-only camera explicitly and publishes replay and save only after recorder finalization',async()=>{
+ const recorder=recordingMock();render(<CameraCoaching immersive/>);
+ expect(getMedia).not.toHaveBeenCalled();expect(screen.queryByRole('button',{name:'휴대폰에 저장'})).toBeNull();
+ fireEvent.click(screen.getByRole('button',{name:'동영상 촬영',exact:true}));await screen.findByRole('button',{name:'촬영 종료'});
+ expect(getMedia).toHaveBeenCalledWith(expect.objectContaining({audio:false}));expect(createPoseRunner).not.toHaveBeenCalled();
+ fireEvent.click(screen.getByRole('button',{name:'촬영 종료'}));expect(screen.getByRole('button',{name:'영상 준비 중…'}).disabled).toBe(true);expect(screen.queryByRole('button',{name:'휴대폰에 저장'})).toBeNull();
+ act(()=>{recorder().ondataavailable({data:new Blob(['video'])});recorder().onstop();});
+ expect(screen.getByLabelText('촬영한 운동 동영상').getAttribute('src')).toBe('blob:recorded-video');expect(screen.getByRole('button',{name:'휴대폰에 저장'}).disabled).toBe(false);expect(track.stop).toHaveBeenCalledTimes(1);
+ fireEvent.click(screen.getByRole('button',{name:'촬영 영상 버리기'}));expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:recorded-video');expect(screen.queryByLabelText('촬영한 운동 동영상')).toBeNull();
+});
+it('exercise switch and background discard active or finished recordings and never revive late recorder results',async()=>{
+ const recorder=recordingMock(),view=render(<CameraCoaching motion="squat"/>);
+ fireEvent.click(screen.getByRole('button',{name:'동영상 촬영',exact:true}));await screen.findByRole('button',{name:'촬영 종료'});
+ const old=recorder();view.rerender(<CameraCoaching motion="plank"/>);expect(old.stop).toHaveBeenCalledTimes(1);
+ act(()=>{old.ondataavailable({data:new Blob(['late video'])});old.onstop();});expect(screen.queryByLabelText('촬영한 운동 동영상')).toBeNull();
+ fireEvent.click(screen.getByRole('button',{name:'동영상 촬영',exact:true}));await screen.findByRole('button',{name:'촬영 종료'});
+ act(()=>{recorder().ondataavailable({data:new Blob(['video'])});recorder().onstop();});expect(screen.getByLabelText('촬영한 운동 동영상')).toBeTruthy();
+ Object.defineProperty(document,'hidden',{configurable:true,value:true});fireEvent(document,new Event('visibilitychange'));Object.defineProperty(document,'hidden',{configurable:true,value:false});
+ expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:recorded-video');expect(screen.queryByLabelText('촬영한 운동 동영상')).toBeNull();expect(screen.getByRole('button',{name:'동영상 촬영',exact:true}).disabled).toBe(false);
+});
+it('a missing recorder preserves the separate live camera and a hung camera permission request times out to retry',async()=>{
+ vi.stubGlobal('MediaRecorder',undefined);render(<CameraCoaching/>);fireEvent.click(screen.getByRole('button',{name:'동영상 촬영',exact:true}));
+ expect(screen.getByRole('alert').textContent).toContain('동영상 촬영을 지원');expect(getMedia).not.toHaveBeenCalled();
+ const pending=deferred();getMedia.mockReturnValueOnce(pending.promise);vi.useFakeTimers();fireEvent.click(screen.getByRole('button',{name:'카메라 켜기'}));
+ await act(async()=>vi.advanceTimersByTimeAsync(20001));expect(screen.getByRole('alert').textContent).toContain('카메라 준비 시간이 초과');expect(screen.getByRole('button',{name:'카메라 켜기'}).disabled).toBe(false);
+ await act(async()=>pending.resolve(media));expect(track.stop).toHaveBeenCalledTimes(1);
+});
+it('bodyweight variants can film and preview while unsupported live correction never opens an analyzer',async()=>{
+ const recorder=recordingMock();render(<CameraCoaching motion="wall_push" immersive/>);
+ expect(screen.getByText('동영상 촬영 가능 · 실시간 교정 미지원')).toBeTruthy();expect(screen.getByRole('button',{name:'실시간 교정 미지원'}).disabled).toBe(true);
+ fireEvent.click(screen.getByRole('button',{name:'카메라 켜기'}));await waitFor(()=>expect(screen.getByLabelText('내 운동 모습').srcObject).toBe(media));
+ expect(screen.getByRole('switch').disabled).toBe(true);fireEvent.click(screen.getByRole('switch'));
+ expect(createPoseRunner).not.toHaveBeenCalled();expect(fetch).not.toHaveBeenCalled();expect(api).not.toHaveBeenCalled();
+ fireEvent.click(screen.getByRole('button',{name:'동영상 촬영',exact:true}));await screen.findByRole('button',{name:'촬영 종료'});fireEvent.click(screen.getByRole('button',{name:'촬영 종료'}));
+ act(()=>{recorder().ondataavailable({data:new Blob(['wall push video'])});recorder().onstop();});expect(screen.getByLabelText('촬영한 운동 동영상')).toBeTruthy();
+ expect(createPoseRunner).not.toHaveBeenCalled();expect(fetch).not.toHaveBeenCalled();expect(api).not.toHaveBeenCalled();
+});

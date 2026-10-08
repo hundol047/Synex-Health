@@ -118,13 +118,15 @@ export function standingCatalogPose(id, progress, rest) {
     tilt = .04 + .09 * lowering;
     pelvisTilt = .04 * lowering;
   } else if (id === 'wall_push' || id === 'close_wall_push') {
-    tilt = .15 + .18 * bend;
+    // A wall press ends before the forehead reaches the support. The previous
+    // .33-radian lean drove the head through a wall sized only for the palms.
+    tilt = .15 + .095 * bend;
     const reach = (length(9, 10) + length(10, 11) + length(12, 13) + length(13, 14)) / 2;
     const lateral = Math.abs(rest[11][0] - rest[9][0]);
     const bodyAxis = Math.sqrt((reach * .994) ** 2 - lateral ** 2) + .04 * h;
     hip = vec([0, feet[0][1], feet[0][2]]).addScaledVector(new THREE.Vector3(0, Math.cos(tilt), Math.sin(tilt)), bodyAxis);
     pelvisTilt = tilt;
-    equipment = { kind: 'wall', heightScale: h, wallZ: .61 * h };
+    equipment = { kind: 'wall', heightScale: h, wallZ: .64 * h };
   } else if (id === 'incline_push') {
     const rise = .73 - .10 * bend;
     const axis = new THREE.Vector3(0, rise, Math.sqrt(1 - rise * rise));
@@ -141,19 +143,19 @@ export function standingCatalogPose(id, progress, rest) {
     hip.set(0, rest[0][1] - .08 * h * bend, rest[0][2] - .22 * h * bend);
     tilt = .035 + .94 * bend;
     pelvisTilt = .15 * bend;
-    equipment = { kind: 'back_wall', heightScale: h, wallZ: -.285 * h };
+    equipment = { kind: 'back_wall', heightScale: h, wallZ: -.37 * h };
   } else if (id === 'wall_sit') {
     hip.set(0, .58 * h, -.06 * h);
-    tilt = 0;
+    tilt = -.065;
     feet[0] = [rest[11][0], .10 * h, .34 * h];
     feet[1] = [rest[14][0], .10 * h, .34 * h];
-    equipment = { kind: 'back_wall', heightScale: h, wallZ: -.20 * h };
+    equipment = { kind: 'back_wall', heightScale: h, wallZ: -.23 * h };
   } else if (id === 'calf_stretch') {
     hip.set(0, (.849 - .012 * bend) * h, (-.005 + .03 * bend) * h);
     tilt = .12;
     feet[0] = [rest[11][0], .10 * h, .15 * h];
     feet[1] = [rest[14][0], .10 * h, -.35 * h];
-    equipment = { kind: 'wall', heightScale: h, wallZ: .44 * h };
+    equipment = { kind: 'wall', heightScale: h, wallZ: .52 * h };
   } else if (id === 'calf' || id === 'single_calf') {
     const pitch = .48 * bend;
     plantedToe(0, rest[15], pitch);
@@ -276,6 +278,12 @@ export function standingCatalogPose(id, progress, rest) {
       target = vec(joints[root]).add(new THREE.Vector3(side * mix(.06, .41, opening) * h, -.06 * h, mix(.26, -.04, opening) * h).applyQuaternion(rotation)).toArray();
       toward = [side, -.4, 0];
       hand = normalized([side, 0, .08]).applyQuaternion(rotation).toArray();
+    } else if (id === 'wall_hinge') {
+      // Hands rest in front of the lower ribs. Letting them hang behind the
+      // hips made a fingertip, rather than the buttocks, determine wall contact.
+      target = [hip.x + side * .10 * h, joints[root][1] - .21 * h, joints[root][2] + .17 * h];
+      toward = [side * .5, -1, -.2];
+      hand = [-side * .7, 0, .7];
     } else if (id === 'sumo_squat' || id === 'split_squat' || id === 'reverse_lunge' || id === 'sit_stand') {
       target = [hip.x + side * .11 * h, joints[root][1] - .17 * h, joints[root][2] + .22 * h];
       toward = [side * .5, -1, -.2];
@@ -306,12 +314,24 @@ export function standingCatalogPose(id, progress, rest) {
       // fingers face up and the palm faces the wall. Wrist centers remain
       // behind the wall by the palm thickness rather than inside the glass.
       const floorPalm = new THREE.Quaternion().setFromUnitVectors(vec(rest[finger]).sub(vec(rest[wrist])).normalize(), new THREE.Vector3(0, 0, 1));
-      floorPalm.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), side * .9));
-      joints.boneRotations[12 + i] = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2).multiply(floorPalm).toArray();
+      const palmRoll = rest.wallSupport?.palmRoll?.[i] ?? side * .9;
+      floorPalm.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), palmRoll));
+      const palmRotation = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2).multiply(floorPalm);
+      joints.boneRotations[12 + i] = palmRotation.toArray();
+      // Preserve the palm's roll through the lower arm. A shortest-direction
+      // forearm rotation twisted the blended wrist skin through the wall even
+      // when the hand's separate rotation faced it correctly.
+      const forearmDirection = vec(joints[wrist]).sub(vec(joints[elbow])).normalize();
+      const palmAlignedForearm = vec(rest[wrist]).sub(vec(rest[elbow])).normalize().applyQuaternion(palmRotation);
+      joints.boneRotations[3 + i * 2] = new THREE.Quaternion().setFromUnitVectors(palmAlignedForearm, forearmDirection).multiply(palmRotation).toArray();
     }
   }
   if (id === 'incline_push') joints.handRoll = [.9, -.9];
   if (equipment) {
+    // A calibration describes the fixed wall's actual contact face, not its
+    // center. It includes clothing and blended wrist skin, beyond the joints.
+    const wallSupport = rest.wallSupport?.[id];
+    if (Number.isFinite(wallSupport?.surfaceZ)) equipment.wallZ = wallSupport.surfaceZ;
     equipment.contactPoints = equipment.kind === 'wall' || equipment.kind === 'incline' ? [joints[5].slice(), joints[8].slice()] : equipment.kind === 'support' ? [joints[5].slice()] : [];
     joints.equipment = equipment;
   }
