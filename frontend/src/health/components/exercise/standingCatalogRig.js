@@ -205,7 +205,9 @@ export function standingCatalogPose(id, progress, rest) {
     feet.forEach((point, i) => {
       const phase = cycle + i * Math.PI, swing = Math.max(0, Math.sin(phase));
       point[2] += stride * Math.cos(phase);
-      point[1] += .075 * h * swing;
+      // Ease the swing foot into and out of floor contact. Squaring the
+      // positive arc keeps the same clearance with no landing/takeoff snap.
+      point[1] += .075 * h * swing * swing;
       footRotations[i].setFromAxisAngle(new THREE.Vector3(1, 0, 0), .24 * Math.sin(phase));
     });
     joints.locomotion = 'in_place';
@@ -287,7 +289,11 @@ export function standingCatalogPose(id, progress, rest) {
       toward = [side * .5, -1, 0];
       hand = [-side * .4, -.2, .8];
     } else if (id === 'walk' || id === 'brisk_walk' || id === 'standing_march' || id === 'step_touch') {
-      const swing = id === 'walk' || id === 'brisk_walk' || id === 'step_touch' ? Math.sin(t * Math.PI * 2 + i * Math.PI) : (i === active ? -1 : 1) * lift;
+      // Walking arms oppose the same-side stride; a quarter-cycle offset
+      // leaves both hands still at maximum stride and reads as a rigid march.
+      const swing = id === 'walk' || id === 'brisk_walk' ? -Math.cos(t * Math.PI * 2 + i * Math.PI)
+        : id === 'step_touch' ? Math.sin(t * Math.PI * 2 + i * Math.PI)
+          : (i === active ? -1 : 1) * lift;
       const brisk = id === 'brisk_walk';
       target = [joints[root][0] + side * .02 * h, joints[root][1] - (brisk ? .30 : .39) * h, joints[root][2] + (brisk ? .18 : .13) * h * swing + (brisk ? .12 : .03) * h];
       toward = [0, -.2, 1];

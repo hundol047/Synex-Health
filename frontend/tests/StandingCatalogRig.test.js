@@ -74,6 +74,39 @@ describe('standing and chair catalog anatomy', () => {
     }
   });
 
+  it('counter-swings each walking hand against its leg throughout the full stride', () => {
+    for (const scale of [.82, 1, 1.14]) {
+      const rest = REST.map(point => point.map(value => value * scale));
+      for (const id of ['walk', 'brisk_walk']) for (let frame = 0; frame <= 120; frame++) {
+        const current = pose(id, frame / 120, rest);
+        const neutralHand = (id === 'brisk_walk' ? .12 : .03) * scale;
+        for (const [shoulder, wrist, ankle] of [[3, 5, 11], [6, 8, 14]]) {
+          const stride = current[ankle][2] - rest[ankle][2];
+          const counterSwing = current[wrist][2] - current[shoulder][2] - neutralHand;
+          expect(stride * counterSwing, `${id}/${scale}/${frame} arm-leg opposition`).toBeLessThanOrEqual(1e-10);
+          if (Math.abs(stride) > .05 * scale) expect(Math.abs(counterSwing), `${id} visible counter-swing`).toBeGreaterThan(.02 * scale);
+        }
+      }
+    }
+  });
+
+  it('lands and lifts walking ankles smoothly while preserving the full swing clearance', () => {
+    const epsilon = .00001;
+    const wrap = phase => ((phase % 1) + 1) % 1;
+    for (const id of ['walk', 'brisk_walk']) {
+      for (const [ankle, peak] of [[11, .25], [14, .75]]) {
+        expect(pose(id, peak, REST)[ankle][1] - REST[ankle][1], `${id} peak foot clearance`).toBeCloseTo(.075, 8);
+        for (const contact of [0, .5, 1]) {
+          const middle = pose(id, wrap(contact), REST)[ankle][1];
+          const before = pose(id, wrap(contact - epsilon), REST)[ankle][1];
+          const after = pose(id, wrap(contact + epsilon), REST)[ankle][1];
+          expect(Math.abs(middle - before) / epsilon, `${id}/${ankle} smooth contact approach`).toBeLessThan(.0001);
+          expect(Math.abs(after - middle) / epsilon, `${id}/${ankle} smooth contact departure`).toBeLessThan(.0001);
+        }
+      }
+    }
+  });
+
   it('keeps the shoulder, hip, and ankles aligned during supported presses', () => {
     for (const id of ['wall_push', 'close_wall_push', 'incline_push']) {
       for (const t of frames) {

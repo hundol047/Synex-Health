@@ -44,7 +44,8 @@ export function calibrateGripScale(base, weights, rest) {
 // separate ball-shaped hand. The rest surface is cached before skinning.
 export function gripSurface(base, weights, rest, grip) {
   const output = base.slice();
-  if (grip !== 'closed') return output;
+  if (grip !== 'closed' && grip !== 'relaxed') return output;
+  const closure = grip === 'relaxed' ? .35 : 1;
   const stature = scaleFor(rest), scales = rest.handGripScale || calibrateGripScale(base, weights, rest);
   for (let side = 0; side < 2; side++) {
     const h = stature * scales[side], hinge = .17 * h, radius = .026 * h;
@@ -66,7 +67,7 @@ export function gripSurface(base, weights, rest, grip) {
         nextD = THREE.MathUtils.lerp(nextD, .166 * h + (d - .17 * h) * .25, thumb * .65);
       }
       const folded = origin.clone().addScaledVector(along, nextD).addScaledVector(across, nextW).addScaledVector(back, nextN);
-      const blend = smoothStep(.5, .85, influence);
+      const blend = closure * smoothStep(.5, .85, influence);
       new THREE.Vector3().fromArray(base, i * 3).lerp(folded, blend).toArray(output, i * 3);
     }
   }

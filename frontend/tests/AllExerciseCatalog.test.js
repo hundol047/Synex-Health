@@ -11,7 +11,7 @@ import { BONES, REST, bindSurface, deformSurface, poseJoints } from '../src/heal
 import { MOTIONS, samplePose } from '../src/health/components/exercise/motions.js';
 import { MOTION_GUIDES, getMotionGuide, motionPhase } from '../src/health/components/exercise/motionGuide.js';
 import { exerciseAvatarGeometry, exerciseMaterials } from '../src/health/components/exercise/exerciseAppearance.js';
-import { gripSurface } from '../src/health/components/exercise/exerciseGrip.js';
+import { gripSurface, handRestFrame } from '../src/health/components/exercise/exerciseGrip.js';
 
 vi.mock('../src/health/components/exercise/motions.js', async importOriginal => {
   const actual = await importOriginal();
@@ -147,6 +147,32 @@ describe('complete authored exercise catalog', () => {
 });
 
 describe('offline exercise appearance', () => {
+  it('gives unsupported hands a gentle finger curl while preserving wrists, palms and the rest of the body', () => {
+    const base = Float32Array.from(mesh.profiles.male, value => value * mesh.scale), saved = base.slice();
+    const weights = bindSurface(base), relaxed = gripSurface(base, weights, REST, 'relaxed'), closed = gripSurface(base, weights, REST, 'closed');
+    const changes = [0, 0], extents = [[0, 0, 0], [0, 0, 0]];
+    const frames = [0, 1].map(side => ({ ...handRestFrame(REST, side), origin: v(REST[side === 0 ? 5 : 8]) }));
+    let movedSupports = 0;
+    for (let index = 0; index < weights.length; index++) {
+      const point = v(Array.from(base.slice(index * 3, index * 3 + 3))), next = v(Array.from(relaxed.slice(index * 3, index * 3 + 3)));
+      const hand = weights[index].find(([bone, influence]) => (bone === 12 || bone === 13) && influence >= .5);
+      if (!hand) { if (point.distanceTo(next) > 1e-8) movedSupports++; continue; }
+      const side = hand[0] - 12, frame = frames[side], along = point.clone().sub(frame.origin).dot(frame.along);
+      if (along <= .125 && point.distanceTo(next) > 1e-8) movedSupports++;
+      if (point.distanceTo(next) > .005) changes[side]++;
+      [base, relaxed, closed].forEach((surface, state) => {
+        extents[side][state] = Math.max(extents[side][state], v(Array.from(surface.slice(index * 3, index * 3 + 3))).sub(frame.origin).dot(frame.along));
+      });
+    }
+    expect(movedSupports).toBe(0);
+    expect(base).toEqual(saved);
+    for (let side = 0; side < 2; side++) {
+      expect(changes[side]).toBeGreaterThan(10);
+      expect(extents[side][1]).toBeLessThan(extents[side][0] - .005);
+      expect(extents[side][1]).toBeGreaterThan(extents[side][2] + .005);
+    }
+  });
+
   it('closes modeled equipment fingers while preserving open support palms and every non-hand vertex', () => {
     const base = Float32Array.from(mesh.profiles.male, value => value * mesh.scale), saved = base.slice();
     const weights = bindSurface(base), closed = gripSurface(base, weights, REST, 'closed');

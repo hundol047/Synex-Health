@@ -29,6 +29,12 @@ test('catalogue keeps static previews and one large selected 3D stage on a small
  await expect(page.locator('.health-bottom-nav')).toBeHidden();
  await expect(page.getByRole('button',{name:'운동 목록으로 돌아가기',exact:true})).toBeInViewport();
  await expect.poll(async()=>(await stage.locator('canvas').boundingBox()).height).toBeGreaterThanOrEqual(350);
+ await expect.poll(async()=>(await stage.locator('.exercise-library-stage-heading').boundingBox()).height).toBeLessThan(100);
+ for(const name of ['정면 운동 시범 보기','45° 운동 시범 보기','측면 운동 시범 보기','후면 운동 시범 보기','자유 운동 시범 보기']){
+  const control=stage.getByRole('button',{name,exact:true});
+  await expect(control).toBeInViewport();
+  expect(await control.evaluate(button=>{const rect=button.getBoundingClientRect(),top=document.elementFromPoint(rect.x+rect.width/2,rect.y+rect.height/2);return button===top||button.contains(top);})).toBe(true);
+ }
  await expect(stage.getByRole('button',{name:'동작 재생',exact:true})).toBeVisible();
  await stage.getByRole('button',{name:'골반·무릎 확인 구간 보기'}).click();
  await expect(stage.getByLabel('동작 구간',{exact:true})).toHaveValue('43');
@@ -98,7 +104,8 @@ test('camera filter offers exactly the seven supported bodyweight variants',asyn
  await expect(page.locator('canvas')).toHaveCount(0);
 });
 
-test('supported library movement opens the matching camera guide with an explicit start',async({page})=>{
+test('supported library movement opens the matching camera guide with an explicit start',async({page},info)=>{
+ await page.emulateMedia({reducedMotion:'reduce'});
  await page.addInitScript(()=>{
   window.__cameraRequests=0;
   Object.defineProperty(navigator,'mediaDevices',{configurable:true,value:{getUserMedia:async()=>{window.__cameraRequests++;throw new DOMException('denied','NotAllowedError');}}});
@@ -106,6 +113,15 @@ test('supported library movement opens the matching camera guide with an explici
  await page.goto('/health/library');
  await page.getByLabel('운동·근육 검색').fill('맨몸 힙 힌지');
  await page.getByRole('button',{name:'맨몸 힙 힌지 동작 보기',exact:true}).click();
+ const stage=page.getByRole('region',{name:'선택한 운동 시범'});
+ await expect(stage.locator('canvas')).toHaveAttribute('data-exercise-rendered','hinge');
+ const cameraEntry=page.getByRole('link',{name:'이 동작 카메라 코칭',exact:true});
+ await expect(cameraEntry).toBeInViewport();
+ expect(await cameraEntry.evaluate(link=>{const rect=link.getBoundingClientRect(),top=document.elementFromPoint(rect.x+rect.width/2,rect.y+rect.height/2);return link===top||link.contains(top);})).toBe(true);
+ await expect.poll(async()=>(await stage.locator('.exercise-library-stage-heading').boundingBox()).height).toBeLessThan(100);
+ await expect(stage.getByRole('button',{name:'측면 운동 시범 보기',exact:true})).toBeInViewport();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.screenshot({path:info.outputPath('exercise-studio-bodyweight-393.png')});
  await page.getByRole('link',{name:'이 동작 카메라 코칭',exact:true}).click();
  await expect(page.getByRole('heading',{name:'맨몸운동 코칭'})).toBeVisible();
  await expect(page.getByLabel('따라 할 운동')).toHaveValue('hip_hinge');

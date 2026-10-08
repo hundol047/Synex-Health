@@ -42,3 +42,16 @@ it('starts still for reduced motion and stops the demo when the page is hidden',
  fireEvent(document,new Event('visibilitychange'));
  expect(frames.size).toBe(0);
 });
+
+it('keeps 24 evenly scheduled updates on a 60 Hz display without accumulating render delay',async()=>{
+ render(<BodyweightDemo exerciseId="squat"/>);
+ const progress=await screen.findByTestId('demo-progress');
+ frame(0);
+ let updates=0,previous=progress.textContent;
+ for(let tick=1;tick<=120;tick++){
+  frame(tick*1000/60);
+  if(progress.textContent!==previous){updates++;previous=progress.textContent;}
+ }
+ expect(updates).toBe(48);
+ expect(Number(progress.textContent)).toBeCloseTo(.25,6);
+});

@@ -6,7 +6,7 @@ import { getMotionGuide, motionPhase } from './motionGuide.js';
 import MotionFigure from './MotionFigure.jsx';
 import './exercise-experience.css';
 
-export default function ExerciseMotion({ exercise, measurement, profile, paused=false }) {
+export default function ExerciseMotion({ exercise, measurement, profile, paused=false, onReady }) {
   const motion = MOTIONS[exercise.motion_id], guide = getMotionGuide(exercise.motion_id);
   const [dimension, setDimension] = useState('3d');
   const [loop, setLoop] = useState(true);
@@ -17,6 +17,7 @@ export default function ExerciseMotion({ exercise, measurement, profile, paused=
   const phase = useRef(0), viewer = useRef(null);
   const currentPhase = motionPhase(exercise.motion_id, progress);
   useEffect(() => { setPlaying(false); setDimension('3d'); phase.current = 0; setProgress(0); }, [exercise.motion_id]);
+  useEffect(() => { onReady?.(); }, [exercise.motion_id, onReady]);
   useEffect(() => { if (paused) setPlaying(false); }, [paused]);
   useEffect(() => {
     const media = window.matchMedia?.('(prefers-reduced-motion: reduce)');
@@ -36,7 +37,8 @@ export default function ExerciseMotion({ exercise, measurement, profile, paused=
         const next = phase.current + Math.min(time - last, 100) * speed / duration;
         phase.current = loop ? next % 1 : Math.min(next, 1);
         if (!loop && next >= 1) setPlaying(false);
-        if (time - renderedAt >= 1000 / 24 || (!loop && next >= 1)) { setProgress(phase.current); renderedAt = time; }
+        const interval = 1000 / 30;
+        if (time - renderedAt >= interval || (!loop && next >= 1)) { setProgress(phase.current); renderedAt = time - (time - renderedAt) % interval; }
       }
       last = time;
       frame = requestAnimationFrame(animate);
@@ -63,7 +65,7 @@ export default function ExerciseMotion({ exercise, measurement, profile, paused=
         <select aria-label="재생 속도" value={speed} onChange={e => setSpeed(Number(e.target.value))}><option value={.5}>0.5× 느리게</option><option value={.75}>0.75×</option><option value={1}>1× 보통</option></select>
         <button className={`motion-icon-control ${mirror ? 'is-active' : ''}`} aria-label="좌우 반전" aria-pressed={mirror} title="좌우 반전" type="button" onClick={() => setMirror(p => !p)}><FlipHorizontal2 size={18}/></button>
       </div>
-      <div className="motion-current-phase"><div><span>{guide?.kind === 'alternating' ? `교대 동작 ${progress >= .5 ? '2' : '1'} / 2` : guide?.kind === 'hold' ? '호흡 유지' : '현재 동작'}</span><strong>{currentPhase?.label || motion.label}</strong></div>{currentPhase && <small>{currentPhase.index + 1} / {currentPhase.total}</small>}</div>
+      <div className="motion-current-phase"><div><span>{guide?.kind === 'alternating' ? `교대 동작 ${progress >= .5 ? '2' : '1'} / 2` : guide?.kind === 'hold' ? '호흡 유지' : '현재 동작'}</span><strong>{currentPhase?.label || motion.label}</strong></div>{currentPhase && <small>STEP {String(currentPhase.index + 1).padStart(2, '0')}<span> / {String(currentPhase.total).padStart(2, '0')}</span></small>}</div>
       <p className="motion-phase-cue">{currentPhase?.cue || exercise.instructions?.[0]}</p>
       {!!guide?.phases.length && <div className="motion-phase-steps" role="group" aria-label="동작 순서">{guide.phases.map((step, index) => <button type="button" key={index} aria-label={`${step.label} 구간 보기`} aria-current={currentPhase?.index === index ? 'step' : undefined} onClick={() => selectStep(step)}><span>{index + 1}</span>{step.label}</button>)}</div>}
       <div className="motion-scrubber"><input aria-label="동작 구간" aria-valuetext={`${Math.round(progress * 100)}% · ${currentPhase?.label || motion.label}`} type="range" min="0" max="100" value={Math.round(progress * 100)} style={{ '--motion-progress': `${Math.round(progress * 100)}%` }} onChange={e => setPhase(Number(e.target.value) / 100)}/><div><span>시작 자세</span><span>{Math.round(progress * 100)}%</span><span>한 주기</span></div></div>

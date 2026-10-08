@@ -8,10 +8,10 @@
       "file": "sit_stand.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 6788,
-      "sha256": "04a534da23e6ae3ca6b17446c130c8fd6f3401081cd07ec8768b0770c4a43464"
+      "width": 508,
+      "height": 430,
+      "bytes": 6792,
+      "sha256": "68d8237cfc0013f85041377bae3cd151725035be2786f001a7287ad8993b7dd6"
     },
     {
       "id": "squat",
@@ -19,10 +19,10 @@
       "file": "squat.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 5888,
-      "sha256": "a07ca99a85fa6f556b5619d3d74f05e00abe02f1cbf6cab70ddfe04cb0329940"
+      "width": 508,
+      "height": 430,
+      "bytes": 5844,
+      "sha256": "9e74af15d917cc1fa808d669bd7ecc230b6d032583d8f2c17ca78a7383edfd92"
     },
     {
       "id": "wall_push",
@@ -30,10 +30,10 @@
       "file": "wall_push.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 6942,
-      "sha256": "b7bd730f6f0ff59a8e172758276f20a43a10231ce9e4f8e190564acb2ccf5f05"
+      "width": 508,
+      "height": 430,
+      "bytes": 6760,
+      "sha256": "d5bcfaa6e400426fdc9d06690908bd6aa02babbf211572272e0d27f7298a2ac1"
     },
     {
       "id": "pushup",
@@ -41,10 +41,10 @@
       "file": "pushup.webp",
       "phase": 0.43,
       "view": "side",
-      "width": 480,
-      "height": 428,
-      "bytes": 6154,
-      "sha256": "f503342d474eab9d59d1cfabc67b4640d534f6380e515ddcddfc7092d72d9528"
+      "width": 508,
+      "height": 430,
+      "bytes": 6764,
+      "sha256": "38aa9855ac8d87edd6223fa0f564c05872fa5cda3daa0debe8c6129fd8935679"
     },
     {
       "id": "band_row",
@@ -52,10 +52,10 @@
       "file": "band_row.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 7780,
-      "sha256": "99b677554b2ac5788b9487913baf424cd0a329bfc58e247c8b9c89bf4628e13b"
+      "width": 508,
+      "height": 430,
+      "bytes": 7664,
+      "sha256": "602ba08ffc60a46c1ed07f4173519dc73c9ce7abf76eb68b9a839a345eaba26a"
     },
     {
       "id": "scapular",
@@ -63,10 +63,10 @@
       "file": "scapular.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 6266,
-      "sha256": "06f10fc21d428c99c64581d5933a7cdb5cfb1e7fe2ae712bf42515083b0720fd"
+      "width": 508,
+      "height": 430,
+      "bytes": 6070,
+      "sha256": "517cb0941db5d52f09a2ebe89e3c662a65ff9f931379d4570a6f5fdb93f4801e"
     },
     {
       "id": "bridge",
@@ -74,10 +74,10 @@
       "file": "bridge.webp",
       "phase": 0.43,
       "view": "side",
-      "width": 480,
-      "height": 428,
-      "bytes": 7042,
-      "sha256": "098dc92bf45803c28769ca8c94a0e5e7159a1e48cb725f724ad76f85adf961b6"
+      "width": 508,
+      "height": 430,
+      "bytes": 7580,
+      "sha256": "a59567607b763ad699ab01b4e739987d90293501f1c0578b4c8ec41c5aff50ce"
     },
     {
       "id": "hinge",
@@ -85,10 +85,10 @@
       "file": "hinge.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 5986,
-      "sha256": "ef872d1223ff28541e12a1b5ccefca5e64b497725f2f4eaa8ca7e6085113ff5b"
+      "width": 508,
+      "height": 430,
+      "bytes": 5994,
+      "sha256": "4750096ba42e4488f86a199431e18d789e3030f3fb284c6d7ae7f691a349c748"
     },
     {
       "id": "bird_dog",
@@ -96,10 +96,10 @@
       "file": "bird_dog.webp",
       "phase": 0.25,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 8658,
-      "sha256": "3eed36aededda907f9a4d3680fe70804d5b7b48cda8248767467bff680240139"
+      "width": 508,
+      "height": 430,
+      "bytes": 9376,
+      "sha256": "1e915a303157ec5a3ceb8d7c5d355b2400f7769785134c13ee14b7ee853e9f8b"
     },
     {
       "id": "dead_bug",
@@ -107,10 +107,10 @@
       "file": "dead_bug.webp",
       "phase": 0.25,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 11240,
-      "sha256": "9ab79ac805e2bf25a30670043c7ee41d9b63deebda8fe7183ae39a36bbb6d72a"
+      "width": 508,
+      "height": 430,
+      "bytes": 11902,
+      "sha256": "1079dcb9e13cb68ec87c271a14f56ceb44b52eeac3f411f3286ad1ea3c42ac96"
     },
     {
       "id": "curl",
@@ -118,10 +118,10 @@
       "file": "curl.webp",
       "phase": 0.43,
       "view": "front",
-      "width": 480,
-      "height": 428,
-      "bytes": 7132,
-      "sha256": "e4bc6d6370d810d2aab4f3402a2af3d62c6703efdb1c02d917264464357d853a"
+      "width": 508,
+      "height": 430,
+      "bytes": 6772,
+      "sha256": "584976847102edc9372fcfc822eeb6d725ddd8f982c8a24f5b26a2739cee795d"
     },
     {
       "id": "calf",
@@ -129,10 +129,10 @@
       "file": "calf.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 6458,
-      "sha256": "b0c23e1accf46bcce9ce6e0938e050f7cc3ddcb701411e49baa6d67dd7ea5173"
+      "width": 508,
+      "height": 430,
+      "bytes": 6396,
+      "sha256": "c9f0a1940a25a649352a70df3df1baf4c895ebcbcae8f88e3793c16fd3f5ff66"
     },
     {
       "id": "walk",
@@ -140,10 +140,10 @@
       "file": "walk.webp",
       "phase": 0.25,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 6048,
-      "sha256": "ab87a7934dbd768c6c3e4a19107fbb21adca547477e9a3adccc782062c6b7a6a"
+      "width": 508,
+      "height": 430,
+      "bytes": 5766,
+      "sha256": "edfc05f943d87c3b8a94863c8675edf73f85542b1f5cbf131ca331ac84093852"
     },
     {
       "id": "march",
@@ -151,10 +151,10 @@
       "file": "march.webp",
       "phase": 0.25,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 8972,
-      "sha256": "54af87e649e90ed23b28f3fe4530ca30f4fb61b2d5b248aeaab7aa9416a04677"
+      "width": 508,
+      "height": 430,
+      "bytes": 9304,
+      "sha256": "c26b0b33938f5323023843a6996a71c296bdaf7886924797724c5b967a6277bc"
     },
     {
       "id": "lunge",
@@ -162,10 +162,10 @@
       "file": "lunge.webp",
       "phase": 0.25,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 6028,
-      "sha256": "13af6499328177b5a729c924653ab0c06baadcfb57403990734fdd0a20f312ce"
+      "width": 508,
+      "height": 430,
+      "bytes": 6010,
+      "sha256": "c9f2f1b211d746c395280997451ddf5da53f0faac9f5521e745cb2c6a45d0c32"
     },
     {
       "id": "shoulder_press",
@@ -173,10 +173,10 @@
       "file": "shoulder_press.webp",
       "phase": 0.43,
       "view": "front",
-      "width": 480,
-      "height": 428,
-      "bytes": 6874,
-      "sha256": "051abbf0fe9d615978ee182d17467f33e11670b969bc2bfe9c3e36009bd5e113"
+      "width": 508,
+      "height": 430,
+      "bytes": 6756,
+      "sha256": "2642d051ad8d8d9942921c1e850df2981f5c810b2c470a416600c75f20ec2121"
     },
     {
       "id": "lateral_raise",
@@ -184,10 +184,10 @@
       "file": "lateral_raise.webp",
       "phase": 0.43,
       "view": "front",
-      "width": 480,
-      "height": 428,
-      "bytes": 7658,
-      "sha256": "5641dd45643df235c369b6ec1837fd5d71e656973f2ebfd31b94a9a700c13c32"
+      "width": 508,
+      "height": 430,
+      "bytes": 7392,
+      "sha256": "b40ae8ac0220867b3cae29a2b39180e14408cfeb6a8ca06a9390b48468060199"
     },
     {
       "id": "plank",
@@ -195,10 +195,10 @@
       "file": "plank.webp",
       "phase": 0,
       "view": "side",
-      "width": 480,
-      "height": 428,
-      "bytes": 5676,
-      "sha256": "60be71935972a90e50bc6a2bd718e2886713b91a495aa3c97997fe835979f892"
+      "width": 508,
+      "height": 430,
+      "bytes": 6090,
+      "sha256": "e6970b0c9d9c078672a23593926599f0a1a266d54555df71a854b1eb855650e0"
     },
     {
       "id": "step_touch",
@@ -206,10 +206,10 @@
       "file": "step_touch.webp",
       "phase": 0.25,
       "view": "front",
-      "width": 480,
-      "height": 428,
-      "bytes": 6808,
-      "sha256": "a07d26ce283ec9550bfc2aba8e691f848226dabee092791701872a99cd718d65"
+      "width": 508,
+      "height": 430,
+      "bytes": 6624,
+      "sha256": "04b368050f0c0a546b8bdbb806dccdf7337048e6ab775fe42d64ce8509b91041"
     },
     {
       "id": "standing_march",
@@ -217,10 +217,10 @@
       "file": "standing_march.webp",
       "phase": 0.25,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 6182,
-      "sha256": "c6f990d60434b54344eae15cfe49990bcd0937ed5d9d6d40bf0af23984aadcde"
+      "width": 508,
+      "height": 430,
+      "bytes": 6074,
+      "sha256": "7b4c7caffeef3575adaaec74c8f9145da2118871061372ab3900f134e324cdb8"
     },
     {
       "id": "hip_abduction",
@@ -228,10 +228,10 @@
       "file": "hip_abduction.webp",
       "phase": 0.25,
       "view": "front",
-      "width": 480,
-      "height": 428,
-      "bytes": 7646,
-      "sha256": "205460b6666c8f89662692909cf3fb23efc3dd9dcf9653b671ae0f644a129f08"
+      "width": 508,
+      "height": 430,
+      "bytes": 7410,
+      "sha256": "929f1e83227fe8068fa4f9095ce4a58636c7919c8b212a2d7e7d383749ac9f2d"
     },
     {
       "id": "heel_slide",
@@ -239,10 +239,10 @@
       "file": "heel_slide.webp",
       "phase": 0.25,
       "view": "side",
-      "width": 480,
-      "height": 428,
-      "bytes": 6054,
-      "sha256": "cc7d2b4f4997ff050f600afe7eb7af40f56d2585397671708b46293fd7cd45c2"
+      "width": 508,
+      "height": 430,
+      "bytes": 6646,
+      "sha256": "6538771a8e268d1cbb59f7cd9b2b5fe906c5145bd64d01236daa035f7a83ebb7"
     },
     {
       "id": "chest_open",
@@ -250,10 +250,10 @@
       "file": "chest_open.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 6200,
-      "sha256": "72c9d58de8d11220ed8a4e11a2b14b20595ce277d8407c8afb77dbbb7efa0f49"
+      "width": 508,
+      "height": 430,
+      "bytes": 6038,
+      "sha256": "d4454c8a6ff29f159294acb1bf86552211dfcc85ea2153f118fc73771886f0a0"
     },
     {
       "id": "shoulder_roll",
@@ -261,10 +261,10 @@
       "file": "shoulder_roll.webp",
       "phase": 0.25,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 5776,
-      "sha256": "4639087dfe0b6222709ab33f7ea801748430591e3544556f54fed0ba8169399d"
+      "width": 508,
+      "height": 430,
+      "bytes": 5664,
+      "sha256": "594e69465cf20e2e3e09353c09b81997e7909a088809f9f20d28f8a0906e4a3f"
     },
     {
       "id": "cat_cow",
@@ -272,10 +272,10 @@
       "file": "cat_cow.webp",
       "phase": 0.43,
       "view": "side",
-      "width": 480,
-      "height": 428,
-      "bytes": 7180,
-      "sha256": "d23613476a73aee96b9c17d666e7e26036161db359c92d5c484c23a6084c219b"
+      "width": 508,
+      "height": 430,
+      "bytes": 7452,
+      "sha256": "6dff2ae73156c66c7fc97ecafd2e834449419067ea8f3d727622d5f35ed8ca9f"
     },
     {
       "id": "thoracic_rotation",
@@ -283,10 +283,10 @@
       "file": "thoracic_rotation.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 6488,
-      "sha256": "9c43cceb1d4819ea9638216d8a2b688510eb17a190dc64e680c1a897db7b6144"
+      "width": 508,
+      "height": 430,
+      "bytes": 6296,
+      "sha256": "41d15279413a27fe573e367ec8739b005f081fb842bf89ce75a8146d2b11f9ea"
     },
     {
       "id": "ankle_pump",
@@ -294,10 +294,10 @@
       "file": "ankle_pump.webp",
       "phase": 0.25,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 8906,
-      "sha256": "5573e60eb9c0221535169de5e71fdad54962c9fd446f492c5b13dfe5d484b4b1"
+      "width": 508,
+      "height": 430,
+      "bytes": 8972,
+      "sha256": "3acdc1a30984735b5f1a75200d2bd75ce820876833e201ac802030bee66d3b19"
     },
     {
       "id": "hamstring_stretch",
@@ -305,10 +305,10 @@
       "file": "hamstring_stretch.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 9664,
-      "sha256": "a595ecc1e051512b57dfccce8fd25abdbc479d16cefd329e7e0161f87151c093"
+      "width": 508,
+      "height": 430,
+      "bytes": 9572,
+      "sha256": "b01e99f5fd0c17831cd537211ad0ba583531db17413f3a4e172e39b51f34eea9"
     },
     {
       "id": "calf_stretch",
@@ -316,10 +316,10 @@
       "file": "calf_stretch.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 6498,
-      "sha256": "98b2938001ad9af39d1503bb83e9db8a7b254229d7300a83c6e2fe4dff314e30"
+      "width": 508,
+      "height": 430,
+      "bytes": 6398,
+      "sha256": "0cf4d9cb5a0a9e5177791073a94f6dc9e31d62ae19bd171be18400eb7935364d"
     },
     {
       "id": "triceps_extension",
@@ -327,10 +327,10 @@
       "file": "triceps_extension.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 6050,
-      "sha256": "ab4edaf376b60ba4d3e30b7557fc19f2e9ded3bb17bf63178dcc3ee2cc79521a"
+      "width": 508,
+      "height": 430,
+      "bytes": 5982,
+      "sha256": "d5ac2eb5f48254508aa3b60bf59973f6149f790deb37209c78f5aa9dc3b869c8"
     },
     {
       "id": "goblet_squat",
@@ -338,10 +338,10 @@
       "file": "goblet_squat.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 5786,
-      "sha256": "368b47ba22dbb05aeb198f761c233c2e6e9268333501a369adfcec56cbc53147"
+      "width": 508,
+      "height": 430,
+      "bytes": 5752,
+      "sha256": "a1c8425c631d85399b153cd3f451a60b973e0e8053cee4a94fc6e283cad958df"
     },
     {
       "id": "sumo_squat",
@@ -349,10 +349,10 @@
       "file": "sumo_squat.webp",
       "phase": 0.43,
       "view": "front",
-      "width": 480,
-      "height": 428,
-      "bytes": 6950,
-      "sha256": "08e94364ab68a1c1bcee7bcf325eb21ef8f037e1cb2b69b77adf307a1bfd7439"
+      "width": 508,
+      "height": 430,
+      "bytes": 7010,
+      "sha256": "208d5f604b62a1fb3ab31a3172aeb70e507272c7d216a987a023c5a7714e400a"
     },
     {
       "id": "split_squat",
@@ -360,10 +360,10 @@
       "file": "split_squat.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 6930,
-      "sha256": "21e0a39b5e1391750d834170ae4e58f931cf790bfc3756d1d4b9c40ecbb645f3"
+      "width": 508,
+      "height": 430,
+      "bytes": 6870,
+      "sha256": "c2a6c1df626a03c0d28c4a3e773a41ca4d1ed711a460faaa5d0f312a978136da"
     },
     {
       "id": "reverse_lunge",
@@ -371,10 +371,10 @@
       "file": "reverse_lunge.webp",
       "phase": 0.25,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 6124,
-      "sha256": "c49964f09c4286fc56de7a1d898d76f3e6d5c00711893c91841bc8cb6cc439e1"
+      "width": 508,
+      "height": 430,
+      "bytes": 6154,
+      "sha256": "47eb9782b42b32337c6b16c0de00822cfd8a062d6acdc3220e11d41de0670ea0"
     },
     {
       "id": "incline_push",
@@ -382,10 +382,10 @@
       "file": "incline_push.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 8958,
-      "sha256": "7aeaf7ce93c3ad6729862c49b1a1fbf94e2ffdaf29b3b2d1fcf2b64ddc6dc65e"
+      "width": 508,
+      "height": 430,
+      "bytes": 9042,
+      "sha256": "f87f7e5ee9075f120c6619fa3e299d27f2fc1cf75960a36078fd250da7fd952c"
     },
     {
       "id": "close_wall_push",
@@ -393,10 +393,10 @@
       "file": "close_wall_push.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 6526,
-      "sha256": "d1a1a61a37f5933deb5ac225d16efae40271b379132fbaab49d30c4a233725c9"
+      "width": 508,
+      "height": 430,
+      "bytes": 6460,
+      "sha256": "85b623384d6e719cd799e34592ebc43dddc974d30cbc36825d3f41d86da6ac59"
     },
     {
       "id": "dumbbell_row",
@@ -404,10 +404,10 @@
       "file": "dumbbell_row.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 7604,
-      "sha256": "dc99a0292dbad236546a3122813525d49f9d0d3f5730e933355afed8fe413b84"
+      "width": 508,
+      "height": 430,
+      "bytes": 7650,
+      "sha256": "02c94f9e2073d23e75846a75c77b8c365a8b425dc2006dc8c5ea4c7448a69d05"
     },
     {
       "id": "band_pull_apart",
@@ -415,10 +415,10 @@
       "file": "band_pull_apart.webp",
       "phase": 0.43,
       "view": "front",
-      "width": 480,
-      "height": 428,
-      "bytes": 7354,
-      "sha256": "82c068182abf332c50564971eba60ed6b10028f699a2e34c377fc36bf5f7677b"
+      "width": 508,
+      "height": 430,
+      "bytes": 7088,
+      "sha256": "2d864c9cc1b0dd3631a6803d730dee6140f013927c3f48b6a07392cace7d8514"
     },
     {
       "id": "hammer_curl",
@@ -426,10 +426,10 @@
       "file": "hammer_curl.webp",
       "phase": 0.43,
       "view": "front",
-      "width": 480,
-      "height": 428,
-      "bytes": 7354,
-      "sha256": "8f1d45bb65e01adcc9fd883ad0d304438ad16d28e5c559c6e043393ada3650d3"
+      "width": 508,
+      "height": 430,
+      "bytes": 7074,
+      "sha256": "1a22f7603199784adee7014382d78ebf7be36fb0a663f10dc9306313082687eb"
     },
     {
       "id": "front_raise",
@@ -437,10 +437,10 @@
       "file": "front_raise.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 6922,
-      "sha256": "9ebf6acce1dc6859e2d1177e754c6dc0aee73a6a4b7b8d583b72a7433dbe82cb"
+      "width": 508,
+      "height": 430,
+      "bytes": 7136,
+      "sha256": "1ed58ac72faa4599b35edc154e98694cc8c7403d2e6ac1d370305c49085aec22"
     },
     {
       "id": "single_bridge",
@@ -448,10 +448,10 @@
       "file": "single_bridge.webp",
       "phase": 0.25,
       "view": "side",
-      "width": 480,
-      "height": 428,
-      "bytes": 6624,
-      "sha256": "90c9465d768ade856d0d3b767155af6b9128c4f72ce3e529fdd2671c00e116ae"
+      "width": 508,
+      "height": 430,
+      "bytes": 6946,
+      "sha256": "68dbd30b064ed64d51a4acd99569928aedb9493c871faa1a902bcd21765d0c3e"
     },
     {
       "id": "wall_hinge",
@@ -459,10 +459,10 @@
       "file": "wall_hinge.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 7206,
-      "sha256": "4642c8b2ed55b7ed9f57e8743f76e01a02d2b447689789702b2bb3017e1b90aa"
+      "width": 508,
+      "height": 430,
+      "bytes": 7300,
+      "sha256": "b7f8037b42bf83a100b9c91275b09fbd309595aa6cc8052e462389104a2d0c64"
     },
     {
       "id": "seated_calf",
@@ -470,10 +470,10 @@
       "file": "seated_calf.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 9186,
-      "sha256": "b1ac6222dfce3311a5abc680c894b68be864383c35caae7aa1450531a1997a96"
+      "width": 508,
+      "height": 430,
+      "bytes": 9220,
+      "sha256": "12cc1675c0462b929ee1e15167a3ea2ce7c0c0cba8c3d2897c0b55c2f3fe6bc4"
     },
     {
       "id": "brisk_walk",
@@ -481,10 +481,10 @@
       "file": "brisk_walk.webp",
       "phase": 0.25,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 6286,
-      "sha256": "58419613f369b15069c0d048c8d22b0dfc6efda9137d2f8b7953df677f1b078f"
+      "width": 508,
+      "height": 430,
+      "bytes": 6490,
+      "sha256": "50a47210b57954c6a0aa92b13b58863a34643e6770b40008aa67fbe7c66a82fa"
     },
     {
       "id": "full_pushup",
@@ -492,10 +492,10 @@
       "file": "full_pushup.webp",
       "phase": 0.43,
       "view": "side",
-      "width": 480,
-      "height": 428,
-      "bytes": 6374,
-      "sha256": "88ccb1a721c246ab7c36f3360419d1d8cc8848fb018f8f835cc614527a0033f1"
+      "width": 508,
+      "height": 430,
+      "bytes": 6810,
+      "sha256": "a6a22010e907e384af936520b05c84f609e94f36156ca16a6fb55b0c1b8b35f3"
     },
     {
       "id": "side_lunge",
@@ -503,10 +503,10 @@
       "file": "side_lunge.webp",
       "phase": 0.25,
       "view": "front",
-      "width": 480,
-      "height": 428,
-      "bytes": 7350,
-      "sha256": "e6413a7e8a9b05fa7a86b65a36a6787405352cbe6efca96264b548fa79dd7aa4"
+      "width": 508,
+      "height": 430,
+      "bytes": 7156,
+      "sha256": "106851db90e91c5812373825f485d193a3dae24db05f585b938dd6533a588cec"
     },
     {
       "id": "wall_sit",
@@ -514,10 +514,10 @@
       "file": "wall_sit.webp",
       "phase": 0,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 8110,
-      "sha256": "d9e346965022598076ad10f2013ece62e0164ffa89a8b45790147ab334f562cb"
+      "width": 508,
+      "height": 430,
+      "bytes": 8442,
+      "sha256": "55fcdeaf6da3a4334d8ea8ba1e8d41aab297b26b95feff0e788515756f5e91f9"
     },
     {
       "id": "knee_side_plank",
@@ -525,10 +525,10 @@
       "file": "knee_side_plank.webp",
       "phase": 0,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 10366,
-      "sha256": "bea81f9bb442485f8270249ea0f36fb7f9b0c2f1e65fc6c81dfd99fd45bf3751"
+      "width": 508,
+      "height": 430,
+      "bytes": 11074,
+      "sha256": "2961eafaf17c51f29e43d82a7db6113e2956d7bf2a104fdb15429684afcf2188"
     },
     {
       "id": "standing_knee_crunch",
@@ -536,10 +536,10 @@
       "file": "standing_knee_crunch.webp",
       "phase": 0.25,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 5876,
-      "sha256": "79dc75e21479fcd4eaeedbc96f2169f0189fadbb2ab40b2408a3c5b96b01b813"
+      "width": 508,
+      "height": 430,
+      "bytes": 5750,
+      "sha256": "ebbab41450f4debeec96e99d2edc64f1c0ab5697d2ba0184c94217dc1c820fb4"
     },
     {
       "id": "clamshell",
@@ -547,10 +547,10 @@
       "file": "clamshell.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 9856,
-      "sha256": "54088fb56af6c5412c03338a32bc68c783d2303501fcaea82578f1dd144ae422"
+      "width": 508,
+      "height": 430,
+      "bytes": 11016,
+      "sha256": "7d5973d0a28772900aeadd03abccc155accbd3cf470f5a19558147022af90dfa"
     },
     {
       "id": "prone_y",
@@ -558,10 +558,10 @@
       "file": "prone_y.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 8006,
-      "sha256": "499f20b84489e604d27a77e7f6b697c2bc7188fc0f03d38baf4e7c6d21b7ccc0"
+      "width": 508,
+      "height": 430,
+      "bytes": 8714,
+      "sha256": "b40f59d4ea50cb826a013535571ef9cc97f287f1c7a8183bfc6960d982d703c9"
     },
     {
       "id": "single_calf",
@@ -569,10 +569,10 @@
       "file": "single_calf.webp",
       "phase": 0.25,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 6570,
-      "sha256": "cf85ccbf2d187192fec2f6bded663373648917f1b2bb9dc244b10af566a60d52"
+      "width": 508,
+      "height": 430,
+      "bytes": 6522,
+      "sha256": "39b7f886a0a521068c22631466e8a8e8c8083ebb954d314ec3f3cab796ff6be0"
     },
     {
       "id": "machine_chest_press",
@@ -580,10 +580,10 @@
       "file": "machine_chest_press.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 12364,
-      "sha256": "d22eeeb57899871bc114c085b4c104b57c31b7010512cd84feb6310048b154f1"
+      "width": 508,
+      "height": 430,
+      "bytes": 12442,
+      "sha256": "7f311f007c472718f7a05e3948f527271220fd23e1c16d99c9c600c948942d96"
     },
     {
       "id": "lat_pulldown",
@@ -591,10 +591,10 @@
       "file": "lat_pulldown.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 9930,
-      "sha256": "4a42e9f1d87a6df29ae0efd51231b971e5c8c639360240a10023d2c27ed51598"
+      "width": 508,
+      "height": 430,
+      "bytes": 10116,
+      "sha256": "399bde670ef49a525d84aeccde0019554992ed50e876a153517802c01e446f8f"
     },
     {
       "id": "machine_row",
@@ -602,10 +602,10 @@
       "file": "machine_row.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 10902,
-      "sha256": "d61f661b00993e120edaa4c1ed94ed22bba843ded0357a150059e05770867488"
+      "width": 508,
+      "height": 430,
+      "bytes": 11090,
+      "sha256": "cddc37abac9e3e802ce54fcdd284221190e65e495b0a5dd82302415ffc7835e3"
     },
     {
       "id": "leg_press",
@@ -613,10 +613,10 @@
       "file": "leg_press.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 12762,
-      "sha256": "b9c2bee8cc47887533a4c75af76dd1ce195b9fbe8e9acf2e84f33e8210114c8c"
+      "width": 508,
+      "height": 430,
+      "bytes": 14426,
+      "sha256": "a951aa3594a144e9d5ef65cddde4a2f4e3d14f65d01e7bf6186f9f0ec21400fc"
     },
     {
       "id": "leg_extension",
@@ -624,10 +624,10 @@
       "file": "leg_extension.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 11920,
-      "sha256": "07291a18a3e9e08be0603abbacf37a1e9326acd1255495ad0243e52a6764e1f3"
+      "width": 508,
+      "height": 430,
+      "bytes": 12042,
+      "sha256": "89591d19ce2322ff257353b9513ddd8afb85fdf01d09e20adfeed9e358b6dfb1"
     },
     {
       "id": "seated_leg_curl",
@@ -635,10 +635,10 @@
       "file": "seated_leg_curl.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 9906,
-      "sha256": "9b35ca573c5b4bfb23793e2ff62898f0b097742003c5ccb5bb141430516b0d00"
+      "width": 508,
+      "height": 430,
+      "bytes": 10020,
+      "sha256": "a929bd21f6b99df0155a87668f6069f5ffbfa58f8d27f52728c0ac06f77da10f"
     },
     {
       "id": "machine_hip_abduction",
@@ -646,10 +646,10 @@
       "file": "machine_hip_abduction.webp",
       "phase": 0.43,
       "view": "front",
-      "width": 480,
-      "height": 428,
-      "bytes": 9336,
-      "sha256": "ffc03c307a654b507c705a71d8a90d76de1aa237aaf00312f2377e980701e9a0"
+      "width": 508,
+      "height": 430,
+      "bytes": 9180,
+      "sha256": "921faf709d82db163e45a70dbb7a1b8ceeb5e4e5e7b39d11452085d2e58caea8"
     },
     {
       "id": "cable_pushdown",
@@ -657,10 +657,10 @@
       "file": "cable_pushdown.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 8254,
-      "sha256": "cf89531d4a351edb7420598544ae6cee51dc3f94ded59c726858226eee9da0ef"
+      "width": 508,
+      "height": 430,
+      "bytes": 8906,
+      "sha256": "cf1d70e85050f809b7c612c787f0dc2c16ba382ff7692fb524d45448cb51d87d"
     },
     {
       "id": "cable_face_pull",
@@ -668,10 +668,10 @@
       "file": "cable_face_pull.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 8860,
-      "sha256": "0b4f2290ceff90a970bff7a029bc4e960e56f1b03f3916986a06ec4ffc20cb6a"
+      "width": 508,
+      "height": 430,
+      "bytes": 8420,
+      "sha256": "8d3882293358d8c12ea314e2bc2742c98770b4ad3c1434a3b97680533070d108"
     },
     {
       "id": "cable_row",
@@ -679,10 +679,10 @@
       "file": "cable_row.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 8874,
-      "sha256": "b64e4f66824dc17bcaa89f82b215ad87da1fa79ee079a88ac616dbe4724fba2a"
+      "width": 508,
+      "height": 430,
+      "bytes": 8656,
+      "sha256": "3da78f01291b15333ee06ebed5f611f9c15fde9b81aedb2709d09798b57feb89"
     },
     {
       "id": "dumbbell_bench_press",
@@ -690,10 +690,10 @@
       "file": "dumbbell_bench_press.webp",
       "phase": 0.43,
       "view": "side",
-      "width": 480,
-      "height": 428,
-      "bytes": 9568,
-      "sha256": "2a27dceb98c0280ae396e44d87a3e2a02bcef256209b105d8e64290899b75ca6"
+      "width": 508,
+      "height": 430,
+      "bytes": 9838,
+      "sha256": "e87f51bc1e9afa41282c9e8fedf9ad6fe5e2fe0f73883e02363e5d8590e941da"
     },
     {
       "id": "dumbbell_floor_press",
@@ -701,10 +701,10 @@
       "file": "dumbbell_floor_press.webp",
       "phase": 0.43,
       "view": "side",
-      "width": 480,
-      "height": 428,
-      "bytes": 7094,
-      "sha256": "133573f44bf4a455760ddeb097b185a4651031c40d1d3cb3093c7b5aa9e7ad3f"
+      "width": 508,
+      "height": 430,
+      "bytes": 7662,
+      "sha256": "19510b96346527f83bea6aa06af4bdc2d63352bb82afaae71bc1858d48d13bf3"
     },
     {
       "id": "dumbbell_rdl",
@@ -712,10 +712,10 @@
       "file": "dumbbell_rdl.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 6926,
-      "sha256": "3fd48c29182a1cdeb9026615966aec8813bebe19e05e30e56edfc3001a050509"
+      "width": 508,
+      "height": 430,
+      "bytes": 6900,
+      "sha256": "392f8ab0c06645a2810b5747e164f600237e19b19cd9975e11f761865e566641"
     },
     {
       "id": "barbell_rdl",
@@ -723,10 +723,10 @@
       "file": "barbell_rdl.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 8058,
-      "sha256": "8a6cb1f3b70d317055be56f111248c1b0716ab2b42aac4fe3776e666c33b37bb"
+      "width": 508,
+      "height": 430,
+      "bytes": 8108,
+      "sha256": "1d88867f69768f617582e91b729eeb7b461c8881c45d114c335262c2b5fbb1c6"
     },
     {
       "id": "barbell_bench_press",
@@ -734,10 +734,10 @@
       "file": "barbell_bench_press.webp",
       "phase": 0.43,
       "view": "side",
-      "width": 480,
-      "height": 428,
-      "bytes": 11390,
-      "sha256": "ca19d38e3de72d2369c40e422f63949e9a1cf479a86cd28318b132c2dc384209"
+      "width": 508,
+      "height": 430,
+      "bytes": 12646,
+      "sha256": "0a436c28be9dcabf49714bc0cf2f24cad791acc27ddddbf1169f95a81310dcdf"
     },
     {
       "id": "barbell_squat",
@@ -745,10 +745,10 @@
       "file": "barbell_squat.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
+      "width": 508,
+      "height": 430,
       "bytes": 7598,
-      "sha256": "0c0d22c1092cbc77d76118c4dfcf584ba0adba308bee0751497da5045289bca1"
+      "sha256": "c6883c5f5567070fb37e7ec310cd5f5b15c085aaab7de4f8b459b56e2c52b615"
     },
     {
       "id": "dumbbell_split_squat",
@@ -756,10 +756,10 @@
       "file": "dumbbell_split_squat.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 6398,
-      "sha256": "ee64f4800b4c7f366c1f7fa0eb302382c29b9b6bc023986bcc36a5739046e98f"
+      "width": 508,
+      "height": 430,
+      "bytes": 6188,
+      "sha256": "2113ccc015b1f8952778d738de52c37cd767ba88ce7393c2f55e19d9839a2ce9"
     },
     {
       "id": "dumbbell_shrug",
@@ -767,10 +767,10 @@
       "file": "dumbbell_shrug.webp",
       "phase": 0.43,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 6376,
-      "sha256": "f992d02d099f2805a099affee7664d656a573a492223474d3da67554ecc8caba"
+      "width": 508,
+      "height": 430,
+      "bytes": 6264,
+      "sha256": "f7fc38931c1cddce1279ff2c794a2f0efda930e95a3eafbb179cbaf423a27dec"
     },
     {
       "id": "treadmill_walk",
@@ -778,10 +778,10 @@
       "file": "treadmill_walk.webp",
       "phase": 0.25,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 9512,
-      "sha256": "e5111c37ede8e2bfa4ee5a6a7e35a9e346b864db89bca11beb1a14cb7f3c19d5"
+      "width": 508,
+      "height": 430,
+      "bytes": 9626,
+      "sha256": "2f1ba6dac50692a812852f9d4fdee65e757e215f145bb4266320f4721f3afe7f"
     },
     {
       "id": "stationary_cycle",
@@ -789,10 +789,10 @@
       "file": "stationary_cycle.webp",
       "phase": 0.25,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 10354,
-      "sha256": "7cc691c0e5fc7f79b7d2ddf9b94d9d3b308add8d8011c57dfb7f69d8baea62ca"
+      "width": 508,
+      "height": 430,
+      "bytes": 10360,
+      "sha256": "fa062b44ec0a54f94497ebe42f8b4e52fd386f2346384215ffa9728af20c8906"
     },
     {
       "id": "elliptical",
@@ -800,10 +800,10 @@
       "file": "elliptical.webp",
       "phase": 0.25,
       "view": "45",
-      "width": 480,
-      "height": 428,
-      "bytes": 9852,
-      "sha256": "1bebff86028f50ea02520c5ad9607a6e6f70adf791dbb13e7eed2b3ff7f40325"
+      "width": 508,
+      "height": 430,
+      "bytes": 9926,
+      "sha256": "f8af181f005f172d5b851318781ca93632a19261ef217faca76474292c74807c"
     },
     {
       "id": "cable_pallof",
@@ -811,10 +811,10 @@
       "file": "cable_pallof.webp",
       "phase": 0.43,
       "view": "front",
-      "width": 480,
-      "height": 428,
-      "bytes": 8422,
-      "sha256": "c49fb14e8a72ffa377f631bd6650f35d41488569573217a8cd74815e917d8419"
+      "width": 508,
+      "height": 430,
+      "bytes": 8298,
+      "sha256": "a402f83151b0ee78b6b12f85cbe8bf9b57a3d3860e25f792b154b5cfba66210e"
     }
   ]
 }

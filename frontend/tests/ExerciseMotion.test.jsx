@@ -1,12 +1,12 @@
 import React from 'react';
 import { describe,it,expect,vi } from 'vitest';
-import { render,screen,fireEvent } from '@testing-library/react';
+import { render,screen,fireEvent,act } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import ExerciseMotion from '../src/health/components/exercise/ExerciseMotion.jsx';
 import { MOTIONS,samplePose } from '../src/health/components/exercise/motions.js';
 import { resolveBodyProfile } from '../src/health/components/body3d/bodyProfiles.js';
 
-vi.mock('../src/health/components/exercise/ExerciseMotion3D.jsx',()=>({default:()=> <div>3D 시범</div>}));
+vi.mock('../src/health/components/exercise/ExerciseMotion3D.jsx',()=>({default:({progress})=> <div data-testid="motion-render" data-progress={progress}>3D 시범</div>}));
 
 describe('motion guidance',()=>{
   it('has finite, moving poses for every backend catalogue entry',()=>{
@@ -69,6 +69,22 @@ describe('motion guidance',()=>{
     rerender(<ExerciseMotion exercise={exercise}/>);
     expect(screen.getByRole('button',{name:'동작 재생'}).disabled).toBe(false);
     expect(screen.queryByRole('button',{name:'일시정지'})).toBeNull();
+  });
+  it('renders each 30 fps interval on a 60 Hz display without discarding the interval remainder',()=>{
+    let nextFrame;
+    const raf=vi.spyOn(window,'requestAnimationFrame').mockImplementation(callback=>{nextFrame=callback;return 1;});
+    const cancel=vi.spyOn(window,'cancelAnimationFrame').mockImplementation(()=>{});
+    const {unmount}=render(<ExerciseMotion exercise={{motion_id:'squat',exercise_name:'스쿼트',instructions:[],cautions:[]}}/>);
+    try {
+      fireEvent.click(screen.getByRole('button',{name:'동작 재생'}));
+      for(const time of [0,16.667,33.334])act(()=>nextFrame(time));
+      const first=Number(screen.getByTestId('motion-render').dataset.progress);
+      expect(first).toBeGreaterThan(0);
+      act(()=>nextFrame(50.001));
+      expect(Number(screen.getByTestId('motion-render').dataset.progress)).toBe(first);
+      act(()=>nextFrame(66.668));
+      expect(Number(screen.getByTestId('motion-render').dataset.progress)).toBeCloseTo(first*2,6);
+    } finally { unmount();raf.mockRestore();cancel.mockRestore(); }
   });
 });
 

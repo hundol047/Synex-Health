@@ -17,6 +17,9 @@ import MotionFigure from './MotionFigure.jsx';
 const FLOOR_MOTIONS = /plank|bridge|dead_bug|bird_dog|push_?up|clamshell|prone_y|heel_slide|cat_cow|floor_press|bench_press/;
 const PLANTED_FLOOR_MOTIONS = new Set(['full_pushup', 'push_up', 'plank', 'bridge', 'glute_bridge']);
 const ORIGINAL_MOTIONS = new Set(['squat', 'lunge', 'side_lunge', 'full_pushup', 'push_up', 'plank', 'bridge', 'glute_bridge', 'hinge', 'hip_hinge']);
+// These hands are unsupported. Contact palms and equipment grips retain their
+// separately calibrated shapes.
+const RELAXED_HAND_MOTIONS = new Set(['walk', 'brisk_walk', 'standing_march', 'step_touch']);
 
 export { exerciseCameraPreset } from './exerciseCamera.js';
 
@@ -63,7 +66,8 @@ function Athlete({ motion, progress, mirror, measurement, profile, compact }) {
     if (posed.handRoll && !posed.boneRotations?.[12]) posed.handRoll = model.palmRoll;
     return posed;
   }, [motion, progress, model]);
-  const skin = useMemo(() => gripSurface(model.base, model.weights, model.rest, joints.equipment?.grip), [model, motion, joints.equipment?.grip]);
+  const grip = joints.equipment?.grip || (RELAXED_HAND_MOTIONS.has(motion) ? 'relaxed' : undefined);
+  const skin = useMemo(() => gripSurface(model.base, model.weights, model.rest, grip), [model, grip]);
   const shoes = useMemo(() => model.shoes.map((shoe, i) => {
     const [ankle, toe] = i === 0 ? [11, 15] : [14, 16];
     const origin = new THREE.Vector3(...model.rest[ankle]), destination = new THREE.Vector3(...joints[ankle]);
@@ -101,14 +105,14 @@ function Athlete({ motion, progress, mirror, measurement, profile, compact }) {
 function SoftFloorShadow({ floor, heightScale }) {
   const texture = useMemo(() => {
     const canvas = document.createElement('canvas');
-    canvas.width = canvas.height = 64;
+    canvas.width = canvas.height = 128;
     const context = canvas.getContext('2d');
-    const gradient = context.createRadialGradient(32, 32, 2, 32, 32, 32);
-    gradient.addColorStop(0, 'rgba(21, 55, 63, .25)');
-    gradient.addColorStop(.45, 'rgba(21, 55, 63, .14)');
-    gradient.addColorStop(1, 'rgba(21, 55, 63, 0)');
+    const gradient = context.createRadialGradient(64, 64, 4, 64, 64, 64);
+    gradient.addColorStop(0, 'rgba(32, 45, 48, .23)');
+    gradient.addColorStop(.45, 'rgba(32, 45, 48, .11)');
+    gradient.addColorStop(1, 'rgba(32, 45, 48, 0)');
     context.fillStyle = gradient;
-    context.fillRect(0, 0, 64, 64);
+    context.fillRect(0, 0, 128, 128);
     return new THREE.CanvasTexture(canvas);
   }, []);
   useEffect(() => () => texture.dispose(), [texture]);
@@ -139,15 +143,15 @@ function Studio({ compact, heightScale, motion }) {
   const floor = FLOOR_MOTIONS.test(motion) || MOTIONS[motion]?.prop === 'mat';
   return <>
     <StudioEnvironment/>
-    <color attach="background" args={['#eaf2f2']}/>
-    <fog attach="fog" args={['#eaf2f2', 5, 11]}/>
-    <hemisphereLight args={['#fffaf2', '#afc5ca', .7]}/>
-    <directionalLight position={[-3, 5, 4]} color="#fff6e9" intensity={2.1} castShadow={!compact} shadow-mapSize={[1024, 1024]} shadow-camera-left={-2} shadow-camera-right={2} shadow-camera-top={2.6} shadow-camera-bottom={-1.3} shadow-bias={-.0003} shadow-normalBias={.012} shadow-radius={4}/>
-    <directionalLight position={[3, 2, 2]} color="#d6f0f1" intensity={.9}/>
-    <directionalLight position={[1, 3, -3]} color="#e5f0ff" intensity={1.7}/>
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -.021, 0]}><planeGeometry args={[30, 30]}/><meshStandardMaterial color="#e6eff0" roughness={.95}/></mesh>
+    <color attach="background" args={['#f0f2ef']}/>
+    <fog attach="fog" args={['#f0f2ef', 5, 11]}/>
+    <hemisphereLight args={['#fffaf4', '#b9c7c8', .65]}/>
+    <directionalLight position={[-3, 5, 4]} color="#fff6ec" intensity={1.85} castShadow={!compact} shadow-mapSize={[1024, 1024]} shadow-camera-left={-2} shadow-camera-right={2} shadow-camera-top={2.6} shadow-camera-bottom={-1.3} shadow-bias={-.0003} shadow-normalBias={.012} shadow-radius={4}/>
+    <directionalLight position={[3, 2, 2]} color="#e4eff4" intensity={.75}/>
+    <directionalLight position={[1, 3, -3]} color="#edf3ff" intensity={1.5}/>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -.021, 0]}><planeGeometry args={[30, 30]}/><meshStandardMaterial color="#e9edeb" roughness={.95}/></mesh>
     {floor && <TrainingMat heightScale={heightScale}/>}
-    {compact ? <SoftFloorShadow floor={floor} heightScale={heightScale}/> : <ContactShadows position={[0, floor ? .001 : -.019, 0]} opacity={.32} scale={4} blur={2.8} far={2} resolution={256}/>}
+    {compact ? <SoftFloorShadow floor={floor} heightScale={heightScale}/> : <ContactShadows position={[0, floor ? .001 : -.019, 0]} opacity={.29} scale={4} blur={2.3} far={2} resolution={512}/>}
   </>;
 }
 
@@ -157,7 +161,7 @@ function StudioEnvironment() {
     const generator = new THREE.PMREMGenerator(gl), room = new RoomEnvironment();
     const target = generator.fromScene(room, .04);
     scene.environment = target.texture;
-    scene.environmentIntensity = .4;
+    scene.environmentIntensity = .48;
     generator.dispose(); room.dispose(); invalidate();
     return () => { if (scene.environment === target.texture) scene.environment = null; target.dispose(); };
   }, [gl, scene, invalidate]);
@@ -187,7 +191,7 @@ export default function ExerciseMotion3D({ motion, progress, mirror, measurement
   return <>
     <div className="motion-controls motion-view-controls">{compact ? <select aria-label="운동 시범 방향" value={view} onChange={event => setView(event.target.value)}><option value="front">정면</option><option value="45">45°</option><option value="side">측면</option></select> : [['front', '정면'], ['45', '45°'], ['side', '측면'], ['back', '후면'], ['free', '자유']].map(([id, label]) => <button key={id} type="button" className="btn btn-ghost" aria-label={`${label} 운동 시범 보기`} aria-pressed={view === id} onClick={() => setView(id)}>{label}</button>)}</div>
     <div className="motion-3d-canvas" style={{ height: compact ? undefined : 340, flex: compact ? '1 1 0' : undefined, minHeight: compact ? 0 : undefined, touchAction: 'none' }}>
-      <SceneBoundary motion={motion} fallback={fallback}><Canvas shadows={!compact} dpr={[1, compact ? 1.25 : 1.5]} frameloop="demand" gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }} camera={{ position: [3, 1.5, 3], fov: 36 }} fallback={fallback} aria-label="운동복을 입은 3D 운동 시범">
+      <SceneBoundary motion={motion} fallback={fallback}><Canvas shadows={!compact} dpr={[1, compact ? 1.5 : 2]} frameloop="demand" gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }} camera={{ position: [3, 1.5, 3], fov: 36 }} fallback={fallback} aria-label="운동복을 입은 3D 운동 시범">
         <SceneCamera motion={motion} view={view} mirror={mirror} heightScale={heightScale} controls={controls}/><Studio compact={compact} heightScale={heightScale} motion={motion}/>
         <Athlete {...{ motion, progress, mirror, compact }} measurement={m} profile={p}/>
         <OrbitControls ref={controls} enabled={view === 'free'} enablePan={false} minDistance={1.2 * heightScale} maxDistance={6 * heightScale} maxPolarAngle={Math.PI / 2 - .02}/>

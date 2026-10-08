@@ -21,10 +21,17 @@ export default function BodyweightDemo({ exerciseId, compact = true, paused = fa
   useEffect(() => {
     if (!guide || paused || !playing || !visible) return;
     let frame, last, renderedAt = 0;
+    const renderInterval = 1000 / 24;
     const animate = time => {
       if (last != null && !document.hidden) {
         progressRef.current = (progressRef.current + Math.min(time - last, 80) * speed / (exerciseId === 'lunge' || exerciseId === 'side_lunge' ? 10000 : 6000)) % 1;
-        if (time - renderedAt >= 1000 / 24) { setProgress(progressRef.current); renderedAt = time; }
+        const elapsed = time - renderedAt;
+        if (elapsed + 1e-6 >= renderInterval) {
+          setProgress(progressRef.current);
+          // Retain the fractional interval instead of slipping to 20 fps on
+          // a 60 Hz display. Camera inference keeps the existing 24 fps cap.
+          renderedAt += Math.floor((elapsed + 1e-6) / renderInterval) * renderInterval;
+        }
       }
       last = time;
       frame = requestAnimationFrame(animate);
