@@ -1,0 +1,28 @@
+{
+  "sourceSha": "14f4e07e560d0ac52781b9c59a9d6d195f1479d4",
+  "appId": "com.synex.health.personal.storagefix",
+  "versionCode": 2026100804,
+  "versionName": "1.4.catalog",
+  "label": "Synex Health 수정판",
+  "bytes": 33806193,
+  "sha256": "4a2c2584548a15fe7cc8512146c1c5cacd05acee9c267014d9581df7e7a6a2ce",
+  "certificateSha256": "35bc683c5c8e45464c100dad5cafa8d8c0af6806dd39370030020cc51a727d35",
+  "modelSha256": "59929e1d1ee95287735ddd833b19cf4ac46d29bc7afddbbf6753c459690d574a",
+  "matchingWebFiles": 283,
+  "localOnly": true,
+  "checks": {
+    "frontendUnitTests": 347,
+    "frontendUnitFiles": 63,
+    "backendTests": 164,
+    "personalDevelopmentBrowserTests": 9,
+    "personalProductionBrowserTests": 13,
+    "actualMobileRenderedExercises": 74,
+    "actualMobileRenderedFrames": 222,
+    "localThumbnailCount": 74,
+    "zeroExternalRequests": true,
+    "zeroAPIRequests": true,
+    "physicalPhoneTested": false,
+    "browser": "Chromium SwiftShader, 393x852",
+    "sourceSha": "14f4e07e560d0ac52781b9c59a9d6d195f1479d4"
+  }
+}
