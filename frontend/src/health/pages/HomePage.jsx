@@ -1,6 +1,7 @@
 import {LOCAL_ONLY} from '../../shared/lib/localMode.js';
 import React, { useCallback, useState, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
+import { ArrowUpRight, Camera, PersonStanding, Activity, ClipboardCheck, Dumbbell, Check } from 'lucide-react';
 import { HealthAPI } from '../../shared/lib/api.js';
 import { Card, StatTile, Skeleton, EmptyState, ErrorState, DemoBadge, Disclaimer } from '../../shared/components/ui.jsx';
 import ReferenceSource from '../components/body3d/ReferenceSource.jsx';
@@ -36,19 +37,42 @@ export default function HomePage() {
   const total=group?.totals?.skeletal_muscle_mass;
   const published=publishedMuscleReference(measurement.data,{...bodyMap.data?.body_profile,birth_date:profile.data?.birth_date});
   const overlay=group?{myValues:valuesFor(bodyMap.data?.measurement,'lean'),referenceValues:referenceValues(group,'lean'),metric:'lean',options:{showMy:true,showReference:true,myOpacity:.85,referenceOpacity:.35,referenceStyle:'wireframe',myStyle:'surface'}}:null;
+  const hasRoutine = !!routines.data?.length && !routines.data[0].needs_review;
+  const nextStep = noMeasurement ? 0 : hasRoutine ? 2 : 1;
 
   return (
-    <>
-      <div>
+    <div className={LOCAL_ONLY?'health-home personal-home':'health-home'}>
+      <div className="home-greeting">
+        {LOCAL_ONLY&&<span className="home-eyebrow">나의 건강 공간</span>}
         <h1>{profile.loading ? <Skeleton height={28} width={220} /> : `안녕하세요${name ? `, ${name}님` : ''}`}</h1>
         <p className="muted" style={{ marginTop: 4 }}>{LOCAL_ONLY?'기록을 쌓고, 몸의 변화를 확인하세요.':'오늘도 건강한 하루가 될 거예요.'}</p>
       </div>
 
-      <Card title="오늘은 여기서 시작하세요">
+      {LOCAL_ONLY&&<div className="home-feature-grid">
+        <Link className="home-feature home-feature-coach" to="/health/pose" aria-label="맨몸운동 카메라 코치">
+          <div className="home-feature-top"><span className="home-feature-icon"><Camera size={24}/></span><ArrowUpRight size={20} aria-hidden="true"/></div>
+          <span className="home-feature-kicker">7가지 맨몸운동</span>
+          <strong>맨몸운동<br/>카메라 코치</strong>
+          <p>위에서 자세를 보고<br/>아래에서 직접 따라 하세요.</p>
+          <span className="home-feature-action">코칭 열기 <ArrowUpRight size={15}/></span>
+        </Link>
+        <Link className="home-feature home-feature-body" to="/health/body" aria-label="내 3D 마네킹 보기">
+          <div className="home-feature-top"><span className="home-feature-icon"><PersonStanding size={24}/></span><ArrowUpRight size={20} aria-hidden="true"/></div>
+          <span className="home-feature-kicker">체성분으로 보는 내 몸</span>
+          <strong>내 3D<br/>마네킹 보기</strong>
+          <p>내 측정값을 반영한<br/>신체 형태를 살펴보세요.</p>
+          <span className="home-feature-action">내 몸 열기 <ArrowUpRight size={15}/></span>
+        </Link>
+      </div>}
+
+      <Card title="오늘은 여기서 시작하세요" className="home-next-card">
+        {LOCAL_ONLY&&!measurement.loading&&!routines.loading&&!routines.error&&(!measurement.error||noMeasurement)&&<ol className="home-step-track" aria-label="기록과 운동 시작 순서">
+          {[{label:'체성분',Icon:Activity},{label:'운동 계획',Icon:ClipboardCheck},{label:'운동 기록',Icon:Dumbbell}].map(({label,Icon},i)=><li key={label} className={i===nextStep?'current':i<nextStep?'complete':''} aria-current={i===nextStep?'step':undefined}><span>{i<nextStep?<Check size={16}/>:<Icon size={16}/>}</span>{label}</li>)}
+        </ol>}
         {measurement.loading||routines.loading?<Skeleton height={70}/>:routines.error?<ErrorState message={routines.error.message} onRetry={routines.reload}/>:measurement.error&&!noMeasurement?<ErrorState message={measurement.error.message} onRetry={measurement.reload}/>:<>
         <p>{noMeasurement?'체성분을 입력하면 내 변화와 운동 계획을 확인할 수 있어요.':routines.data?.[0]?.needs_review?'측정값이나 운동 조건이 바뀌었어요. 계획을 먼저 갱신하세요.':!routines.data?.length?'운동 방식과 이용할 기구를 정하고 첫 계획을 만들어 보세요.':'준비된 운동을 하나씩 따라 하고 오늘의 기록을 남겨 보세요.'}</p>
-        <Link className="btn btn-primary" to={noMeasurement?'/health/profile':!routines.data?.length||routines.data?.[0]?.needs_review?'/health/routine':'/health/workout'}>{noMeasurement?'1. 체성분 입력하기':routines.data?.[0]?.needs_review?'변경된 조건으로 계획 갱신':!routines.data?.length?'2. 내 운동 계획 만들기':'3. 오늘 운동 시작하기'}</Link></>}
-        <div className="motion-controls"><Link className="btn btn-secondary" to="/health/pose">맨몸운동 카메라 코치</Link><Link className="btn btn-secondary" to="/health/body">내 3D 마네킹 보기</Link><Link to="/health/library">맨몸·헬스장 운동 찾기</Link><Link to="/health/progress">내 기록과 변화 보기</Link></div>
+        <Link className="btn btn-primary" to={noMeasurement?'/health/profile':!routines.data?.length||routines.data?.[0]?.needs_review?'/health/routine':'/health/workout'}>{noMeasurement?'1. 체성분 입력하기':routines.data?.[0]?.needs_review?'변경된 조건으로 계획 갱신':!routines.data?.length?'2. 내 운동 계획 만들기':'3. 오늘 운동 시작하기'}{LOCAL_ONLY&&<ArrowUpRight size={18}/>}</Link></>}
+        <div className={LOCAL_ONLY?'home-quick-links':'motion-controls'}>{!LOCAL_ONLY&&<><Link className="btn btn-secondary" to="/health/pose">맨몸운동 카메라 코치</Link><Link className="btn btn-secondary" to="/health/body">내 3D 마네킹 보기</Link></>}<Link to="/health/library">맨몸·헬스장 운동 찾기 <ArrowUpRight size={14}/></Link><Link to="/health/progress">내 기록과 변화 보기 <ArrowUpRight size={14}/></Link></div>
       </Card>
 
       {measurement.loading ? (
@@ -63,7 +87,7 @@ export default function HomePage() {
       ) : measurement.error ? (
         <ErrorState message={measurement.error.message} onRetry={measurement.reload} />
       ) : (
-        <Card title="최근 체성분" action={measurement.data.source === 'mock' ? <DemoBadge /> : null}>
+        <Card title="최근 체성분" className="home-measurements" action={measurement.data.source === 'mock' ? <DemoBadge /> : null}>
           <p className="muted">측정일 {measurement.data.measurement_date} · 이 수치는 해당 날짜에 측정한 기록입니다.</p>
           <div className="stat-grid">
             <StatTile
@@ -87,7 +111,7 @@ export default function HomePage() {
       )}
 
       {!noMeasurement && (
-        <Card title="내 몸의 변화와 비교" action={<Link className="btn btn-ghost" to="/health/body">자세히 보기</Link>}>
+        <Card title="내 몸의 변화와 비교" className="home-body-card" action={<Link className="btn btn-ghost" to="/health/body">자세히 보기</Link>}>
           {bodyMap.loading ? (
             <Skeleton height={200} />
           ) : bodyMap.data ? (
@@ -98,7 +122,7 @@ export default function HomePage() {
         </Card>
       )}
 
-      <Link to="/health/workout" className="btn btn-primary btn-block">오늘의 루틴 시작하기</Link>
+      {(!LOCAL_ONLY||hasRoutine)&&<Link to="/health/workout" className="btn btn-primary btn-block">오늘의 루틴 시작하기</Link>}
 
       <Card
         title="측정값 해설"
@@ -125,6 +149,6 @@ export default function HomePage() {
       </Card>
 
       <Disclaimer>이 앱의 분석 및 시각화 결과는 의학적 진단이 아니며, 참고용 건강 정보입니다.</Disclaimer>
-    </>
+    </div>
   );
 }

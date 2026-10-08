@@ -11,7 +11,7 @@ test('InBody inputs restore and render two distinct translucent mannequins offli
  await page.getByLabel('체중 (kg)',{exact:true}).fill('78');await page.getByLabel('키 (cm)',{exact:true}).first().fill('178');await page.getByLabel('골격근량 (kg)',{exact:true}).fill('30');await page.getByLabel('체지방률 (%)',{exact:true}).fill('23');
  await page.getByText('내 체형 맞추기 · 둘레와 골량 (선택)').click();
  for(const [label,value] of [['가슴둘레 (cm)','99'],['허리둘레 (cm)','84'],['엉덩이둘레 (cm)','101'],['추정 골량 (kg)','3'],['무기질량 (kg)','3.7']])await page.getByLabel(label,{exact:true}).fill(value);
- await page.getByRole('button',{name:'측정값 저장',exact:true}).click();await page.getByRole('link',{name:'내 3D 마네킹 보기',exact:true}).last().click();
+ await page.getByRole('button',{name:'측정값 저장',exact:true}).click();await expect(page.getByRole('status').filter({hasText:'측정값을 저장했습니다.'})).toBeVisible();await page.getByRole('link',{name:'내 3D 마네킹 보기',exact:true}).last().click();
  await expect(page.getByRole('heading',{name:'수치로 그린 내 몸'})).toBeVisible();
  await expect.poll(async()=>{try{return (await stats(page)).layers.length;}catch{return 0;}},{timeout:30000}).toBe(2);
  const initial=await stats(page);expect(initial.layers.map(l=>l.name).sort()).toEqual(['my-muscle','reference-average']);
@@ -39,7 +39,7 @@ test('InBody inputs restore and render two distinct translucent mannequins offli
 });
 test('unmeasured and ineligible profiles never receive a fabricated average',async({page})=>{
  await page.goto('/health/body');await expect(page.getByRole('link',{name:'측정값 입력하기',exact:true})).toBeVisible();await page.getByRole('link',{name:'측정값 입력하기',exact:true}).click();
- await page.getByLabel('체중 (kg)',{exact:true}).fill('60');await page.getByLabel('골격근량 (kg)',{exact:true}).fill('24');await page.getByRole('button',{name:'측정값 저장',exact:true}).click();
+ await page.getByLabel('체중 (kg)',{exact:true}).fill('60');await page.getByLabel('골격근량 (kg)',{exact:true}).fill('24');await page.getByRole('button',{name:'측정값 저장',exact:true}).click();await expect(page.getByRole('status').filter({hasText:'측정값을 저장했습니다.'})).toBeVisible();
  await page.goto('/health/body');await expect(page.getByRole('status').filter({hasText:'미입력'})).toBeVisible();
  await expect(page.getByRole('button',{name:'평균 비교 모형',exact:true})).toBeDisabled();await expect.poll(async()=>{try{return (await stats(page)).layers.length;}catch{return 0;}}).toBe(1);
  await page.goto('/health/profile');await page.getByLabel('인체 모형 성별').selectOption('female');await page.getByLabel('생년월일').fill('2015-01-01');await page.getByRole('button',{name:'저장하기',exact:true}).click();

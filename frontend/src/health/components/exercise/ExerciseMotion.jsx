@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Play, Pause, RotateCcw } from 'lucide-react';
 import ExerciseMotion3D from './ExerciseMotion3D.jsx';
 import { MOTIONS } from './motions.js';
@@ -13,16 +13,16 @@ export default function ExerciseMotion({ exercise, measurement, profile }) {
   const [progress, setProgress] = useState(0);
   const [mirror, setMirror] = useState(false);
   const phase = useRef(0);
-  const labelId = useId();
   useEffect(() => { setPlaying(false); phase.current=0; setProgress(0); }, [exercise.motion_id]);
   useEffect(() => {
     if (!playing || !motion) return;
-    let frame, last;
+    let frame, last, renderedAt = 0;
+    const duration = /^(lunge|side_lunge)$/.test(exercise.motion_id) ? 10000 : 6000;
     function animate(time) {
       if (last !== undefined) {
-        const next=phase.current + Math.min(time-last,100) * speed / 6000;
+        const next=phase.current + Math.min(time-last,100) * speed / duration;
         phase.current = loop?next%1:Math.min(next,1);if(!loop&&next>=1)setPlaying(false);
-        setProgress(phase.current);
+        if (time-renderedAt>=1000/24 || (!loop&&next>=1)) { setProgress(phase.current); renderedAt=time; }
       }
       last=time; frame=requestAnimationFrame(animate);
     }
@@ -30,7 +30,7 @@ export default function ExerciseMotion({ exercise, measurement, profile }) {
     const hide=()=>{if(document.hidden) setPlaying(false);};
     document.addEventListener('visibilitychange',hide);
     return () => {cancelAnimationFrame(frame);document.removeEventListener('visibilitychange',hide);};
-  }, [playing, speed, motion, loop]);
+  }, [playing, speed, motion, loop, exercise.motion_id]);
   if (!motion) return <p className="muted">이전 버전 운동입니다. 루틴을 다시 생성하면 동작 안내를 볼 수 있습니다.</p>;
   const setPhase=(value)=>{setPlaying(false); phase.current=value;setProgress(value);};
   return <div className="motion-layout">

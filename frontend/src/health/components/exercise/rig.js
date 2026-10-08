@@ -48,11 +48,30 @@ export function bindSurface(base){
  }
  return weights;
 }
+// Fit palm pronation once to each avatar's actual hand surface. Stature changes
+// the authored joint direction and male/female hands have different thickness.
+export function calibratePalmRoll(base,weights,rest=REST){
+ const target=.04*rest[0][1]/.94;
+ return [[5,17,12,1],[8,18,13,-1]].map(([wrist,finger,bone,side])=>{
+  const rotation=new THREE.Quaternion().setFromUnitVectors(vec(rest[finger]).sub(vec(rest[wrist])).normalize(),new THREE.Vector3(0,0,1));
+  const points=[];
+  for(let i=0;i<weights.length;i++)if(weights[i].some(([index,weight])=>index===bone&&weight>.8))points.push(new THREE.Vector3().fromArray(base,i*3).sub(vec(rest[wrist])).applyQuaternion(rotation));
+  if(!points.length)return side*.9;
+  let low=.35,high=1.25;
+  for(let iteration=0;iteration<14;iteration++){
+   const angle=(low+high)/2,cos=Math.cos(angle),sin=Math.sin(angle)*side;
+   const minimum=Math.min(...points.map(point=>point.y*cos+point.x*sin));
+   if(minimum < -target)high=angle;else low=angle;
+  }
+  return side*(low+high)/2;
+ });
+}
 // Normalized dual-quaternion blending preserves rigid volume around bent joints.
 // Original implementation of the published algorithm (Kavan et al., 2008).
 export function deformSurface(base,weights,joints,target,rest=REST,ground=true){
- const transforms=BONES.map(([a,b])=>{
+ const transforms=BONES.map(([a,b],index)=>{
   const rotation=new THREE.Quaternion().setFromUnitVectors(vec(rest[b]).sub(vec(rest[a])).normalize(),vec(joints[b]).sub(vec(joints[a])).normalize());
+  if(index>=12&&joints.handRoll?.[index-12])rotation.premultiply(new THREE.Quaternion().setFromAxisAngle(vec(joints[b]).sub(vec(joints[a])).normalize(),joints.handRoll[index-12]));
   const t=vec(joints[a]).sub(vec(rest[a]).applyQuaternion(rotation));
   const dual=new THREE.Quaternion(t.x,t.y,t.z,0).multiply(rotation);
   return {real:rotation.toArray(),dual:dual.toArray().map(v=>v*.5)};

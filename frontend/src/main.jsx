@@ -7,5 +7,6 @@ import App from './App.jsx';
 import ErrorBoundary from './shared/components/ErrorBoundary.jsx';
 import Onboarding from './shared/components/Onboarding.jsx';
 import './shared/styles.css';
+import './shared/personal-screen.css';
 
 createRoot(document.getElementById('root')).render(<ErrorBoundary><Onboarding><NativeServerSetup><AuthBoundary><App /></AuthBoundary></NativeServerSetup></Onboarding></ErrorBoundary>);
