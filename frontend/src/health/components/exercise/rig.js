@@ -1,9 +1,11 @@
 import * as THREE from 'three';
 import { samplePose, MOTIONS } from './motions.js';
+import {bodyweightPoseJoints} from './bodyweightRig.js';
 // Rest joints in the CC0 mesh coordinate system. Segment transforms are blended at joints.
-export const REST=[[0,.94,.035],[0,1.42,.025],[0,1.66,.025],[.185,1.42,.02],[.325,1.25,.04],[.445,1.105,.13],[-.185,1.42,.02],[-.325,1.25,.04],[-.445,1.105,.13],[.1,.90,.035],[.14,.52,.05],[.19,.1,.035],[-.1,.90,.035],[-.14,.52,.05],[-.19,.1,.035],[.19,.04,.20],[-.19,.04,.20]];
-export const BONES=[[0,1],[1,2],[3,4],[4,5],[6,7],[7,8],[9,10],[10,11],[12,13],[13,14],[11,15],[14,16]];
+export const REST=[[0,.94,.035],[0,1.42,.025],[0,1.66,.025],[.185,1.42,.02],[.325,1.25,.04],[.445,1.105,.13],[-.185,1.42,.02],[-.325,1.25,.04],[-.445,1.105,.13],[.1,.90,.035],[.14,.52,.05],[.19,.1,.035],[-.1,.90,.035],[-.14,.52,.05],[-.19,.1,.035],[.19,.04,.20],[-.19,.04,.20],[.565,.965,.25],[-.565,.965,.25]];
+export const BONES=[[0,1],[1,2],[3,4],[4,5],[6,7],[7,8],[9,10],[10,11],[12,13],[13,14],[11,15],[14,16],[5,17],[8,18]];
 export function poseJoints(id,t,rest=REST){
+ const bodyweight=bodyweightPoseJoints(id,t,rest);if(bodyweight)return bodyweight;
  const p=samplePose(id,t);if(!p)return rest;
  const front=MOTIONS[id].view.includes('정면');
  const point=(i,side=0)=>front?[(170-p[i][0])*.007,(306-p[i][1])*.007,side*.05]:[side,(306-p[i][1])*.007,(p[i][0]-170)*.007];
@@ -24,6 +26,10 @@ export function poseJoints(id,t,rest=REST){
   if(Math.abs(leg.y)<.5)delta.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(vec(rest[ankle]).sub(vec(rest[knee])).normalize(),vec(joints[ankle]).sub(vec(joints[knee])).normalize()));
   joints[toe]=vec(joints[ankle]).add(delta).toArray();
  }
+ for(const [elbow,wrist,finger] of [[4,5,17],[7,8,18]]){
+  const rotation=new THREE.Quaternion().setFromUnitVectors(vec(rest[wrist]).sub(vec(rest[elbow])).normalize(),vec(joints[wrist]).sub(vec(joints[elbow])).normalize());
+  joints[finger]=vec(joints[wrist]).add(vec(rest[finger]).sub(vec(rest[wrist])).applyQuaternion(rotation)).toArray();
+ }
  const lift=.08-Math.min(joints[11][1],joints[14][1]);
  for(const p of joints)p[1]+=lift;
  return joints;
@@ -37,7 +43,8 @@ export function bindSurface(base){
   const head=smooth(1.47,1.56,y),arm=smooth(.16,.27,Math.abs(x))*smooth(.84,.91,y)*(1-head),leg=(1-smooth(.85,1.02,y))*(1-arm);
   const trunk=Math.max(0,1-head-arm-leg),elbow=smooth(1.20,1.29,y),knee=smooth(.47,.57,y);
   const armIndex=x>=0?2:4,legIndex=x>=0?6:8,footIndex=x>=0?10:11,foot=1-smooth(.12,.21,y);
-  weights.push([[0,trunk],[1,head],[armIndex,arm*elbow],[armIndex+1,arm*(1-elbow)],[legIndex,leg*knee],[legIndex+1,leg*(1-knee)*(1-foot)],[footIndex,leg*(1-knee)*foot]].filter(([,w])=>w>0));
+  const handIndex=x>=0?12:13,hand=smooth(.40,.46,Math.abs(x))*(1-smooth(1.04,1.14,y));
+  weights.push([[0,trunk],[1,head],[armIndex,arm*elbow],[armIndex+1,arm*(1-elbow)*(1-hand)],[handIndex,arm*(1-elbow)*hand],[legIndex,leg*knee],[legIndex+1,leg*(1-knee)*(1-foot)],[footIndex,leg*(1-knee)*foot]].filter(([,w])=>w>0));
  }
  return weights;
 }

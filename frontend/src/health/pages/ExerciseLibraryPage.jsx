@@ -4,7 +4,7 @@ import {api} from '../../shared/lib/api.js';
 import {Card,Skeleton,ErrorState,EmptyState} from '../../shared/components/ui.jsx';
 import {useApiData} from '../lib/useApiData.js';
 import {CATEGORY_LABELS,EQUIPMENT_LABELS,equipmentText} from '../lib/exerciseLabels.js';
-import {POSE_EXERCISES} from '../components/exercise/poseCoach.js';
+import {BODYWEIGHT_EXERCISES} from '../components/exercise/bodyweightGuide.js';
 import ExerciseCard from '../components/exercise/ExerciseCard.jsx';
 export default function ExerciseLibraryPage(){
  const {data,loading,error,reload}=useApiData(()=>api('/api/exercise-catalog'),[]);
@@ -12,7 +12,7 @@ export default function ExerciseLibraryPage(){
  if(loading)return <Skeleton/>;
  if(error)return <ErrorState message={error.message} onRetry={reload}/>;
  const list=data||[], term=query.trim().toLowerCase();
- const filtered=list.filter(e=>(!poseOnly||!!POSE_EXERCISES[e.motion_id])&&(type==='all'||e.training_type===type)&&(category==='all'||e.category===category)&&(equipment==='all'||e.equipment.includes(equipment))&&`${e.name} ${e.english_name} ${e.target_muscle.join(' ')} ${equipmentText(e.equipment)}`.toLowerCase().includes(term));
+ const filtered=list.filter(e=>(!poseOnly||(e.training_type==='bodyweight'&&!!BODYWEIGHT_EXERCISES[e.motion_id]))&&(type==='all'||e.training_type===type)&&(category==='all'||e.category===category)&&(equipment==='all'||e.equipment.includes(equipment))&&`${e.name} ${e.english_name} ${e.target_muscle.join(' ')} ${equipmentText(e.equipment)}`.toLowerCase().includes(term));
  function change(setter,value){setter(value);setLimit(12);}
  return <Card title={`운동 라이브러리 · ${list.length}개`}>
   <div className="motion-controls" role="group" aria-label="운동 방식">
@@ -23,7 +23,7 @@ export default function ExerciseLibraryPage(){
    <label>운동 부위<select className="text-input" value={category} onChange={e=>change(setCategory,e.target.value)}><option value="all">전체 부위</option>{Object.entries(CATEGORY_LABELS).map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></label>
    {type!=='bodyweight'&&<label>이용할 기구<select className="text-input" value={equipment} onChange={e=>change(setEquipment,e.target.value)}><option value="all">전체 기구</option>{[...new Set(list.flatMap(e=>e.equipment))].map(id=><option key={id} value={id}>{EQUIPMENT_LABELS[id]||id}</option>)}</select></label>}
   </div>
-  <label><input type="checkbox" checked={poseOnly} onChange={e=>{setPoseOnly(e.target.checked);setLimit(12);}}/>카메라 자세 참고 지원 운동만 보기</label><p className="muted">지원 운동도 관절 추적을 이용한 참고 안내입니다. 기구 무게나 자세의 안전성을 판정하지 않습니다.</p>
+  <label><input type="checkbox" checked={poseOnly} onChange={e=>{setPoseOnly(e.target.checked);setLimit(12);}}/>맨몸 카메라 코칭 지원 운동만 보기</label><p className="muted">현재 카메라 코칭은 맨몸운동 7종을 지원합니다. 관절 추적 상태에 따라 부위별 동작을 안내합니다.</p>
   <p role="status">조건에 맞는 운동 {filtered.length}개</p>
   <Link className="btn btn-secondary" to="/health/profile">내 운동 방식·장비 설정하기</Link>
   <p className="muted">시범은 자세 이해를 위한 개념도입니다. 기구 조절과 안전 장치는 현장에서 확인하세요.</p>

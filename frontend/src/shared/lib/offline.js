@@ -1,5 +1,6 @@
 import {secureUUID} from './uuid.js';
 import {nativeOfflineKey,removeNativeOfflineKey,offlineEncryptionStatus} from './offlineKey.js';
+import {storageWait} from './storageWait.js';
 // Only pending workout writes and unfinished workout drafts persist. Health response caches and auth tokens stay in memory.
 // AES-GCM + non-exportable CryptoKey protect stored bytes, not a compromised same-origin script.
 const cache = new Map();
@@ -15,40 +16,47 @@ const entryId = async (ctx,body) => `${ctx.account}:${await hash(identity(body))
 const channel = typeof window !== 'undefined' && window.BroadcastChannel ? new window.BroadcastChannel('synex-account-lifecycle') : null;
 if(channel)channel.onmessage=({data})=>{if(data?.action==='logout'&&data.account===active?.account)window.dispatchEvent(new Event('synex-session-expired'));};
 const identity = b => JSON.stringify([b.routine_id,b.date,b.day_number,b.routine_exercise_id || b.exercise_name]);
-function database() {
-  return new Promise((resolve,reject) => {
+function database(options) {
+  let expired=false;
+  return storageWait(()=>new Promise((resolve,reject) => {
     if (!globalThis.indexedDB || !globalThis.crypto?.subtle) return reject(Error('암호화 기록 저장을 지원하지 않는 환경입니다.'));
     const request = indexedDB.open('synex-workout-outbox-v1',3);
     request.onupgradeneeded = () => {
+      if(expired){request.transaction.abort();return;}
       if(!request.result.objectStoreNames.contains('keys'))request.result.createObjectStore('keys');
       for(const name of ['records','drafts','snapshots'])if(!request.result.objectStoreNames.contains(name))request.result.createObjectStore(name,{keyPath:'id'}).createIndex('account','account');
     };
-    request.onsuccess = () => resolve(request.result);
+    request.onsuccess = () => {
+      if(expired){request.result.close();return;}
+      request.result.onversionchange=()=>request.result.close();
+      resolve(request.result);
+    };
     request.onerror = () => reject(request.error);
-  });
+    request.onblocked = () => {expired=true;reject(Error('다른 화면에서 기기 저장소를 사용 중입니다. 다른 앱 화면을 닫고 다시 시도하세요.'));};
+  }),{...options,cancel:()=>{expired=true;}});
 }
-async function transaction(stores,mode,action) {
-  const db = await database();
-  try { return await new Promise((resolve,reject) => {
-    const tx = db.transaction(stores,mode); let value;
+async function transaction(stores,mode,action,options) {
+  const db = await database(options);let tx;
+  try { return await storageWait(()=>new Promise((resolve,reject) => {
+    tx = db.transaction(stores,mode); let value;
     tx.oncomplete = () => resolve(value); tx.onerror = tx.onabort = () => reject(tx.error || Error('기기 저장 실패'));
     action(tx, result => { value = result; });
-  }); } finally { db.close(); }
+  }),{...options,cancel:()=>{try{tx?.abort();}catch{/* Already completed. */}}}); } finally { db.close(); }
 }
-async function keyFor(account) {
-  const existing=await transaction(['keys'],'readonly',(tx,done)=>{const q=tx.objectStore('keys').get(account);q.onsuccess=()=>done(q.result);});
-  const native=await nativeOfflineKey(account,existing);
-  if(native){if(native.legacyKey)await migrateNativeRows(account,existing,native);else await transaction(['keys'],'readwrite',tx=>tx.objectStore('keys').put({id:native.id,native:true},account));return native;}
+async function keyFor(account,options) {
+  const existing=await transaction(['keys'],'readonly',(tx,done)=>{const q=tx.objectStore('keys').get(account);q.onsuccess=()=>done(q.result);},options);
+  const native=await nativeOfflineKey(account,existing,options);
+  if(native){if(native.legacyKey)await migrateNativeRows(account,existing,native,options);else await transaction(['keys'],'readwrite',tx=>tx.objectStore('keys').put({id:native.id,native:true},account),options);return native;}
   const candidate = await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
   return transaction(['keys'],'readwrite',(tx,done) => {
     const store = tx.objectStore('keys'), read = store.get(account);
     read.onsuccess = () => { const record = read.result || {key:candidate,id:secureUUID()}; if (!read.result) store.put(record,account); done(record); };
-  });
+  },options);
 }
 // Re-encrypt legacy native records atomically, rejecting concurrent changes rather than losing them.
-async function migrateNativeRows(account,existing,native){
+async function migrateNativeRows(account,existing,native,options){
  const names=['records','drafts','snapshots'];
- const rows=await transaction(names,'readonly',(tx,done)=>{const all={};let pending=names.length;for(const name of names){const q=tx.objectStore(name).index('account').getAll(account);q.onsuccess=()=>{all[name]=q.result;if(--pending===0)done(all);};}});
+ const rows=await transaction(names,'readonly',(tx,done)=>{const all={};let pending=names.length;for(const name of names){const q=tx.objectStore(name).index('account').getAll(account);q.onsuccess=()=>{all[name]=q.result;if(--pending===0)done(all);};}},options);
  const encrypted={};
  for(const name of names)encrypted[name]=await Promise.all(rows[name].map(async row=>{
   const aad=encode(row.id),bytes=await crypto.subtle.decrypt({name:'AES-GCM',iv:row.iv,additionalData:aad},native.legacyKey,row.data),iv=crypto.getRandomValues(new Uint8Array(12));
@@ -64,12 +72,12 @@ async function migrateNativeRows(account,existing,native){
     if(--pending===0){for(const store of names)for(const row of encrypted[store])tx.objectStore(store).put(row);tx.objectStore('keys').put({id:native.id,native:true},account);}
    };}
   };
- });
+ },options);
 }
-async function readEntries(ctx) {
+async function readEntries(ctx,options) {
   const rows = await transaction(['records'],'readonly',(tx,done) => {
     const read = tx.objectStore('records').index('account').getAll(ctx.account); read.onsuccess = () => done(read.result);
-  });
+  },options);
   return Promise.all(rows.map(async row => {
     const bytes = await crypto.subtle.decrypt({name:'AES-GCM',iv:row.iv,additionalData:encode(row.id)},ctx.key,row.data);
     const entry=JSON.parse(new TextDecoder().decode(bytes));
@@ -99,22 +107,24 @@ async function removeEntry(ctx,entry) {
     read.onsuccess = () => { if (read.result?.mutation === entry.body.mutation_id) store.delete(entry.id); };
   });
 }
-export async function bindOfflineAccount(userId,namespace='') {
+export async function bindOfflineAccount(userId,namespace='',options={}) {
   if (!userId) throw Error('기록을 저장할 로그인 계정이 필요합니다.');
   const account = await hash(`${namespace}|${userId}`);
-  if (active?.account === account) return;
+  if (active?.account === account && active.key) return;
   lockOffline();
   const version = epoch;
   await serial(async () => {
     try {
-      const stored=await keyFor(account);
+      if(options.signal?.aborted)return;
+      const stored=await keyFor(account,options);
       const ctx = {account,key:stored.key,keyId:stored.id};
-      const restored = await readEntries(ctx);
-      if (version !== epoch) return;
-      active = ctx; entries = restored; storageError = '';
-      await restoreSnapshots(ctx);
-      draftCount=await transaction(['drafts'],'readonly',(tx,done)=>{const q=tx.objectStore('drafts').index('account').count(account);q.onsuccess=()=>done(q.result);});
-    } catch { if (version === epoch) { active={account,key:null,keyId:null}; storageError = '기기에 기록을 보관할 수 없습니다. 저장 공간과 브라우저 설정을 확인하세요.'; } }
+      const restored = await readEntries(ctx,options);
+      const snapshots=await restoreSnapshots(ctx,options);
+      const count=await transaction(['drafts'],'readonly',(tx,done)=>{const q=tx.objectStore('drafts').index('account').count(account);q.onsuccess=()=>done(q.result);},options);
+      if (version !== epoch || options.signal?.aborted) return;
+      active = ctx; entries = restored; storageError = '';draftCount=count;
+      for(const [path,data] of snapshots)cache.set(path,data);
+    } catch(e) { if (version === epoch) { active={account,key:null,keyId:null}; storageError = e.message || '기기에 기록을 보관할 수 없습니다. 저장 공간과 브라우저 설정을 확인하세요.'; } }
     notify();
   });
 }
@@ -130,13 +140,15 @@ export async function cacheResponse(path,data) {
   await transaction(['keys','snapshots'],'readwrite',tx=>{const q=tx.objectStore('keys').get(ctx.account);q.onsuccess=()=>{if(active!==ctx||q.result?.id!==ctx.keyId){tx.abort();return;}tx.objectStore('snapshots').put({id,account:ctx.account,iv,data:encrypted});};});
  }).catch(()=>{if(active===ctx){storageError='최근 데이터의 기기 저장에 실패했습니다.';notify();}});
 }
-async function restoreSnapshots(ctx){
- const rows=await transaction(['snapshots'],'readonly',(tx,done)=>{const q=tx.objectStore('snapshots').index('account').getAll(ctx.account);q.onsuccess=()=>done(q.result);});
+async function restoreSnapshots(ctx,options){
+ const rows=await transaction(['snapshots'],'readonly',(tx,done)=>{const q=tx.objectStore('snapshots').index('account').getAll(ctx.account);q.onsuccess=()=>done(q.result);},options);
+ const snapshots=[];
  for(const row of rows){
   const bytes=await crypto.subtle.decrypt({name:'AES-GCM',iv:row.iv,additionalData:encode(row.id)},ctx.key,row.data);
   const saved=JSON.parse(new TextDecoder().decode(bytes));
-  if(active===ctx&&allowed.has(saved.path)&&Date.now()-saved.saved_at<7*86400000)cache.set(saved.path,saved.data);
+  if(allowed.has(saved.path)&&Date.now()-saved.saved_at<7*86400000)snapshots.push([saved.path,saved.data]);
  }
+ return snapshots;
 }
 export function cachedResponse(path) { return allowed.has(path) && cache.has(path) ? structuredClone(cache.get(path)) : undefined; }
 export function prepareWorkout(body) {

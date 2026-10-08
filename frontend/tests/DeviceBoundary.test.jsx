@@ -11,12 +11,19 @@ it('stops indefinite startup, ignores late completion, and retries only into ver
   render(<DeviceBoundary><h1>내 기록</h1></DeviceBoundary>);
   await act(async()=>{vi.advanceTimersByTime(20000);});
   expect(screen.getByRole('alert').textContent).toContain('응답이 늦어지고');
+  expect(state.bind.mock.calls.at(-1)[2].signal.aborted).toBe(true);
   state.ready=true;await act(async()=>resolve());
   expect(screen.queryByRole('heading',{name:'내 기록'})).toBeNull();
   state.bind.mockResolvedValueOnce();
   await act(async()=>fireEvent.click(screen.getByRole('button',{name:'기기 저장소 다시 열기'})));
   expect(screen.getByRole('heading',{name:'내 기록'})).toBeTruthy();
  }finally{vi.useRealTimers();}
+});
+it('cancels the pending storage operation when the startup screen unmounts',()=>{
+ state.ready=false;state.bind.mockImplementationOnce(()=>new Promise(()=>{}));
+ const view=render(<DeviceBoundary/>);
+ const signal=state.bind.mock.calls.at(-1)[2].signal;
+ expect(signal.aborted).toBe(false);view.unmount();expect(signal.aborted).toBe(true);
 });
 it('does not admit a user when storage initialization rejects',async()=>{
  state.ready=false;state.bind.mockRejectedValueOnce(Error('기기 키 잠김'));

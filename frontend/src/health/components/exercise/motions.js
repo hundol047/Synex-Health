@@ -134,6 +134,6 @@ add('cable_pallof','몸통 고정 / 두 손 앞으로',[pallof,pose(pallof,{3:[2
 // Machine geometry is schematic; use the 2D guide that includes support/attachment points.
 for(const id of ['machine_chest_press','lat_pulldown','machine_row','leg_press','leg_extension','seated_leg_curl','machine_hip_abduction','cable_pushdown','cable_face_pull','cable_row','dumbbell_bench_press','barbell_bench_press','treadmill_walk','stationary_cycle','elliptical','cable_pallof','wall_sit'])MOTIONS[id].twoDimensionalOnly=true;
 
-for(const id of ['wall_sit','knee_side_plank'])MOTIONS[id].hold=true;
+for(const id of ['wall_sit','knee_side_plank','plank'])MOTIONS[id].hold=true;
 
 MOTIONS.dumbbell_shrug.twoDimensionalOnly=true;

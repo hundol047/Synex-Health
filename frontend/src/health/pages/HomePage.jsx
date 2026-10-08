@@ -46,7 +46,7 @@ export default function HomePage() {
         {measurement.loading||routines.loading?<Skeleton height={70}/>:routines.error?<ErrorState message={routines.error.message} onRetry={routines.reload}/>:measurement.error&&!noMeasurement?<ErrorState message={measurement.error.message} onRetry={measurement.reload}/>:<>
         <p>{noMeasurement?'체성분을 입력하면 내 변화와 운동 계획을 확인할 수 있어요.':routines.data?.[0]?.needs_review?'측정값이나 운동 조건이 바뀌었어요. 계획을 먼저 갱신하세요.':!routines.data?.length?'운동 방식과 이용할 기구를 정하고 첫 계획을 만들어 보세요.':'준비된 운동을 하나씩 따라 하고 오늘의 기록을 남겨 보세요.'}</p>
         <Link className="btn btn-primary" to={noMeasurement?'/health/profile':!routines.data?.length||routines.data?.[0]?.needs_review?'/health/routine':'/health/workout'}>{noMeasurement?'1. 체성분 입력하기':routines.data?.[0]?.needs_review?'변경된 조건으로 계획 갱신':!routines.data?.length?'2. 내 운동 계획 만들기':'3. 오늘 운동 시작하기'}</Link></>}
-        <div className="motion-controls"><Link to="/health/library">맨몸·헬스장 운동 찾기</Link><Link to="/health/progress">내 기록과 변화 보기</Link></div>
+        <div className="motion-controls"><Link className="btn btn-secondary" to="/health/pose">맨몸운동 카메라 코치</Link><Link to="/health/library">맨몸·헬스장 운동 찾기</Link><Link to="/health/progress">내 기록과 변화 보기</Link></div>
       </Card>
 
       {measurement.loading ? (

@@ -41,7 +41,7 @@ export default function App(){
           <Route path="/health/goals" element={<GoalsPage />} />
           <Route path="/health/privacy" element={<PrivacyPage />} />
           <Route path="/health/library" element={<ExerciseLibraryPage />} />
-          <Route path="/health/pose" element={LOCAL_ONLY?<ServerFeature/>:<PoseCoachPage />} />
+          <Route path="/health/pose" element={<PoseCoachPage />} />
           <Route path="/health/admin" element={LOCAL_ONLY?<ServerFeature/>:<AdminPage />} />
           <Route path="/health/connections" element={<ConnectionsPage />} />
           <Route path="/health" element={<HomePage />} />

@@ -1,4 +1,20 @@
 import {test,expect} from '@playwright/test';
+test('first launch recovers from a temporary storage failure without erasing records',async({page})=>{
+ await page.addInitScript(()=>{
+  const open=indexedDB.open.bind(indexedDB);let first=true;
+  indexedDB.open=(...args)=>{
+   if(first){first=false;throw Error('기기 저장소가 잠시 사용 중입니다. 다시 시도하세요.');}
+   return open(...args);
+  };
+ });
+ await page.goto('/health');
+ for(let i=0;i<6;i++)await page.getByRole('button',{name:'다음',exact:true}).click();
+ await page.getByRole('button',{name:'시작하기',exact:true}).click();
+ await expect(page.getByRole('alert')).toContainText('잠시 사용 중');
+ await page.getByRole('button',{name:'기기 저장소 다시 열기'}).click();
+ await expect(page.getByText('내 기록은 이 기기에')).toBeVisible();
+ await expect(page.getByRole('heading',{name:'이 폰에서 사용'})).toHaveCount(0);
+});
 test('personal mode opens without a server and restores records on restart',async({page,context})=>{
  const requests=[],errors=[];page.on('request',r=>{if(new URL(r.url()).pathname.startsWith('/api/'))requests.push(r.url());});page.on('pageerror',e=>errors.push(e.message));
  await page.addInitScript(()=>localStorage.setItem('synex-personal-onboarding-v1','done'));

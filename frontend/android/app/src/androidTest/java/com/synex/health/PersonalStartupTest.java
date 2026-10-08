@@ -16,6 +16,13 @@ import static org.junit.Assert.*;
 
 @RunWith(AndroidJUnit4.class)
 public class PersonalStartupTest {
+    // Software-only cloud emulators can take minutes to initialize WebView.
+    // This changes only the test harness wait; app storage deadlines stay intact.
+    private long timeoutMultiplier() {
+        return Math.max(1, Long.parseLong(InstrumentationRegistry.getArguments()
+            .getString("timeoutMultiplier", "1")));
+    }
+
     private String evaluate(ActivityScenario<MainActivity> scenario, String script) throws Exception {
         AtomicReference<String> result = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
@@ -23,13 +30,13 @@ public class PersonalStartupTest {
             WebView web = activity.getBridge().getWebView();
             web.evaluateJavascript(script, value -> { result.set(value); latch.countDown(); });
         });
-        assertTrue("WebView did not answer JavaScript", latch.await(15, TimeUnit.SECONDS));
+        assertTrue("WebView did not answer JavaScript", latch.await(15 * timeoutMultiplier(), TimeUnit.SECONDS));
         Object value = new JSONTokener(result.get()).nextValue();
         return String.valueOf(value);
     }
 
     private void waitFor(ActivityScenario<MainActivity> scenario, String expression) throws Exception {
-        long until = System.currentTimeMillis() + 45000;
+        long until = System.currentTimeMillis() + 45000 * timeoutMultiplier();
         while (System.currentTimeMillis() < until) {
             if ("true".equals(evaluate(scenario, expression))) return;
             Thread.sleep(250);
@@ -39,7 +46,7 @@ public class PersonalStartupTest {
 
     @Test public void completesOnboardingAndRestoresNativeEncryptedKey() throws Exception {
         Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        assertEquals("com.synex.health.personal", context.getPackageName());
+        assertEquals(InstrumentationRegistry.getArguments().getString("expectedPackage", "com.synex.health.personal"), context.getPackageName());
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
             waitFor(scenario, "!!document.querySelector('button')");
             for (int i=0; i<6; i++) {

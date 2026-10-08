@@ -4,7 +4,7 @@ import PendingWorkouts from './PendingWorkouts.jsx';
 import { useAuth } from './AuthBoundary.jsx';
 import React, { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { Home, PersonStanding, GitCompare, Dumbbell, ClipboardList, TrendingUp, MessageCircle, User, Users, Crown } from 'lucide-react';
 import {offlineState} from '../lib/offline.js';
 import { getDemoUser, setDemoUser, syncPendingWorkouts } from '../lib/api.js';
@@ -23,6 +23,7 @@ const STUDENT_NAV = [
 
 export default function Layout({ children }) {
   const navigate = useNavigate();
+  const {pathname} = useLocation();
   const [offline,setOffline]=useState(offlineState()),[syncError,setSyncError]=useState(''),[cached,setCached]=useState(false);
   const [online,setOnline] = useState(navigator.onLine);
   useEffect(()=>{
@@ -50,7 +51,7 @@ export default function Layout({ children }) {
   const nav = isAdmin ? [{to:'/health/admin',label:'관리자',icon:Users,end:true}] : isCounselor ? [{ to: '/health-center', label: '학생 관리', icon: Users, end: true }] : STUDENT_NAV.filter(item=>!LOCAL_ONLY||!['/health/agent','/health/subscription'].includes(item.to));
 
   return (
-    <div className={`health-shell ${auth.local?'device-personal':''}`}>
+    <div className={`health-shell ${auth.local?'device-personal':''} ${pathname==='/health/pose'?'health-shell-pose':''}`}>
       <header className="health-topbar">
         <div className="health-brand">
           <span className="health-brand-icon">SH</span>
