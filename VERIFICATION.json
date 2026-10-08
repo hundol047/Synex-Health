@@ -1,0 +1,44 @@
+{
+  "sourceSha": "1973995f62d7165fc7170d9d6c09ae1e1423aaf2",
+  "appId": "com.synex.health.personal.storagefix",
+  "versionCode": 2026100806,
+  "versionName": "1.6.camera-body",
+  "label": "Synex Health 수정판",
+  "bytes": 33834790,
+  "sha256": "684ff125aed8568bbfacde3a44d91dd4d7bc5eb3cc7b77af7991935ca5632dd1",
+  "certificateSha256": "35bc683c5c8e45464c100dad5cafa8d8c0af6806dd39370030020cc51a727d35",
+  "modelSha256": "59929e1d1ee95287735ddd833b19cf4ac46d29bc7afddbbf6753c459690d574a",
+  "matchingWebFiles": 285,
+  "localOnly": true,
+  "nativeVideoBridge": {
+    "className": "com.synex.health.VideoRecordingPlugin",
+    "registeredInMainActivity": true,
+    "methods": [
+      "append",
+      "begin",
+      "cancel",
+      "finish"
+    ],
+    "physicalDeviceExportTested": false
+  },
+  "checks": {
+    "frontendUnitTests": 380,
+    "frontendUnitFiles": 66,
+    "frontendUnitCountSource": "explicit counts from completed full Vitest run",
+    "backendSourceUnchanged": true,
+    "previousBackendTests": 164,
+    "personalProductionBrowserTests": 22,
+    "productionBrowserCountSource": "/workspace/scratch/synex-camera-body-playwright-report.json",
+    "actualMobileRenderedExercises": 74,
+    "actualMobileRenderedFrames": 222,
+    "localThumbnailCount": 74,
+    "thumbnailBytesAndHashesVerified": true,
+    "actualRenderedFrameHashesVerified": true,
+    "zeroExternalRequests": true,
+    "zeroAPIRequests": true,
+    "physicalPhoneTested": false,
+    "nativeAndroidVideoExportPhysicallyTested": false,
+    "browser": "Chromium SwiftShader, mobile 360/393 px",
+    "sourceSha": "1973995f62d7165fc7170d9d6c09ae1e1423aaf2"
+  }
+}
