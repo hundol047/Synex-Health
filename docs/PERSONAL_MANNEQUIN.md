@@ -12,10 +12,17 @@ is independent of the dressed exercise avatar. Fat and muscle affect different
 envelopes; height sets scale. Girth constraints use triangle/plane perimeter
 lengths. The personal view and home preview use blue on white: the personal
 surface is blue at opacity 0.66 (34% transparent), and the literature-reference
-surface is pale blue at opacity 0.22 (78% transparent). They appear side by side
-by default, with matching labels and independently adjustable transparency.
+surface is a lighter gray-blue at opacity 0.22 (78% transparent). They are
+overlaid at the same origin by default, with feet, scale and rotation aligned so
+the difference reads as a direct silhouette comparison. A side-by-side mode and
+an independent reference contour are available when separation is easier to
+inspect. Both layers keep matching labels and independently adjustable
+transparency.
 Rotation, zoom, region selection, opacity, reference layers and an
-illustrative skeleton are available. Demand rendering pauses in the background.
+illustrative skeleton are available. The body surface is fitted from closed
+central torso contours and local limb centers, so measured chest, waist and hip
+values do not inflate the pelvis or break the human silhouette. Demand rendering
+pauses in the background.
 
 This is **not a 3D scan or a validated anatomical reconstruction**. Composition
 totals and girths do not identify fat distribution, face, skeletal dimensions

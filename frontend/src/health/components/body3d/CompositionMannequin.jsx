@@ -9,12 +9,12 @@ const regions={TRUNK:'몸통',LEFT_ARM:'왼팔',RIGHT_ARM:'오른팔',LEFT_LEG:'
 const format=v=>Number.isFinite(v)?Number(v.toFixed(1)):'—';
 export default function CompositionMannequin({comparisonData,height=540}){
  const m=comparisonData?.measurement,profile=comparisonData?.body_profile||{};
- const [display,setDisplay]=useState('side-by-side'),[selected,setSelected]=useState(null);
- const [myOpacity,setMyOpacity]=useState(.66),[referenceOpacity,setReferenceOpacity]=useState(.22),[skeleton,setSkeleton]=useState(false),[referenceWireframe,setReferenceWireframe]=useState(false);
+ const [display,setDisplay]=useState('overlap'),[selected,setSelected]=useState(null);
+ const [myOpacity,setMyOpacity]=useState(.66),[referenceOpacity,setReferenceOpacity]=useState(.22),[skeleton,setSkeleton]=useState(false),[referenceWireframe,setReferenceWireframe]=useState(false),[referenceContour,setReferenceContour]=useState(true);
  const reference=useMemo(()=>publishedMuscleReference(m,profile),[m,profile]);
  const refMeasurement=useMemo(()=>reference.available&&reference.canOverlay?referenceMannequinMeasurement(m,reference.value):null,[m,reference.available,reference.canOverlay,reference.value]);
- const options={showMy:display!=='reference'||!refMeasurement,showReference:display!=='my',layout:display==='side-by-side'?'side-by-side':'overlap',myOpacity,referenceOpacity,skeleton,referenceWireframe};
- const mannequin=useMemo(()=>({referenceMeasurement:refMeasurement,options}),[refMeasurement,display,myOpacity,referenceOpacity,skeleton,referenceWireframe]);
+ const options={showMy:display!=='reference'||!refMeasurement,showReference:display!=='my',layout:display==='side-by-side'?'side-by-side':'overlap',myOpacity,referenceOpacity,skeleton,referenceWireframe,referenceContour};
+ const mannequin=useMemo(()=>({referenceMeasurement:refMeasurement,options}),[refMeasurement,display,myOpacity,referenceOpacity,skeleton,referenceWireframe,referenceContour]);
  const missing=[['height','키'],['weight','체중'],['body_fat_percentage','체지방률'],['skeletal_muscle_mass','골격근량']].filter(([k])=>!Number.isFinite(k==='height'?m?.height||profile.height_cm:m?.[k])).map(([,label])=>label);
  const referenceMissing=[...(!['male','female'].includes(profile.gender)?['성별']:[]),...(ageAt(profile.birth_date,m?.measurement_date)==null?['생년월일']:[]),...missing];
  const age=ageAt(profile.birth_date,m?.measurement_date),outsideStudyAge=age!=null&&(age<18||age>88),referenceNeedsInput=referenceMissing.length>0&&!outsideStudyAge;
@@ -23,10 +23,10 @@ export default function CompositionMannequin({comparisonData,height=540}){
   <div className="mannequin-heading"><div><span className="mannequin-eyebrow">MY BODY</span><h3>수치로 그린 내 몸</h3><p className="muted">{m.measurement_date} 측정 · 반투명 3D</p></div><Link className="btn btn-secondary" to="/health/profile">인바디 수치 입력</Link></div>
   <div className="mannequin-stats">{[['키',m.height||profile.height_cm,'cm'],['체중',m.weight,'kg'],['체지방률',m.body_fat_percentage,'%'],['골격근량',m.skeletal_muscle_mass,'kg'],...(Number.isFinite(m.bone_mass)?[['추정 골량',m.bone_mass,'kg']]:[]),...(Number.isFinite(m.mineral_mass)?[['무기질량',m.mineral_mass,'kg']]:[])].map(([name,value,unit])=><div key={name}><span>{name}</span><strong>{format(value)} <small>{unit}</small></strong></div>)}</div>
   {missing.length>0&&<p role="status" className="mannequin-note">{missing.join('·')} 미입력: 해당 부분은 기본 형상입니다. <Link to="/health/profile">측정값 보완</Link></p>}
-  {!refMeasurement&&<div className="mannequin-reference-setup" role="status"><strong>평균 3D 모형 {referenceNeedsInput?'입력 확인':'표시 조건 확인'}</strong><p>{outsideStudyAge?'이 연구의 대상은 18–88세입니다. 해당 연령 밖에서는 평균 모형을 표시하지 않습니다.':referenceNeedsInput?`${referenceMissing.join(' · ')}을 입력하면 내 몸과 문헌 평균을 나란히 비교할 수 있습니다.`:reference.available?reference.overlayReason:reference.reason}</p>{referenceNeedsInput&&<Link className="btn btn-secondary" to="/health/profile">평균 모형에 필요한 정보 입력</Link>}</div>}
-  <div className="mannequin-display" aria-label="마네킹 표시 선택">{[['side-by-side','나란히 비교'],['overlap','겹쳐보기'],['my','내 몸만'],['reference','평균 비교 모형']].map(([id,title])=><button className={`btn ${display===id?'btn-primary':'btn-ghost'}`} key={id} aria-pressed={display===id} disabled={['side-by-side','reference'].includes(id)&&!refMeasurement} onClick={()=>setDisplay(id)}>{title}</button>)}</div>
+  {!refMeasurement&&<div className="mannequin-reference-setup" role="status"><strong>평균 3D 모형 {referenceNeedsInput?'입력 확인':'표시 조건 확인'}</strong><p>{outsideStudyAge?'이 연구의 대상은 18–88세입니다. 해당 연령 밖에서는 평균 모형을 표시하지 않습니다.':referenceNeedsInput?`${referenceMissing.join(' · ')}을 입력하면 내 몸과 문헌 평균을 겹쳐 비교할 수 있습니다.`:reference.available?reference.overlayReason:reference.reason}</p>{referenceNeedsInput&&<Link className="btn btn-secondary" to="/health/profile">평균 모형에 필요한 정보 입력</Link>}</div>}
+  <div className="mannequin-display" aria-label="마네킹 표시 선택">{[['overlap','겹쳐보기'],['side-by-side','나란히 비교'],['my','내 몸만'],['reference','평균 비교 모형']].map(([id,title])=><button className={`btn ${display===id?'btn-primary':'btn-ghost'}`} key={id} aria-pressed={display===id} disabled={['side-by-side','reference'].includes(id)&&!refMeasurement} onClick={()=>setDisplay(id)}>{title}</button>)}</div>
   <div className={`mannequin-legend ${display==='side-by-side'&&refMeasurement?'paired':''}`}>{options.showMy&&<span><i/>내 체성분 · {format(m.skeletal_muscle_mass)} kg</span>}{options.showReference&&refMeasurement&&<span><i className="reference"/>문헌 평균 · {format(reference.value)} kg</span>}</div>
-  {display==='side-by-side'&&refMeasurement&&<p className="mannequin-comparison-hint">왼쪽은 내 몸, 오른쪽은 문헌 평균 골격근량을 반영한 3D 모형입니다. 내 몸은 진한 파랑, 평균은 연한 파랑으로 구분합니다. 함께 회전하고 확대됩니다.</p>}
+  {refMeasurement&&options.showMy&&options.showReference&&<p className="mannequin-comparison-hint">{display==='side-by-side'?'왼쪽은 내 몸, 오른쪽은 문헌 평균 골격근량을 반영한 3D 모형입니다.':'내 몸과 문헌 평균 모형의 키·발 위치를 맞춰 같은 자리에 겹쳤습니다.'} 파랑은 내 몸, 회색 표면과 윤곽선은 평균입니다. {display==='overlap'&&'얼굴과 목은 내 모형 하나로 표시합니다.'}</p>}
   <BodyScene {...{measurement:m,profile,height,selectedSegment:selected,onSelect:setSelected,mannequin}} gender={profile.gender} performanceMode="composition_mannequin"/>
   {selected&&<p className="mannequin-selected" role="status">{regions[selected]} 선택 · {m.segments?.find(s=>s.segment===selected)?.lean_mass_kg!=null?`결과지 부위 제지방량 ${m.segments.find(s=>s.segment===selected).lean_mass_kg}kg`:'부위별 근육 kg는 전체 골격근량만으로 계산하지 않습니다.'}</p>}
   <details className="mannequin-settings"><summary>투명도 · 골격 · 표현 설정</summary><div>
@@ -35,6 +35,7 @@ export default function CompositionMannequin({comparisonData,height=540}){
    <label>평균 투명도 {Math.round((1-referenceOpacity)*100)}%<input aria-label="평균 마네킹 투명도" type="range" min="10" max="90" step="1" value={Math.round((1-referenceOpacity)*100)} onChange={e=>setReferenceOpacity(Number(((100-Number(e.target.value))/100).toFixed(2)))}/></label>
    <label><input type="checkbox" checked={skeleton} onChange={e=>setSkeleton(e.target.checked)}/>골격 구조 보기 (설명용)</label>
    <label><input type="checkbox" checked={referenceWireframe} onChange={e=>setReferenceWireframe(e.target.checked)}/>평균 모형 격자선</label>
+   <label><input type="checkbox" checked={referenceContour} onChange={e=>setReferenceContour(e.target.checked)}/>평균 윤곽선 보기</label>
   </div></details>
   <div className="mannequin-reference-card"><h4>골격근량 · 문헌 평균 비교</h4>{reference.available?<>
    <div className="mannequin-mass-comparison"><span>내 측정<strong>{format(m.skeletal_muscle_mass)} <small>kg</small></strong></span><span>문헌 평균<strong>{format(reference.value)} <small>kg</small></strong></span><span>평균과 차이<strong>{signed(reference.differenceKg)} <small>kg</small></strong></span></div>

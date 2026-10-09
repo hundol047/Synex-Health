@@ -41,9 +41,9 @@ it('fits measured torso perimeters without moving the pose or inventing regional
 it('shows provenance and composition, toggles actual layers, and keeps own body without eligible mean',async()=>{
  const user=userEvent.setup();const view=render(<MemoryRouter><CompositionMannequin comparisonData={{measurement,body_profile:profile}}/></MemoryRouter>);
  expect(screen.getByText('골격근량')).toBeTruthy();expect(screen.getByText(/전신 MRI/)).toBeTruthy();expect(scene.mock.lastCall[0].mannequin.referenceMeasurement.skeletal_muscle_mass).toBe(33);
- expect(screen.getByRole('button',{name:'나란히 비교',exact:true}).getAttribute('aria-pressed')).toBe('true');
- expect(scene.mock.lastCall[0].mannequin.options).toMatchObject({layout:'side-by-side',showMy:true,showReference:true,myOpacity:.66,referenceOpacity:.22});
- expect(screen.getByText(/왼쪽은 내 몸, 오른쪽은 문헌 평균/)).toBeTruthy();
+ expect(screen.getByRole('button',{name:'겹쳐보기',exact:true}).getAttribute('aria-pressed')).toBe('true');
+ expect(scene.mock.lastCall[0].mannequin.options).toMatchObject({layout:'overlap',showMy:true,showReference:true,myOpacity:.66,referenceOpacity:.22,referenceContour:true});
+ expect(screen.getByText(/키·발 위치를 맞춰 같은 자리에/)).toBeTruthy();
  await user.click(screen.getByRole('button',{name:'내 몸만',exact:true}));expect(scene.mock.lastCall[0].mannequin.options.showReference).toBe(false);
  await user.click(screen.getByText('투명도 · 골격 · 표현 설정'));await user.click(screen.getByRole('checkbox',{name:/골격 구조 보기/}));expect(scene.mock.lastCall[0].mannequin.options.skeleton).toBe(true);
  view.rerender(<MemoryRouter><CompositionMannequin comparisonData={{measurement,body_profile:{gender:'unspecified'}}}/></MemoryRouter>);
@@ -60,6 +60,8 @@ it('higher displayed transparency makes both actual materials less opaque',async
  expect(scene.mock.lastCall[0].mannequin.options).toMatchObject({myOpacity:.2,referenceOpacity:.25});
  expect(screen.getByText('내 몸 투명도 80%')).toBeTruthy();
  await user.click(screen.getByRole('button',{name:'겹쳐보기',exact:true}));expect(scene.mock.lastCall[0].mannequin.options).toMatchObject({layout:'overlap',showMy:true,showReference:true});
+ await user.click(screen.getByRole('checkbox',{name:'평균 윤곽선 보기'}));expect(scene.mock.lastCall[0].mannequin.options.referenceContour).toBe(false);
+ await user.click(screen.getByRole('button',{name:'나란히 비교',exact:true}));expect(scene.mock.lastCall[0].mannequin.options.layout).toBe('side-by-side');
  await user.click(screen.getByRole('button',{name:'평균 비교 모형',exact:true}));expect(scene.mock.lastCall[0].mannequin.options).toMatchObject({showMy:false,showReference:true});
  expect(screen.queryByText('내 체성분 · 30 kg')).toBeNull();expect(screen.getByText('문헌 평균 · 33 kg')).toBeTruthy();
 });
