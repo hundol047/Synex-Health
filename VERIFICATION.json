@@ -1,0 +1,80 @@
+{
+  "sourceSha": "edaf3a0c6516942e330dd6790a0db929a7fd84ee",
+  "appId": "com.synex.health.personal.storagefix",
+  "versionCode": 2026100908,
+  "versionName": "1.8.overlay",
+  "label": "Synex Health 수정판",
+  "bytes": 33859306,
+  "sha256": "82a9654e870654e33877116d1c8670893bd7af345621387c21beb8dcc265daf2",
+  "certificateSha256": "35bc683c5c8e45464c100dad5cafa8d8c0af6806dd39370030020cc51a727d35",
+  "modelSha256": "59929e1d1ee95287735ddd833b19cf4ac46d29bc7afddbbf6753c459690d574a",
+  "matchingWebFiles": 285,
+  "localOnly": true,
+  "nativeVideoBridge": {
+    "className": "com.synex.health.VideoRecordingPlugin",
+    "registeredInMainActivity": true,
+    "methods": [
+      "append",
+      "begin",
+      "cancel",
+      "finish"
+    ],
+    "physicalDeviceExportTested": false
+  },
+  "checks": {
+    "frontendUnitTests": 391,
+    "frontendUnitFiles": 68,
+    "frontendUnitCountSource": "/workspace/scratch/synex-body-overlay-vitest-report.json",
+    "backendSourceUnchanged": true,
+    "previousBackendTests": 164,
+    "personalProductionBrowserTests": 21,
+    "productionBrowserCountSource": "/workspace/scratch/synex-body-overlay-playwright-report.json",
+    "productionBrowserSpecFiles": [
+      "bodyweight-coach.spec.js",
+      "composition-mannequin.spec.js",
+      "device-only.spec.js",
+      "exercise-library-studio.spec.js",
+      "video-recording.spec.js",
+      "workout-record-layout.spec.js"
+    ],
+    "previousActualMobileRenderedExercises": 74,
+    "previousActualMobileRenderedFrames": 222,
+    "exerciseRendersRepeatedForThisRelease": false,
+    "exerciseRenderDependenciesUnchangedSincePreviousProof": true,
+    "unchangedExerciseDependencyPaths": [
+      "frontend/src/health/components/exercise",
+      "frontend/src/health/components/body3d/avatar.js",
+      "frontend/src/health/components/body3d/morph.js",
+      "frontend/src/health/components/body3d/Footwear.jsx",
+      "frontend/src/health/components/body3d/assets/human-mesh.json",
+      "frontend/src/shared/lib/localCatalog.json",
+      "frontend/public/exercise-thumbnails",
+      "frontend/package.json",
+      "frontend/package-lock.json"
+    ],
+    "previousExerciseRenderProof": {
+      "sourceSha": "5e610a2e0bce4613743627675b6ad1a621b5350f",
+      "artifactCommit": "50d0b7fb2f036c25ee3a7e25ae696c1c98c6b845",
+      "versionName": "1.7.blue-white",
+      "proof": "VERIFICATION.json in immutable previous artifact commit",
+      "actualMobileRenderedExercises": 74,
+      "actualMobileRenderedFrames": 222,
+      "actualRenderedFrameHashesVerified": true,
+      "zeroExternalRequests": true,
+      "zeroAPIRequests": true,
+      "apkURL": "https://github.com/hundol047/Synex-Health/raw/refs/heads/synex-apk-blue-white-20261008/Synex-Health-blue-white.apk"
+    },
+    "localThumbnailCount": 74,
+    "thumbnailBytesAndHashesVerified": true,
+    "thumbnailsIdenticalToPreviousSource": true,
+    "bodyOverlayRenderMetadata": [],
+    "bodyOverlayRenderMetadataPresent": false,
+    "physicalPhoneTested": false,
+    "nativeAndroidVideoExportPhysicallyTested": false,
+    "browser": "Chromium SwiftShader, mobile 360/393 px",
+    "sourceSha": "edaf3a0c6516942e330dd6790a0db929a7fd84ee",
+    "versionCode": 2026100908,
+    "versionName": "1.8.overlay",
+    "apkSha256": "82a9654e870654e33877116d1c8670893bd7af345621387c21beb8dcc265daf2"
+  }
+}
