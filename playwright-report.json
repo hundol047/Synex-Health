@@ -1,0 +1,960 @@
+{
+  "config": {
+    "argv": [
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "/workspace/Synex-Health/frontend/node_modules/.bin/playwright",
+      "test",
+      "--config",
+      "/workspace/scratch/synex-motion-quality-production-playwright.config.mjs",
+      "bodyweight-coach.spec.js",
+      "composition-mannequin.spec.js",
+      "device-only.spec.js",
+      "exercise-library-studio.spec.js",
+      "video-recording.spec.js",
+      "workout-record-layout.spec.js",
+      "tempo-coaching.spec.js",
+      "--reporter=list,json"
+    ],
+    "configFile": "/workspace/scratch/synex-motion-quality-production-playwright.config.mjs",
+    "rootDir": "/workspace/Synex-Health/frontend/e2e-local",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/workspace/Synex-Health/frontend/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "/workspace/Synex-Health/frontend/e2e-local",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 1,
+    "webServer": {
+      "command": "npm exec -- vite preview --host 127.0.0.1 --port 5174 --strictPort",
+      "url": "http://127.0.0.1:5174",
+      "reuseExistingServer": false,
+      "cwd": "/workspace/Synex-Health/frontend"
+    }
+  },
+  "suites": [
+    {
+      "title": "bodyweight-coach.spec.js",
+      "file": "bodyweight-coach.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "bodyweight coach opens from home without a server and keeps equal phone panels",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 11339,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-17T11:30:29.407Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "0578c3cbf6a388181e95-3d25c6bdb6952136d0dd",
+          "file": "bodyweight-coach.spec.js",
+          "line": 17,
+          "column": 1
+        },
+        {
+          "title": "short phones scroll and landscape preserves both guides after a permission error",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3972,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-17T11:30:40.908Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "0578c3cbf6a388181e95-01b357ff727cadc9a63e",
+          "file": "bodyweight-coach.spec.js",
+          "line": 54,
+          "column": 1
+        },
+        {
+          "title": "camera permission denial explains how to recover and leaves coaching retry available",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2838,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-17T11:30:44.889Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "0578c3cbf6a388181e95-d48f629a073f2fa1c973",
+          "file": "bodyweight-coach.spec.js",
+          "line": 72,
+          "column": 1
+        },
+        {
+          "title": "personal build enforces local requests and rejects equipment motion URLs",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2364,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-17T11:30:47.736Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "0578c3cbf6a388181e95-71518609f0fb1b271142",
+          "file": "bodyweight-coach.spec.js",
+          "line": 83,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "composition-mannequin.spec.js",
+      "file": "composition-mannequin.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "InBody inputs restore and render two distinct translucent mannequins offline on a phone",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 9432,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-17T11:30:50.118Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bb1895a078e824b7a9e5-bef0c91b77701ca2e90e",
+          "file": "composition-mannequin.spec.js",
+          "line": 33,
+          "column": 1
+        },
+        {
+          "title": "average appears only after actual eligible profile inputs and aligns with the personal body in 3D",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4741,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-17T11:30:59.558Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bb1895a078e824b7a9e5-66e9a4060d43d58a9d56",
+          "file": "composition-mannequin.spec.js",
+          "line": 85,
+          "column": 1
+        },
+        {
+          "title": "equal muscle mass yields coincident geometry without an inflated reference shell",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2499,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-17T11:31:04.308Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bb1895a078e824b7a9e5-ece79d53c9809023fb1f",
+          "file": "composition-mannequin.spec.js",
+          "line": 94,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "device-only.spec.js",
+      "file": "device-only.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "first launch recovers from a temporary storage failure without erasing records",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 526,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-17T11:31:06.824Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "af6bc4b70d3fe875bb75-0da4e33fa7986c0e7325",
+          "file": "device-only.spec.js",
+          "line": 2,
+          "column": 1
+        },
+        {
+          "title": "personal mode opens without a server and restores records on restart",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 17695,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-17T11:31:07.359Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "af6bc4b70d3fe875bb75-e1d37665d73bc8dc120c",
+          "file": "device-only.spec.js",
+          "line": 18,
+          "column": 1
+        },
+        {
+          "title": "first launch completes the fixed intro without login or server setup",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 519,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-17T11:31:25.059Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "af6bc4b70d3fe875bb75-e261c78a6d015e942cee",
+          "file": "device-only.spec.js",
+          "line": 41,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "exercise-library-studio.spec.js",
+      "file": "exercise-library-studio.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "catalogue keeps static previews and one large selected 3D stage on a small phone",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4721,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-17T11:31:25.596Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "29c9a8503458ac58735e-3c9c90c1308ba0bc779c",
+          "file": "exercise-library-studio.spec.js",
+          "line": 9,
+          "column": 1
+        },
+        {
+          "title": "Escape and route changes restore the mobile navigation after focusing a guide",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3405,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-17T11:31:30.322Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "29c9a8503458ac58735e-eb417a0bcb75afebecc8",
+          "file": "exercise-library-studio.spec.js",
+          "line": 55,
+          "column": 1
+        },
+        {
+          "title": "changing the selected exercise resets the stage and keeps directions and playback available",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6631,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-17T11:31:33.735Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "29c9a8503458ac58735e-ab4c5213b774b7f26f25",
+          "file": "exercise-library-studio.spec.js",
+          "line": 69,
+          "column": 1
+        },
+        {
+          "title": "camera filter offers exactly the seven supported bodyweight variants",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1093,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-17T11:31:40.374Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "29c9a8503458ac58735e-e84006d9e0f419404f93",
+          "file": "exercise-library-studio.spec.js",
+          "line": 95,
+          "column": 1
+        },
+        {
+          "title": "supported library movement opens the matching camera guide with an explicit start",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3469,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-17T11:31:41.475Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "29c9a8503458ac58735e-6b54d73acc7c40fe2abe",
+          "file": "exercise-library-studio.spec.js",
+          "line": 107,
+          "column": 1
+        },
+        {
+          "title": "the first bodyweight library movement offers filming without claiming unsupported correction",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3074,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-17T11:31:44.950Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "29c9a8503458ac58735e-21a7980f3afd3bd2f7cc",
+          "file": "exercise-library-studio.spec.js",
+          "line": 133,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "tempo-coaching.spec.js",
+      "file": "tempo-coaching.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "instructor follows the timer, pauses with it, and resets cleanly for another exercise",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 13161,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-17T11:31:48.036Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7f546763508182753f35-b4cf083c1ca857304b11",
+          "file": "tempo-coaching.spec.js",
+          "line": 7,
+          "column": 1
+        },
+        {
+          "title": "real bundled MediaPipe analyzes a captured empty scene and reports insufficient evidence, not invented form advice",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 8148,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-17T11:32:01.202Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7f546763508182753f35-f8b4a4c9a501331928bb",
+          "file": "tempo-coaching.spec.js",
+          "line": 42,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "video-recording.spec.js",
+      "file": "video-recording.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "real MediaRecorder records moving video, decodes replay and downloads a nonempty video after explicit save",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 8289,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-17T11:32:09.366Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "492bd8eb1a1ff69e9873-5d3b14e1caf4fa9fdff5",
+          "file": "video-recording.spec.js",
+          "line": 22,
+          "column": 1
+        },
+        {
+          "title": "background and exercise change immediately stop and discard the active camera recording",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3541,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-17T11:32:17.661Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "492bd8eb1a1ff69e9873-5fa5084ead5a323fe027",
+          "file": "video-recording.spec.js",
+          "line": 48,
+          "column": 1
+        },
+        {
+          "title": "recording permission errors keep retry available and short phones can reach the capture button",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3562,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-17T11:32:21.211Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "492bd8eb1a1ff69e9873-361b2dc8a5c22d655245",
+          "file": "video-recording.spec.js",
+          "line": 58,
+          "column": 1
+        },
+        {
+          "title": "wall push opens its own 3D demonstration and real recording while unsupported correction does not load a model",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6957,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-17T11:32:24.779Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "492bd8eb1a1ff69e9873-af6aef297c3ca2f013d8",
+          "file": "video-recording.spec.js",
+          "line": 65,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "workout-record-layout.spec.js",
+      "file": "workout-record-layout.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "360px effort and pain stay aligned and persist in manual/guided records",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 10153,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-17T11:32:31.748Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e4c055c02309f0da0d78-02b974890c59ebf5dc35",
+          "file": "workout-record-layout.spec.js",
+          "line": 34,
+          "column": 30
+        },
+        {
+          "title": "393px effort and pain stay aligned and persist in manual/guided records",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 10376,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-17T11:32:41.908Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e4c055c02309f0da0d78-996f1e2ed29d19a6dfce",
+          "file": "workout-record-layout.spec.js",
+          "line": 34,
+          "column": 30
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-17T11:30:28.702Z",
+    "duration": 143695.154,
+    "expected": 24,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "sourceSha": "a318399ea74b13640d6ce17f7ee7af11e8859cfa",
+  "appId": "com.synex.health.personal.storagefix",
+  "versionCode": 2026101709,
+  "versionName": "1.9.tempo",
+  "label": "Synex Health 수정판",
+  "bytes": 34037046,
+  "sha256": "635f06413f56b9aeae38837bd21884501f55ba9757c4d012392aa5e59f392f67",
+  "certificateSha256": "35bc683c5c8e45464c100dad5cafa8d8c0af6806dd39370030020cc51a727d35",
+  "modelSha256": "59929e1d1ee95287735ddd833b19cf4ac46d29bc7afddbbf6753c459690d574a",
+  "matchingWebFiles": 284,
+  "localOnly": true,
+  "nativeVideoBridge": {
+    "className": "com.synex.health.VideoRecordingPlugin",
+    "registeredInMainActivity": true,
+    "methods": [
+      "append",
+      "begin",
+      "cancel",
+      "finish"
+    ],
+    "physicalDeviceExportTested": false
+  },
+  "nativeSpeechBridge": {
+    "className": "com.synex.health.WorkoutSpeechPlugin",
+    "registeredInMainActivity": true,
+    "methods": [
+      "speak",
+      "stop"
+    ],
+    "physicalDeviceExportTested": false
+  },
+  "checks": {
+    "sourceSha": "a318399ea74b13640d6ce17f7ee7af11e8859cfa",
+    "frontendUnitTests": 408,
+    "frontendUnitFiles": 71,
+    "personalProductionBrowserTests": 24,
+    "browserSpecFiles": [
+      "bodyweight-coach.spec.js",
+      "composition-mannequin.spec.js",
+      "device-only.spec.js",
+      "exercise-library-studio.spec.js",
+      "tempo-coaching.spec.js",
+      "video-recording.spec.js",
+      "workout-record-layout.spec.js"
+    ],
+    "unitStartedAt": 1792236575837,
+    "browserStartedAt": "2026-10-17T11:30:28.702Z",
+    "unitReportSha256": "9f18d52f37f60a7987336ceb78687fa79c506eaea3173b6b8bdf9fe081177eef",
+    "browserReportSha256": "b87b81a4bf95d9da27c20e8fd160e3a214fd60c0d97e78a7140f76f3929bc7f4",
+    "previousReportsReused": false,
+    "physicalPhoneTested": false,
+    "physicalAndroidSpeechTested": false,
+    "realExerciseVideoAccuracyValidated": false,
+    "poseTests": "Synthetic visible-joint scenarios plus real bundled-model inference on a captured empty scene; no clinical accuracy claim"
+  }
+}
