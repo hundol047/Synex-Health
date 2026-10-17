@@ -25,6 +25,12 @@ test('personal mode opens without a server and restores records on restart',asyn
  await page.getByLabel('소속 학교').selectOption('yonsei-mirae');await expect(page.getByRole('checkbox').first()).toBeDisabled();await page.getByRole('button',{name:'학교·공유 설정 저장'}).click();await expect(page.getByText('학교와 공유 설정을 저장했습니다.',{exact:true})).toBeVisible();
  await page.goto('/health/routine');await page.getByRole('button',{name:'오늘의 루틴 시작하기'}).click();await expect(page.getByText('이 폰에서 생성한 기본 운동 계획입니다.',{exact:false})).toBeVisible();
  await page.screenshot({path:'test-results/android-local-routine.png',fullPage:true});
+ await page.goto('/health/workout');await page.getByRole('button',{name:'자동 시범 · 휴식 맞춰 따라하기'}).click();
+ await expect(page.getByRole('heading',{name:'자동 운동 따라하기'})).toBeVisible();
+ await page.getByRole('button',{name:'자동 따라하기 시작'}).click();
+ await expect(page.getByRole('region',{name:'자동 운동 템포'})).toHaveAttribute('data-stage','work',{timeout:15000});
+ await page.getByRole('button',{name:'실제 수행 기록하기'}).click();
+ await expect(page.getByRole('button',{name:'운동 따라하기 · 한 운동씩 시작'})).toBeVisible();
  await page.goto('/health/workout');await page.getByRole('button',{name:'운동 따라하기 · 한 운동씩 시작'}).click();await page.getByLabel('이번 세트 반복 횟수').fill('8');await page.getByRole('button',{name:'세트 완료',exact:true}).click();await page.getByRole('button',{name:'휴식 건너뛰기'}).click();await page.getByRole('button',{name:'완료 기록 · 다음 운동',exact:true}).click();await expect(page.locator('.workout-mode .exercise-card-info strong')).toHaveText('벽 푸시업');
  await page.goto('/health');await page.reload();await expect(page.getByText('24kg',{exact:true}).first()).toBeVisible();await page.screenshot({path:'test-results/android-local-home.png',fullPage:true});
  await page.goto('/health/profile');await expect(page.getByLabel('소속 학교')).toHaveValue('yonsei-mirae');
