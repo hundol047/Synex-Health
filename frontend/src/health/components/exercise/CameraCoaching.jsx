@@ -1,4 +1,4 @@
-import React,{useEffect,useLayoutEffect,useRef,useState} from 'react';
+import React,{useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import {flushSync} from 'react-dom';
 import {Camera,CameraOff,SwitchCamera,Play,PersonStanding,Video,Square,Download,Share2,Trash2} from 'lucide-react';
 import {Capacitor} from '@capacitor/core';
@@ -16,6 +16,11 @@ import {BODYWEIGHT_EXERCISES,getBodyweightGuide} from './bodyweightGuide.js';
 import {createVideoRecording,recordingMimeType,saveRecordedVideo,MAX_RECORDING_SECONDS} from './videoRecording.js';
 import './coaching.css';
 import './recording.css';
+import useTempoSession from './useTempoSession.js';
+import TempoControls from './TempoControls.jsx';
+import {poseFeedback,PoseSessionReport} from './poseFeedback.js';
+import PoseFeedbackDetails from './PoseFeedbackDetails.jsx';
+import {speechAvailable,speakWorkout,stopWorkoutSpeech} from './workoutSpeech.js';
 
 const CONNECTIONS=[[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28],[27,29],[29,31],[28,30],[30,32]];
 const validPoint=p=>p&&(p.visibility??0)>=.7&&Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.x>=0&&p.x<=1&&p.y>=0&&p.y<=1;
@@ -34,21 +39,28 @@ function cameraError(e){
  if(e.name==='NotReadableError')return '다른 앱이 카메라를 사용하고 있습니다. 카메라를 사용하는 앱을 닫고 다시 시작해 주세요.';
  return e.message||'카메라를 시작하지 못했습니다. 다시 시도해 주세요.';
 }
-export default function CameraCoaching({motion='squat',paused=false,onEvaluation,immersive=false}){
+export default function CameraCoaching({motion='squat',paused=false,onEvaluation,immersive=false,playback:externalPlayback,exercise}){
  const video=useRef(null),stream=useRef(null),cameraVersion=useRef(0),analysisVersion=useRef(0),resources=useRef({}),voiceRef=useRef(false),speechAt=useRef(-Infinity),releaseCamera=useRef(null);
  const recordingSession=useRef(null),recordingVersion=useRef(0),clipUrl=useRef(null),saveVersion=useRef(0),saveAbort=useRef(null),cameraTimer=useRef(null);
+ const recordingReport=useRef(null),playbackRef=useRef(null),lastSpoken=useRef(null);
+ const [clipReport,setClipReport]=useState(null);
  const previousMotion=useRef(motion);
  const [running,setRunning]=useState(false),[busy,setBusy]=useState(false),[feedback,setFeedback]=useState(false),[preparing,setPreparing]=useState(false),[voice,setVoice]=useState(false),[error,setError]=useState(''),[result,setResult]=useState(null),[points,setPoints]=useState([]),[size,setSize]=useState([640,480]),[layout,setLayout]=useState('split'),[facing,setFacing]=useState('user');
  const [recordingPhase,setRecordingPhase]=useState('idle'),[recordingSeconds,setRecordingSeconds]=useState(0),[recordPending,setRecordPending]=useState(false),[recordedClip,setRecordedClip]=useState(null),[saving,setSaving]=useState(false),[recordingMessage,setRecordingMessage]=useState('');
  const guide=getBodyweightGuide(motion),label=guide?.label||POSE_EXERCISES[motion]?.label||'운동',analysisSupported=Object.hasOwn(BODYWEIGHT_EXERCISES,motion)&&Object.hasOwn(POSE_EXERCISES,motion);
+ const tempoExercises=useMemo(()=>[exercise||{motion_id:guide?.motionId,exercise_name:label,sets:2,reps:8,hold_seconds:30}], [exercise,motion]);
+ const tempo=useTempoSession(tempoExercises,{disabled:paused||externalPlayback!==undefined});
+ const playback=externalPlayback!==undefined?externalPlayback:tempo.playback;
+ playbackRef.current=playback;
+ const detail=result?.coaching||poseFeedback(motion,null);
  function stopAnalysis(){
   analysisVersion.current++;const r=resources.current;resources.current={};
   cancelAnimationFrame(r.frame);video.current?.cancelVideoFrameCallback?.(r.videoFrame);clearInterval(r.timer);clearTimeout(r.prepareTimer);clearTimeout(r.staleTimer);r.abort?.abort();r.detector?.close();
-  window.speechSynthesis?.cancel();voiceRef.current=false;setVoice(false);setFeedback(false);setPreparing(false);setResult(null);setPoints([]);
+  stopWorkoutSpeech('pose');voiceRef.current=false;lastSpoken.current=null;setVoice(false);setFeedback(false);setPreparing(false);setResult(null);setPoints([]);
  }
  function clearRecording(){
   saveVersion.current++;saveAbort.current?.abort();saveAbort.current=null;if(clipUrl.current)URL.revokeObjectURL(clipUrl.current);clipUrl.current=null;
-  setRecordedClip(null);setRecordingMessage('');setSaving(false);
+  setRecordedClip(null);setClipReport(null);recordingReport.current=null;setRecordingMessage('');setSaving(false);
  }
  function stopCamera({clearClip=false}={}){
   clearTimeout(cameraTimer.current);recordingVersion.current++;recordingSession.current?.cancel();recordingSession.current=null;setRecordingPhase('idle');setRecordPending(false);
@@ -88,11 +100,13 @@ export default function CameraCoaching({motion='squat',paused=false,onEvaluation
   }catch(e){if(version===cameraVersion.current){stopCamera();setError(cameraError(e));}}
   finally{if(version===cameraVersion.current)setBusy(false);}
  }
- async function startRecording(){
+ async function startRecording(analyze=false){
   try{recordingMimeType();}catch(e){setError(e.message);return;}
   clearRecording();setError('');setRecordPending(true);
   const media=stream.current||await startCamera();
   if(!media||media!==stream.current||document.hidden)return;
+  if(analyze&&!feedback){await startAnalysis();if(!resources.current.detector||media!==stream.current){setRecordPending(false);return;}}
+  recordingReport.current=(analyze||resources.current.detector)?new PoseSessionReport():null;
   const version=++recordingVersion.current;
   try{
    recordingSession.current=createVideoRecording(media,{
@@ -102,9 +116,10 @@ export default function CameraCoaching({motion='squat',paused=false,onEvaluation
     onError:message=>{if(version===recordingVersion.current){recordingSession.current=null;setError(message);}},
     onComplete:clip=>{
      if(version!==recordingVersion.current)return;
-     recordingSession.current=null;stopCamera();
+     const report=recordingReport.current?.snapshot();recordingReport.current=null;
+     recordingSession.current=null;stopCamera();setClipReport(report||null);
      const url=URL.createObjectURL(clip.blob);clipUrl.current=url;setRecordedClip({...clip,url});
-     setRecordingMessage('촬영 완료 · 아래 영상에서 내 자세를 다시 확인하세요.');
+     setRecordingMessage(report?'촬영 완료 · 영상과 이번 촬영의 자세 분석을 확인하세요.':'촬영 완료 · 아래 영상에서 내 자세를 다시 확인하세요.');
     },
    });
   }catch(e){setError(e.message);setRecordingPhase('idle');}
@@ -145,12 +160,15 @@ export default function CameraCoaching({motion='squat',paused=false,onEvaluation
       const raw=out.landmarks?.[0]||[],w=video.current.videoWidth||640,h=video.current.videoHeight||480;
       const visible=POSE_EXERCISES[motion].joints.every(i=>raw[i]&&raw[i].x>=0&&raw[i].x<=1&&raw[i].y>=0&&raw[i].y<=1);
       const calibrated=calibration.update(out.landmarks,time);
-      const next=stableCoachingFeedback(calibrated.ready?coach.update(visible?raw:[],time,h/w):{...coach.update([],time,h/w),feedback:calibrated.message,calibration:calibrated.progress});
-      const message=next.issues?.[0]?.message||next.corrections?.[0]||next.warnings?.[0]||next.feedback;
-      watch();onEvaluation?.({...next,message});setResult({...next,message});setPoints(next.detected?raw:[]);setSize([w,h]);last=time;
-      if(r.hadDetection&&!next.detected)window.speechSynthesis?.cancel();r.hadDetection=next.detected;
-      if(message&&voiceRef.current&&time-speechAt.current>10000&&window.speechSynthesis&&typeof SpeechSynthesisUtterance!=='undefined'){
-       window.speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(message);utterance.lang='ko-KR';window.speechSynthesis.speak(utterance);speechAt.current=time;
+      const resting=playbackRef.current&&!playbackRef.current.running;
+      const next=stableCoachingFeedback(calibrated.ready&&!resting?coach.update(visible?raw:[],time,h/w):{...coach.update([],time,h/w),feedback:resting?'준비·휴식 구간입니다. 운동 시작 후 자세를 다시 분석합니다.':calibrated.message,calibration:calibrated.progress});
+      const coaching=poseFeedback(motion,next),message=coaching.message;
+      if(recordingSession.current&&recordingReport.current)recordingReport.current.add(next,time);
+      watch();onEvaluation?.({...next,message});setResult({...next,message,coaching});setPoints(next.detected?raw:[]);setSize([w,h]);last=time;
+      if(r.hadDetection&&!next.detected)stopWorkoutSpeech('pose');r.hadDetection=next.detected;
+      const speechKey=next.issues?.[0]?.id||`${next.detected?'tracked':'lost'}:${next.movement_phase||next.phase}`;
+      if(message&&voiceRef.current&&time-speechAt.current>8000&&speechKey!==lastSpoken.current&&speechAvailable()){
+       speakWorkout(message,'pose').catch(e=>{if(active()){setError(e.message);voiceRef.current=false;setVoice(false);}});speechAt.current=time;lastSpoken.current=speechKey;
       }
      }
      schedule();
@@ -165,7 +183,7 @@ export default function CameraCoaching({motion='squat',paused=false,onEvaluation
  return <section className={`camera-coaching${immersive?' camera-coaching-immersive':''}`} aria-label="선택형 카메라 코칭">
   {!immersive&&<div className="coach-toolbar"><label>화면 배치<select value={layout} onChange={e=>{setLayout(e.target.value);if(e.target.value==='demo')stopCamera();}}><option value="split">반반 보기</option><option value="camera">카메라 크게</option><option value="demo">시범만 보기</option></select></label><span>권장 촬영: {guide?.cameraView||CAMERA_DIRECTIONS[motion]}</span></div>}
   <div className={`coach-stage coach-stage-${layout}`}>
-   <div className="coach-pane coach-example" aria-label={`위 화면 · ${label} 운동 시범`}><div className="coach-pane-title"><strong><b className="coach-pane-step">01</b> 운동 방법</strong><span className="coach-exercise-tag">{guide?.target||label}</span></div><div className="coach-demo"><BodyweightDemo exerciseId={motion} compact paused={paused}/></div></div>
+   <div className="coach-pane coach-example" aria-label={`위 화면 · ${label} 운동 시범`}><div className="coach-pane-title"><strong><b className="coach-pane-step">01</b> 운동 방법</strong><span className="coach-exercise-tag">{guide?.target||label}</span></div><div className="coach-demo"><BodyweightDemo exerciseId={motion} compact paused={paused} playback={playback}/></div></div>
    <div className="coach-pane coach-camera" hidden={layout==='demo'} aria-label="아래 화면 · 내 운동 자세"><div className="coach-pane-title"><strong><b className="coach-pane-step">02</b> 내 자세</strong><span className={`coach-live-status${running?' is-active':''}`}><i aria-hidden="true"/>{recording?'동영상 촬영 중':recordedClip?'촬영 영상 다시 보기':running?(preparing?'자세 확인 준비 중':feedback?'자세 확인 중':'카메라 켜짐'):'카메라 꺼짐'}</span></div><div className={`coach-feed${mirror?' coach-feed-mirrored':''}`}><video ref={video} hidden={!!recordedClip} muted playsInline aria-label="내 운동 모습"/>{recordedClip&&<video className="coach-recorded-video" src={recordedClip.url} controls playsInline aria-label="촬영한 운동 동영상"/>}{recording&&<span className="coach-recording-badge" aria-live="off">● 촬영 {String(Math.floor(recordingSeconds/60)).padStart(2,'0')}:{String(recordingSeconds%60).padStart(2,'0')}</span>}<svg aria-hidden="true" viewBox={`0 0 ${size[0]} ${size[1]}`} preserveAspectRatio="xMidYMid meet">{feedback&&CONNECTIONS.map(([a,b])=>validPoint(points[a])&&validPoint(points[b])?<line key={`${a}-${b}`} x1={points[a].x*size[0]} y1={points[a].y*size[1]} x2={points[b].x*size[0]} y2={points[b].y*size[1]} stroke={highlighted.has(a)&&highlighted.has(b)?'#ff7c72':'#5df5cb'} strokeWidth={highlighted.has(a)&&highlighted.has(b)?6:4} strokeLinecap="round" data-highlighted={highlighted.has(a)&&highlighted.has(b)||undefined}/>:null)}{feedback&&points.map((point,index)=>validPoint(point)&&index>=11?<circle key={index} cx={point.x*size[0]} cy={point.y*size[1]} r={highlighted.has(index)?7:4} fill={highlighted.has(index)?'#ff7c72':'#5df5cb'} stroke="#142031" strokeWidth="2" data-joint={index} data-highlighted={highlighted.has(index)||undefined}/>:null)}</svg>{!running&&!recordedClip&&<div className="coach-camera-empty"><div className="coach-camera-guide" aria-hidden="true"><PersonStanding size={48} strokeWidth={1.2}/><i/><i/><i/><i/></div><strong>내 자세를 확인할 준비</strong><p>휴대폰을 고정하고 전신이 보이도록<br/>2–3m 떨어져 주세요.</p><span>동영상 촬영 또는 코칭 시작을 눌러 주세요</span></div>}
     <span className="coach-camera-direction">{guide?.cameraView||CAMERA_DIRECTIONS[motion]} 촬영</span>
    </div>
@@ -176,10 +194,13 @@ export default function CameraCoaching({motion='squat',paused=false,onEvaluation
    <div className="coach-recording-actions" aria-label="운동 동영상 촬영">
     {recordedClip?<div className="coach-recording-save-actions"><button type="button" className="btn btn-primary" disabled={saving} onClick={()=>saveRecording()}><Download size={16} aria-hidden="true"/>{saving?'저장 중…':'휴대폰에 저장'}</button><button type="button" className="btn btn-secondary" disabled={saving} onClick={()=>saveRecording(true)}><Share2 size={16} aria-hidden="true"/>공유</button><button type="button" className="btn btn-ghost coach-discard" aria-label="촬영 영상 버리기" disabled={saving} onClick={clearRecording}><Trash2 size={17} aria-hidden="true"/></button></div>:<><button type="button" className={`btn coach-record-button${recording?' is-recording':''}`} disabled={busy||paused||finishing||recordPending||layout==='demo'} onClick={()=>recording?recordingSession.current?.stop():startRecording()}>{recording?<Square size={16} aria-hidden="true"/>:<Video size={17} aria-hidden="true"/>}{recording?'촬영 종료':finishing?'영상 준비 중…':recordPending?'촬영 준비 중…':'동영상 촬영'}</button><span className="coach-recording-meta">영상만 · 최대 {MAX_RECORDING_SECONDS}초<br/>저장 전에는 기기 메모리에만</span></>}
    </div>
+   {analysisSupported&&!recordedClip&&!recording&&!finishing&&<button type="button" className="btn btn-primary" disabled={busy||paused||recordPending||layout==='demo'} onClick={()=>startRecording(true)}>촬영·분석 함께 시작</button>}
    {recordingMessage&&<p className="coach-recording-status" role="status">{recordingMessage}</p>}
-   <div className="coach-preferences"><label><input type="checkbox" role="switch" checked={feedback} disabled={!analysisSupported||!running||paused} onChange={e=>e.target.checked?startAnalysis():stopAnalysis()}/> 자세 피드백 받기</label><label><input type="checkbox" checked={voice} disabled={!feedback||preparing||!window.speechSynthesis} onChange={e=>{voiceRef.current=e.target.checked;setVoice(e.target.checked);speechAt.current=-Infinity;if(!e.target.checked)window.speechSynthesis?.cancel();}}/> 음성으로도 듣기</label></div>
+   {externalPlayback===undefined&&<TempoControls session={tempo} exercises={tempoExercises} disabled={paused}/>}
+   <PoseFeedbackDetails feedback={detail} report={clipReport}/>
+   <div className="coach-preferences"><label><input type="checkbox" role="switch" checked={feedback} disabled={!analysisSupported||!running||paused} onChange={e=>e.target.checked?startAnalysis():stopAnalysis()}/> 자세 피드백 받기</label><label><input type="checkbox" checked={voice} disabled={!feedback||preparing||!speechAvailable()} onChange={e=>{voiceRef.current=e.target.checked;setVoice(e.target.checked);speechAt.current=-Infinity;lastSpoken.current=null;if(!e.target.checked)stopWorkoutSpeech('pose');}}/> 음성으로도 듣기</label></div>
    {error&&<p className="coach-error" role="alert">{error}</p>}
-   <details className="coach-help"><summary>촬영 준비 · 기기 내 분석</summary><p>권장 방향: {guide?.cameraView||CAMERA_DIRECTIONS[motion]}. 한 사람의 전신과 바닥 지지점이 보이도록 촬영하세요. 자세 분석은 기기에서 처리합니다. 동영상 촬영을 누를 때만 최대 60초 녹화하며 마이크는 사용하지 않습니다. 휴대폰에 저장·공유는 직접 누를 때만 실행됩니다.</p><p>촬영 영상에는 카메라 원본만 담기며 관절 표시와 음성 안내는 포함되지 않습니다. 전면 카메라 미리보기는 거울 방향이고 촬영 파일은 원본 방향입니다. 화면을 벗어나거나 운동을 바꾸면 촬영이 취소되고 저장하지 않은 영상이 지워집니다. 카메라만 켜면 분석하지 않습니다. 피드백을 끄면 관절 분석과 음성 안내가 멈춥니다. 시범과 내 동작은 자동 동기화되지 않습니다. 통증이 있으면 멈추고, 잘 보이지 않는 관절은 판정을 보류합니다.</p>{result?.detected&&<p>{TRACKING_LABELS[result.tracking_quality]} · 관찰 가동 범위 {result.range_of_motion??'—'}° · {result.rep_seconds!=null?`${result.rep_seconds}초/회`:'반복 속도 측정 중'}</p>}</details>
+   <details className="coach-help"><summary>촬영 준비 · MediaPipe 기기 내 분석</summary><p>권장 방향: {guide?.cameraView||CAMERA_DIRECTIONS[motion]}. 한 사람의 전신과 바닥 지지점이 보이도록 촬영하세요. MediaPipe로 추정한 관절의 화면상 각도와 정렬을 운동별 기준과 비교합니다. 실제 깊이나 근육의 힘을 측정하는 기능은 아닙니다.</p><p>촬영·분석 함께 시작을 누르면 최대 60초 영상과 관찰 요약을 함께 만듭니다. 마이크는 사용하지 않습니다. 영상 저장·공유는 직접 누를 때 실행됩니다. 카메라만 켜면 분석하지 않습니다. 잘 보이지 않는 관절은 판정을 보류합니다.</p><p>자동 따라하기의 시범·카운트·휴식은 같은 타이머로 움직입니다. 내 실제 동작 속도에 맞춰 시범이 바뀌지는 않습니다. 촬영 파일은 원본 영상이며 관절 표시와 음성은 합성하지 않습니다. 화면을 벗어나거나 운동을 바꾸면 촬영이 취소되고 저장하지 않은 영상·요약이 지워집니다.</p>{result?.detected&&<p>{TRACKING_LABELS[result.tracking_quality]} · 화면상 관찰 가동 범위 {result.range_of_motion??'—'}° · {result.rep_seconds!=null?`${result.rep_seconds}초/회`:'반복 속도 측정 중'}</p>}</details>
   </div>
  </section>;
 }

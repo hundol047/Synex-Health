@@ -20,6 +20,7 @@
 .mannequin-settings>div{display:grid;gap:12px;padding-top:14px}.mannequin-settings label{display:flex;align-items:center;gap:12px;font-size:13px;flex-wrap:wrap}
 .mannequin-settings input[type=range]{flex:1;min-width:120px;min-height:44px;accent-color:#2563eb}
 .mannequin-selected{background:#edf4ff;padding:12px;font-size:13px;border-radius:10px}
+.muscle-comparison-readout{display:grid;gap:9px;padding:15px;border:1px solid #bfdbfe;border-radius:12px;background:#f5f9ff;color:#17345a;margin:12px 0}.muscle-comparison-readout>strong{font-size:18px}.muscle-comparison-readout>span{font-size:12px;color:#536580}.muscle-comparison-readout small{font-size:11px;line-height:1.6;color:#536580}.muscle-comparison-row{display:grid;grid-template-columns:75px minmax(0,1fr) 58px;gap:10px;align-items:center;font-size:11px}.muscle-comparison-row>div{background:#e8eff9;border-radius:5px;height:9px;overflow:hidden}.muscle-comparison-row i{display:block;height:100%;background:#2563eb;border-radius:5px}.muscle-comparison-row.reference i{background:#94a3b8}.muscle-comparison-row b{text-align:right;font-variant-numeric:tabular-nums}
 .mannequin-reference-card{background:#f7faff;border:1px solid #dce7f6;border-radius:16px;padding:20px;margin:20px 0}
 .mannequin-reference-card h4{margin:0 0 18px;font-size:15px}.mannequin-reference-card p{font-size:12px;line-height:1.7}
 .mannequin-reference-card details{margin-top:14px;font-size:12px}.mannequin-reference-card summary{cursor:pointer}

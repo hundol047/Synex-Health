@@ -82,7 +82,9 @@ export class ExercisePoseAnalyzer {
   if(['LOW','LOST'].includes(tracking.level))points=[];
   const inFrame=required.every(i=>points?.[i]&&Number.isFinite(points[i].x)&&Number.isFinite(points[i].y)&&points[i].x>=0&&points[i].x<=1&&points[i].y>=0&&points[i].y<=1);
   if(!inFrame||!Number.isFinite(aspectRatio)||aspectRatio<=0)points=[];
-  else points=points.map(p=>p?({...p,y:p.y*aspectRatio}):p);
+  // Screen x and y use image-width units after aspect correction. MediaPipe's
+  // inferred z is not a measured depth and must not be mixed into 2D angles.
+  else points=points.map(p=>p?({...p,y:p.y*aspectRatio,z:0}):p);
   if(torsoSize(points)<RULE_THRESHOLDS.minTorso)points=[];
   const floorReady=this.id!=='push_up'||floorSupported(points,'push_up');
   const bridgeReady=this.id!=='glute_bridge'||bridgeSupported(points);

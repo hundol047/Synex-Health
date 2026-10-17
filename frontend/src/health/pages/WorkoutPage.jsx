@@ -2,6 +2,7 @@ import {WORKOUT_STATUS} from '../lib/workoutStatus.js';
 import WorkoutRecordForm from '../components/exercise/WorkoutRecordForm.jsx';
 import {previousWorkout} from '../lib/workoutProgress.js';
 import WorkoutMode from '../components/exercise/WorkoutMode.jsx';
+import TempoWorkout from '../components/exercise/TempoWorkout.jsx';
 import React, { useMemo, useState } from 'react';
 import WorkoutCalendar from '../components/WorkoutCalendar.jsx';
 import ExerciseCard from '../components/exercise/ExerciseCard.jsx';
@@ -65,11 +66,12 @@ export default function WorkoutPage() {
   if (latest.needs_review) return <Card><EmptyState title="운동 계획을 먼저 갱신하세요" description={latest.review_reason}
     action={<Link className="btn btn-primary" to="/health/routine">루틴 재생성</Link>}/></Card>;
 
+  if(workoutMode==='tempo')return <Card><TempoWorkout exercises={dayExercises} onClose={()=>setWorkoutMode(false)}/></Card>;
   if(workoutMode)return <Card><WorkoutMode routine={latest} exercises={dayExercises} workouts={workouts.data||[]} onSaved={workouts.reload} onClose={()=>setWorkoutMode(false)}/></Card>;
 
   return (
     <>
-      {requested&&<p role="status">보관된 계획의 입력을 복구했습니다. 기록 날짜를 확인하세요. <Link to="/health/privacy">임시 입력 목록</Link></p>}<section className="workout-hero"><span className="workout-eyebrow">TODAY · 오늘의 움직임</span><h1>내 속도로, 하나씩</h1><p>{activeDay}일차 · {dayExercises.length}개 운동 · {dayExercises.filter(isDone).length}개 완료</p><progress aria-label="오늘 운동 진행률" value={dayExercises.filter(isDone).length} max={Math.max(1,dayExercises.length)}/><button className="btn btn-primary" disabled={!dayExercises.length} onClick={()=>setWorkoutMode(true)}>운동 따라하기 · 한 운동씩 시작</button><Link to="/health/routine">운동 교체·계획 확인</Link></section><Card title="오늘의 운동">
+      {requested&&<p role="status">보관된 계획의 입력을 복구했습니다. 기록 날짜를 확인하세요. <Link to="/health/privacy">임시 입력 목록</Link></p>}<section className="workout-hero"><span className="workout-eyebrow">TODAY · 오늘의 움직임</span><h1>내 속도로, 하나씩</h1><p>{activeDay}일차 · {dayExercises.length}개 운동 · {dayExercises.filter(isDone).length}개 완료</p><progress aria-label="오늘 운동 진행률" value={dayExercises.filter(isDone).length} max={Math.max(1,dayExercises.length)}/><button className="btn btn-primary" disabled={!dayExercises.length} onClick={()=>setWorkoutMode('tempo')}>자동 시범 · 휴식 맞춰 따라하기</button><button className="btn btn-secondary" disabled={!dayExercises.length} onClick={()=>setWorkoutMode(true)}>운동 따라하기 · 한 운동씩 기록</button><Link to="/health/routine">운동 교체·계획 확인</Link></section><Card title="오늘의 운동">
         {days.length > 1 && (
           <div style={{ display: 'flex', gap: 6, marginBottom: 12, overflowX: 'auto', paddingBottom: 2 }}>
             {days.map(([d]) => (

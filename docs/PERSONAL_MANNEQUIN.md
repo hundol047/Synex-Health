@@ -11,13 +11,17 @@ and continuous torso-girth constraints. This translucent anatomical illustration
 is independent of the dressed exercise avatar. Fat and muscle affect different
 envelopes; height sets scale. Girth constraints use triangle/plane perimeter
 lengths. The personal view and home preview use blue on white: the personal
-surface is blue at opacity 0.66 (34% transparent), and the literature-reference
-surface is a lighter gray-blue at opacity 0.22 (78% transparent). They are
+surface is blue at opacity 0.38 (62% transparent), and the literature-reference
+surface is a lighter gray-blue at opacity 0.12 (88% transparent). They are
 overlaid at the same origin by default, with feet, scale and rotation aligned so
 the difference reads as a direct silhouette comparison. A side-by-side mode and
 an independent reference contour are available when separation is easier to
 inspect. Both layers keep matching labels and independently adjustable
-transparency.
+transparency. Both actual mesh silhouettes are drawn (blue personal, gray
+reference), without expanding either surface. A comparison above the viewer and
+on the home screen states whether total SMM is greater, smaller or equal, with kg
+and percentage differences. Equal SMM keeps equal geometry. These totals cannot
+establish regional muscle differences or reproduce individual muscle anatomy.
 Rotation, zoom, region selection, opacity, reference layers and an
 illustrative skeleton are available. The body surface is fitted from closed
 central torso contours and local limb centers, so measured chest, waist and hip

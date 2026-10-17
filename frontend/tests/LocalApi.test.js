@@ -6,7 +6,7 @@ import {bindOfflineAccount,clearOffline,lockOffline,loadLocalDocument} from '../
 import {LOCAL_ACCOUNT,LOCAL_NAMESPACE} from '../src/shared/lib/localMode.js';
 const measurement={measurement_date:'2026-01-01',weight:60,height:165,skeletal_muscle_mass:24,body_fat_percentage:25,segments:[]};
 beforeEach(async()=>{vi.stubGlobal('crypto',webcrypto);await bindOfflineAccount(LOCAL_ACCOUNT,LOCAL_NAMESPACE);});
-afterEach(async()=>{await clearOffline();vi.unstubAllGlobals();});
+afterEach(async()=>{await clearOffline();vi.useRealTimers();vi.unstubAllGlobals();});
 it('works without any HTTP and persists actual entries through reopening',async()=>{
  const fetch=vi.fn(()=>{throw Error('HTTP forbidden');});vi.stubGlobal('fetch',fetch);
  await expect(localApi('/api/body-composition/latest')).rejects.toMatchObject({status:404});
@@ -30,6 +30,7 @@ it('refuses unsafe input and never fabricates reference averages',async()=>{
  await expect(localApi('/api/health/school',{school_id:'yonsei-mirae',share_with_center:true},{method:'PUT'})).rejects.toThrow('공유');
 });
 it('adjusts the routine to goals and equipment and flags changed conditions',async()=>{
+ vi.useFakeTimers({toFake:['Date']});vi.setSystemTime(new Date('2026-10-08T12:00:00Z'));
  await localApi('/api/body-composition',measurement);
  const first=await localApi('/api/exercise-routines/generate',{});expect(first.exercises.every(e=>e.equipment.length===0)).toBe(true);
  await localApi('/api/exercise-profile',{goal:'FAT_MANAGEMENT',minutes_per_session:20},{method:'PUT'});

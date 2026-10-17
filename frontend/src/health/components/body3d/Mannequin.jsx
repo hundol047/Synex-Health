@@ -40,6 +40,7 @@ export default function Mannequin({measurement,profile,referenceMeasurement,opti
   {options.showMy&&<ComparisonBody offset={paired?-.68*scale:0}>
    {options.skeleton&&<MannequinSkeleton scale={scale}/>}
    <Surface name="my-muscle" positions={own} color="#2563eb" opacity={options.myOpacity} {...{selectedSegment,onSelect,onHover,clippingPlanes,regions,layout}}/>
+   <ReferenceContour name="my-contour" opacity={.85} positions={own} color="#2563eb" clippingPlanes={clippingPlanes} regions={regions}/>
    <Platform scale={scale} color="#2563eb"/>
   </ComparisonBody>}
   {!options.showMy&&reference&&<Platform scale={scale} color="#7c8fa7"/>}
@@ -96,7 +97,7 @@ export function writeContourSegments(model,viewer,target){
  }
  return segments;
 }
-function ReferenceContour({positions,color,clippingPlanes,regions}){
+function ReferenceContour({positions,color,clippingPlanes,regions,name='reference-contour',opacity=.72}){
  const line=useRef(),{camera,invalidate}=useThree();
  const model=useMemo(()=>{
   const values=createContourModel(positions,sharedIndex,contourTopology,regions),buffer=new Float32Array(values.topology.length/4*6),geometry=new THREE.BufferGeometry();
@@ -114,8 +115,8 @@ function ReferenceContour({positions,color,clippingPlanes,regions}){
   attribute.clearUpdateRanges();attribute.addUpdateRange(0,count*6);attribute.needsUpdate=true;model.geometry.setDrawRange(0,count*2);
   line.current.userData.segmentCount=count;
  });
- return <lineSegments name="reference-contour" ref={line} geometry={model.geometry} frustumCulled={false} renderOrder={4} raycast={()=>{}}>
-  <lineBasicMaterial color={color} transparent opacity={.72} depthTest={false} depthWrite={false} toneMapped={false} clippingPlanes={clippingPlanes}/>
+ return <lineSegments name={name} ref={line} geometry={model.geometry} frustumCulled={false} renderOrder={name==='my-contour'?5:4} raycast={()=>{}}>
+  <lineBasicMaterial color={color} transparent opacity={opacity} depthTest={false} depthWrite={false} toneMapped={false} clippingPlanes={clippingPlanes}/>
  </lineSegments>;
 }
 function Surface({name,positions,color,opacity,wireframe=false,headDepth=true,selectedSegment,onSelect,onHover,clippingPlanes,regions,layout}){

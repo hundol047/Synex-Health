@@ -5,6 +5,7 @@ async function expectRegisteredBodies(page){
  const state=await stats(page),own=state.layers.find(l=>l.name==='my-muscle'),reference=state.layers.find(l=>l.name==='reference-average'),box=await page.locator('[data-mannequin]').boundingBox();
  expect(state.layout).toBe('overlap');expect(own.placement).toEqual(reference.placement);
  expect(state.contour).toMatchObject({color:'#7c8fa7',opacity:.72,depthTest:false,source:'reference-mesh-edges'});expect(state.contour.segments).toBeGreaterThan(50);
+ expect(state.ownContour).toMatchObject({color:'#2563eb',opacity:.85,source:'personal-mesh-edges'});expect(state.ownContour.segments).toBeGreaterThan(50);
  expect(new Set(state.layers.map(l=>l.geometryId)).size).toBe(2);
  for(const layer of state.layers){
   expect(layer.vertexCount).toBeGreaterThan(10000);expect(layer.screenBounds.left).toBeGreaterThan(0);expect(layer.screenBounds.right).toBeLessThan(box.width);expect(layer.screenBounds.top).toBeGreaterThan(0);expect(layer.screenBounds.bottom).toBeLessThan(box.height);
@@ -42,8 +43,9 @@ test('InBody inputs restore and render two distinct translucent mannequins offli
  await expect.poll(async()=>{try{return (await stats(page)).layers.length;}catch{return 0;}},{timeout:30000}).toBe(2);
  const initial=await stats(page);expect(initial.layers.map(l=>l.name).sort()).toEqual(['my-muscle','reference-average']);
  expect(initial.layout).toBe('overlap');await expectRegisteredBodies(page);
- expect(initial.layers.find(l=>l.name==='my-muscle')).toMatchObject({opacity:.66,color:'#2563eb',headColor:'#2563eb',roughness:.86});expect(initial.layers.find(l=>l.name==='reference-average')).toMatchObject({opacity:.22,color:'#7c8fa7',headColor:'#7c8fa7',roughness:.86});
+ expect(initial.layers.find(l=>l.name==='my-muscle')).toMatchObject({opacity:.38,color:'#2563eb',headColor:'#2563eb',roughness:.86});expect(initial.layers.find(l=>l.name==='reference-average')).toMatchObject({opacity:.12,color:'#7c8fa7',headColor:'#7c8fa7',roughness:.86});
  expect(initial.layers[0].shapeFingerprint).not.toBe(initial.layers[1].shapeFingerprint);
+ await expect(page.getByLabel('내 골격근량과 평균의 차이')).toContainText('문헌 평균보다 3 kg 적어요');
  expect(initial.layers.every(l=>l.opacity>0&&l.opacity<1&&!l.wireframe)).toBe(true);
  await expect(page.locator('.mannequin-mass-comparison')).toContainText('33');await expect(page.locator('.mannequin-stats')).toContainText('추정 골량');await expect(page.locator('.mannequin-stats')).toContainText('3.7');
  await page.locator('.mannequin-scene').scrollIntoViewIfNeeded();await page.getByRole('button',{name:'후면',exact:true}).click();
@@ -54,7 +56,7 @@ test('InBody inputs restore and render two distinct translucent mannequins offli
  await expect.poll(async()=>(await stats(page)).layers.find(l=>l.name==='my-muscle').opacity).toBe(.2);await expect.poll(async()=>(await stats(page)).layers.find(l=>l.name==='reference-average').opacity).toBe(.25);
  await page.getByRole('checkbox',{name:'평균 윤곽선 보기',exact:true}).uncheck();await expect.poll(async()=>(await stats(page)).contour).toBeNull();await page.getByRole('checkbox',{name:'평균 윤곽선 보기',exact:true}).check();
  await page.getByRole('checkbox',{name:/골격 구조 보기/}).check();await page.getByRole('button',{name:'정면',exact:true}).click();await expect.poll(async()=>(await stats(page)).meshCount).toBeGreaterThan(20);
- await page.getByRole('checkbox',{name:/골격 구조 보기/}).uncheck();await page.getByLabel('내 마네킹 투명도').fill('34');await page.getByLabel('평균 마네킹 투명도').fill('78');await page.getByText('투명도 · 골격 · 표현 설정').click();
+ await page.getByRole('checkbox',{name:/골격 구조 보기/}).uncheck();await page.getByLabel('내 마네킹 투명도').fill('62');await page.getByLabel('평균 마네킹 투명도').fill('88');await page.getByText('투명도 · 골격 · 표현 설정').click();
  for(const viewport of [{width:393,height:852},{width:360,height:640}]){
   await page.setViewportSize(viewport);await page.getByRole('button',{name:'정면',exact:true}).click();await expectRegisteredBodies(page);await page.locator('.mannequin-scene').evaluate(el=>el.scrollIntoView({block:'center'}));await page.waitForTimeout(400);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
@@ -66,7 +68,7 @@ test('InBody inputs restore and render two distinct translucent mannequins offli
  await page.getByRole('button',{name:'내 몸만',exact:true}).click();await expect.poll(async()=>(await stats(page)).layers.length).toBe(1);
  expect((await stats(page)).layers[0].headOcclusion).toMatchObject({sourceBody:'my-muscle',colorWrite:false,depthWrite:true,sharedPositions:true});
  await page.getByRole('button',{name:'평균 비교 모형',exact:true}).click();await expect.poll(async()=>(await stats(page)).layers.length).toBe(1);
- expect((await stats(page)).layers[0]).toMatchObject({name:'reference-average',opacity:.22,headVisible:true,headOcclusion:{sourceBody:'reference-average',colorWrite:false,depthWrite:true,sharedPositions:true}});
+ expect((await stats(page)).layers[0]).toMatchObject({name:'reference-average',opacity:.12,headVisible:true,headOcclusion:{sourceBody:'reference-average',colorWrite:false,depthWrite:true,sharedPositions:true}});
  await context.setOffline(true);await page.getByRole('button',{name:'겹쳐보기',exact:true}).click();await page.getByRole('button',{name:'후면',exact:true}).click();
  await expect.poll(async()=>(await stats(page)).layers.length).toBe(2);
  await expectRegisteredBodies(page);await page.getByRole('button',{name:'나란히 비교',exact:true}).click();await expectSeparatedBodies(page);await page.getByRole('button',{name:'겹쳐보기',exact:true}).click();
@@ -77,7 +79,7 @@ test('InBody inputs restore and render two distinct translucent mannequins offli
  await expect(page.locator('.mannequin-stats')).toContainText('3.7');
  await page.goto('/health');await page.getByRole('button',{name:'3D 미리보기 열기',exact:true}).click();await expectRegisteredBodies(page);
  await expect(page.locator('.home-body-card .body-scene button')).toHaveCount(0);
- const home=await stats(page);expect(home.layers.find(l=>l.name==='my-muscle')).toMatchObject({opacity:.66,color:'#2563eb',headColor:'#2563eb'});expect(home.layers.find(l=>l.name==='reference-average')).toMatchObject({opacity:.22,color:'#7c8fa7',headColor:'#7c8fa7'});
+ const home=await stats(page);expect(home.layers.find(l=>l.name==='my-muscle')).toMatchObject({opacity:.38,color:'#2563eb',headColor:'#2563eb'});expect(home.layers.find(l=>l.name==='reference-average')).toMatchObject({opacity:.12,color:'#7c8fa7',headColor:'#7c8fa7'});
  expect(requests).toEqual([]);expect(errors).toEqual([]);
 });
 test('average appears only after actual eligible profile inputs and aligns with the personal body in 3D',async({page})=>{

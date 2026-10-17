@@ -10,6 +10,7 @@ import {publishedMuscleReference} from '../lib/publishedMuscleReference.js';
 import {referenceMannequinMeasurement} from '../components/body3d/mannequinMath.js';
 const BodyScene=lazy(()=>import('../components/body3d/BodyScene.jsx'));
 import { colorsForMode } from '../lib/bodyMapColors.js';
+import MuscleComparisonReadout,{COMPARISON_OPACITY} from '../components/body3d/MuscleComparisonReadout.jsx';
 import { useApiData } from '../lib/useApiData.js';
 
 export default function HomePage() {
@@ -40,7 +41,7 @@ export default function HomePage() {
   const compositionMeasurement=bodyMap.data?.measurement||measurement.data;
   const published=publishedMuscleReference(compositionMeasurement,compositionProfile);
   const referenceMeasurement=useMemo(()=>published.available&&published.canOverlay?referenceMannequinMeasurement(compositionMeasurement,published.value):null,[compositionMeasurement,published.available,published.canOverlay,published.value]);
-  const previewMannequin=useMemo(()=>({referenceMeasurement,options:{showMy:true,showReference:!!referenceMeasurement,layout:'overlap',myOpacity:.66,referenceOpacity:.22}}),[referenceMeasurement]);
+  const previewMannequin=useMemo(()=>({referenceMeasurement,options:{showMy:true,showReference:!!referenceMeasurement,layout:'overlap',...COMPARISON_OPACITY}}),[referenceMeasurement]);
   const overlay=group?{myValues:valuesFor(bodyMap.data?.measurement,'lean'),referenceValues:referenceValues(group,'lean'),metric:'lean',options:{showMy:true,showReference:true,myOpacity:.85,referenceOpacity:.35,referenceStyle:'wireframe',myStyle:'surface'}}:null;
   const hasRoutine = !!routines.data?.length && !routines.data[0].needs_review;
   const nextStep = noMeasurement ? 0 : hasRoutine ? 2 : 1;
@@ -117,6 +118,7 @@ export default function HomePage() {
 
       {!noMeasurement && (
         <Card title="내 몸의 변화와 비교" className="home-body-card" action={<Link className="btn btn-ghost" to="/health/body">자세히 보기</Link>}>
+          {LOCAL_ONLY&&<MuscleComparisonReadout reference={published} own={compositionMeasurement?.skeletal_muscle_mass}/>}
           {bodyMap.loading ? (
             <Skeleton height={200} />
           ) : bodyMap.data ? (

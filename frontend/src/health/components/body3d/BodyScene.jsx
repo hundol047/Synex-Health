@@ -82,7 +82,8 @@ function RendererMonitor({performanceMode,quality,overlay,mannequin,canvas,lowPo
  useEffect(()=>{if(!lowPower)monitor.current=new RenderPerformance();},[lowPower,performanceMode,quality]);
  useFrame(()=>{const start=performance.now();gl.render(scene,camera);const t=performance.now();const perf=monitor.current.sample(t,t-start);
   if(perf.fallbackActive&&!lowPower)onSlow();
-  let meshes=0,vertices=0,contour=null;const layers=[];scene.traverse(o=>{
+  let meshes=0,vertices=0,contour=null,ownContour=null;const layers=[];scene.traverse(o=>{
+   if(o.name==='my-contour')ownContour={segments:o.userData.segmentCount||0,color:`#${o.material.color.getHexString()}`,opacity:o.material.opacity,depthTest:o.material.depthTest,source:'personal-mesh-edges'};
    if(o.name==='reference-contour')contour={segments:o.userData.segmentCount||0,color:`#${o.material.color.getHexString()}`,opacity:o.material.opacity,depthTest:o.material.depthTest,source:'reference-mesh-edges'};
    if(o.isMesh){meshes++;vertices+=o.geometry?.attributes.position?.count||0;if(o.name==='my-muscle'||o.name==='reference-average'){
    const bounds=o.geometry.boundingBox,screenBounds=bounds?projectBounds(o,bounds,camera,size):undefined;
@@ -93,7 +94,7 @@ function RendererMonitor({performanceMode,quality,overlay,mannequin,canvas,lowPo
   if(import.meta.env.DEV){stats.renderer=gl.getContext().getParameter(gl.getContext().RENDERER);if(canvas.current)canvas.current.dataset.overlay=JSON.stringify(stats);}
   // Record only render state, without body measurements, after the real draw.
   // This also verifies the two actual meshes in the packaged production app.
-  if(mannequin&&canvas.current)canvas.current.dataset.mannequin=JSON.stringify({layout:mannequin.options.layout,meshCount:meshes,contour,layers:layers.map(({name,opacity,color,headColor,headVisible,headOcclusion,roughness,wireframe,placement,geometryId,shapeFingerprint,vertexCount,screenBounds})=>({name,opacity,color,headColor,headVisible,headOcclusion,roughness,wireframe,placement,geometryId,shapeFingerprint,vertexCount,screenBounds}))});
+  if(mannequin&&canvas.current)canvas.current.dataset.mannequin=JSON.stringify({layout:mannequin.options.layout,meshCount:meshes,contour,ownContour,layers:layers.map(({name,opacity,color,headColor,headVisible,headOcclusion,roughness,wireframe,placement,geometryId,shapeFingerprint,vertexCount,screenBounds})=>({name,opacity,color,headColor,headVisible,headOcclusion,roughness,wireframe,placement,geometryId,shapeFingerprint,vertexCount,screenBounds}))});
   recordRenderer(stats);
  },1);return null;
 }
