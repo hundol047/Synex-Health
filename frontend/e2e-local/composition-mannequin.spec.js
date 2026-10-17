@@ -67,7 +67,7 @@ test('InBody inputs restore and render two distinct translucent mannequins offli
  await page.setViewportSize({width:393,height:852});await page.screenshot({path:info.outputPath('mannequin-page.png'),fullPage:true});
  await page.getByRole('button',{name:'내 몸만',exact:true}).click();await expect.poll(async()=>(await stats(page)).layers.length).toBe(1);
  expect((await stats(page)).layers[0].headOcclusion).toMatchObject({sourceBody:'my-muscle',colorWrite:false,depthWrite:true,sharedPositions:true});
- await page.getByRole('button',{name:'평균 비교 모형',exact:true}).click();await expect.poll(async()=>(await stats(page)).layers.length).toBe(1);
+ await page.getByRole('button',{name:'평균 비교 모형',exact:true}).click();await expect.poll(async()=>(await stats(page)).layers.map(layer=>layer.name)).toEqual(['reference-average']);
  expect((await stats(page)).layers[0]).toMatchObject({name:'reference-average',opacity:.12,headVisible:true,headOcclusion:{sourceBody:'reference-average',colorWrite:false,depthWrite:true,sharedPositions:true}});
  await context.setOffline(true);await page.getByRole('button',{name:'겹쳐보기',exact:true}).click();await page.getByRole('button',{name:'후면',exact:true}).click();
  await expect.poll(async()=>(await stats(page)).layers.length).toBe(2);
