@@ -31,7 +31,8 @@ public class WorkoutSpeechPlugin extends Plugin {
                 Voice korean = null;
                 if (status == TextToSpeech.SUCCESS && engine.getVoices() != null) {
                     for (Voice voice : engine.getVoices()) {
-                        if (voice.getLocale().getLanguage().equals(Locale.KOREAN.getLanguage()) && !voice.isNetworkConnectionRequired()) {
+                        if (voice.getLocale().getLanguage().equals(Locale.KOREAN.getLanguage()) && !voice.isNetworkConnectionRequired()
+                                && (voice.getFeatures() == null || !voice.getFeatures().contains(TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED))) {
                             korean = voice; break;
                         }
                     }
