@@ -64,6 +64,6 @@ export class CatalogPoseAnalyzer{
   }
   if(c.dose_type!=='reps'&&corrections.length===0&&this.lastTime!=null&&gap>0&&gap<=500)this.activeMs+=gap;
   this.lastTime=time;this.previous=metrics;const confidence=Math.min(...c.joints.map(i=>raw[i].visibility));
-  return {...base,detected:true,confidence,tracking_quality:confidence>=.85?'HIGH':'MEDIUM',metrics,corrections,warnings,phase:this.phase,movement_phase:this.phase,reps:this.reps,repetition_count:this.reps,hold_seconds:c.dose_type==='hold'?this.activeMs/1000:null,observed_seconds:this.activeMs/1000,range_of_motion:Math.round(this.max-this.min),left_right_balance:Math.round(Math.abs(metric[0]-metric[1])),completion_state:'observing',feedback:corrections[0]||`${c.label}: 보이는 관절을 추적하고 있습니다. ${c.instructions[0]}`};
+  return {...base,detected:true,confidence,tracking_quality:confidence>=.85?'HIGH':'MEDIUM',metrics,corrections,warnings,phase:this.phase,movement_phase:this.phase,reps:this.reps,repetition_count:this.reps,hold_seconds:c.dose_type==='hold'?this.activeMs/1000:null,observed_seconds:this.activeMs/1000,seconds:c.dose_type!=='reps'?Math.floor(this.activeMs/1000):null,range_of_motion:Math.round(this.max-this.min),left_right_balance:Math.round(Math.abs(metric[0]-metric[1])),completion_state:'observing',feedback:corrections[0]||`${c.label}: 보이는 관절을 추적하고 있습니다. ${c.instructions[0]}`};
  }
 }

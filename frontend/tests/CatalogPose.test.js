@@ -26,3 +26,5 @@ it('tracking loss never counts a return as a completed repetition',()=>{
  expect(a.update(points(),400).reps).toBe(0);
  expect(()=>createExercisePoseAnalyzer('made-up')).toThrow();
 });
+
+it.each(['walk','wall_sit','cat_cow'])('%s reports observed seconds for timed display',id=>{const a=new CatalogPoseAnalyzer(id);const r=a.update(points(),0);expect(r.detected).toBe(true);expect(r.seconds).toBe(0);expect(r.target_guidance).toContain('카메라로 측정하지 않습니다');});
