@@ -1,4 +1,6 @@
 """Subscriptions: server-verified RevenueCat entitlements, isolated demo mode."""
+from app.services.release_config import auth_mode
+
 import os
 import json
 import secrets
@@ -19,7 +21,7 @@ router = APIRouter(prefix='/api/billing', tags=['subscriptions'])
 def mode():
     if os.getenv('LAUNCH_MODE')=='free':return 'disabled'
     value = os.getenv('BILLING_MODE', 'disabled')
-    auth = os.getenv('AUTH_MODE', 'demo').lower()
+    auth = auth_mode()
     if value == 'demo' and auth == 'demo':
         return 'demo'
     if value == 'revenuecat' and auth == 'oidc' and os.getenv('REVENUECAT_SECRET_KEY'):

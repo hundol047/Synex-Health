@@ -31,9 +31,10 @@ def client(tmp_path, monkeypatch):
 
 def student_headers(client, uid='student-jimin'):
     if uid not in client.demo_sessions:
-        response = client.post('/api/auth/demo-login', json={'demo_user_id':uid, 'transport':'native'})
+        response = client.post('/api/auth/demo-login', json={'access_code':'test-only-demo-code','demo_user_id':uid, 'transport':'native'})
         assert response.status_code == 200, response.text
         client.demo_sessions[uid] = {'Authorization':'Bearer ' + response.json()['session_token']}
+        assert client.post('/api/consents', headers=client.demo_sessions[uid], json={'privacy_collection':True,'sensitive_health':True,'age_14_or_over':True}).status_code == 200
     return client.demo_sessions[uid]
 
 

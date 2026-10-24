@@ -1,7 +1,13 @@
 """Optional bounded login sessions; no IdP refresh tokens are stored."""
+from app.services.release_config import auth_mode
+
 import os
 import secrets
 import re
+import hmac
+import time
+from collections import OrderedDict
+from threading import Lock
 from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Response, Cookie, Header, Request
 from pydantic import BaseModel
@@ -27,7 +33,7 @@ def establish(req: SessionRequest, response: Response, user: User = Depends(get_
               authorization: str = Header(default=''), synex_health_auth_session: str = Cookie(default=None)):
     # Only a freshly verified IdP JWT can create a session, never an existing session/review token.
     token = authorization.removeprefix('Bearer ').removeprefix('bearer ')
-    if not authorization.lower().startswith('bearer ') or os.getenv('AUTH_MODE') != 'oidc' or token.count('.') != 2 or token.startswith('synex-session.'):
+    if not authorization.lower().startswith('bearer ') or auth_mode() != 'oidc' or token.count('.') != 2 or token.startswith('synex-session.'):
         raise HTTPException(401, '새로운 계정 로그인이 필요합니다.')
     # Privileged accounts retain IdP token verification on every request.
     if req.remember and user.role != 'student':
@@ -55,15 +61,35 @@ def forget(response: Response, synex_health_auth_session: str = Cookie(default=N
     return {'forgotten': True}
 
 
+_demo_failures = OrderedDict()
+_demo_lock = Lock()
+
 class DemoLoginRequest(BaseModel):
+    access_code: str | None = None
     demo_user_id: str
     transport: Literal['web', 'native'] = 'web'
 
 
 @router.post('/demo-login')
 def demo_login(req: DemoLoginRequest, request: Request, response: Response):
-    if os.getenv('AUTH_MODE', 'demo').lower() != 'demo':
+    if auth_mode() != 'demo':
         raise HTTPException(404, 'Demo login disabled')
+    ip = request.client.host if request.client else 'unknown'
+    with _demo_lock:
+        clock = time.monotonic()
+        started, failures = _demo_failures.get(ip, (clock, 0))
+        if clock - started >= 60:
+            started, failures = clock, 0
+        if failures >= 10:
+            raise HTTPException(429, '데모 로그인 시도가 많습니다. 잠시 후 다시 시도하세요.', headers={'Retry-After':'60'})
+        configured = os.getenv('DEMO_ACCESS_CODE', '')
+        if not configured or not hmac.compare_digest((req.access_code or '').encode(), configured.encode()):
+            _demo_failures[ip] = (started, failures + 1)
+            _demo_failures.move_to_end(ip)
+            while len(_demo_failures) > 10000:
+                _demo_failures.popitem(last=False)
+            raise HTTPException(401, '데모 접근 코드를 확인하세요.')
+        _demo_failures.pop(ip, None)
     if req.demo_user_id not in DEMO_USERS:
         raise HTTPException(422, 'Unknown demo account')
     actor = _account_active(User(req.demo_user_id, DEMO_USERS[req.demo_user_id]['role']))

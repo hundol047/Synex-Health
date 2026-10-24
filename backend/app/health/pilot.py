@@ -73,5 +73,7 @@ def readiness(store,env=None):
     except (OSError,ValueError,KeyError,TypeError):acceptance={}
     for name in ('Authentication','Database','Privacy','Terms','Support'):
         if checks[name]=='VERIFIED' and not acceptance.get(name):checks[name]='EXTERNAL SETUP REQUIRED'
+    from .pose_release import pose_validation
+    checks['Pose validation']=pose_validation(e)
     blockers=[k for k,v in checks.items() if k not in ('InBody','Billing') and v not in ('VERIFIED','DISABLED')]
-    return {'pilot_mode':e.get('PILOT_MODE')=='true','pilot_ready':not blockers,'checks':checks,'blockers':blockers,'pose_validation':'EXTERNAL VALIDATION DATA REQUIRED','notice':'실험적 기능 · Pose 실제 사람 정확도 및 실기기 검증 상태를 확인하세요.'}
+    return {'pilot_mode':e.get('PILOT_MODE')=='true','pilot_ready':not blockers,'checks':checks,'blockers':blockers,'pose_validation':checks['Pose validation'],'notice':'실험적 기능 · Pose 실제 사람 정확도 및 실기기 검증 상태를 확인하세요.'}

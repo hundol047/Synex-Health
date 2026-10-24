@@ -23,8 +23,12 @@ def advanced_body(user:User=Depends(require('measurement:read'))):
 
 @router.get('/advanced/pose')
 def pose_access(user:User=Depends(require('health:read'))):
+    from .consents import ensure_consent
+    ensure_consent(user.id)
+    from .pose_release import enforce_pose_release
+    enforce_pose_release()
     plus(user)
-    return {'enabled':True,'upload_video':False,'exercises':['squat','lunge','push_up','plank','shoulder_press','curl','lateral_raise','bent_row','hip_hinge','glute_bridge','front_raise','side_lunge'],'notice':'설명용 자세 추정. 진단·정확한 관절각 측정이 아닙니다.'}
+    return {'enabled':True,'upload_video':False,'exercises':[e['id'] for e in __import__('app.health.exercise_catalog',fromlist=['CATALOG']).CATALOG],'notice':'설명용 자세 추정. 진단·정확한 관절각 측정이 아닙니다.'}
 
 class GoalRequest(BaseModel):
     model_config=ConfigDict(allow_inf_nan=False)
@@ -76,6 +80,7 @@ def purge(uid,account=False):
         db.execute('DELETE FROM counselor_notes WHERE student_id=?',(uid,))
         db.execute('UPDATE users SET share_with_center=0 WHERE id=?',(uid,))
         if account:
+            db.execute('DELETE FROM processing_consents WHERE user_id=?',(uid,))
             db.execute('DELETE FROM users WHERE id=?',(uid,))
             db.execute('DELETE FROM billing_accounts WHERE user_id=?',(uid,))
             db.execute('DELETE FROM school_requests WHERE user_id=?',(uid,))
@@ -142,6 +147,8 @@ def provider_status(user:User=Depends(require('health:read'))):
 
 @router.post('/integrations/inbody/sync')
 def provider_sync(user:User=Depends(require('measurement:write')), trigger:Literal['manual_refresh','app_login','scheduled_server']='manual_refresh'):
+    from .consents import ensure_consent
+    ensure_consent(user.id)
     from .providers.configured import inbody
     from .providers.inbody import ProviderFailure
     from .providers.base import ProviderNotConfigured

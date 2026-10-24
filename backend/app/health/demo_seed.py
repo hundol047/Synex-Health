@@ -23,6 +23,11 @@ def seed_demo_data(store: HealthStore) -> None:
         if store.get_user(account.id) is None:
             store.upsert_user(account)
 
+    from .consents import consent_status, record, KINDS
+    # Seed once only: a withdrawal or old version must never be silently re-granted.
+    if not consent_status(store, DEMO_STUDENT_ID)['history']:
+        record(store, DEMO_STUDENT_ID, KINDS, True, True)
+
     if not store.list_measurements(DEMO_STUDENT_ID):
         MockProvider(store).seed_demo_readings(DEMO_STUDENT_ID)
 

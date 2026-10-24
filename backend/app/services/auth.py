@@ -18,12 +18,14 @@ RBAC roles:
     to counselor notes. Never sees Clinical Agent / EMR data (this app does not expose it).
   - admin: everything, plus reference-range management (ReferenceRange CRUD) and user administration.
 """
+from app.services.release_config import auth_mode
+
 import os, secrets, sqlite3, time, hashlib, re
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
-from fastapi import Cookie, Header, HTTPException, Depends
+from fastapi import Cookie, Header, HTTPException, Depends, Request
 
 _READ_ACTIONS = {'health:read', 'measurement:read', 'routine:read', 'workout:read'}
 _STUDENT_WRITE_ACTIONS = {'health:write', 'measurement:write', 'routine:write', 'workout:write', 'agent:chat'}
@@ -144,7 +146,7 @@ def get_current_user(authorization: Optional[str] = Header(None),
                       synex_health_auth_session: Optional[str] = Cookie(default=None),
                       x_synex_demo_user: Optional[str] = Header(default=None)) -> User:
     """Authenticate sessions/tokens; client identity headers never grant access."""
-    mode = os.getenv('AUTH_MODE', 'demo').lower()
+    mode = auth_mode()
     if mode not in ('demo', 'oidc'):
         raise HTTPException(503, 'Invalid authentication configuration')
     if mode == 'demo':
@@ -183,9 +185,15 @@ def get_current_user(authorization: Optional[str] = Header(None),
 
 
 def require(action: str):
-    def checker(user: User = Depends(get_current_user)) -> User:
+    def checker(request: Request, user: User = Depends(get_current_user)) -> User:
         if not user.can(action):
             raise HTTPException(403, f'Role "{user.role}" is not permitted to {action}')
+        if action in {'health:write','measurement:write','routine:write','workout:write','agent:chat'} and request.method in ('POST','PUT','PATCH'):
+            # Revoking school sharing and deleting records must remain possible after withdrawal.
+            withdrawing_share = request.url.path == '/api/health/school' and request.method == 'PUT'
+            if not withdrawing_share:
+                from ..health.consents import ensure_consent
+                ensure_consent(user.id)
         return user
     return checker
 

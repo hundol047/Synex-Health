@@ -5,6 +5,8 @@ students only ever touch their own data (require_self_or_counselor), counselors 
 access plus their own notes, admin gets reference-range management.
 """
 from __future__ import annotations
+
+from app.services.release_config import auth_mode
 import os
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from pydantic import ValidationError
@@ -68,14 +70,15 @@ def _require_user_record(user_id: str) -> HealthUser:
 
 
 def _can_access_student(actor, student):
-    if actor.role == 'admin':
+    if actor.role in ('student','admin'):
         return actor.id == student.id
-    if actor.role == 'student':
-        return actor.id == student.id
+    from .consents import consent_status
+    if not consent_status(store, student.id)['active']:
+        return False
     counselor = store.get_user(actor.id)
     return bool(counselor and counselor.school_id and student.school_id == counselor.school_id
                 and student.share_with_center and student.role == 'student'
-                and (os.getenv('AUTH_MODE','demo')=='demo' or (store.preference(student.id,'membership',{}).get('verified') and store.preference(student.id,'membership',{}).get('school_id')==student.school_id)))
+                and (auth_mode()=='demo' or (store.preference(student.id,'membership',{}).get('verified') and store.preference(student.id,'membership',{}).get('school_id')==student.school_id)))
 
 
 def _require_student_access(actor, student_id):
@@ -131,6 +134,9 @@ def select_school(req: SchoolSelection, user: User = Depends(require('health:wri
     if changed:
         store.save_preference(user.id,'membership',{})
     u.school_id = req.school_id
+    if req.share_with_center:
+        from .consents import ensure_consent
+        ensure_consent(user.id)
     u.share_with_center = req.share_with_center
     store.upsert_user(u)
     with store.connect() as db:
@@ -168,6 +174,9 @@ def update_profile(patch: dict, user: User = Depends(require('health:write'))):
     merged = {**u.model_dump(), **{k: v for k, v in patch.items() if k in HealthUser.model_fields and k not in protected and v is not None}}
     try:
         updated = HealthUser(**merged)
+        from .consents import under_age
+        if under_age(updated):
+            raise HTTPException(403, '만 14세 미만은 현재 서비스를 이용할 수 없습니다.')
     except ValidationError:
         raise HTTPException(422, '프로필 입력값을 확인하세요.')
     return store.upsert_user(updated)
@@ -586,7 +595,7 @@ def list_reference_ranges(user: User = Depends(require('reference_range:write'))
 
 @router.post('/admin/reference-ranges')
 def create_reference_range(r: ReferenceRange, user: User = Depends(require('reference_range:write'))):
-    if os.getenv('AUTH_MODE','demo')!='demo' or os.getenv('APP_ENV')=='production' or os.getenv('PILOT_MODE')=='true':
+    if auth_mode()!='demo' or os.getenv('APP_ENV')=='production' or os.getenv('PILOT_MODE')=='true':
         from .reference_validation import validate
         try:validate({'references':[old.model_dump() for old in store.list_reference_ranges() if old.dataset_id==r.dataset_id and old.id!=r.id]+[r.model_dump()]})
         except ValueError as e:raise HTTPException(422,str(e)) from None

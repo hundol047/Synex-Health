@@ -13,7 +13,7 @@ def test_header_without_session_is_rejected(client, identity):
 @pytest.mark.parametrize('transport',['web','native'])
 def test_session_transport_and_permissions(client,identity,role,transport):
     client.headers.pop('Authorization',None)
-    response=client.post('/api/auth/demo-login',json={'demo_user_id':identity,'transport':transport})
+    response=client.post('/api/auth/demo-login',json={'access_code':'test-only-demo-code','demo_user_id':identity,'transport':transport})
     assert response.status_code == 200
     assert response.json()['role'] == role
     if transport=='web':
@@ -33,9 +33,9 @@ def test_session_transport_and_permissions(client,identity,role,transport):
     assert client.get('/api/health/profile',headers=headers).status_code==401
 
 def test_login_allowlist_and_oidc_gate(client,monkeypatch):
-    assert client.post('/api/auth/demo-login',json={'demo_user_id':'unlisted'}).status_code==422
+    assert client.post('/api/auth/demo-login',json={'access_code':'test-only-demo-code','demo_user_id':'unlisted'}).status_code==422
     monkeypatch.setenv('AUTH_MODE','oidc')
-    assert client.post('/api/auth/demo-login',json={'demo_user_id':'student-jimin'}).status_code==404
+    assert client.post('/api/auth/demo-login',json={'access_code':'test-only-demo-code','demo_user_id':'student-jimin'}).status_code==404
 
 def test_expired_session_is_rejected(client,monkeypatch):
     from app.services import auth

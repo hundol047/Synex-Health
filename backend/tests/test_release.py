@@ -15,6 +15,7 @@ def test_review_requires_configuration_and_password(client,monkeypatch):
  token=client.post('/api/auth/review',json={'username':'review','password':'test-only-password'}).json()['access_token']
  monkeypatch.setenv('AUTH_MODE','oidc')
  headers={'Authorization':'Bearer '+token}
+ assert client.post('/api/consents',headers=headers,json={'privacy_collection':True,'sensitive_health':True,'age_14_or_over':True}).status_code==200
  profile=client.get('/api/health/profile',headers=headers).json()
  assert profile['id']=='app-review-synthetic' and not profile['share_with_center']
  assert len(client.get('/api/body-composition',headers=headers).json())==2

@@ -23,6 +23,9 @@ def validate_production(env=None):
     for name in ('PUBLIC_API_URL','PRIVACY_POLICY_URL','SUPPORT_URL','TERMS_URL'):
         u=urlparse(e.get(name,''))
         if u.scheme!='https' or not u.hostname or u.hostname in ('localhost','127.0.0.1') or u.hostname.endswith(('.example','.test')) or u.hostname in ('example.com','example.org','example.net'):failures.append(name+' must be a real HTTPS URL')
+    retention=e.get('RETENTION_POLICY','').strip()
+    if not retention or any(marker in retention.lower() for marker in ('{{','}}','placeholder','todo','설정 필요','출시 전 확정')):
+        failures.append('RETENTION_POLICY must contain the actual retention and deletion policy')
     if not e.get('LEGAL_OPERATOR') or not e.get('SUPPORT_EMAIL'):failures.append('Legal operator and contact required')
     if e.get('SYNEX_HEALTH_DEMO_SEED','true')!='false':failures.append('Demo seeding must be disabled')
     if e.get('LAUNCH_MODE') not in ('free','plus'):failures.append('LAUNCH_MODE must be free or plus')
@@ -35,3 +38,32 @@ def validate_production(env=None):
     if not origins or any(not (o.startswith('https://') or o=='capacitor://localhost') or '*' in o for o in origins):failures.append('Explicit HTTPS/native CORS origins required')
     if e.get('APP_REVIEW_MODE')=='true' and not all(e.get(k) for k in ('APP_REVIEW_USERNAME','APP_REVIEW_PASSWORD_HASH','APP_REVIEW_SALT')):failures.append('Review credentials required')
     if failures:raise RuntimeError('Invalid production configuration: '+'; '.join(failures))
+
+
+def auth_mode(env=None):
+    e = os.environ if env is None else env
+    mode = e.get('AUTH_MODE')
+    if mode not in ('demo', 'oidc'):
+        raise RuntimeError('AUTH_MODE must be explicitly set to demo or oidc')
+    return mode
+
+
+def validate_auth_configuration(env=None):
+    e = os.environ if env is None else env
+    if auth_mode(e) == 'demo':
+        if e.get('SYNEX_ALLOW_DEMO') != 'true':
+            raise RuntimeError('Demo requires SYNEX_ALLOW_DEMO=true')
+        if len(e.get('DEMO_ACCESS_CODE', '')) < 12:
+            raise RuntimeError('Demo requires DEMO_ACCESS_CODE of at least 12 characters')
+
+
+def validate_demo_database(store):
+    if auth_mode() != 'demo':
+        return
+    from .auth import DEMO_USERS
+    with store.connect() as db:
+        ids = [row[0] for row in db.execute('SELECT id FROM users').fetchall()]
+        for table in ('measurements', 'routines', 'workouts', 'exercise_profiles', 'analyses', 'pose_sessions'):
+            ids.extend(row[0] for row in db.execute(f'SELECT DISTINCT user_id FROM {table}').fetchall())
+    if any(uid not in DEMO_USERS for uid in ids):
+        raise RuntimeError('Demo startup refused: database contains non-demo identities or records; use a separate empty database')

@@ -6,6 +6,8 @@ Unlike SynexAgent's Clinical Workspace (which keeps patient data in-memory via a
 Health data is genuinely persisted here: measurements/routines/workouts must survive a server
 restart between a student's first measurement and their re-measurement weeks later.
 """
+from app.services.release_config import auth_mode
+
 import json, os, sqlite3, uuid
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -201,7 +203,7 @@ class HealthStore:
         if height is not None:
             in_height = [r for r in candidates if (r.height_min is None or height >= r.height_min) and (r.height_max is None or height <= r.height_max)]
             candidates = in_height
-        if os.getenv('APP_ENV')=='production' or os.getenv('AUTH_MODE','demo')!='demo':
+        if os.getenv('APP_ENV')=='production' or auth_mode()!='demo':
             candidates=[r for r in candidates if r.source!='demo' and r.publication and r.version and r.effective_date]
         candidates.sort(key=lambda r: (r.source == 'demo', r.gender == 'any'))
         return candidates[0] if candidates else None

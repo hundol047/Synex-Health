@@ -8,7 +8,7 @@ def test_migration_checksums_repeated_and_tamper_rejected(tmp_path):
     store=HealthStore(path)
     HealthStore(path)
     with store.connect() as db:
-        assert db.execute('SELECT COUNT(*) FROM migration_history').fetchone()[0]==1
+        assert db.execute('SELECT COUNT(*) FROM migration_history').fetchone()[0]==2
         db.execute('UPDATE migration_history SET checksum=?',('tampered',))
     with pytest.raises(RuntimeError,match='checksum'):HealthStore(path)
 

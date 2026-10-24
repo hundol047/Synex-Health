@@ -1,5 +1,8 @@
+
+from app.services.release_config import auth_mode
 import os, logging
-from .services.release_config import validate_production
+from .services.release_config import validate_production, validate_auth_configuration, validate_demo_database
+validate_auth_configuration()
 validate_production()
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -31,7 +34,8 @@ def resolve_cors_config(cors_origins_env=None, allow_credentials_env=None):
 
 @asynccontextmanager
 async def lifespan(app):
-    if os.getenv('AUTH_MODE', 'demo').lower() == 'demo' and os.getenv('SYNEX_HEALTH_DEMO_SEED', 'true').lower() != 'false':
+    validate_demo_database(health_store)
+    if auth_mode() == 'demo' and os.getenv('SYNEX_HEALTH_DEMO_SEED', 'true').lower() != 'false':
         seed_demo_data(health_store)
     yield
 
@@ -54,14 +58,16 @@ def health_status():
     from .health.providers.configured import inbody
     provider=inbody(health_store)
     return {
-        'status': 'ok', 'demo': os.getenv('AUTH_MODE', 'demo').lower() == 'demo', 'service': 'synex-health', 'review_login':os.getenv('APP_REVIEW_MODE')=='true',
+        'status': 'ok', 'demo': auth_mode() == 'demo', 'service': 'synex-health', 'review_login':os.getenv('APP_REVIEW_MODE')=='true',
         'agent': {'status': 'ok', 'mode': health_agent.agent_mode()},
-        'auth': {'status': 'ok', 'mode': os.getenv('AUTH_MODE', 'demo').lower()},
-        'providers': {'mock': 'ok' if os.getenv('AUTH_MODE','demo')=='demo' else 'disabled', 'manual': 'ok', 'csv': 'ok', 'inbody': 'configured' if provider.configured() else 'not_configured', 'biogram': 'not_configured'},
+        'auth': {'status': 'ok', 'mode': auth_mode()},
+        'providers': {'mock': 'ok' if auth_mode()=='demo' else 'disabled', 'manual': 'ok', 'csv': 'ok', 'inbody': 'configured' if provider.configured() else 'not_configured', 'biogram': 'not_configured'},
     }
 
 
 app.include_router(health_router)
+from .health.consents import router as consent_router
+app.include_router(consent_router)
 from .health.billing import router as billing_router
 app.include_router(billing_router)
 from .health.extensions import router as extensions_router
