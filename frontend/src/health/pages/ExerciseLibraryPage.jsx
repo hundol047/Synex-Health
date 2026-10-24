@@ -4,7 +4,7 @@ import {api} from '../../shared/lib/api.js';
 import {Card,Skeleton,ErrorState,EmptyState} from '../../shared/components/ui.jsx';
 import {useApiData} from '../lib/useApiData.js';
 import {CATEGORY_LABELS,EQUIPMENT_LABELS,equipmentText} from '../lib/exerciseLabels.js';
-import {POSE_EXERCISES} from '../components/exercise/poseCoach.js';
+import {SUPPORTED_POSE_EXERCISES} from '../components/exercise/poseCoach.js';
 import ExerciseCard from '../components/exercise/ExerciseCard.jsx';
 export default function ExerciseLibraryPage(){
  const {data,loading,error,reload}=useApiData(()=>api('/api/exercise-catalog'),[]);
@@ -12,7 +12,7 @@ export default function ExerciseLibraryPage(){
  if(loading)return <Skeleton/>;
  if(error)return <ErrorState message={error.message} onRetry={reload}/>;
  const list=data||[], term=query.trim().toLowerCase();
- const filtered=list.filter(e=>(!poseOnly||!!POSE_EXERCISES[e.motion_id])&&(type==='all'||e.training_type===type)&&(category==='all'||e.category===category)&&(equipment==='all'||e.equipment.includes(equipment))&&`${e.name} ${e.english_name} ${e.target_muscle.join(' ')} ${equipmentText(e.equipment)}`.toLowerCase().includes(term));
+ const filtered=list.filter(e=>(!poseOnly||!!SUPPORTED_POSE_EXERCISES[e.motion_id])&&(type==='all'||e.training_type===type)&&(category==='all'||e.category===category)&&(equipment==='all'||e.equipment.includes(equipment))&&`${e.name} ${e.english_name} ${e.target_muscle.join(' ')} ${equipmentText(e.equipment)}`.toLowerCase().includes(term));
  function change(setter,value){setter(value);setLimit(12);}
  return <Card title={`운동 라이브러리 · ${list.length}개`}>
   <div className="motion-controls" role="group" aria-label="운동 방식">

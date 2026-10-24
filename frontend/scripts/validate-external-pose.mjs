@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import {fileURLToPath,pathToFileURL} from 'node:url';
-import {createExercisePoseAnalyzer,POSE_EXERCISES} from '../src/health/components/exercise/poseCoach.js';
+import {createExercisePoseAnalyzer,SUPPORTED_POSE_EXERCISES as POSE_EXERCISES} from '../src/health/components/exercise/poseCoach.js';
 import {POSE_VERSIONS} from '../src/health/components/exercise/poseThresholds.js';
 const required=['sample_id','exercise','camera_angle','device','fps','subject_id_anonymized','ground_truth_phase','ground_truth_rep_count','known_form_issue','label_source','reviewer','consent_status'];
 const ratio=(n,d)=>d?n/d:null;

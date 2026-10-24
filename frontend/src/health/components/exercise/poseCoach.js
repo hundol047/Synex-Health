@@ -1,5 +1,7 @@
+import {CatalogPoseAnalyzer,CATALOG_POSE_EXERCISES} from './catalogPoseAnalyzer.js';
 import {POSE_EXERCISES,POSE_VERSIONS} from './poseThresholds.js';
 export {POSE_EXERCISES} from './poseThresholds.js';
+export const SUPPORTED_POSE_EXERCISES={...POSE_EXERCISES,...CATALOG_POSE_EXERCISES};
 import {REQUIRED_LANDMARKS,trackingQuality,evaluateRules} from './poseRules.js';
 // Angles/phase thresholds are conservative product heuristics, not clinical assessment.
 export function jointAngle(a,b,c){
@@ -113,10 +115,10 @@ export class ExercisePoseAnalyzer {
  }
 }
 export const ANALYZERS=Object.fromEntries(Object.keys(POSE_EXERCISES).map(id=>[id,class extends ExercisePoseAnalyzer{constructor(){super(id);}}]));
-export function createExercisePoseAnalyzer(id){if(!ANALYZERS[id])throw Error('Unsupported exercise');return new ANALYZERS[id]();}
+export function createExercisePoseAnalyzer(id){if(CATALOG_POSE_EXERCISES[id]&&!ANALYZERS[id])return new CatalogPoseAnalyzer(id);if(!ANALYZERS[id])throw Error('Unsupported exercise');return new ANALYZERS[id]();}
 
 // Exercise-specific temporal hysteresis. Tracking loss invalidates the current repetition.
-export const CAMERA_DIRECTIONS={squat:'측면 또는 45도',lunge:'측면 또는 45도',push_up:'측면',plank:'측면',shoulder_press:'정면 또는 45도',curl:'정면',hip_hinge:'측면',lateral_raise:'정면',bent_row:'측면 또는 45도',front_raise:'측면',side_lunge:'정면',glute_bridge:'측면'};
+export const CAMERA_DIRECTIONS={...Object.fromEntries(Object.entries(CATALOG_POSE_EXERCISES).map(([id,c])=>[id,c.camera])),squat:'측면 또는 45도',lunge:'측면 또는 45도',push_up:'측면',plank:'측면',shoulder_press:'정면 또는 45도',curl:'정면',hip_hinge:'측면',lateral_raise:'정면',bent_row:'측면 또는 45도',front_raise:'측면',side_lunge:'정면',glute_bridge:'측면'};
 const LOW_START=new Set(['shoulder_press','lateral_raise','front_raise','glute_bridge']);
 const CONCENTRIC_FIRST=new Set(['shoulder_press','curl','lateral_raise','bent_row','front_raise','glute_bridge']);
 export class TemporalPhases{

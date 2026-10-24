@@ -8,3 +8,6 @@ Worker inference falls back to throttled main-thread inference. Video frame call
 
 
 Status definitions: VERIFIED means a named automated/browser check passed; IMPLEMENTED / NOT DEVICE VERIFIED means code exists without physical-device evidence; EXTERNAL SETUP REQUIRED needs operator systems; NOT IMPLEMENTED means no working feature is claimed.
+
+## 2026-10-24 coverage update
+The catalog now has explicit profiles for all 74 exercise IDs, with legacy IDs kept for compatibility. Added analyses are screen-space, movement-family heuristics and remain experimental. Per-exercise profiles do not establish independent accuracy. Algorithm/rule version is 3.0.0 / 2026.10.24. Production camera feedback requires current-build, reviewed real-video evidence; see LAUNCH_SECURITY_COMPLETION.md. No external dataset was fabricated or evaluated in this change.

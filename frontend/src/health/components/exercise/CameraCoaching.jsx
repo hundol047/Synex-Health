@@ -5,7 +5,7 @@ import React,{useEffect,useRef,useState,lazy,Suspense} from 'react';
 import {claimCamera} from './cameraLease.js';
 import {api} from '../../../shared/lib/api.js';
 import {createPoseRunner} from './poseRunner.js';
-import {createExercisePoseAnalyzer,POSE_EXERCISES,CAMERA_DIRECTIONS} from './poseCoach.js';
+import {createExercisePoseAnalyzer,SUPPORTED_POSE_EXERCISES,CAMERA_DIRECTIONS} from './poseCoach.js';
 const ExerciseMotion3D=lazy(()=>import('./ExerciseMotion3D.jsx'));
 const CONNECTIONS=[[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28]];
 function Demo({motion,paused}){
@@ -18,7 +18,7 @@ function Demo({motion,paused}){
   frame=requestAnimationFrame(tick);document.addEventListener('visibilitychange',hide);
   return()=>{cancelAnimationFrame(frame);document.removeEventListener('visibilitychange',hide);};
  },[playing]);
- return <><div className="coach-pane-title"><strong>운동 시범 · {POSE_EXERCISES[motion].label}</strong><button type="button" className="btn btn-ghost" disabled={paused} onClick={()=>setPlaying(p=>!p)}>{playing?'시범 정지':'시범 재생'}</button></div><div className="coach-demo"><Suspense fallback={<p>시범 준비 중…</p>}><ExerciseMotion3D motion={motion} progress={progress} mirror={false} compact/></Suspense></div></>;
+ return <><div className="coach-pane-title"><strong>운동 시범 · {SUPPORTED_POSE_EXERCISES[motion].label}</strong><button type="button" className="btn btn-ghost" disabled={paused} onClick={()=>setPlaying(p=>!p)}>{playing?'시범 정지':'시범 재생'}</button></div><p className="muted">영상으로 힘·근활성·기구 안전을 측정할 수 없습니다. 자세 피드백은 검증 전 참고 정보입니다.</p><div className="coach-demo"><Suspense fallback={<p>시범 준비 중…</p>}><ExerciseMotion3D motion={motion} progress={progress} mirror={false} compact/></Suspense></div></>;
 }
 export default function CameraCoaching({motion='squat',paused=false,onEvaluation}){
  const video=useRef(null),stream=useRef(null),cameraVersion=useRef(0),analysisVersion=useRef(0),resources=useRef({}),voiceRef=useRef(false),speechAt=useRef(-Infinity),releaseCamera=useRef(null);
@@ -70,7 +70,7 @@ export default function CameraCoaching({motion='squat',paused=false,onEvaluation
      if(time-last>=150&&video.current.readyState>=2){
       const began=performance.now();const out=await detector.detectForVideo(video.current,time);recordPoseDiagnostics({inferenceMs:out.inferenceMs??performance.now()-began,poseFPS:last?1000/(time-last):null,cameraFPS:video.current.srcObject?.getVideoTracks()[0]?.getSettings?.()?.frameRate??null});if(!active())return;
       const raw=out.landmarks?.[0]||[],w=video.current.videoWidth||640,h=video.current.videoHeight||480;
-      const visible=POSE_EXERCISES[motion].joints.every(i=>raw[i]&&raw[i].x>=0&&raw[i].x<=1&&raw[i].y>=0&&raw[i].y<=1);
+      const visible=SUPPORTED_POSE_EXERCISES[motion].joints.every(i=>raw[i]&&raw[i].x>=0&&raw[i].x<=1&&raw[i].y>=0&&raw[i].y<=1);
       const calibrated=calibration.update(out.landmarks,time);
       const next=calibrated.ready?coach.update(visible?raw:[],time,h/w):{...coach.update([],time,h/w),feedback:calibrated.message,calibration:calibrated.progress};
       const message=next.corrections?.[0]||next.warnings?.[0]||next.feedback;
