@@ -1,3 +1,4 @@
+from test_health import student_headers
 import json
 import pytest
 from test_average_overlay import fixture_data
@@ -47,7 +48,7 @@ def test_mapping_admin_only_and_school_matches(client):
     payload={'school_id':school,'school_user_id':'test-student-token','subject':'test-provider-token'}
     url=f'/api/admin/users/{uid}/inbody-mapping'
     assert client.put(url,json=payload).status_code==403
-    admin={'X-Synex-Demo-User':'admin-demo'}
+    admin=student_headers(client, 'admin-demo')
     assert client.put(url,json={**payload,'school_id':'other-school'},headers=admin).status_code==422
     assert client.put(url,json=payload,headers=admin).status_code==200
     stored=store.preference(uid,'inbody_mapping',{})
@@ -75,7 +76,7 @@ def test_provider_long_retry_after_never_retries_early(monkeypatch):
 
 def test_center_connection_does_not_claim_school_sso(client,monkeypatch):
     monkeypatch.setenv('SCHOOL_OIDC_CONFIG','[]')
-    response=client.get('/api/admin/dashboard',headers={'X-Synex-Demo-User':'admin-demo'})
+    response=client.get('/api/admin/dashboard',headers=student_headers(client, 'admin-demo'))
     assert response.status_code==200
     assert response.json()['school_overview']
     assert all(s['sso']=='NOT CONFIGURED' and s['provider']=='DISCONNECTED' for s in response.json()['school_overview'])
@@ -86,7 +87,7 @@ def test_mapping_is_unique_across_schools_and_normalized(client):
     first=store.get_user('student-jimin')
     second=first.model_copy(update={'id':'other-school-student','school_id':'other-school'})
     store.upsert_user(second)
-    admin={'X-Synex-Demo-User':'admin-demo'}
+    admin=student_headers(client, 'admin-demo')
     payload={'school_id':first.school_id,'school_user_id':' school-1 ','subject':' external-1 '}
     assert client.put(f'/api/admin/users/{first.id}/inbody-mapping',json=payload,headers=admin).status_code==200
     assert store.preference(first.id,'inbody_mapping')['subject']=='external-1'

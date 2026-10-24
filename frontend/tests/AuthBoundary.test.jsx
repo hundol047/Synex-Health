@@ -2,8 +2,8 @@ import React from 'react';
 import {beforeEach,it,expect,vi} from 'vitest';
 import {render,screen,fireEvent,waitFor} from '@testing-library/react';
 import AuthBoundary from '../src/shared/components/AuthBoundary.jsx';
-import {api} from '../src/shared/lib/api.js';
-vi.mock('../src/shared/lib/api.js',()=>({BASE:'',getDemoUser:()=>'',api:vi.fn()}));
+import {api,loginDemo} from '../src/shared/lib/api.js';
+vi.mock('../src/shared/lib/api.js',()=>({BASE:'',getDemoUser:()=>'student-jimin',loginDemo:vi.fn(),api:vi.fn()}));
 vi.mock('../src/shared/lib/offline.js',()=>({bindOfflineAccount:vi.fn(),offlineState:()=>({})}));
 beforeEach(()=>{
  sessionStorage.clear();history.replaceState({},'','/health');
@@ -87,4 +87,15 @@ it('loads login settings on WebViews without AbortSignal.timeout',async()=>{
   render(<AuthBoundary/>);
   await screen.findByText(/계정 로그인 연결을 준비 중/);
  }finally{Object.defineProperty(AbortSignal,'timeout',{value:timeout,configurable:true});}
+});
+
+it('waits for demo login before rendering protected content',async()=>{
+ const normal=api.getMockImplementation();
+ api.mockImplementation(path=>path==='/api/health/status'?Promise.resolve({demo:true}):normal(path));
+ let finish;loginDemo.mockImplementation(()=>new Promise(resolve=>{finish=resolve;}));
+ render(<AuthBoundary><p>Demo records</p></AuthBoundary>);
+ await waitFor(()=>expect(loginDemo).toHaveBeenCalled());
+ expect(screen.queryByText('Demo records')).toBeNull();
+ finish({id:'student-jimin',role:'student'});
+ expect(await screen.findByText('Demo records')).toBeTruthy();
 });

@@ -1,19 +1,24 @@
+import {Capacitor} from '@capacitor/core';
 import {resolveApiBase} from './serverConfig.js';
-import {cacheResponse,cachedResponse,queueWorkout,syncWorkouts,clearOffline,offlineEpoch,prepareWorkout,acknowledgeWorkout} from './offline.js';
-import { getAccessToken,refreshAccessToken } from './session.js';
+import {bindOfflineAccount,cacheResponse,cachedResponse,queueWorkout,syncWorkouts,clearOffline,offlineEpoch,prepareWorkout,acknowledgeWorkout} from './offline.js';
+import { getAccessToken,refreshAccessToken,setAccessToken } from './session.js';
 export const BASE = resolveApiBase();
 
-// Demo-mode identity switch (see backend/app/services/auth.py's get_current_user docstring):
-// X-Synex-Demo-User lets the same browser preview the student and counselor experiences without a
-// real login flow. Stored in localStorage purely as a per-browser UI convenience (which role is
-// currently selected) -- it is never treated as an auth credential; AUTH_MODE=oidc ignores it
-// entirely server-side.
+// A selected demo id is a UI preference, never a credential.
 const DEMO_USER_KEY = 'synex-health-demo-user';
 export function getDemoUser() {
   try { return localStorage.getItem(DEMO_USER_KEY) || 'student-jimin'; } catch { return 'student-jimin'; }
 }
+export async function loginDemo(id = getDemoUser()) {
+  const session = await api('/api/auth/demo-login', {demo_user_id:id, transport:Capacitor.isNativePlatform()?'native':'web'});
+  setAccessToken('');
+  if (session.session_token) setAccessToken(session.session_token);
+  return session;
+}
 export async function setDemoUser(id) {
   await clearOffline();
+  await loginDemo(id);
+  await bindOfflineAccount(id, BASE);
   try { localStorage.setItem(DEMO_USER_KEY, id); } catch {}
 }
 
@@ -25,7 +30,7 @@ export async function api(path, body, { method, signal, headers, offlineRetry=fa
   if (requestEpoch !== offlineEpoch()) throw Error('계정이 변경되었습니다. 다시 시도하세요.');
   const options = {
     method: m,
-    headers: { 'Content-Type': 'application/json', ...(import.meta.env.VITE_RELEASE_BUILD==='true'?{}:{'X-Synex-Demo-User':getDemoUser()}), ...(getAccessToken() ? {Authorization: `Bearer ${getAccessToken()}`} : {}), ...headers },
+    headers: { 'Content-Type': 'application/json', ...(getAccessToken() ? {Authorization: `Bearer ${getAccessToken()}`} : {}), ...headers },
     body: body === undefined ? undefined : JSON.stringify(body),
     signal, credentials: 'include',
   };

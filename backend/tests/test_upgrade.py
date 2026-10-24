@@ -1,3 +1,4 @@
+from test_health import student_headers
 import os
 from concurrent.futures import ThreadPoolExecutor
 import pytest
@@ -42,7 +43,7 @@ def test_numeric_pain_blocks_plan_and_history_is_private(client):
     body=dict(routine_id=r['id'],routine_exercise_id=e['exercise_id'],day_number=e['day_number'],date=date.today().isoformat(),exercise_name=e['exercise_name'],rpe=8,pain=2,difficulty='moderate')
     assert client.post('/api/workouts',json=body).status_code==200
     assert client.post('/api/exercise-routines/generate').status_code==409
-    assert client.get('/api/adaptive-history',headers={'X-Synex-Demo-User':'other'}).json()==[]
+    assert client.get('/api/adaptive-history',headers=student_headers(client, 'other')).json()==[]
     assert client.request('DELETE','/api/privacy/health-data',json={'confirmation':'DELETE'}).status_code==200
     assert client.get('/api/adaptive-history').json()==[]
 

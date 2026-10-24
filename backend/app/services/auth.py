@@ -4,10 +4,8 @@ Adapted from SynexAgent's auth.py (backend/app/services/auth.py in the SynexAgen
 repository) -- same session-cookie-over-bearer-token shape, same AUTH_MODE=demo/oidc split -- but with
 Health's own role set (student/counselor/admin) instead of Clinical's (clinician/pharmacist/admin).
 
-AUTH_MODE=demo (default): identity comes from the X-Synex-Demo-User header (falls back to
-SYNEX_DEMO_USER_ID/SYNEX_DEMO_ROLE env vars, then the bundled demo student) -- this lets the demo
-frontend switch between the seeded demo student and the demo counselor without a real login flow,
-while still exercising the same RBAC checks every write path uses.
+AUTH_MODE=demo: only allowlisted accounts with a server-issued demo session authenticate.
+Demo accounts remain publicly selectable for development; use OIDC on public deployments.
 
 AUTH_MODE=oidc: real OIDC bearer-token verification (JWKS fetch + PyJWT), identical mechanism to
 SynexAgent's -- unverified against a real campus SSO/IdP from this environment; see module docstring
@@ -145,17 +143,17 @@ def create_auth_session(*, user_id, role) -> str:
 def get_current_user(authorization: Optional[str] = Header(None),
                       synex_health_auth_session: Optional[str] = Cookie(default=None),
                       x_synex_demo_user: Optional[str] = Header(default=None)) -> User:
-    """Demo-mode identity switch: the frontend's role switcher (student / counselor) sends
-    X-Synex-Demo-User so the same browser session can preview both experiences without a real
-    login flow -- this header is only honored when AUTH_MODE=demo; in AUTH_MODE=oidc it is
-    ignored entirely and identity comes only from a verified token/session."""
+    """Authenticate sessions/tokens; client identity headers never grant access."""
     mode = os.getenv('AUTH_MODE', 'demo').lower()
     if mode not in ('demo', 'oidc'):
         raise HTTPException(503, 'Invalid authentication configuration')
     if mode == 'demo':
-        demo_id = x_synex_demo_user or os.getenv('SYNEX_DEMO_USER_ID', 'student-jimin')
-        info = DEMO_USERS.get(demo_id, DEMO_USERS['student-jimin'])
-        return _account_active(User(id=demo_id, role=os.getenv('SYNEX_DEMO_ROLE', info['role'])))
+        token = authorization.split(' ', 1)[1] if authorization and authorization.lower().startswith('bearer ') else synex_health_auth_session
+        # Demo sessions use create_auth_session's opaque 32-character tokens, not OIDC sessions.
+        user = AUTH_SESSIONS.get(token) if isinstance(token, str) and re.fullmatch(r'[A-Za-z0-9_-]{32}', token) else None
+        if user and user.id in DEMO_USERS and user.role == DEMO_USERS[user.id]['role']:
+            return _account_active(user)
+        raise HTTPException(401, 'Demo login required')
     if authorization and authorization.lower().startswith('bearer '):
         try:
             token=authorization.split(' ',1)[1]

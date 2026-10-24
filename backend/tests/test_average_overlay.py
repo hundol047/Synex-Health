@@ -69,11 +69,11 @@ def test_explicit_total_supported_and_zero_mean_safe():
 
 
 def test_body_map_and_progress_share_selected_reference(client):
-    body=client.get('/api/body-map/latest',headers=student_headers()).json()
+    body=client.get('/api/body-map/latest',headers=student_headers(client)).json()
     assert body['average_comparison']['available']
     assert body['average_comparison']['groups'][0]['metadata']['demo']
     assert body['previous_measurement']['id']==body['previous_measurement_id']
-    progress=client.get('/api/progress',headers=student_headers()).json()
+    progress=client.get('/api/progress',headers=student_headers(client)).json()
     assert progress['average_comparison']['selected_group_id']==body['average_comparison']['selected_group_id']
 
 
@@ -97,18 +97,18 @@ def test_invalid_metadata_ranges_rejected():
 
 
 def test_reference_selection_is_owned_validated_and_persisted(client):
-    body=client.get('/api/body-map/latest',headers=student_headers()).json()
+    body=client.get('/api/body-map/latest',headers=student_headers(client)).json()
     group=body['average_comparison']['selected_group_id']
-    assert client.put('/api/body-map/reference-group',headers=student_headers(),json={'group_id':'invented'}).status_code==422
-    assert client.put('/api/body-map/reference-group',headers={'X-Synex-Demo-User':'counselor-demo'},json={'group_id':group}).status_code==403
-    assert client.put('/api/body-map/reference-group',headers=student_headers(),json={'group_id':group}).status_code==200
-    selected=client.get('/api/body-map/latest',headers=student_headers()).json()['average_comparison']
+    assert client.put('/api/body-map/reference-group',headers=student_headers(client),json={'group_id':'invented'}).status_code==422
+    assert client.put('/api/body-map/reference-group',headers=student_headers(client, 'counselor-demo'),json={'group_id':group}).status_code==403
+    assert client.put('/api/body-map/reference-group',headers=student_headers(client),json={'group_id':group}).status_code==200
+    selected=client.get('/api/body-map/latest',headers=student_headers(client)).json()['average_comparison']
     assert selected['selected_group_id']==group and selected['selection_mode']=='manual'
-    assert client.put('/api/body-map/reference-group',headers=student_headers(),json={'group_id':None}).status_code==200
+    assert client.put('/api/body-map/reference-group',headers=student_headers(client),json={'group_id':None}).status_code==200
 
 
 def test_reference_change_marks_old_routine_for_review(client):
-    headers=student_headers()
+    headers=student_headers(client)
     created=client.post('/api/exercise-routines/generate',headers=headers,json={})
     assert created.status_code==200
     body=client.get('/api/body-map/latest',headers=headers).json()

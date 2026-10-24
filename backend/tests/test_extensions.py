@@ -23,7 +23,7 @@ def test_consent_history_revoke_and_export_isolation(client):
     data=client.get('/api/privacy/export').json()
     assert [h['shared'] for h in data['sharing_history']]==[True,False]
     assert data['profile']['id']=='student-jimin'
-    assert client.get('/api/counselor/students',headers=counselor_headers()).json()==[]
+    assert client.get('/api/counselor/students',headers=counselor_headers(client)).json()==[]
     assert not client.get('/api/health/school-connection').json()['verified']
 
 
@@ -42,7 +42,7 @@ def test_account_deletion_blocks_existing_identity_and_preserves_others(client):
     assert client.request('DELETE','/api/privacy/account',json={'confirmation':'WRONG'}).status_code==422
     assert client.request('DELETE','/api/privacy/account',json={'confirmation':'DELETE'}).status_code==200
     assert client.get('/api/health/profile').status_code==401
-    assert client.get('/api/health/profile',headers=counselor_headers()).status_code==200
+    assert client.get('/api/health/profile',headers=counselor_headers(client)).status_code==200
     from app.health.router import store
     assert store.list_measurements('student-jimin')==[]
     assert store.get_user('student-jimin') is None
@@ -59,14 +59,14 @@ def test_health_data_delete_removes_snapshots(client):
 def test_measurement_delete_is_own_only_and_removes_derived_plan(client):
     plan=client.post('/api/exercise-routines/generate').json()
     mid=client.get('/api/body-composition/latest').json()['id']
-    assert client.delete('/api/body-composition/'+mid,headers=student_headers('other')).status_code==404
+    assert client.delete('/api/body-composition/'+mid,headers=student_headers(client, 'other')).status_code==404
     assert client.delete('/api/body-composition/'+mid).status_code==200
     assert client.get('/api/exercise-routines/'+plan['id']).status_code==404
     assert len(client.get('/api/body-composition').json())==1
 
 
 def test_admin_has_metadata_but_not_student_health(client):
-    admin=student_headers('admin-demo')
+    admin=student_headers(client, 'admin-demo')
     assert client.get('/api/admin/dashboard').status_code==403
     data=client.get('/api/admin/dashboard',headers=admin).json()
     assert 'measurements' not in data

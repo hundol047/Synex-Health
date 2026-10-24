@@ -1,6 +1,6 @@
 """API routes for Synex Health (section 35 of the product brief). Mounted under /api in main.py.
 
-Every write path uses the demo-mode X-Synex-Demo-User identity switch from services/auth.py --
+Every write path uses the authenticated session/token identity from services/auth.py --
 students only ever touch their own data (require_self_or_counselor), counselors get read-only roster
 access plus their own notes, admin gets reference-range management.
 """

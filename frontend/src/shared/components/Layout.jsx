@@ -41,9 +41,9 @@ export default function Layout({ children }) {
 
   async function switchRole(id) {
     if((offlineState().pending||offlineState().drafts)&&!window.confirm('미전송·진행 중 기록을 삭제하고 데모 계정을 바꿀까요?'))return;
-    await setDemoUser(id);
+    try { await setDemoUser(id); } catch (error) { setSyncError(error.message); return; }
     navigate(id==='admin-demo'?'/health/admin':id === 'counselor-demo' ? '/health-center' : '/health');
-    window.location.reload();
+    window.dispatchEvent(new Event('synex-demo-account-changed'));
   }
 
   const nav = isAdmin ? [{to:'/health/admin',label:'관리자',icon:Users,end:true}] : isCounselor ? [{ to: '/health-center', label: '학생 관리', icon: Users, end: true }] : STUDENT_NAV;
