@@ -11,6 +11,7 @@ os.environ.setdefault('SYNEX_HEALTH_DEMO_SEED', 'true')
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
+    monkeypatch.setenv('DEMO_ACCESS_CODE', 'test-only-demo-code')
     monkeypatch.setenv('SYNEX_HEALTH_DB_PATH', str(tmp_path / 'health.sqlite3'))
     monkeypatch.setenv('SYNEX_HEALTH_AUTH_SESSION_PATH', str(tmp_path / 'auth.sqlite3'))
     # Reimport fresh so the store picks up the tmp-path DB.

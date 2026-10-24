@@ -13,4 +13,4 @@ psycopg[binary]==3.3.6
 tzdata>=2025.2
 
 # Test runner used by the documented verification command.
-pytest>=8,<9
+pytest>=9.0.3,<10
