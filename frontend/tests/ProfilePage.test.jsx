@@ -1,0 +1,22 @@
+import React from 'react';
+import {MemoryRouter} from 'react-router-dom';
+import { it, expect } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { mockFetch } from './helpers.js';
+import ProfilePage from '../src/health/pages/ProfilePage.jsx';
+it('loads and saves edited profile fields',async()=>{
+ const p={name:'김지민',height:165,gender:'female'}, e={goal:'BALANCE',experience_level:'BEGINNER',days_per_week:3,minutes_per_session:40,exercise_location:'gym',available_equipment:['dumbbell']};
+ const fetch=mockFetch({'/api/schools':[], '/api/health/school-connection':{}, '/api/health/profile':({options:o})=>o.method==='PUT'?Object.assign(p,JSON.parse(o.body)):p,'/api/exercise-profile':({options:o})=>o.method==='PUT'?Object.assign(e,JSON.parse(o.body)):e});
+ render(<MemoryRouter><ProfilePage/></MemoryRouter>);
+ expect((await screen.findByLabelText('운동 목표')).value).toBe('BALANCE');
+ expect(screen.getByLabelText('덤벨').checked).toBe(true);
+ fireEvent.change(screen.getByLabelText('운동 목표'),{target:{value:'MUSCLE_GAIN'}});
+ fireEvent.change(screen.getByLabelText('키 (cm)', {selector:'#height-input'}),{target:{value:'170'}});
+ fireEvent.click(screen.getByRole('button',{name:'저장하기'}));
+ expect(await screen.findByText('저장되었습니다.')).toBeTruthy();
+ expect(fetch.mock.calls.filter(([,o])=>o.method==='PUT')).toHaveLength(2);
+ expect(p.height).toBe(170);expect(e.goal).toBe('MUSCLE_GAIN');
+ const updates=fetch.mock.calls.filter(([,o])=>o.method==='PUT');
+ expect(JSON.parse(updates.find(([url])=>url==='/api/health/profile')[1].body)).toMatchObject({height:170});
+ expect(JSON.parse(updates.find(([url])=>url==='/api/exercise-profile')[1].body)).toMatchObject({goal:'MUSCLE_GAIN'});
+});
