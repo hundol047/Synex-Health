@@ -103,7 +103,7 @@ cd ../backend && python -m uvicorn app.main:app --port 8000   # http://localhost
 
 | 변수 | 기본값 | 설명 |
 |---|---|---|
-| `AUTH_MODE` | `demo` | `demo`\|`oidc` |
+| `AUTH_MODE` | 필수 (기본값 없음) | `demo`\|`oidc` |
 | `HEALTH_AGENT_MODE` | `deterministic` | `deterministic`\|`llm` (llm은 `ANTHROPIC_API_KEY`와 계정에서 사용 가능한 `ANTHROPIC_MODEL` 필요, 미설정/실패 시 자동으로 deterministic으로 폴백) |
 | `SYNEX_CORS_ORIGINS` | `http://localhost:5173,...` | 프론트엔드 dev 서버 |
 | `SYNEX_HEALTH_DEMO_SEED` | `true` | 데모 학생/상담사/기준값 자동 시드 |
@@ -179,3 +179,5 @@ See [release readiness](docs/APP_STORE_RELEASE_READINESS.md) for verified result
 ### Production hardening (2026-10-03)
 
 See [hardening report](docs/HARDENING_REPORT.md) and [current readiness](docs/PRODUCTION_READINESS.md) for bounded 3D morphs, twelve movement rules/calibration, encrypted restart persistence, sandbox-isolated billing and verified disposable PostgreSQL recovery. Physical devices, real pose accuracy and actual store payments remain externally unverified.
+
+개발 환경도 `AUTH_MODE=demo`, `SYNEX_ALLOW_DEMO=true`, 12자 이상의 `DEMO_ACCESS_CODE`를 명시해야 합니다. 데모 접근 코드를 로그인 화면에 입력하세요. 실제 사용자 데이터가 든 DB는 데모 모드로 시작할 수 없습니다. 운영 설정과 동의·자세 분석 제한은 [출시 보완 보고서](docs/LAUNCH_SECURITY_COMPLETION.md)를 확인하세요.

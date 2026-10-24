@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './fixtures.js';
 
 test('mobile catalog separates bodyweight/gym, filters equipment, and opens a machine guide',async({page},info)=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));

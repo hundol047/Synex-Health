@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './fixtures.js';
 async function confirmAction(page,accept,action){
  const handled=new Promise((resolve,reject)=>page.once('dialog',dialog=>(accept?dialog.accept():dialog.dismiss()).then(resolve,reject)));
  await Promise.all([handled,action()]);

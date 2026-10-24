@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './fixtures.js';
 test('low power preserves numeric comparison and toggles rendering fallback',async({page})=>{
  await page.addInitScript(()=>localStorage.setItem('synex-onboarding-v1','done'));
  const errors=[];page.on('pageerror',e=>errors.push(e.message));

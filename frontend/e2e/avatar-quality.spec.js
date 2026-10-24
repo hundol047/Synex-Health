@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './fixtures.js';
 test('dressed avatar renders from all sides and keeps joints visible through exercise phases',async({page},info)=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.addInitScript(()=>localStorage.setItem('synex-onboarding-v1','done'));
  await page.goto('/health/body');await page.getByRole('button',{name:/Range View/}).click();

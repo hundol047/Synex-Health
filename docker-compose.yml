@@ -7,7 +7,13 @@ services:
     ports:
       - "127.0.0.1:8000:8000"
     environment:
+      RETENTION_POLICY: "계정 삭제 또는 데이터 삭제 요청 시까지"
+      LEGAL_OPERATOR: "Synex Health 운영팀"
+      SUPPORT_EMAIL: "hundol047@gmail.com"
       AUTH_MODE: demo
+      SYNEX_ALLOW_DEMO: "true"
+      # DEV ONLY: never reuse this default on a reachable server.
+      DEMO_ACCESS_CODE: ${DEMO_ACCESS_CODE:-local-dev-only-change-me}
       HEALTH_AGENT_MODE: deterministic
       SYNEX_HEALTH_DEMO_SEED: "true"
       SYNEX_HEALTH_DB_PATH: /app/runtime/health.sqlite3

@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './fixtures.js';
 test('diagnostics exposes honest readiness and device inspection without claiming physical QA',async({page})=>{
  await page.addInitScript(()=>localStorage.setItem('synex-onboarding-v1','done'));
  await page.goto('/health/diagnostics');

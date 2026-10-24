@@ -6,6 +6,9 @@ on:
 permissions:
   contents: read
 env:
+  AUTH_MODE: demo
+  SYNEX_ALLOW_DEMO: "true"
+  DEMO_ACCESS_CODE: ci-only-demo-access-code
   VITE_BUILD_COMMIT: ${{ github.sha }}
   SYNEX_VERSION_CODE: ${{ github.run_number }}
   SYNEX_VERSION_NAME: 1.0.${{ github.run_number }}
@@ -187,7 +190,7 @@ jobs:
           fi
       - name: Verify served model, legal pages and release marker
         run: |
-          docker run -d --name synex-smoke -p 8123:8000 -e APP_ENV=development -e AUTH_MODE=demo synex-release-test
+          docker run -d --name synex-smoke -p 8123:8000 -e APP_ENV=development -e AUTH_MODE=demo -e SYNEX_ALLOW_DEMO=true -e DEMO_ACCESS_CODE=ci-only-demo-access-code synex-release-test
           python scripts/verify-container.py
       - name: Container logs
         if: failure()
