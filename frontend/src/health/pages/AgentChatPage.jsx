@@ -8,22 +8,25 @@ export default function AgentChatPage() {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [chatError, setChatError] = useState(null);
+  const [failedMessage, setFailedMessage] = useState('');
 
   const [analysis, setAnalysis] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState(null);
 
-  async function send() {
-    const text = input.trim();
+  async function send(retry = false) {
+    const text = retry === true ? failedMessage : input.trim();
     if (!text || sending) return;
-    setMessages((m) => [...m, { role: 'user', text }]);
+    if (retry !== true) setMessages((m) => [...m, { role: 'user', text }]);
     setInput('');
     setSending(true);
     setChatError(null);
     try {
       const res = await HealthAPI.chat(text);
       setMessages((m) => [...m, { role: 'agent', text: res.reply }]);
+      setFailedMessage('');
     } catch (error) {
+      setFailedMessage(text);
       setChatError(error);
     } finally {
       setSending(false);
@@ -92,7 +95,7 @@ export default function AgentChatPage() {
           ))}
           {sending && <p className="muted">AI 코치가 답변을 작성 중입니다...</p>}
         </div>
-        {chatError && <ErrorState message={chatError.message} onRetry={send} />}
+        {chatError && <ErrorState message={chatError.message} onRetry={() => send(true)} />}
         <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
           <input
             className="chat-input" aria-label="AI 코치에게 질문"

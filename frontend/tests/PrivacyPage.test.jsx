@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event';
 import PrivacyPage from '../src/health/pages/PrivacyPage.jsx';
 import {api} from '../src/shared/lib/api.js';
 import {clearOffline,bindOfflineAccount} from '../src/shared/lib/offline.js';
-vi.mock('../src/shared/lib/api.js',()=>({BASE:'test-server',api:vi.fn(async(path)=>path==='/api/privacy/export'?{profile:{id:'me',school_id:'campus'},measurements:[],workouts:[],sharing_history:[]}:{deleted:true})}));
+vi.mock('../src/shared/lib/api.js',()=>({BASE:'test-server',api:vi.fn(async(path)=>path==='/api/consents'?{active:true,version:'v1'}:path==='/api/privacy/export'?{profile:{id:'me',school_id:'campus'},measurements:[],workouts:[],sharing_history:[]}:{deleted:true})}));
 vi.mock('../src/shared/lib/offline.js',()=>({offlineState:()=>({pending:1}),clearOffline:vi.fn(async()=>{}),clearResponseCache:vi.fn(),bindOfflineAccount:vi.fn(async()=>{})}));
 vi.mock('../src/health/components/WorkoutDraftList.jsx',()=>({default:()=>null}));
 vi.mock('../src/shared/lib/accountLifecycle.js',()=>({clearLocalAccount:vi.fn()}));

@@ -170,8 +170,9 @@ export const offlineState = () => ({pending:entries.length,drafts:draftCount,syn
 // Expiry locks local records until this server-verified account signs in again; it does not erase them.
 export function lockOffline() { epoch++; active = null; cache.clear(); entries = []; draftCount=0; storageError = ''; notify(); }
 // Explicit logout/account deletion purges that account's key and ciphertext.
-export function clearOffline() {
-  const ctx = active; lockOffline();
+export async function clearOffline(userId,namespace='') {
+  // A server-verified identity can purge ciphertext even while consent has locked the key.
+  const ctx = userId ? {account:await hash(`${namespace}|${userId}`)} : active; lockOffline();
   if(ctx)channel?.postMessage({action:'logout',account:ctx.account});
   return serial(async () => {
     if (!ctx) return;

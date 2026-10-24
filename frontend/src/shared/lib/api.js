@@ -1,3 +1,4 @@
+import {getDemoAccessCode,setDemoAccessCode} from './demoAccess.js';
 import {Capacitor} from '@capacitor/core';
 import {resolveApiBase} from './serverConfig.js';
 import {bindOfflineAccount,cacheResponse,cachedResponse,queueWorkout,syncWorkouts,clearOffline,offlineEpoch,prepareWorkout,acknowledgeWorkout} from './offline.js';
@@ -9,8 +10,9 @@ const DEMO_USER_KEY = 'synex-health-demo-user';
 export function getDemoUser() {
   try { return localStorage.getItem(DEMO_USER_KEY) || 'student-jimin'; } catch { return 'student-jimin'; }
 }
-export async function loginDemo(id = getDemoUser()) {
-  const session = await api('/api/auth/demo-login', {demo_user_id:id, transport:Capacitor.isNativePlatform()?'native':'web'});
+export async function loginDemo(id = getDemoUser(), accessCode = getDemoAccessCode()) {
+  const session = await api('/api/auth/demo-login', {demo_user_id:id, access_code:accessCode, transport:Capacitor.isNativePlatform()?'native':'web'});
+  setDemoAccessCode(accessCode);
   setAccessToken('');
   if (session.session_token) setAccessToken(session.session_token);
   return session;
@@ -47,6 +49,7 @@ export async function api(path, body, { method, signal, headers, offlineRetry=fa
     let data;
     try { data = await response.json(); } catch {}
     const err = new Error(typeof data?.detail === 'string' ? data.detail : data?.detail?.message || `요청 실패 (${response.status}). 서버 연결을 확인하십시오.`);
+    if (data?.detail?.code === 'SENSITIVE_CONSENT_REQUIRED') window.dispatchEvent(new Event('synex-consent-required'));
     err.status = response.status; err.data = data;
     throw err;
   }

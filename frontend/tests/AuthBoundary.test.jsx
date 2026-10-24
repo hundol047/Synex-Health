@@ -94,7 +94,10 @@ it('waits for demo login before rendering protected content',async()=>{
  api.mockImplementation(path=>path==='/api/health/status'?Promise.resolve({demo:true}):normal(path));
  let finish;loginDemo.mockImplementation(()=>new Promise(resolve=>{finish=resolve;}));
  render(<AuthBoundary><p>Demo records</p></AuthBoundary>);
- await waitFor(()=>expect(loginDemo).toHaveBeenCalled());
+ fireEvent.change(await screen.findByLabelText('데모 접근 코드'),{target:{value:'test-only-demo-code'}});
+ fireEvent.click(screen.getByRole('button',{name:'데모 열기'}));
+ await waitFor(()=>expect(loginDemo).toHaveBeenCalledWith('student-jimin','test-only-demo-code'));
+ expect(localStorage.getItem('synex-demo-access')).toBeNull();
  expect(screen.queryByText('Demo records')).toBeNull();
  finish({id:'student-jimin',role:'student'});
  expect(await screen.findByText('Demo records')).toBeTruthy();

@@ -27,3 +27,11 @@ it('shows a recoverable API error without removing the chat',async()=>{
  expect(await screen.findByText('분석 생성 실패')).toBeTruthy();
  expect(screen.getByLabelText('AI 코치에게 질문')).toBeTruthy();
 });
+
+it('retries the failed question after the input was cleared, without duplicate bubbles',async()=>{
+ let calls=0;const fetch=mockFetch({'/api/health-agent/chat':()=>++calls===1?{status:503,body:{detail:'일시 오류'}}:{reply:'재시도 답변'}});
+ render(<AgentChatPage/>);fireEvent.change(screen.getByLabelText('AI 코치에게 질문'),{target:{value:'내 질문'}});fireEvent.click(screen.getByRole('button',{name:'전송'}));
+ await screen.findByText('일시 오류');fireEvent.click(screen.getByRole('button',{name:'다시 시도'}));
+ expect(await screen.findByText('재시도 답변')).toBeTruthy();expect(screen.getAllByText('내 질문')).toHaveLength(1);
+ expect(JSON.parse(fetch.mock.calls[1][1].body).message).toBe('내 질문');
+});
