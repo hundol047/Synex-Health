@@ -18,7 +18,7 @@ test('instructor follows the timer, pauses with it, and resets cleanly for anoth
  await panel.getByRole('button',{name:'자동 따라하기 시작'}).click();
  await expect(panel).toHaveAttribute('data-stage','prepare');
  await expect(panel).toHaveAttribute('data-stage','work',{timeout:15000});
- await expect.poll(()=>page.evaluate(()=>window.__spoken)).toContain('1회');
+ await expect.poll(()=>page.evaluate(()=>window.__spoken.some(text=>text.endsWith('1회')))).toBe(true);
  expect(await page.evaluate(()=>window.__spoken.some(text=>text.includes('스쿼트')))).toBe(true);
  await expect(page.getByLabel('현재 시범 안내')).not.toContainText('준비');
  await panel.getByRole('button',{name:'템포 일시정지'}).click();
@@ -32,16 +32,16 @@ test('instructor follows the timer, pauses with it, and resets cleanly for anoth
  await expect(page.getByRole('region',{name:'자세 차이와 힘 사용 안내'})).toContainText('팔뚝으로 바닥');
  for(const size of [{width:360,height:640},{width:852,height:393}]){
   await page.setViewportSize(size);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-  await panel.getByText('운동 속도·휴식 조절').click();
+  await panel.getByText('운동 속도·휴식·음성 설정').click();
   const slider=page.getByLabel('플랭크 휴식 초');await expect(slider).toHaveAttribute('min','10');await expect(slider).toHaveAttribute('max','120');
-  await panel.getByText('운동 속도·휴식 조절').click();
+  await panel.getByText('운동 속도·휴식·음성 설정').click();
  }
  expect(errors).toEqual([]);
 });
 
-test('real bundled MediaPipe analyzes a captured empty scene and reports insufficient evidence, not invented form advice',async({page},testInfo)=>{
+test('real bundled MediaPipe analyzes a captured empty scene and reports insufficient evidence, not invented form advice',async({page,baseURL},testInfo)=>{
  test.setTimeout(90000);
- const requests=[],errors=[];page.on('request',r=>{if(new URL(r.url()).origin!=='http://127.0.0.1:5174')requests.push(r.url());});page.on('pageerror',e=>errors.push(e.message));
+ const requests=[],errors=[];page.on('request',r=>{if(new URL(r.url()).origin!==new URL(baseURL).origin)requests.push(r.url());});page.on('pageerror',e=>errors.push(e.message));
  await page.addInitScript(()=>{
   Object.defineProperty(navigator,'mediaDevices',{configurable:true,value:{getUserMedia:async()=>{
    const canvas=document.createElement('canvas');canvas.width=640;canvas.height=480;
