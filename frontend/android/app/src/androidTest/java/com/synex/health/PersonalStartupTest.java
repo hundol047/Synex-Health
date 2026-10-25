@@ -55,6 +55,12 @@ public class PersonalStartupTest {
                 Thread.sleep(300);
             }
             waitFor(scenario, "Array.from(document.querySelectorAll('button')).some(b=>b.textContent.trim()==='시작하기')");
+            assertEquals("Consent must not be preselected", "false",
+                evaluate(scenario, "document.querySelector('input[type=checkbox]').checked"));
+            assertEquals("Start must require explicit consent", "true",
+                evaluate(scenario, "Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='시작하기').disabled"));
+            evaluate(scenario, "document.querySelector('input[type=checkbox]').click()");
+            waitFor(scenario, "Array.from(document.querySelectorAll('button')).some(b=>b.textContent.trim()==='시작하기'&&!b.disabled)");
             evaluate(scenario, "Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()==='시작하기').click()");
             waitFor(scenario, "document.body.innerText.includes('내 기록은 이 기기에')");
             Map<String,?> stored = context.getSharedPreferences("WSSecureStorageSharedPreferences", Context.MODE_PRIVATE).getAll();
