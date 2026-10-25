@@ -1,4 +1,4 @@
-import catalog from '../../../shared/lib/localCatalog.json';
+import catalog from '../../../shared/lib/localCatalog.json' with {type:'json'};
 
 // Activity-class estimates from the 2024 Adult Compendium (not measurements of a
 // specific lift, muscle activation or this user's metabolism).

@@ -16,7 +16,8 @@ export function useWorkoutDraft(scope,value,dirty,onRestore){
   if(!ready||!dirty||blocked.current||skip.current||encoded===last.current)return;
   last.current=encoded;setStatus('기기에 임시 저장 중…');const epoch=offlineEpoch();
   chain.current=chain.current.then(async()=>{
-   if(blocked.current||epoch!==offlineEpoch())return;
+   // Coalesce queued keystrokes/timer ticks; flush still awaits the latest snapshot.
+   if(blocked.current||epoch!==offlineEpoch()||encoded!==last.current)return;
    try{token.current=await saveDraft(scope,JSON.parse(encoded),token.current);setError('');setSavedEncoded(encoded);if(last.current===encoded)setStatus('기기에 임시 저장됨');}
    catch(e){blocked.current=true;setError(e.message);throw e;}
   });chain.current.catch(()=>{});

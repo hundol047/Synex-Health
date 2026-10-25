@@ -1,7 +1,7 @@
 name: Android Personal APK (no deployment)
 on:
   push:
-    branches: [fix/android-local]
+    branches: [main, fix/android-local]
   workflow_dispatch:
 permissions:
   contents: read
@@ -27,7 +27,11 @@ jobs:
       - uses: android-actions/setup-android@v3
         with:
           packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
+      - name: Assign monotonic personal preview version
+        run: echo "SYNEX_VERSION_CODE=$((100000 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
       - run: npm ci
+        working-directory: frontend
+      - run: npm run pose:setup
         working-directory: frontend
       - run: npm test
         working-directory: frontend

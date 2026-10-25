@@ -3,7 +3,7 @@ import {readFileSync} from 'node:fs';
 const catalogue=JSON.parse(readFileSync(new URL('../src/shared/lib/localCatalog.json',import.meta.url),'utf8'));
 
 test.beforeEach(async({page})=>{
- await page.addInitScript(()=>localStorage.setItem('synex-personal-onboarding-v1','done'));
+ await page.addInitScript(()=>(localStorage.setItem('synex-personal-onboarding-v1','done'),localStorage.setItem('synex-personal-consent-v1','accepted')));
 });
 
 test('catalogue keeps static previews and one large selected 3D stage on a small phone',async({page},info)=>{

@@ -55,17 +55,7 @@ comparison values, not healthy targets or clinical thresholds. This feature
 does not register a reviewed clinical dataset in the existing server reference
 registry; that registry's provenance/review requirements remain unchanged.
 
-**Verification route, 2026-10-08:** the cloud proxy denied PubMed, Europe PMC and
-publisher requests with CONNECT 403. Citation and numbers were checked against
-the explicit abstract transcription in the public reference patient's `sources`
-entry of `open-anesthesia-sim`, pinned at commit
-`d231018056b759ba9ea4672aae63a0d03951a61f`:
-[public transcription](https://github.com/stuthedew/open-anesthesia-sim/blob/d231018056b759ba9ea4672aae63a0d03951a61f/src/anesthesia_sim/data/patients/reference_adult.json).
-That entry records its own PubMed abstract retrieval and distinguishes kg from
-litres. **This session did not directly read the original abstract/paper.**
-The UI exposes verification depth and both links. This is secondary-source
-confirmation, not independent primary-source or clinical validation. No code
-from the external research repositories was copied.
+**Verification update, 2026-10-25:** the original abstract exposed by Europe PMC's MED record for PMID 10904038 explicitly gives 33.0 vs 21.0 kg, sample 468, whole-body MRI and ages 18–88. The UI links to [Europe PMC](https://europepmc.org/article/MED/10904038) and identifies this verification depth. The earlier secondary transcription is no longer the verification source. Full-paper methods and interchangeability with BIA/InBody have not been reviewed; this is not clinical or normative-population validation. See PERSONAL_RELEASE_READINESS.md for the API endpoint and release limits.
 
 The saved environment draft adds precise PubMed/PMC, NCBI eutils, Europe PMC
 and publisher domains, preserving the pose-model domain. Draft saving does not

@@ -17,7 +17,9 @@
     "build:release": "node scripts/build-release.mjs",
     "native:configure": "node scripts/configure-native.mjs",
     "pose:evaluate": "node scripts/validate-external-pose.mjs",
-    "android:local": "node scripts/build-android-local.mjs"
+    "android:local": "node scripts/build-android-local.mjs",
+    "android:personal:release": "node scripts/build-android-local.mjs --release",
+    "build:personal": "VITE_LOCAL_ONLY=true VITE_API_BASE= npm run build"
   },
   "dependencies": {
     "@aparajita/capacitor-secure-storage": "8.0.1",
@@ -49,7 +51,12 @@
     "@testing-library/user-event": "^14.6.7",
     "fake-indexeddb": "^6.2.4",
     "jsdom": "^26.1.0",
-    "vite": "^6.0.0",
-    "vitest": "^3.2.7"
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  },
+  "overrides": {
+    "xcode": {
+      "uuid": "11.1.1"
+    }
   }
 }

@@ -1,5 +1,5 @@
 import {test,expect} from '@playwright/test';
-test.beforeEach(async({page})=>{await page.addInitScript(()=>localStorage.setItem('synex-personal-onboarding-v1','done'));});
+test.beforeEach(async({page})=>{await page.addInitScript(()=>(localStorage.setItem('synex-personal-onboarding-v1','done'),localStorage.setItem('synex-personal-consent-v1','accepted')));});
 
 test('gym coaching exposes its own demonstration and instructions without opening the camera implicitly',async({page},info)=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
@@ -23,7 +23,7 @@ test('finished exercise automatically starts five recovery motions, calculates c
  // Keep actual WebGL frames on the browser clock while controlling workout
  // intervals. Swapping an already-running R3F RAF loop freezes new canvases.
  await page.evaluate(()=>{window.requestAnimationFrame=window.__renderFrame;window.cancelAnimationFrame=window.__cancelRenderFrame;});
- await page.clock.pauseAt(new Date('2026-10-19T00:00:01Z'));await panel.getByRole('button',{name:'자동 따라하기 시작'}).click();
+ await page.clock.pauseAt(await page.evaluate(()=>Date.now()+1000));await panel.getByRole('button',{name:'자동 따라하기 시작'}).click();
  // Deliver bounded one-second ticks; avoid rendering thousands of virtual
  // intermediate WebGL frames while preserving the timer's stall protection.
  for(let i=0;i<1200&&await panel.getAttribute('data-stage')!=='complete';i++)await page.clock.fastForward(1000);

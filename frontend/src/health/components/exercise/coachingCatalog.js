@@ -1,4 +1,4 @@
-import catalog from '../../../shared/lib/localCatalog.json';
+import catalog from '../../../shared/lib/localCatalog.json' with {type:'json'};
 import {cameraMotionId, getMotionGuide} from './motionGuide.js';
 
 // Explicit observation contracts for every catalog entry. These are conservative

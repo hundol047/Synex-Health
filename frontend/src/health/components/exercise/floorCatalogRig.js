@@ -76,7 +76,27 @@ function quadrupedFrame(rest, h) {
   const thigh = (length(rest, 9, 10) + length(rest, 12, 13)) / 2;
   // Knees directly below the hips and palms directly below the shoulders.
   // Anatomical lengths determine the table height rather than scaling a 2D pose.
-  const joints = makeFrame(rest, [0, .062 * h + thigh, -.26 * h], [0, 0, 1], [0, -1, 0]);
+  // Arm and thigh lengths differ. A horizontal torso at hip height folded
+  // the support elbows toward the mat. Fit the shoulder height to a nearly
+  // extended arm while preserving hip/knee contact heights and bone lengths.
+  const hip = [0, .062 * h + thigh, -.26 * h];
+  const baseline = makeFrame(rest, hip, [0, 0, 1], [0, -1, 0]);
+  const hipY = (baseline[9][1] + baseline[12][1]) / 2;
+  const frame = rise => {
+    const forward = Math.sqrt(1 - rise * rise);
+    const pose = makeFrame(rest, hip, [0, rise, forward], [0, -forward, rise]);
+    const shift = hipY - (pose[9][1] + pose[12][1]) / 2;
+    for (const point of pose) point[1] += shift;
+    return pose;
+  };
+  const reach = armIndices.reduce((sum, [a,b,c]) => sum + length(rest,a,b) + length(rest,b,c), 0) / 2;
+  let low = -.3, high = .65;
+  for (let i = 0; i < 24; i++) {
+    const middle = (low + high) / 2, pose = frame(middle);
+    const supportDistance = Math.hypot((pose[3][1] + pose[6][1]) / 2 - .047 * h, .02 * h, .03 * h);
+    if (supportDistance < reach * .99) low = middle; else high = middle;
+  }
+  const joints = frame((low + high) / 2);
   supportedNeck(joints, rest, [0, -.12, Math.sqrt(1 - .12 ** 2)], [0, -1, 0]);
   for (const [side, [hip, knee, ankle]] of legIndices.entries()) {
     joints[knee] = vector(joints[hip]).add(new THREE.Vector3(0, -length(rest, hip, knee), 0)).toArray();

@@ -3,7 +3,7 @@ import {readFile,stat} from 'node:fs/promises';
 
 test.beforeEach(async({page})=>{
  await page.addInitScript(()=>{
-  localStorage.setItem('synex-personal-onboarding-v1','done');
+  (localStorage.setItem('synex-personal-onboarding-v1','done'),localStorage.setItem('synex-personal-consent-v1','accepted'));
   window.__recordingCamera={requests:[],tracks:[],frames:0};
   Object.defineProperty(navigator,'mediaDevices',{configurable:true,value:{getUserMedia:async constraints=>{
    window.__recordingCamera.requests.push(constraints);

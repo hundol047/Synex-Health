@@ -20,7 +20,7 @@ import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.util.UUID;
 
-/** Explicit, local-only video export. No camera, microphone, or storage permissions. */
+/** Explicit, local-only video and JSON backup export. No camera, microphone, or storage permissions. */
 @CapacitorPlugin(name = "VideoRecording")
 public class VideoRecordingPlugin extends Plugin {
     private static final long MAX_BYTES = 24L * 1024 * 1024;
@@ -59,8 +59,10 @@ public class VideoRecordingPlugin extends Plugin {
     public void begin(PluginCall call) {
         String name = call.getString("name", "");
         String mime = call.getString("mimeType", "");
-        if (!name.matches("Synex-[A-Za-z0-9_-]+\\.(mp4|webm)") || name.length() > 160 ||
-                !(mime.equals("video/mp4") && name.endsWith(".mp4") || mime.equals("video/webm") && name.endsWith(".webm"))) {
+        boolean video = name.matches("Synex-[A-Za-z0-9_-]+\\.(mp4|webm)") &&
+                (mime.equals("video/mp4") && name.endsWith(".mp4") || mime.equals("video/webm") && name.endsWith(".webm"));
+        boolean backup = name.matches("Synex-backup-[A-Za-z0-9_-]+\\.json") && mime.equals("application/json");
+        if (name.length() > 160 || !(video || backup)) {
             call.reject("허용되지 않은 촬영 파일 형식입니다."); return;
         }
         remove(active); active = null;
@@ -125,7 +127,7 @@ public class VideoRecordingPlugin extends Plugin {
                 Intent send = new Intent(Intent.ACTION_SEND); send.setType(item.mime); send.putExtra(Intent.EXTRA_STREAM, uri);
                 send.setClipData(ClipData.newUri(getContext().getContentResolver(), item.name, uri));
                 send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                Intent chooser = Intent.createChooser(send, "운동 동영상 저장 · 공유"); chooser.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                Intent chooser = Intent.createChooser(send, item.mime.equals("application/json") ? "건강 기록 백업 저장 · 공유" : "운동 동영상 저장 · 공유"); chooser.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 getBridge().executeOnMainThread(() -> {
                     try {
                         getActivity().startActivity(chooser);

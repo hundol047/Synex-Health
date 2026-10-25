@@ -6,8 +6,8 @@ export const MUSCLE_STUDY=Object.freeze({
  citation:'Janssen I, Heymsfield SB, Wang ZM, Ross R. J Appl Physiol. 2000;89(1):81–88.',
  doi:'10.1152/jappl.2000.89.1.81',url:'https://pubmed.ncbi.nlm.nih.gov/10904038/',
  sampleSize:468,ageRange:[18,88],method:'전신 MRI',means:{male:33,female:21},
- transcriptionUrl:'https://github.com/stuthedew/open-anesthesia-sim/blob/d231018056b759ba9ea4672aae63a0d03951a61f/src/anesthesia_sim/data/patients/reference_adult.json',
- verification:'공개 초록 인용 자료 대조 · 원문 직접 열람 미완료',
+ transcriptionUrl:'https://europepmc.org/article/MED/10904038',
+ verification:'Europe PMC 원 논문 초록 수치 대조 완료(2026-10-25) · 논문 전문 검토 미완료',
 });
 export function ageAt(birthDate,measurementDate){
  if(!/^\d{4}-\d{2}-\d{2}$/.test(birthDate||'')||!/^\d{4}-\d{2}-\d{2}$/.test(measurementDate||''))return null;

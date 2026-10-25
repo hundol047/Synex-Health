@@ -136,6 +136,13 @@ describe('anatomical floor catalog demonstrations', () => {
     }
   });
 
+  it('keeps quadruped support arms nearly straight instead of dropping elbows toward the mat', () => {
+    for(const id of ['cat_cow','bird_dog']){
+      const joints=floorCatalogPose(id,0,REST);
+      for(const [a,b,c] of [[3,4,5],[6,7,8]])expect(angle(joints[a],joints[b],joints[c]),id).toBeGreaterThan(160);
+    }
+  });
+
   it('rounds the cat-cow trunk surface with a supported neck and four stationary contacts', () => {
     const neutral = floorCatalogPose('cat_cow', 0, REST), rounded = floorCatalogPose('cat_cow', .5, REST);
     stationary(neutral, rounded, [0, 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]);

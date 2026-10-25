@@ -1,7 +1,7 @@
 import {test, expect} from '@playwright/test';
 
 async function prepareRoutine(page) {
- await page.addInitScript(()=>localStorage.setItem('synex-personal-onboarding-v1','done'));
+ await page.addInitScript(()=>(localStorage.setItem('synex-personal-onboarding-v1','done'),localStorage.setItem('synex-personal-consent-v1','accepted')));
  await page.goto('/health');
  await expect(page.getByText('내 기록은 이 기기에')).toBeVisible();
  await page.goto('/health/profile');

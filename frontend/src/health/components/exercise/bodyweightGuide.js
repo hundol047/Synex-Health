@@ -1,6 +1,6 @@
 // Authored technique guidance for the bodyweight movements supported by pose analysis.
 // Demonstrations explain the movement; a person's comfortable range can differ.
-import catalog from '../../../shared/lib/localCatalog.json';
+import catalog from '../../../shared/lib/localCatalog.json' with {type:'json'};
 import {cameraMotionId, getMotionGuide, motionPhase} from './motionGuide.js';
 export const BODYWEIGHT_EXERCISES = Object.freeze({
   squat: {

@@ -2,7 +2,7 @@ import {test,expect} from '@playwright/test';
 const BODYWEIGHT_LABELS={squat:'스쿼트',lunge:'런지',side_lunge:'사이드 런지',push_up:'푸시업',plank:'플랭크',hip_hinge:'힙힌지',glute_bridge:'글루트 브리지'};
 
 test.beforeEach(async({page})=>{
- await page.addInitScript(()=>localStorage.setItem('synex-personal-onboarding-v1','done'));
+ await page.addInitScript(()=>(localStorage.setItem('synex-personal-onboarding-v1','done'),localStorage.setItem('synex-personal-consent-v1','accepted')));
 });
 
 async function expectDemonstrationContained(page){

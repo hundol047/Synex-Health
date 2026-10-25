@@ -1,4 +1,4 @@
-import catalog from '../../../shared/lib/localCatalog.json';
+import catalog from '../../../shared/lib/localCatalog.json' with {type:'json'};
 
 const holds=new Set(['plank','wall_sit','knee_side_plank']);
 const cyclic=new Set(['walk','brisk_walk','treadmill_walk','stationary_cycle','elliptical','march','standing_march','step_touch','shoulder_roll','ankle_pump']);

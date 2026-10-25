@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
 
 test.beforeEach(async({page})=>{
-  await page.addInitScript(()=>localStorage.setItem('synex-personal-onboarding-v1','done'));
+  await page.addInitScript(()=>(localStorage.setItem('synex-personal-onboarding-v1','done'),localStorage.setItem('synex-personal-consent-v1','accepted')));
 });
 test('reviewed Korean centers are searchable offline at 360px with qualified measurement claims',async({page,context},info)=>{
   await page.setViewportSize({width:360,height:740});

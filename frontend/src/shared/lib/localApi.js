@@ -11,6 +11,13 @@ export const localDate=()=>{const d=new Date();return `${d.getFullYear()}-${Stri
 const fail=(message,status=422)=>{throw Object.assign(Error(message),{status});};
 const initial=()=>({version:1,profile:{id:LOCAL_ACCOUNT,name:'',role:'student',gender:'unspecified',height:null,school_id:null,share_with_center:false},exercise:{user_id:LOCAL_ACCOUNT,experience_level:'BEGINNER',goal:'GENERAL_HEALTH',days_per_week:3,minutes_per_session:20,training_mode:'bodyweight',exercise_location:'home',available_equipment:[],limitations:[],preferences:[],...Object.fromEntries(safety.map(k=>[k,false]))},measurements:[],routines:[],workouts:[],history:[],goal:null});
 const numeric=(v,min,max,label)=>{if(typeof v!=='number'||!Number.isFinite(v)||v<min||v>max)fail(`${label}: ${min}–${max} 범위의 숫자를 입력하세요.`);};
+const validDate=value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&Number.isFinite(Date.parse(value))&&new Date(value).toISOString().slice(0,10)===value&&value<=localDate();
+function validateWorkout(b){
+ if(typeof b.exercise_name!=='string'||!b.exercise_name.trim()||b.exercise_name.length>200||!validDate(b.date))fail('운동명과 실제 오늘 이전 날짜를 확인하세요.');
+ for(const k of ['rpe','pain'])if(b[k]!=null)numeric(b[k],k==='rpe'?1:0,10,k);
+ if(b.set_records!=null&&(!Array.isArray(b.set_records)||b.set_records.length>100))fail('세트 기록을 확인하세요.');
+ for(const row of b.set_records||[]){if(!row||typeof row!=='object')fail('세트 기록을 확인하세요.');if(row.reps!=null){numeric(row.reps,0,1000,'횟수');if(!Number.isInteger(row.reps))fail('횟수는 정수로 입력하세요.');}if(row.weight_kg!=null)numeric(row.weight_kg,0,1000,'중량');if(row.pain!=null)numeric(row.pain,0,10,'통증');}
+}
 const latest=s=>[...s.measurements].sort((a,b)=>a.measurement_date.localeCompare(b.measurement_date)||a.created_at.localeCompare(b.created_at)).at(-1);
 function measured(s){const m=latest(s);if(!m)fail('체성분 측정값을 먼저 입력하세요.',404);return m;}
 function validateMeasurement(b){
@@ -57,10 +64,12 @@ export function generateLocalRoutine(s){
 let chain=Promise.resolve();
 export function localApi(path,b,{method,signal}={}){
  const execute=async()=>{if(signal?.aborted)throw new DOMException('Aborted','AbortError');const s=await loadLocalDocument()||initial(),m=method||(b===undefined?'GET':'POST'),url=new URL(path,'https://device.invalid'),p=url.pathname;let result,write=false;
+ if(s.version!==1)fail('현재 앱에서 지원하지 않는 기록 버전입니다. 앱을 업데이트하세요. 기록은 변경하지 않았습니다.',409);
+ if(s.profile.birth_date&&ageAt(s.profile.birth_date,localDate())<14&&m!=='GET'&&m!=='DELETE'&&!p.startsWith('/api/privacy/')&&p!=='/api/health/profile')fail('만 14세 이상만 사용할 수 있습니다. 개인정보 화면에서 기록을 내보내거나 삭제하세요.',403);
  const save=x=>{result=x;write=true;};
  if(p==='/api/health/status')result={status:'ok',service:'synex-health',demo:false,local:true};
- else if(p==='/api/health/profile'){if(m==='PUT'){if(b.height!=null)numeric(b.height,50,250,'키');if(b.gender&&!['male','female','unspecified'].includes(b.gender))fail('성별 값이 잘못되었습니다.');if(b.name!=null&&(typeof b.name!=='string'||b.name.length>30))fail('이름은 30자 이내로 입력하세요.');if(b.birth_date!=null&&(b.birth_date<'1900-01-01'||ageAt(b.birth_date,localDate())==null))fail('올바른 오늘 이전 생년월일을 입력하세요.');s.profile={...s.profile,...(Object.hasOwn(b,'birth_date')?{birth_date:b.birth_date}:{}),...(b.name!=null?{name:b.name.trim()}:{}),height:Object.hasOwn(b,'height')?b.height:s.profile.height,gender:b.gender||s.profile.gender};review(s);save(s.profile);}else result=s.profile;}
- else if(p==='/api/exercise-profile'){if(m==='PUT'){const next={...s.exercise,...b};numeric(next.days_per_week,1,7,'운동 일수');if(!Number.isInteger(next.days_per_week))fail('운동 일수는 정수입니다.');numeric(next.minutes_per_session,10,180,'운동 시간');if(!['BEGINNER','INTERMEDIATE','ADVANCED'].includes(next.experience_level)||!['mixed','bodyweight','equipment'].includes(next.training_mode)||!['home','gym','outdoor'].includes(next.exercise_location))fail('운동 설정이 잘못되었습니다.');for(const k of ['available_equipment','limitations','preferences'])if(!Array.isArray(next[k])||next[k].some(x=>typeof x!=='string'))fail('운동 조건을 확인하세요.');s.exercise=next;review(s);save(next);}else result=s.exercise;}
+ else if(p==='/api/health/profile'){if(m==='PUT'){if(b.height!=null)numeric(b.height,50,250,'키');if(b.gender&&!['male','female','unspecified'].includes(b.gender))fail('성별 값이 잘못되었습니다.');if(b.name!=null&&(typeof b.name!=='string'||b.name.length>30))fail('이름은 30자 이내로 입력하세요.');if(b.birth_date!=null&&(b.birth_date<'1900-01-01'||ageAt(b.birth_date,localDate())==null))fail('올바른 오늘 이전 생년월일을 입력하세요.');if(b.birth_date!=null&&ageAt(b.birth_date,localDate())<14)fail('만 14세 이상만 사용할 수 있습니다.');s.profile={...s.profile,...(Object.hasOwn(b,'birth_date')?{birth_date:b.birth_date}:{}),...(b.name!=null?{name:b.name.trim()}:{}),height:Object.hasOwn(b,'height')?b.height:s.profile.height,gender:b.gender||s.profile.gender};review(s);save(s.profile);}else result=s.profile;}
+ else if(p==='/api/exercise-profile'){if(m==='PUT'){const next={...s.exercise,...b};numeric(next.days_per_week,1,7,'운동 일수');if(!Number.isInteger(next.days_per_week))fail('운동 일수는 정수입니다.');numeric(next.minutes_per_session,10,180,'운동 시간');if(!['BEGINNER','INTERMEDIATE','ADVANCED'].includes(next.experience_level)||!['mixed','bodyweight','equipment'].includes(next.training_mode)||!['home','gym','outdoor'].includes(next.exercise_location))fail('운동 설정이 잘못되었습니다.');for(const k of ['available_equipment','limitations','preferences'])if(!Array.isArray(next[k])||next[k].some(x=>typeof x!=='string'))fail('운동 조건을 확인하세요.');for(const k of safety)if(typeof next[k]!=='boolean')fail('안전 문진 값을 확인하세요.');s.exercise=next;review(s);save(next);}else result=s.exercise;}
  else if(p==='/api/schools')result=schools;
  else if(p==='/api/health/school-connection')result={verified:false,integration_status:'기기 전용 · 미연결'};
  else if(p==='/api/health/school'&&m==='PUT'){if(b.share_with_center)fail('기기 전용 모드에서는 건강센터 공유를 사용할 수 없습니다.');if(b.school_id&&!schools.some(x=>x.id===b.school_id))fail('학교를 확인하세요.');s.profile.school_id=b.school_id;s.profile.share_with_center=false;save(s.profile);}
@@ -77,7 +86,7 @@ export function localApi(path,b,{method,signal}={}){
  else if(p==='/api/advanced/body')result={measurements:[...s.measurements].sort((a,b)=>a.measurement_date.localeCompare(b.measurement_date)),profile:{gender:s.profile.gender,height_cm:s.profile.height}};
  else if(p==='/api/advanced/progress')result={first_date:s.measurements[0]?.measurement_date||'미입력',last_date:latest(s)?.measurement_date||'미입력',measurement_count:s.measurements.length,summary:'이 폰에 직접 입력한 측정 기록입니다.',notice:'운동 효과나 건강 상태를 진단하지 않습니다.'};
  else if(p==='/api/adaptive-history')result=s.history;
- else if(p==='/api/workouts'){if(m==='POST'){if(!b.exercise_name||!/^\d{4}-\d{2}-\d{2}$/.test(b.date))fail('운동명과 날짜를 확인하세요.');for(const k of ['rpe','pain'])if(b[k]!=null)numeric(b[k],k==='rpe'?1:0,10,k);for(const row of b.set_records||[]){if(row.reps!=null)numeric(row.reps,0,1000,'횟수');if(row.weight_kg!=null)numeric(row.weight_kg,0,1000,'중량');if(row.pain!=null)numeric(row.pain,0,10,'통증');}
+ else if(p==='/api/workouts'){if(m==='POST'){validateWorkout(b);
  const prior=s.workouts.find(x=>b.mutation_id&&x.mutation_id===b.mutation_id);if(prior)result=prior;else{const existing=s.workouts.find(x=>x.routine_id===b.routine_id&&x.date===b.date&&x.routine_exercise_id===b.routine_exercise_id&&x.exercise_name===b.exercise_name);if(existing&&(b.expected_revision??0)!==existing.revision)fail('다른 입력에서 기록이 바뀌었습니다. 화면을 다시 열어 확인하세요.',409);const routine=s.routines.find(x=>x.id===b.routine_id);if(routine?.needs_review)fail('변경된 조건으로 루틴을 다시 생성하세요.',409);const item={...b,id:existing?.id||secureUUID(),revision:(existing?.revision||0)+1,created_at:existing?.created_at||now(),pending_sync:false};if(existing)s.workouts[s.workouts.indexOf(existing)]=item;else s.workouts.push(item);save(item);}}else result=s.workouts;}
  else if(p.startsWith('/api/workouts/')&&m==='DELETE'){s.workouts=s.workouts.filter(x=>x.id!==p.split('/').at(-1));save({notice:'운동 기록을 삭제했습니다.'});}
  else if(p==='/api/progress')result={measurements:[...s.measurements].sort((a,b)=>a.measurement_date.localeCompare(b.measurement_date)),workout_count:s.workouts.length,completed_workout_count:s.workouts.filter(x=>x.completed||x.completion_status==='completed').length,workout_weeks:[],average_comparison:null};
@@ -86,8 +95,30 @@ export function localApi(path,b,{method,signal}={}){
  else if(p==='/api/billing/plans')result={plans:[{id:'free',name:'개인용 무료',price_label:'무료',features:['기기 내 체성분·운동 기록','기본 규칙 운동 추천','3D·동작 안내']}]};
  else if(['/api/billing/subscription','/api/billing/sync'].includes(p))result={state:'free',mode:'disabled',active:false,demo:false};
  else if(p==='/api/health-agent/analyze'){const m=measured(s);result={summary:`${m.measurement_date}에 직접 입력한 체중 ${m.weight}kg, 골격근량 ${m.skeletal_muscle_mass}kg입니다.`,recommendations:['측정 환경을 일정하게 유지하고 변화 기록을 확인하세요.','프로필의 운동 조건과 안전 문진을 확인하세요.'],local:true};}
+ else if(p==='/api/privacy/backup')result={format:'synex-device-document',version:1,document:s};
+ else if(p==='/api/privacy/restore'&&m==='POST'){
+  if(b?.confirmation!=='RESTORE'||b.backup?.format!=='synex-device-document'||b.backup.version!==1)fail('지원하지 않는 백업입니다.');
+  const d=b.backup.document;
+  if(!d||d.version!==1||!d.profile||!d.exercise||!['measurements','routines','workouts','history'].every(k=>Array.isArray(d[k])&&d[k].length<=10000))fail('백업 형식이 올바르지 않습니다.');
+  if(typeof d.profile.name!=='string'||d.profile.name.length>30||!['male','female','unspecified'].includes(d.profile.gender))fail('프로필이 잘못되었습니다.');
+  if(d.profile.school_id!=null&&!schools.some(x=>x.id===d.profile.school_id))fail('학교를 확인하세요.');
+  if(!['BEGINNER','INTERMEDIATE','ADVANCED'].includes(d.exercise.experience_level)||!['mixed','bodyweight','equipment'].includes(d.exercise.training_mode)||!['home','gym','outdoor'].includes(d.exercise.exercise_location))fail('운동 설정이 잘못되었습니다.');
+  if(d.profile.birth_date!=null&&(ageAt(d.profile.birth_date,localDate())??-1)<14)fail('만 14세 이상만 사용할 수 있습니다.');
+  if(d.profile.height!=null)numeric(d.profile.height,50,250,'키');
+  for(const k of ['measurements','workouts'])if(new Set(d[k].map(x=>x?.id)).size!==d[k].length)fail('백업에 중복된 기록이 있습니다.');
+  if(!Number.isInteger(d.exercise.days_per_week))fail('운동 일수는 정수입니다.');
+  numeric(d.exercise.days_per_week,1,7,'운동 일수');numeric(d.exercise.minutes_per_session,10,180,'운동 시간');
+  for(const k of ['limitations','preferences','available_equipment'])if(!Array.isArray(d.exercise[k])||d.exercise[k].some(x=>typeof x!=='string'))fail('운동 조건이 잘못되었습니다.');
+  for(const k of safety)if(typeof d.exercise[k]!=='boolean')fail('안전 문진이 잘못되었습니다.');
+  for(const item of d.measurements){validateMeasurement(item);if(typeof item.id!=='string'||!Number.isFinite(Date.parse(item.created_at)))fail('측정 식별자가 잘못되었습니다.');}
+  d.workouts.forEach(item=>{validateWorkout(item);if(typeof item.id!=='string'||!Number.isFinite(Date.parse(item.created_at)))fail('운동 식별자가 잘못되었습니다.');});
+  // Derived plans are regenerated from validated measurements and conditions.
+  const restored={...initial(),profile:{...initial().profile,name:d.profile.name,gender:d.profile.gender,height:d.profile.height,birth_date:d.profile.birth_date||null,school_id:d.profile.school_id||null},exercise:{...d.exercise,user_id:LOCAL_ACCOUNT},measurements:d.measurements,workouts:d.workouts.map(w=>({...w,routine_id:null}))};
+  if(d.goal!=null){numeric(d.goal.target,.1,1000,'목표');restored.goal=d.goal;}
+  Object.assign(s,restored);save({notice:'백업을 복원했습니다. 운동 계획은 현재 조건으로 다시 생성하세요.'});
+ }
  else if(p==='/api/privacy/export')result={profile:s.profile,exercise_profile:s.exercise,measurements:s.measurements,routines:s.routines,workouts:s.workouts,goals:s.goal,sharing_history:[],storage:'device-only'};
- else if(['/api/privacy/health-data','/api/privacy/account'].includes(p)&&m==='DELETE'){if(b?.confirmation!=='DELETE')fail('DELETE 확인 문구가 필요합니다.');const empty=initial();if(p.endsWith('health-data')){empty.profile=s.profile;empty.exercise=s.exercise;}Object.assign(s,empty);save({notice:'이 폰의 기록을 삭제했습니다.'});}
+ else if(['/api/privacy/health-data','/api/privacy/account'].includes(p)&&m==='DELETE'){if(b?.confirmation!=='DELETE')fail('DELETE 확인 문구가 필요합니다.');const empty=initial();if(p.endsWith('health-data')){empty.profile.name=s.profile.name;}Object.assign(s,empty);save({notice:'이 폰의 기록을 삭제했습니다.'});}
  else fail('이 기능은 서버 연결이 필요합니다. 체성분·운동 기록·기본 루틴은 이 폰에서 사용할 수 있습니다.',503);
  if(signal?.aborted)throw new DOMException('Aborted','AbortError');if(write)await saveLocalDocument(s);return structuredClone(result);
  };const next=chain.then(execute);chain=next.catch(()=>{});return next;

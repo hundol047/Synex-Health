@@ -1,6 +1,14 @@
 export function validateRelease(e){
  const errors=[];
- if(e.VITE_LOCAL_ONLY==='true'&&e.VITE_RELEASE_BUILD==='true')errors.push('Device-only builds cannot be store releases');
+ if(e.VITE_LOCAL_ONLY==='true'&&e.VITE_RELEASE_BUILD==='true'){
+  if(e.VITE_API_BASE||e.VITE_POSE_MODEL_URL)errors.push('Personal release must use local data and bundled pose assets');
+  if(e.VITE_LAUNCH_MODE!=='free')errors.push('Personal release must be free');
+  for(const k of ['PERSONAL_DEVICE_QA_VERIFIED','PERSONAL_POSE_QA_VERIFIED'])if(e[k]!=='true')errors.push(`${k}: documented real-device / real-video acceptance required`);
+  if(!e.SYNEX_APPLICATION_ID||!/^\w+(\.\w+){2,}$/.test(e.SYNEX_APPLICATION_ID))errors.push('SYNEX_APPLICATION_ID required');
+  if(!/^[1-9]\d*$/.test(e.SYNEX_VERSION_CODE||''))errors.push('SYNEX_VERSION_CODE required');
+  return errors;
+ }
+
  if(e.VITE_RELEASE_BUILD!=='true')return errors;
  for(const k of ['VITE_API_BASE','VITE_PRIVACY_URL','VITE_SUPPORT_URL','VITE_TERMS_URL']){
   try{const u=new URL(e[k]);if(u.protocol!=='https:'||/localhost|127\.0\.0\.1|\.example$|\.test$|(^|\.)example\.(com|org|net)$/.test(u.hostname))throw Error();}catch{errors.push(`${k}: real HTTPS URL required`);}

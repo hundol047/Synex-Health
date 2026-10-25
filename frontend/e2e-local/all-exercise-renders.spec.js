@@ -12,7 +12,7 @@ test('all 74 exercises render an actual mobile 3D surface and complete their mot
     if (url.pathname.startsWith('/api/')) apiRequests.push(url.pathname);
     if (url.protocol.startsWith('http') && !['127.0.0.1', 'localhost'].includes(url.hostname)) remoteRequests.push(url.hostname);
   });
-  await page.addInitScript(() => localStorage.setItem('synex-personal-onboarding-v1', 'done'));
+  await page.addInitScript(() => (localStorage.setItem('synex-personal-onboarding-v1','done'),localStorage.setItem('synex-personal-consent-v1','accepted')));
   await page.setViewportSize({ width: 393, height: 852 });
   await page.goto('/health/library');
   await expect(page.getByRole('heading', { name: '운동 라이브러리 · 74개' })).toBeVisible();

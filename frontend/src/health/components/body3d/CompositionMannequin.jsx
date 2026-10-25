@@ -61,12 +61,12 @@ export default function CompositionMannequin({comparisonData,height=540}){
    <label><input type="checkbox" checked={referenceWireframe} onChange={e=>setReferenceWireframe(e.target.checked)}/>평균 모형 격자선</label>
    <label><input type="checkbox" checked={referenceContour} onChange={e=>setReferenceContour(e.target.checked)}/>평균 윤곽선 보기</label>
   </div></details>
-  <div className="mannequin-reference-card"><h4>골격근량 · 문헌 평균 비교</h4>{reference.available?<>
+  <div className="mannequin-reference-card"><h4>골격근량 · 문헌 평균 비교</h4><p>연구 집단의 MRI 측정 평균입니다. 한국인·동일 연령·인바디 정상 기준이 아니며, 측정 방식이 달라 근육 부족 여부를 판정할 수 없습니다. 겹친 신체는 설명용 모형입니다.</p>{reference.available?<>
    <div className="mannequin-mass-comparison"><span>내 측정<strong>{format(m.skeletal_muscle_mass)} <small>kg</small></strong></span><span>문헌 평균<strong>{format(reference.value)} <small>kg</small></strong></span><span>평균과 차이<strong>{signed(reference.differenceKg)} <small>kg</small></strong></span></div>
    <p>성인 {profile.gender==='female'?'여성':'남성'} · 연구 전체 468명 · 18–88세 · 전신 MRI</p>
    <p className="muted">성별에 따른 연구 평균입니다. 나이·키가 같은 한국인 인바디 평균은 아닙니다. 평균 모형은 내 키·체중·체지방을 유지하고 골격근량만 바꿔 표시합니다.</p>
    {!reference.canOverlay&&<p>{reference.overlayReason}</p>}
-   <details><summary>논문과 수치 출처</summary><p>{reference.study.citation}</p><p>{reference.study.title}</p><p className="muted">{reference.study.verification}</p><p><a href={reference.study.url} target="_blank" rel="noreferrer">PubMed 논문</a> · <a href={reference.study.transcriptionUrl} target="_blank" rel="noreferrer">수치 확인에 사용한 공개 인용 자료</a></p></details>
+   <details><summary>논문과 수치 출처</summary><p>{reference.study.citation}</p><p>{reference.study.title}</p><p className="muted">{reference.study.verification}</p><p><a href={reference.study.url} target="_blank" rel="noreferrer">PubMed 논문</a> · <a href={reference.study.transcriptionUrl} target="_blank" rel="noreferrer">수치를 확인한 Europe PMC 초록</a></p></details>
   </>:<p>{reference.reason} <Link to="/health/profile">프로필 설정</Link></p>}</div>
   <p className="mannequin-note">체성분 기반 근사 모형입니다. 지방 분포와 얼굴·뼈 모양을 그대로 복원하지는 못합니다. {GIRTH_FIELDS.some(([k])=>Number.isFinite(m[k]))?'입력한 가슴·허리·엉덩이 둘레를 형상에 반영했습니다.':'가슴·허리·엉덩이 둘레를 추가하면 체형을 더 가깝게 맞출 수 있습니다.'}</p>
  </div>;

@@ -1,4 +1,4 @@
-import catalog from '../../../shared/lib/localCatalog.json';
+import catalog from '../../../shared/lib/localCatalog.json' with {type:'json'};
 
 // Thirty distinct movements; left/right are never counted as separate entries.
 const rows=[
