@@ -22,14 +22,15 @@ test.beforeEach(async({page})=>{
 test('real MediaRecorder records moving video, decodes replay and downloads a nonempty video after explicit save',async({page},testInfo)=>{
  const apiRequests=[],pageErrors=[];page.on('request',request=>{if(new URL(request.url()).pathname.startsWith('/api/'))apiRequests.push(request.url());});page.on('pageerror',error=>pageErrors.push(error.message));
  await page.goto('/health/pose');
- await expect(page.getByRole('button',{name:'동영상 촬영',exact:true})).toBeInViewport();
+ await expect(page.getByRole('button',{name:'동영상 촬영',exact:true})).toBeInViewport({timeout:20000});
  expect(await page.evaluate(()=>window.__recordingCamera.requests.length)).toBe(0);
  await page.getByRole('button',{name:'동영상 촬영',exact:true}).click();
- await expect(page.getByRole('button',{name:'촬영 종료',exact:true})).toBeEnabled();
+ await expect(page.getByRole('button',{name:'촬영 종료',exact:true})).toBeEnabled({timeout:20000});
  await expect.poll(()=>page.evaluate(()=>window.__recordingCamera.frames)).toBeGreaterThan(20);
  await page.screenshot({path:testInfo.outputPath('camera-recording-active.png')});
  await page.getByRole('button',{name:'촬영 종료',exact:true}).click();
  const replay=page.getByLabel('촬영한 운동 동영상');await expect(replay).toBeVisible();
+ await expect(page.getByRole('region',{name:'촬영 자세 분석 결과'})).toContainText('이번 촬영에서 관찰한 자세');
  await replay.evaluate(async video=>{video.muted=true;await video.play();});
  await expect.poll(()=>replay.evaluate(video=>({width:video.videoWidth,height:video.videoHeight,playing:video.currentTime>0}))).toEqual({width:640,height:480,playing:true});
  const downloaded=page.waitForEvent('download');await page.getByRole('button',{name:'휴대폰에 저장',exact:true}).click();
@@ -46,11 +47,11 @@ test('real MediaRecorder records moving video, decodes replay and downloads a no
 });
 
 test('background and exercise change immediately stop and discard the active camera recording',async({page})=>{
- await page.goto('/health/pose');await page.getByRole('button',{name:'동영상 촬영',exact:true}).click();await expect(page.getByRole('button',{name:'촬영 종료'})).toBeEnabled();
+ await page.goto('/health/pose');await page.getByRole('button',{name:'동영상 촬영',exact:true}).click();await expect(page.getByRole('button',{name:'촬영 종료'})).toBeEnabled({timeout:20000});
  await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'));Object.defineProperty(document,'hidden',{configurable:true,value:false});});
  await expect(page.getByRole('button',{name:'동영상 촬영',exact:true})).toBeEnabled();await expect(page.getByLabel('촬영한 운동 동영상')).toHaveCount(0);
  expect(await page.evaluate(()=>window.__recordingCamera.tracks.every(track=>track.readyState==='ended'))).toBe(true);
- await page.getByRole('button',{name:'동영상 촬영',exact:true}).click();await expect(page.getByRole('button',{name:'촬영 종료'})).toBeEnabled();await page.getByLabel('따라 할 운동').selectOption('plank');
+ await page.getByRole('button',{name:'동영상 촬영',exact:true}).click();await expect(page.getByRole('button',{name:'촬영 종료'})).toBeEnabled({timeout:20000});await page.getByLabel('따라 할 운동').selectOption('plank');
  await expect(page.getByRole('button',{name:'동영상 촬영',exact:true})).toBeEnabled();await expect(page.getByLabel('촬영한 운동 동영상')).toHaveCount(0);
  expect(await page.evaluate(()=>window.__recordingCamera.tracks.every(track=>track.readyState==='ended'))).toBe(true);
 });
@@ -68,7 +69,7 @@ test('wall push opens its own 3D demonstration and video-only recording does not
  await expect(page.getByRole('button',{name:'코칭 시작',exact:true})).toBeEnabled();await expect(page.getByRole('switch')).toBeDisabled();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await expect(page.locator('.coach-example canvas')).toHaveAttribute('data-exercise-rendered','wall_push');
- await page.getByRole('button',{name:'동영상 촬영',exact:true}).click();await expect(page.getByRole('button',{name:'촬영 종료'})).toBeEnabled();await expect.poll(()=>page.evaluate(()=>window.__recordingCamera.frames)).toBeGreaterThan(12);
+ await page.getByRole('button',{name:'영상만 촬영 · 분석 안 함',exact:true}).click();await expect(page.getByRole('button',{name:'촬영 종료'})).toBeEnabled({timeout:20000});await expect.poll(()=>page.evaluate(()=>window.__recordingCamera.frames)).toBeGreaterThan(12);
  await expect(page.getByRole('switch')).toBeDisabled();await page.getByRole('button',{name:'촬영 종료'}).click();
  const replay=page.getByLabel('촬영한 운동 동영상');await expect(replay).toBeVisible();await replay.evaluate(async video=>{video.muted=true;await video.play();});await expect.poll(()=>replay.evaluate(video=>video.currentTime)).toBeGreaterThan(0);
  expect(analysisRequests).toEqual([]);await page.screenshot({path:testInfo.outputPath('wall-push-recording-replay.png')});

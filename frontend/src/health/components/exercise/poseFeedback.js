@@ -61,13 +61,14 @@ export function poseFeedback(id,result){
 
 // Retains only bounded numeric aggregates and observed issue text, never frames or landmarks.
 export class PoseSessionReport{
- constructor(){this.frames=0;this.valid=0;this.last=null;this.validMs=0;this.issues=new Map();this.metrics=new Map();this.baseReps=null;this.reps=0;this.previousIssues=new Set();this.countSupported=true;}
+ constructor(motionId=null){this.motionId=motionId;this.profile=getCoachingProfile(motionId);this.observations=new Map();this.frames=0;this.valid=0;this.last=null;this.validMs=0;this.issues=new Map();this.metrics=new Map();this.baseReps=null;this.reps=0;this.previousIssues=new Set();this.countSupported=true;}
  add(result,time){
   if(!Number.isFinite(time))return;
   if(result.count_supported===false)this.countSupported=false;
   const gap=this.last==null?0:time-this.last;
   const delta=gap>0&&gap<=1200?gap:0;this.last=time;this.frames++;
   if(!result.detected){this.wasValid=false;this.previousIssues.clear();return;}
+  for(const observation of result.coaching?.observations||result.observations||[]){if(observation.label&&this.observations.size<16)this.observations.set(observation.label,{label:observation.label,value:observation.value,reference:observation.reference});}
   this.valid++;if(this.wasValid)this.validMs+=delta;this.wasValid=true;
   this.baseReps??=result.reps||0;this.reps=Math.max(this.reps,(result.reps||0)-this.baseReps);
   for(const issue of result.issues||[]){
@@ -82,5 +83,5 @@ export class PoseSessionReport{
    this.metrics.set(key,{min:Math.min(old.min,...values),max:Math.max(old.max,...values)});
   }
  }
- snapshot(){return {countSupported:this.countSupported,frames:this.frames,validFrames:this.valid,observedSeconds:Math.round(this.validMs/100)/10,reps:this.reps,issues:[...this.issues.values()].sort((a,b)=>b.samples-a.samples).slice(0,5),ranges:Object.fromEntries(this.metrics),sufficient:this.valid>=5&&this.validMs>=1000};}
+ snapshot(){return {motionId:this.motionId,exerciseName:this.profile?.label,observations:[...this.observations.values()],countSupported:this.countSupported,frames:this.frames,validFrames:this.valid,observedSeconds:Math.round(this.validMs/100)/10,reps:this.reps,issues:[...this.issues.values()].sort((a,b)=>b.samples-a.samples).slice(0,5),ranges:Object.fromEntries(this.metrics),sufficient:this.valid>=5&&this.validMs>=1000};}
 }

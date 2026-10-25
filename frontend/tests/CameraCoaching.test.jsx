@@ -5,6 +5,7 @@ import CameraCoaching from '../src/health/components/exercise/CameraCoaching.jsx
 import {api} from '../src/shared/lib/api.js';
 import {createPoseRunner} from '../src/health/components/exercise/poseRunner.js';
 import {PoseCalibration} from '../src/health/components/exercise/poseRules.js';
+import {COACHING_CATALOG} from '../src/health/components/exercise/coachingCatalog.js';
 import {ExercisePoseAnalyzer} from '../src/health/components/exercise/poseCoach.js';
 const mode=vi.hoisted(()=>({local:false}));
 vi.mock('../src/shared/lib/localMode.js',()=>({get LOCAL_ONLY(){return mode.local;}}));
@@ -174,10 +175,10 @@ function recordingMock(){
  vi.stubGlobal('URL',class extends URL{static createObjectURL=vi.fn(()=> 'blob:recorded-video');static revokeObjectURL=vi.fn();});
  return ()=>recorder;
 }
-it('record button opens video-only camera explicitly and publishes replay and save only after recorder finalization',async()=>{
+it('explicit video-only button opens camera and publishes replay and save only after recorder finalization',async()=>{
  const recorder=recordingMock();render(<CameraCoaching immersive/>);
  expect(getMedia).not.toHaveBeenCalled();expect(screen.queryByRole('button',{name:'휴대폰에 저장'})).toBeNull();
- fireEvent.click(screen.getByRole('button',{name:'동영상 촬영',exact:true}));await screen.findByRole('button',{name:'촬영 종료'});
+ fireEvent.click(screen.getByRole('button',{name:'영상만 촬영 · 분석 안 함',exact:true}));await screen.findByRole('button',{name:'촬영 종료'});
  expect(getMedia).toHaveBeenCalledWith(expect.objectContaining({audio:false}));expect(createPoseRunner).not.toHaveBeenCalled();
  fireEvent.click(screen.getByRole('button',{name:'촬영 종료'}));expect(screen.getByRole('button',{name:'영상 준비 중…'}).disabled).toBe(true);expect(screen.queryByRole('button',{name:'휴대폰에 저장'})).toBeNull();
  act(()=>{recorder().ondataavailable({data:new Blob(['video'])});recorder().onstop();});
@@ -207,7 +208,7 @@ it('bodyweight variants support correction while video-only capture never starts
  fireEvent.click(screen.getByRole('button',{name:'카메라 켜기'}));await waitFor(()=>expect(screen.getByLabelText('내 운동 모습').srcObject).toBe(media));
  expect(screen.getByRole('switch').disabled).toBe(false);
  expect(createPoseRunner).not.toHaveBeenCalled();expect(fetch).not.toHaveBeenCalled();expect(api).not.toHaveBeenCalled();
- fireEvent.click(screen.getByRole('button',{name:'동영상 촬영',exact:true}));await screen.findByRole('button',{name:'촬영 종료'});fireEvent.click(screen.getByRole('button',{name:'촬영 종료'}));
+ fireEvent.click(screen.getByRole('button',{name:'영상만 촬영 · 분석 안 함',exact:true}));await screen.findByRole('button',{name:'촬영 종료'});fireEvent.click(screen.getByRole('button',{name:'촬영 종료'}));
  act(()=>{recorder().ondataavailable({data:new Blob(['wall push video'])});recorder().onstop();});expect(screen.getByLabelText('촬영한 운동 동영상')).toBeTruthy();
  expect(createPoseRunner).not.toHaveBeenCalled();expect(fetch).not.toHaveBeenCalled();expect(api).not.toHaveBeenCalled();
 });
@@ -218,4 +219,19 @@ it('continuous routine keeps the opted-in camera and resets analysis for the nex
  expect(detector.close).toHaveBeenCalledTimes(1);expect(track.stop).not.toHaveBeenCalled();expect(getMedia).toHaveBeenCalledTimes(1);
  expect(screen.getByText('3D 시범 · lunge')).toBeTruthy();
  view.unmount();expect(track.stop).toHaveBeenCalledTimes(1);
+});
+
+it.each(Object.values(COACHING_CATALOG))('default recording analyses $label and attaches its own report',async profile=>{
+ const recorder=recordingMock();render(<CameraCoaching motion={profile.id}/>);
+ fireEvent.click(screen.getByRole('button',{name:'동영상 촬영',exact:true}));await screen.findByRole('button',{name:'촬영 종료'});
+ expect(createPoseRunner).toHaveBeenCalledTimes(1);
+ fireEvent.click(screen.getByRole('button',{name:'촬영 종료'}));
+ act(()=>{recorder().ondataavailable({data:new Blob(['clip'])});recorder().onstop();});
+ const report=screen.getByRole('region',{name:'촬영 자세 분석 결과'});
+ expect(report.textContent).toContain(profile.label);expect(report.textContent).toContain('분석 가능한 영상이 부족');
+});
+it('does not silently record an unanalyzed video when model preparation fails',async()=>{
+ recordingMock();createPoseRunner.mockRejectedValueOnce(Error('모델 준비 실패'));render(<CameraCoaching/>);
+ fireEvent.click(screen.getByRole('button',{name:'동영상 촬영',exact:true}));await screen.findByRole('alert');
+ expect(screen.queryByRole('button',{name:'촬영 종료'})).toBeNull();expect(screen.getByRole('button',{name:'동영상 촬영',exact:true}).disabled).toBe(false);
 });

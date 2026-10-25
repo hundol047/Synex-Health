@@ -1,6 +1,8 @@
 export async function createPoseRunner(model,{signal}={}){
  if(signal?.aborted)throw new DOMException("Aborted","AbortError");
- if(typeof Worker!=='undefined'&&typeof OffscreenCanvas!=='undefined'&&typeof createImageBitmap==='function'){
+ // Vite serves unbundled ESM in development; a classic worker cannot parse it.
+ // Production bundles this worker for MediaPipe's classic importScripts loader.
+ if(!import.meta.env.DEV&&typeof Worker!=='undefined'&&typeof OffscreenCanvas!=='undefined'&&typeof createImageBitmap==='function'){
   const worker=new Worker(new URL('./pose.worker.js',import.meta.url),{type:'classic'});let pending,closed=false;
   const request=data=>new Promise((resolve,reject)=>{pending={resolve,reject};worker.postMessage(data,data.bitmap?[data.bitmap]:[]);});
   worker.onmessage=({data})=>{if(data.type==='error')pending?.reject(Error('기기 내 자세 추정을 시작하지 못했습니다.'));else pending?.resolve(data);pending=null;};
