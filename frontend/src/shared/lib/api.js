@@ -1,30 +1,25 @@
-import {getDemoAccessCode,setDemoAccessCode} from './demoAccess.js';
-import {Capacitor} from '@capacitor/core';
+import {LOCAL_ONLY} from './localMode.js';
 import {resolveApiBase} from './serverConfig.js';
-import {bindOfflineAccount,cacheResponse,cachedResponse,queueWorkout,syncWorkouts,clearOffline,offlineEpoch,prepareWorkout,acknowledgeWorkout} from './offline.js';
-import { getAccessToken,refreshAccessToken,setAccessToken } from './session.js';
+import {cacheResponse,cachedResponse,queueWorkout,syncWorkouts,clearOffline,offlineEpoch,prepareWorkout,acknowledgeWorkout} from './offline.js';
+import { getAccessToken,refreshAccessToken } from './session.js';
 export const BASE = resolveApiBase();
 
-// A selected demo id is a UI preference, never a credential.
+// Demo-mode identity switch (see backend/app/services/auth.py's get_current_user docstring):
+// X-Synex-Demo-User lets the same browser preview the student and counselor experiences without a
+// real login flow. Stored in localStorage purely as a per-browser UI convenience (which role is
+// currently selected) -- it is never treated as an auth credential; AUTH_MODE=oidc ignores it
+// entirely server-side.
 const DEMO_USER_KEY = 'synex-health-demo-user';
 export function getDemoUser() {
   try { return localStorage.getItem(DEMO_USER_KEY) || 'student-jimin'; } catch { return 'student-jimin'; }
 }
-export async function loginDemo(id = getDemoUser(), accessCode = getDemoAccessCode()) {
-  const session = await api('/api/auth/demo-login', {demo_user_id:id, access_code:accessCode, transport:Capacitor.isNativePlatform()?'native':'web'});
-  setDemoAccessCode(accessCode);
-  setAccessToken('');
-  if (session.session_token) setAccessToken(session.session_token);
-  return session;
-}
 export async function setDemoUser(id) {
   await clearOffline();
-  await loginDemo(id);
-  await bindOfflineAccount(id, BASE);
   try { localStorage.setItem(DEMO_USER_KEY, id); } catch {}
 }
 
 export async function api(path, body, { method, signal, headers, offlineRetry=false } = {}) {
+  if(LOCAL_ONLY){const {localApi}=await import('./localApi.js');return localApi(path,body,{method,signal});}
   const requestEpoch=offlineEpoch();
   const m = method || (body === undefined ? 'GET' : 'POST');
   const workout = path === '/api/workouts' && m === 'POST';
@@ -32,7 +27,7 @@ export async function api(path, body, { method, signal, headers, offlineRetry=fa
   if (requestEpoch !== offlineEpoch()) throw Error('계정이 변경되었습니다. 다시 시도하세요.');
   const options = {
     method: m,
-    headers: { 'Content-Type': 'application/json', ...(getAccessToken() ? {Authorization: `Bearer ${getAccessToken()}`} : {}), ...headers },
+    headers: { 'Content-Type': 'application/json', ...(import.meta.env.VITE_RELEASE_BUILD==='true'?{}:{'X-Synex-Demo-User':getDemoUser()}), ...(getAccessToken() ? {Authorization: `Bearer ${getAccessToken()}`} : {}), ...headers },
     body: body === undefined ? undefined : JSON.stringify(body),
     signal, credentials: 'include',
   };
@@ -49,7 +44,6 @@ export async function api(path, body, { method, signal, headers, offlineRetry=fa
     let data;
     try { data = await response.json(); } catch {}
     const err = new Error(typeof data?.detail === 'string' ? data.detail : data?.detail?.message || `요청 실패 (${response.status}). 서버 연결을 확인하십시오.`);
-    if (data?.detail?.code === 'SENSITIVE_CONSENT_REQUIRED') window.dispatchEvent(new Event('synex-consent-required'));
     err.status = response.status; err.data = data;
     throw err;
   }
@@ -96,4 +90,4 @@ export const HealthAPI = {
   healthStatus: () => api('/api/health/status'),
 };
 
-export const syncPendingWorkouts=()=>syncWorkouts(body=>api('/api/workouts',body,{offlineRetry:true}));
+export const syncPendingWorkouts=()=>LOCAL_ONLY?Promise.resolve():syncWorkouts(body=>api('/api/workouts',body,{offlineRetry:true}));

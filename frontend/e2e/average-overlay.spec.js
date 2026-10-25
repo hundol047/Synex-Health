@@ -1,4 +1,4 @@
-import {test,expect} from './fixtures.js';
+import {test,expect} from '@playwright/test';
 
 test.beforeEach(async({page})=>{
  await page.addInitScript(()=>localStorage.setItem('synex-onboarding-v1','done'));
@@ -7,8 +7,8 @@ const stats=page=>page.locator('[data-overlay]').evaluate(el=>JSON.parse(el.data
 
 test('same viewer renders both meshes, opacity/selection/camera/mobile and original range mode',async({page},info)=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
- await page.goto('/health/body');
- await expect(page.getByRole('button',{name:/Average Compare/})).toBeVisible();
+ await page.goto('/health/body');await page.getByRole('button',{name:/평균과 비교/}).click();
+ await expect(page.getByRole('button',{name:/평균과 비교/})).toBeVisible();
  await expect.poll(async()=>{try{return (await stats(page)).layers.length;}catch{return 0;}},{timeout:30000}).toBe(2);
  const initial=await stats(page);expect(initial.layers.map(l=>l.name).sort()).toEqual(['my-muscle','reference-average']);
  await page.getByText('레이어 · 투명도 · 겹쳐보기 설정').click();
@@ -40,9 +40,9 @@ test('same viewer renders both meshes, opacity/selection/camera/mobile and origi
  await page.locator('.overlay-viewer').screenshot({path:info.outputPath('overlay-390.png')});
  await page.screenshot({path:info.outputPath('body-page-390.png'),fullPage:true});
  await page.getByRole('button',{name:'Fat · 체지방',exact:true}).click();await expect(page.getByRole('table')).toContainText('체지방량');
- await page.getByRole('button',{name:'Muscle · 제지방',exact:true}).click();
+ await page.getByRole('button',{name:'근육 분석 값 (제지방)',exact:true}).click();
  await page.getByText('레이어 · 투명도 · 겹쳐보기 설정').click();await page.getByRole('checkbox',{name:/My Body →/}).check();await page.getByLabel('표면 전환',{exact:true}).fill('1');await page.getByRole('checkbox',{name:/My Body →/}).uncheck();await page.getByText('레이어 · 투명도 · 겹쳐보기 설정').click();
- await page.getByRole('button',{name:/Previous Compare/}).click();
+ await page.getByRole('button',{name:/이전 기록과 비교/}).click();
  await expect(page.getByRole('table')).toContainText('이전 측정');
  await page.getByRole('button',{name:/Range View/}).click();await expect(page.getByText('기준 범위',{exact:true})).toBeVisible();
  expect(errors).toEqual([]);
@@ -53,13 +53,13 @@ test('reference-unavailable retains body; numeric fixture changes volume with sa
  const fixture=structuredClone(raw);const g=fixture.average_comparison.groups[0];
  const leg=fixture.measurement.segments.find(s=>s.segment==='RIGHT_LEG');leg.lean_mass_kg=7.1;g.segments.RIGHT_LEG.lean.reference_value=7.8;
  await page.route('**/api/body-map/latest',r=>r.fulfill({json:fixture}));
- await page.goto('/health/body');await expect(page.getByRole('table')).toContainText('-9.0');
+ await page.goto('/health/body');await page.getByRole('button',{name:/평균과 비교/}).click();await expect(page.getByRole('table')).toContainText('-9.0');
  await expect.poll(async()=>{try{return (await stats(page)).layers.length;}catch{return 0;}}).toBe(2);
  const layers=(await stats(page)).layers;expect(layers.find(l=>l.name==='reference-average').regions.RIGHT_LEG.depth).toBeGreaterThan(layers.find(l=>l.name==='my-muscle').regions.RIGHT_LEG.depth);
  await page.locator('.overlay-viewer').screenshot({path:info.outputPath('fixture-two-volumes.png')});
  await page.unroute('**/api/body-map/latest');
  await page.route('**/api/body-map/latest',r=>r.fulfill({json:{...raw,average_comparison:{available:false,groups:[]}}}));
- await page.reload();
+ await page.reload();await page.getByRole('button',{name:/평균과 비교/}).click();
  await expect(page.getByRole('status').filter({hasText:'현재 조건에 맞는 비교군'})).toBeVisible();
  await expect(page.locator('canvas')).toBeVisible();
  expect(await page.getByRole('table').innerText()).not.toContain('NaN');

@@ -4,13 +4,17 @@ import {render,screen,fireEvent,waitFor,act,cleanup,within} from '@testing-libra
 import CameraCoaching from '../src/health/components/exercise/CameraCoaching.jsx';
 import {api} from '../src/shared/lib/api.js';
 import {createPoseRunner} from '../src/health/components/exercise/poseRunner.js';
+import {PoseCalibration} from '../src/health/components/exercise/poseRules.js';
+import {ExercisePoseAnalyzer} from '../src/health/components/exercise/poseCoach.js';
+const mode=vi.hoisted(()=>({local:false}));
+vi.mock('../src/shared/lib/localMode.js',()=>({get LOCAL_ONLY(){return mode.local;}}));
 vi.mock('../src/shared/lib/api.js',()=>({api:vi.fn()}));
 vi.mock('../src/health/components/exercise/poseRunner.js',()=>({createPoseRunner:vi.fn()}));
-vi.mock('../src/health/components/exercise/ExerciseMotion3D.jsx',()=>({default:()=> <div>3D 시범</div>}));
+vi.mock('../src/health/components/exercise/BodyweightDemo.jsx',()=>({default:({exerciseId})=> <div>3D 시범 · {exerciseId}</div>}));
 let track,media,getMedia,detector,frames,frameId;
 const deferred=()=>{let resolve;const promise=new Promise(r=>{resolve=r;});return {promise,resolve};};
 beforeEach(()=>{
- vi.clearAllMocks();frames=new Map();frameId=0;
+ vi.clearAllMocks();mode.local=false;frames=new Map();frameId=0;
  vi.stubGlobal('requestAnimationFrame',vi.fn(fn=>{frames.set(++frameId,fn);return frameId;}));vi.stubGlobal('cancelAnimationFrame',vi.fn(id=>frames.delete(id)));
  track={stop:vi.fn(),onended:null};media={getTracks:()=>[track],getVideoTracks:()=>[track]};getMedia=vi.fn().mockResolvedValue(media);Object.defineProperty(navigator,'mediaDevices',{configurable:true,value:{getUserMedia:getMedia}});
  vi.spyOn(HTMLMediaElement.prototype,'play').mockResolvedValue();
@@ -43,6 +47,26 @@ it('camera stop cancels a pending permission request and closes the late stream'
  const pending=deferred();getMedia.mockReturnValueOnce(pending.promise);render(<CameraCoaching/>);fireEvent.click(screen.getByRole('button',{name:'카메라 켜기'}));fireEvent.click(screen.getByRole('button',{name:'카메라 끄기'}));
  await act(async()=>pending.resolve(media));expect(track.stop).toHaveBeenCalledTimes(1);expect(screen.getByRole('switch').disabled).toBe(true);
 });
+it('changing the exercise closes camera and inference without remounting the demonstration session',async()=>{
+ const evaluated=vi.fn(),pending=deferred();detector.detectForVideo.mockReturnValueOnce(pending.promise);
+ const view=render(<CameraCoaching motion="squat" onEvaluation={evaluated}/>);await camera();await enable();
+ let inflight;act(()=>{inflight=[...frames.values()].at(-1)(500);});
+ view.rerender(<CameraCoaching motion="lunge" onEvaluation={evaluated}/>);
+ expect(track.stop).toHaveBeenCalledTimes(1);expect(detector.close).toHaveBeenCalledTimes(1);
+ expect(screen.getByRole('switch').checked).toBe(false);expect(screen.getByRole('switch').disabled).toBe(true);
+ expect(screen.getByText('3D 시범 · lunge')).toBeTruthy();
+ await act(async()=>{pending.resolve({landmarks:[]});await inflight;});
+ expect(evaluated).not.toHaveBeenCalled();expect(screen.queryByRole('status')).toBeNull();
+ expect(getMedia).toHaveBeenCalledTimes(1);
+});
+it('changing the exercise invalidates a pending permission request and closes its late stream',async()=>{
+ const pending=deferred();getMedia.mockReturnValueOnce(pending.promise);
+ const view=render(<CameraCoaching motion="squat"/>);fireEvent.click(screen.getByRole('button',{name:'카메라 켜기'}));
+ view.rerender(<CameraCoaching motion="plank"/>);
+ await act(async()=>pending.resolve(media));
+ expect(track.stop).toHaveBeenCalledTimes(1);expect(createPoseRunner).not.toHaveBeenCalled();
+ expect(screen.getByRole('switch').disabled).toBe(true);expect(screen.getByRole('button',{name:'카메라 켜기'}).disabled).toBe(false);
+});
 it('analysis failure preserves preview and allows retry; leaving releases camera and detector',async()=>{
  api.mockRejectedValueOnce(Error('분석 권한 없음'));const view=render(<CameraCoaching/>);await camera();fireEvent.click(screen.getByRole('switch'));await screen.findByRole('alert');expect(screen.getByRole('switch').checked).toBe(false);expect(track.stop).not.toHaveBeenCalled();
  await enable();view.unmount();expect(detector.close).toHaveBeenCalledTimes(1);expect(track.stop).toHaveBeenCalledTimes(1);
@@ -69,7 +93,7 @@ it('clears stale results and speech after inference stalls; late results cannot 
  render(<CameraCoaching/>);await camera();await enable();fireEvent.click(screen.getByLabelText('음성으로도 듣기'));vi.useFakeTimers({toFake:['setTimeout','clearTimeout','setInterval','clearInterval','Date']});
  await act(async()=>[...frames.values()].at(-1)(500));expect(screen.getByRole('status')).toBeTruthy();
  const pending=deferred();detector.detectForVideo.mockReturnValueOnce(pending.promise);let inFlight;act(()=>{inFlight=[...frames.values()].at(-1)(700);});
- await act(async()=>vi.advanceTimersByTimeAsync(3001));expect(screen.queryByRole('status')).toBeNull();expect(screen.getByRole('alert').textContent).toContain('새 분석 결과');expect(detector.close).toHaveBeenCalledTimes(1);expect(track.stop).not.toHaveBeenCalled();
+ await act(async()=>vi.advanceTimersByTimeAsync(5001));expect(screen.queryByRole('status')).toBeNull();expect(screen.getByRole('alert').textContent).toContain('새 분석 결과');expect(detector.close).toHaveBeenCalledTimes(1);expect(track.stop).not.toHaveBeenCalled();
  const count=speechSynthesis.speak.mock.calls.length;await act(async()=>{pending.resolve({landmarks:[]});await inFlight;});expect(screen.queryByRole('status')).toBeNull();expect(speechSynthesis.speak).toHaveBeenCalledTimes(count);
 });
 it('a second camera owner cancels the first pending permission request without reclaiming it',async()=>{
@@ -89,14 +113,101 @@ it('aborts a hanging model asset check at the preparation deadline',async()=>{
  render(<CameraCoaching/>);await camera();vi.useFakeTimers({toFake:['setTimeout','clearTimeout','setInterval','clearInterval','Date']});fetch.mockReturnValueOnce(new Promise(()=>{}));fireEvent.click(screen.getByRole('switch'));
  await act(async()=>vi.advanceTimersByTimeAsync(20001));expect(fetch.mock.calls[0][1].signal.aborted).toBe(true);expect(createPoseRunner).not.toHaveBeenCalled();expect(screen.getByRole('switch').checked).toBe(false);expect(track.stop).not.toHaveBeenCalled();
 });
-it('explicit local test preview starts bundled analysis without sending health data to a server',async()=>{
- render(<CameraCoaching localPreview/>);await camera();await enable();expect(api).not.toHaveBeenCalled();
+it('starts camera and real inference together only after the local coach action, with no server access',async()=>{
+ mode.local=true;render(<CameraCoaching immersive/>);expect(getMedia).not.toHaveBeenCalled();expect(createPoseRunner).not.toHaveBeenCalled();
+ fireEvent.click(screen.getByRole('button',{name:'코칭 시작'}));await waitFor(()=>expect(createPoseRunner).toHaveBeenCalledTimes(1));
+ expect(screen.getByRole('switch').checked).toBe(true);expect(api).not.toHaveBeenCalled();expect(createPoseRunner.mock.calls[0][0]).toBe('/pose/pose_landmarker_lite.task');expect(getMedia).toHaveBeenCalledWith(expect.objectContaining({audio:false}));
 });
-it('release builds still require server authorization even if a caller requests local preview',async()=>{
- vi.stubEnv('VITE_RELEASE_BUILD','true');
- try{render(<CameraCoaching localPreview/>);await camera();await enable();expect(api).toHaveBeenCalledWith('/api/advanced/pose',undefined,expect.any(Object));}
- finally{vi.unstubAllEnvs();}
+it('releases front camera and analyzer before opening rear camera and restarting opted-in feedback',async()=>{
+ render(<CameraCoaching/>);await camera();await enable();
+ const rearTrack={stop:vi.fn()},rearMedia={getTracks:()=>[rearTrack],getVideoTracks:()=>[rearTrack]};
+ getMedia.mockImplementationOnce(async constraints=>{expect(track.stop).toHaveBeenCalledTimes(1);expect(detector.close).toHaveBeenCalledTimes(1);expect(constraints.video.facingMode.ideal).toBe('environment');return rearMedia;});
+ fireEvent.click(screen.getByRole('button',{name:'전면·후면 카메라 전환'}));await waitFor(()=>expect(createPoseRunner).toHaveBeenCalledTimes(2));
+ expect(screen.getByRole('switch').checked).toBe(true);expect(screen.getByLabelText('내 운동 모습').parentElement.classList.contains('coach-feed-mirrored')).toBe(false);
 });
-it('loads a bundled task with an omitted MIME header instead of rejecting a valid local asset',async()=>{
- fetch.mockResolvedValueOnce({ok:true,headers:new Headers()});render(<CameraCoaching localPreview/>);await camera();await enable();expect(screen.queryByRole('alert')).toBeNull();
+it('highlights the actual problem joints while camera-position issues keep ordinary skeleton colors',async()=>{
+ const raw=Array.from({length:33},()=>({x:.5,y:.5,z:0,visibility:.99}));detector.detectForVideo.mockResolvedValue({landmarks:[raw]});
+ vi.spyOn(PoseCalibration.prototype,'update').mockReturnValue({ready:true});
+ const analyzed={detected:true,reps:2,tracking_quality:'HIGH',feedback:'동작 확인',issues:[{id:'hip_low',severity:'adjust',bodyPart:'골반',message:'골반을 조금 들어 어깨와 발목 사이에 맞추세요.',joints:[11,23,27]}]};
+ const update=vi.spyOn(ExercisePoseAnalyzer.prototype,'update').mockReturnValue(analyzed);
+ const view=render(<CameraCoaching motion="push_up"/>);await camera();await enable();await act(async()=>[...frames.values()].at(-1)(500));
+ expect(screen.getByRole('status').textContent).toContain('골반을 조금 들어');expect(screen.getByText('골반 · 빨간 관절 부위를 확인하세요')).toBeTruthy();expect(view.container.querySelector('circle[data-joint="23"]').getAttribute('fill')).toBe('#ff7c72');
+ update.mockReturnValue({...analyzed,issues:[{id:'view',severity:'camera',bodyPart:'촬영 방향',message:'휴대폰을 측면에 놓아 주세요.',joints:[11,23,27]}]});await act(async()=>[...frames.values()].at(-1)(700));
+ expect(screen.getByRole('status').textContent).toContain('휴대폰을 측면에');expect(view.container.querySelectorAll('[data-highlighted="true"]').length).toBe(0);
+});
+it('a denied camera permission leaves a clear retry state without trying pose inference',async()=>{
+ getMedia.mockRejectedValueOnce(new DOMException('denied','NotAllowedError'));render(<CameraCoaching/>);fireEvent.click(screen.getByRole('button',{name:'코칭 시작'}));
+ expect((await screen.findByRole('alert')).textContent).toContain('휴대폰 설정');expect(createPoseRunner).not.toHaveBeenCalled();expect(screen.getByRole('button',{name:'코칭 시작'}).disabled).toBe(false);expect(screen.getByRole('switch').checked).toBe(false);
+});
+it('withholds transient corrections and red joints until 300ms, then clears them immediately on tracking loss',async()=>{
+ const raw=Array.from({length:33},()=>({x:.5,y:.5,z:0,visibility:.99}));detector.detectForVideo.mockResolvedValue({landmarks:[raw]});
+ vi.spyOn(PoseCalibration.prototype,'update').mockReturnValue({ready:true});
+ const message='골반을 조금 들어 어깨와 발목 사이에 맞추세요.';
+ const issue={id:'hip_low',severity:'adjust',bodyPart:'골반',message,joints:[23,24],observedMs:0};
+ const base={detected:true,reps:0,tracking_quality:'HIGH',feedback:message,corrections:[message],issues:[issue]};
+ const update=vi.spyOn(ExercisePoseAnalyzer.prototype,'update').mockReturnValue(base),evaluated=vi.fn();
+ const view=render(<CameraCoaching motion="push_up" onEvaluation={evaluated}/>);await camera();await enable();fireEvent.click(screen.getByLabelText('음성으로도 듣기'));
+ await act(async()=>[...frames.values()].at(-1)(500));
+ expect(evaluated.mock.calls.at(-1)[0].corrections).toEqual([]);expect(evaluated.mock.calls.at(-1)[0].message).not.toBe(message);expect(view.container.querySelectorAll('[data-highlighted="true"]').length).toBe(0);
+ update.mockReturnValue({...base,issues:[{...issue,observedMs:299}]});await act(async()=>[...frames.values()].at(-1)(700));
+ expect(evaluated.mock.calls.at(-1)[0].issues).toEqual([]);expect(speechSynthesis.speak.mock.calls.some(([utterance])=>utterance.text===message)).toBe(false);
+ update.mockReturnValue({...base,issues:[{...issue,observedMs:300}]});await act(async()=>[...frames.values()].at(-1)(900));
+ expect(evaluated.mock.calls.at(-1)[0].corrections).toEqual([message]);expect(screen.getByRole('status').textContent).toContain(message);expect(view.container.querySelector('circle[data-joint="23"]').getAttribute('fill')).toBe('#ff7c72');
+ speechSynthesis.cancel.mockClear();
+ update.mockReturnValue({detected:false,reps:0,tracking_quality:'LOST',feedback:'전신이 잘 보이도록 위치를 조정하세요.',corrections:[],issues:[]});await act(async()=>[...frames.values()].at(-1)(1100));
+ expect(evaluated.mock.calls.at(-1)[0].corrections).toEqual([]);expect(screen.getByRole('status').textContent).not.toContain(message);expect(view.container.querySelectorAll('[data-highlighted="true"]').length).toBe(0);expect(speechSynthesis.cancel).toHaveBeenCalledTimes(1);
+});
+it('shows camera placement guidance immediately even before the persistence window',async()=>{
+ const raw=Array.from({length:33},()=>({x:.5,y:.5,z:0,visibility:.99}));detector.detectForVideo.mockResolvedValue({landmarks:[raw]});vi.spyOn(PoseCalibration.prototype,'update').mockReturnValue({ready:true});
+ const message='휴대폰을 측면에 놓아 주세요.';vi.spyOn(ExercisePoseAnalyzer.prototype,'update').mockReturnValue({detected:true,reps:0,issues:[{id:'view',severity:'camera',message,joints:[],observedMs:0}],corrections:[message]});
+ const evaluated=vi.fn();render(<CameraCoaching motion="push_up" onEvaluation={evaluated}/>);await camera();await enable();await act(async()=>[...frames.values()].at(-1)(500));
+ expect(screen.getByRole('status').textContent).toContain(message);expect(evaluated.mock.calls.at(-1)[0].corrections).toEqual([message]);
+});
+function recordingMock(){
+ let recorder;
+ class FakeRecorder {
+  static isTypeSupported=()=>true;
+  constructor(_stream,options){recorder=this;this.mimeType=options.mimeType;this.state='inactive';this.stop=vi.fn(()=>{this.state='inactive';});}
+  start(){this.state='recording';}
+ }
+ vi.stubGlobal('MediaRecorder',FakeRecorder);
+ vi.stubGlobal('URL',class extends URL{static createObjectURL=vi.fn(()=> 'blob:recorded-video');static revokeObjectURL=vi.fn();});
+ return ()=>recorder;
+}
+it('record button opens video-only camera explicitly and publishes replay and save only after recorder finalization',async()=>{
+ const recorder=recordingMock();render(<CameraCoaching immersive/>);
+ expect(getMedia).not.toHaveBeenCalled();expect(screen.queryByRole('button',{name:'휴대폰에 저장'})).toBeNull();
+ fireEvent.click(screen.getByRole('button',{name:'동영상 촬영',exact:true}));await screen.findByRole('button',{name:'촬영 종료'});
+ expect(getMedia).toHaveBeenCalledWith(expect.objectContaining({audio:false}));expect(createPoseRunner).not.toHaveBeenCalled();
+ fireEvent.click(screen.getByRole('button',{name:'촬영 종료'}));expect(screen.getByRole('button',{name:'영상 준비 중…'}).disabled).toBe(true);expect(screen.queryByRole('button',{name:'휴대폰에 저장'})).toBeNull();
+ act(()=>{recorder().ondataavailable({data:new Blob(['video'])});recorder().onstop();});
+ expect(screen.getByLabelText('촬영한 운동 동영상').getAttribute('src')).toBe('blob:recorded-video');expect(screen.getByRole('button',{name:'휴대폰에 저장'}).disabled).toBe(false);expect(track.stop).toHaveBeenCalledTimes(1);
+ fireEvent.click(screen.getByRole('button',{name:'촬영 영상 버리기'}));expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:recorded-video');expect(screen.queryByLabelText('촬영한 운동 동영상')).toBeNull();
+});
+it('exercise switch and background discard active or finished recordings and never revive late recorder results',async()=>{
+ const recorder=recordingMock(),view=render(<CameraCoaching motion="squat"/>);
+ fireEvent.click(screen.getByRole('button',{name:'동영상 촬영',exact:true}));await screen.findByRole('button',{name:'촬영 종료'});
+ const old=recorder();view.rerender(<CameraCoaching motion="plank"/>);expect(old.stop).toHaveBeenCalledTimes(1);
+ act(()=>{old.ondataavailable({data:new Blob(['late video'])});old.onstop();});expect(screen.queryByLabelText('촬영한 운동 동영상')).toBeNull();
+ fireEvent.click(screen.getByRole('button',{name:'동영상 촬영',exact:true}));await screen.findByRole('button',{name:'촬영 종료'});
+ act(()=>{recorder().ondataavailable({data:new Blob(['video'])});recorder().onstop();});expect(screen.getByLabelText('촬영한 운동 동영상')).toBeTruthy();
+ Object.defineProperty(document,'hidden',{configurable:true,value:true});fireEvent(document,new Event('visibilitychange'));Object.defineProperty(document,'hidden',{configurable:true,value:false});
+ expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:recorded-video');expect(screen.queryByLabelText('촬영한 운동 동영상')).toBeNull();expect(screen.getByRole('button',{name:'동영상 촬영',exact:true}).disabled).toBe(false);
+});
+it('a missing recorder preserves the separate live camera and a hung camera permission request times out to retry',async()=>{
+ vi.stubGlobal('MediaRecorder',undefined);render(<CameraCoaching/>);fireEvent.click(screen.getByRole('button',{name:'동영상 촬영',exact:true}));
+ expect(screen.getByRole('alert').textContent).toContain('동영상 촬영을 지원');expect(getMedia).not.toHaveBeenCalled();
+ const pending=deferred();getMedia.mockReturnValueOnce(pending.promise);vi.useFakeTimers();fireEvent.click(screen.getByRole('button',{name:'카메라 켜기'}));
+ await act(async()=>vi.advanceTimersByTimeAsync(20001));expect(screen.getByRole('alert').textContent).toContain('카메라 준비 시간이 초과');expect(screen.getByRole('button',{name:'카메라 켜기'}).disabled).toBe(false);
+ await act(async()=>pending.resolve(media));expect(track.stop).toHaveBeenCalledTimes(1);
+});
+it('bodyweight variants support correction while video-only capture never starts analysis implicitly',async()=>{
+ const recorder=recordingMock();render(<CameraCoaching motion="wall_push" immersive/>);
+ expect(screen.getByRole('button',{name:'코칭 시작'}).disabled).toBe(false);
+ fireEvent.click(screen.getByRole('button',{name:'카메라 켜기'}));await waitFor(()=>expect(screen.getByLabelText('내 운동 모습').srcObject).toBe(media));
+ expect(screen.getByRole('switch').disabled).toBe(false);
+ expect(createPoseRunner).not.toHaveBeenCalled();expect(fetch).not.toHaveBeenCalled();expect(api).not.toHaveBeenCalled();
+ fireEvent.click(screen.getByRole('button',{name:'동영상 촬영',exact:true}));await screen.findByRole('button',{name:'촬영 종료'});fireEvent.click(screen.getByRole('button',{name:'촬영 종료'}));
+ act(()=>{recorder().ondataavailable({data:new Blob(['wall push video'])});recorder().onstop();});expect(screen.getByLabelText('촬영한 운동 동영상')).toBeTruthy();
+ expect(createPoseRunner).not.toHaveBeenCalled();expect(fetch).not.toHaveBeenCalled();expect(api).not.toHaveBeenCalled();
 });

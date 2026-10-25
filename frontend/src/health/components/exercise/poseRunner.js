@@ -16,5 +16,5 @@ export async function createPoseRunner(model,{signal}={}){
 async function createMainRunner(model,signal){
  const {FilesetResolver,PoseLandmarker}=await import('@mediapipe/tasks-vision');
  if(signal?.aborted)throw new DOMException('Aborted','AbortError');
- const files=await FilesetResolver.forVisionTasks('/pose/wasm');if(signal?.aborted)throw new DOMException('Aborted','AbortError');const detector=await PoseLandmarker.createFromOptions(files,{baseOptions:{modelAssetPath:model},runningMode:'VIDEO',numPoses:2,minPoseDetectionConfidence:.7,minTrackingConfidence:.7});if(signal?.aborted){detector.close();throw new DOMException('Aborted','AbortError');}detector.execution='main';return detector;
+ const files=await FilesetResolver.forVisionTasks('/pose/wasm');if(signal?.aborted)throw new DOMException('Aborted','AbortError');const detector=await PoseLandmarker.createFromOptions(files,{baseOptions:{modelAssetPath:model,delegate:'CPU'},runningMode:'VIDEO',numPoses:2,minPoseDetectionConfidence:.7,minTrackingConfidence:.7});if(signal?.aborted){detector.close();throw new DOMException('Aborted','AbortError');}detector.execution='main';return detector;
 }

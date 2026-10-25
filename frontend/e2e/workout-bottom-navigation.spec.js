@@ -1,4 +1,4 @@
-import {test,expect} from './fixtures.js';
+import {test,expect} from '@playwright/test';
 test('workout previous/next stay at the bottom while scrolling and changing exercises',async({page},info)=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.addInitScript(()=>localStorage.setItem('synex-onboarding-v1','done'));

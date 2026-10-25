@@ -1,4 +1,4 @@
-import {test,expect} from './fixtures.js';
+import {test,expect} from '@playwright/test';
 test('intro next button stays at the bottom through every step on mobile',async({page})=>{
  await page.addInitScript(()=>{localStorage.removeItem('synex-onboarding-v1');Object.defineProperty(AbortSignal,'timeout',{value:undefined,configurable:true});});
  await page.setViewportSize({width:390,height:844});await page.goto('/health');

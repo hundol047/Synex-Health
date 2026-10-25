@@ -1,9 +1,10 @@
+import {LOCAL_ONLY} from '../lib/localMode.js';
 import {BUILD_LABEL,UI_REVISION} from '../lib/buildInfo.js';
 import PendingWorkouts from './PendingWorkouts.jsx';
 import { useAuth } from './AuthBoundary.jsx';
 import React, { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { Home, PersonStanding, GitCompare, Dumbbell, ClipboardList, TrendingUp, MessageCircle, User, Users, Crown } from 'lucide-react';
 import {offlineState} from '../lib/offline.js';
 import { getDemoUser, setDemoUser, syncPendingWorkouts } from '../lib/api.js';
@@ -13,7 +14,7 @@ const STUDENT_NAV = [
   { to: '/health/body', label: '내 몸 보기', icon: PersonStanding },
   { to: '/health/comparison', label: '비교', icon: GitCompare },
   { to: '/health/routine', label: '루틴', icon: Dumbbell },
-  { to: '/health/workout', label: '운동기록', icon: ClipboardList },
+  { to: '/health/workout', label: '운동 기록', icon: ClipboardList },
   { to: '/health/progress', label: '변화 추적', icon: TrendingUp },
   { to: '/health/agent', label: '건강 코치', icon: MessageCircle },
   { to: '/health/subscription', label: '멤버십', icon: Crown },
@@ -22,6 +23,7 @@ const STUDENT_NAV = [
 
 export default function Layout({ children }) {
   const navigate = useNavigate();
+  const {pathname} = useLocation();
   const [offline,setOffline]=useState(offlineState()),[syncError,setSyncError]=useState(''),[cached,setCached]=useState(false);
   const [online,setOnline] = useState(navigator.onLine);
   useEffect(()=>{
@@ -41,19 +43,19 @@ export default function Layout({ children }) {
 
   async function switchRole(id) {
     if((offlineState().pending||offlineState().drafts)&&!window.confirm('미전송·진행 중 기록을 삭제하고 데모 계정을 바꿀까요?'))return;
-    try { await setDemoUser(id); } catch (error) { setSyncError(error.message); return; }
+    await setDemoUser(id);
     navigate(id==='admin-demo'?'/health/admin':id === 'counselor-demo' ? '/health-center' : '/health');
-    window.dispatchEvent(new Event('synex-demo-account-changed'));
+    window.location.reload();
   }
 
-  const nav = isAdmin ? [{to:'/health/admin',label:'관리자',icon:Users,end:true}] : isCounselor ? [{ to: '/health-center', label: '학생 관리', icon: Users, end: true }] : STUDENT_NAV;
+  const nav = isAdmin ? [{to:'/health/admin',label:'관리자',icon:Users,end:true}] : isCounselor ? [{ to: '/health-center', label: '학생 관리', icon: Users, end: true }] : STUDENT_NAV.filter(item=>!LOCAL_ONLY||!['/health/agent','/health/subscription'].includes(item.to));
 
   return (
-    <div className="health-shell">
+    <div className={`health-shell ${auth.local?'device-personal':''} ${pathname==='/health/pose'?'health-shell-pose':''}`}>
       <header className="health-topbar">
         <div className="health-brand">
           <span className="health-brand-icon">SH</span>
-          Synex <span style={{ color: 'var(--blue)' }}>Health</span><small className="build-badge" title={UI_REVISION}>{BUILD_LABEL} · v2</small>
+          Synex <span style={{ color: 'var(--blue)' }}>Health</span>{!auth.local&&<small className="build-badge" title={UI_REVISION}>{BUILD_LABEL} · v2</small>}
         </div>
         <nav className="health-desktop-nav">
           {nav.map(({ to, label, end }) => (
@@ -63,9 +65,9 @@ export default function Layout({ children }) {
         {auth.demo ? <div className="health-role-switch" role="tablist" aria-label="데모 역할 전환">
           <button className={!isCounselor&&!isAdmin ? 'active' : ''} onClick={() => switchRole('student-jimin')}>학생</button>
           <button className={isCounselor&&!isAdmin ? 'active' : ''} onClick={() => switchRole('counselor-demo')}>상담사</button><button className={isAdmin?'active':''} onClick={()=>switchRole('admin-demo')}>관리자</button>
-        </div> : <button className="btn btn-ghost" onClick={auth.logout}>로그아웃</button>}
+        </div> : auth.local?<span className="device-mode-label" title={`설치 버전 ${BUILD_LABEL}`}>개인용</span>:<button className="btn btn-ghost" onClick={auth.logout}>로그아웃</button>}
       </header>
-      <main className="health-main">{!online && <div className="card" role="status">오프라인입니다. 열었던 화면을 표시합니다. 저장한 운동 기록은 기기에 암호화 보관하며, 연결 복구 또는 재로그인 후 전송합니다.</div>}{cached&&<p role="status">저장된 화면을 표시 중입니다. 최신 정보가 아닐 수 있습니다.</p>}{syncError&&<p role="status">{syncError}</p>}<PendingWorkouts state={offline}/>{offline.drafts>0&&<p className="muted">진행 중 임시 입력 {offline.drafts}건 · 해당 운동 화면에서 복구할 수 있습니다. <NavLink to="/health/privacy">임시 입력 관리</NavLink></p>}<NavLink to="/health/diagnostics">기기 진단</NavLink>{children}</main>
+      <main className="health-main">{auth.local&&<aside className="device-storage-note" aria-label="기록 보관 위치"><span className="device-storage-dot"/><div><strong>내 기록은 이 기기에</strong><p>체성분과 운동 기록을 기기에만 보관합니다.</p></div></aside>}{!auth.local&&!online && <div className="card" role="status">오프라인입니다. 열었던 화면을 표시합니다. 저장한 운동 기록은 기기에 암호화 보관하며, 연결 복구 또는 재로그인 후 전송합니다.</div>}{cached&&<p role="status">저장된 화면을 표시 중입니다. 최신 정보가 아닐 수 있습니다.</p>}{syncError&&<p role="status">{syncError}</p>}<PendingWorkouts state={offline}/>{offline.drafts>0&&<p className="muted">진행 중 임시 입력 {offline.drafts}건 · 해당 운동 화면에서 복구할 수 있습니다. <NavLink to="/health/privacy">임시 입력 관리</NavLink></p>}{!auth.local&&<NavLink to="/health/diagnostics">기기 진단</NavLink>}{children}</main>
       <nav className="health-bottom-nav" aria-label="모바일 메뉴">
         {(isCounselor||isAdmin ? nav : nav.filter(item => ['/health','/health/body','/health/routine','/health/workout','/health/profile'].includes(item.to))).map(({ to, label, icon: Icon, end }) => (
           <NavLink key={to} to={to} end={end}>

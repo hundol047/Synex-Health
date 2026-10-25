@@ -1,9 +1,18 @@
 import * as THREE from 'three';
 import { samplePose, MOTIONS } from './motions.js';
+import {bodyweightPoseJoints} from './bodyweightRig.js';
+import {standingCatalogPose} from './standingCatalogRig.js';
+import {floorCatalogPose} from './floorCatalogRig.js';
+import {equipmentCatalogPose} from './equipmentCatalogRig.js';
+import {stretchPoseJoints} from './stretchRig.js';
+import {refineExerciseHands} from './handPoses.js';
 // Rest joints in the CC0 mesh coordinate system. Segment transforms are blended at joints.
-export const REST=[[0,.94,.035],[0,1.42,.025],[0,1.66,.025],[.185,1.42,.02],[.325,1.25,.04],[.445,1.105,.13],[-.185,1.42,.02],[-.325,1.25,.04],[-.445,1.105,.13],[.1,.90,.035],[.14,.52,.05],[.19,.1,.035],[-.1,.90,.035],[-.14,.52,.05],[-.19,.1,.035],[.19,.04,.20],[-.19,.04,.20]];
-export const BONES=[[0,1],[1,2],[3,4],[4,5],[6,7],[7,8],[9,10],[10,11],[12,13],[13,14],[11,15],[14,16]];
+export const REST=[[0,.94,.035],[0,1.42,.025],[0,1.66,.025],[.185,1.42,.02],[.325,1.25,.04],[.445,1.105,.13],[-.185,1.42,.02],[-.325,1.25,.04],[-.445,1.105,.13],[.1,.90,.035],[.14,.52,.05],[.19,.1,.035],[-.1,.90,.035],[-.14,.52,.05],[-.19,.1,.035],[.19,.04,.20],[-.19,.04,.20],[.565,.965,.25],[-.565,.965,.25]];
+export const BONES=[[0,1],[1,2],[3,4],[4,5],[6,7],[7,8],[9,10],[10,11],[12,13],[13,14],[11,15],[14,16],[5,17],[8,18]];
 export function poseJoints(id,t,rest=REST){
+ const stretch=stretchPoseJoints(id,t,rest);if(stretch)return stretch;
+ const bodyweight=bodyweightPoseJoints(id,t,rest);if(bodyweight)return refineExerciseHands(id,bodyweight,rest);
+ const authored=standingCatalogPose(id,t,rest)||floorCatalogPose(id,t,rest)||equipmentCatalogPose(id,t,rest);if(authored)return refineExerciseHands(id,authored,rest);
  const p=samplePose(id,t);if(!p)return rest;
  const front=MOTIONS[id].view.includes('정면');
  const point=(i,side=0)=>front?[(170-p[i][0])*.007,(306-p[i][1])*.007,side*.05]:[side,(306-p[i][1])*.007,(p[i][0]-170)*.007];
@@ -24,6 +33,10 @@ export function poseJoints(id,t,rest=REST){
   if(Math.abs(leg.y)<.5)delta.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(vec(rest[ankle]).sub(vec(rest[knee])).normalize(),vec(joints[ankle]).sub(vec(joints[knee])).normalize()));
   joints[toe]=vec(joints[ankle]).add(delta).toArray();
  }
+ for(const [elbow,wrist,finger] of [[4,5,17],[7,8,18]]){
+  const rotation=new THREE.Quaternion().setFromUnitVectors(vec(rest[wrist]).sub(vec(rest[elbow])).normalize(),vec(joints[wrist]).sub(vec(joints[elbow])).normalize());
+  joints[finger]=vec(joints[wrist]).add(vec(rest[finger]).sub(vec(rest[wrist])).applyQuaternion(rotation)).toArray();
+ }
  const lift=.08-Math.min(joints[11][1],joints[14][1]);
  for(const p of joints)p[1]+=lift;
  return joints;
@@ -32,36 +45,81 @@ const vec=p=>new THREE.Vector3(...p);
 const smooth=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
 export function bindSurface(base){
  const weights=[];
+ const wristAxes=[0,1].map(side=>{
+  const [elbow,wrist,finger]=side?[7,8,18]:[4,5,17];
+  return vec(REST[wrist]).sub(vec(REST[elbow])).normalize().add(vec(REST[finger]).sub(vec(REST[wrist])).normalize()).normalize();
+ });
  for(let i=0;i<base.length;i+=3){
   const x=base[i],y=base[i+1];
-  const head=smooth(1.47,1.56,y),arm=smooth(.16,.27,Math.abs(x))*smooth(.84,.91,y)*(1-head),leg=(1-smooth(.85,1.02,y))*(1-arm);
+  // Below the armpit the torso and hands share a height, but not a lateral
+  // region. A constant shoulder-width mask incorrectly bound the hips to the
+  // forearms, pulling the shirt hem outward whenever the arms were raised.
+  const shoulder=smooth(1.02,1.19,y);
+  const head=smooth(1.47,1.56,y),arm=smooth(.26-.10*shoulder,.34-.07*shoulder,Math.abs(x))*smooth(.84,.91,y)*(1-head),leg=(1-smooth(.85,1.02,y))*(1-arm);
   const trunk=Math.max(0,1-head-arm-leg),elbow=smooth(1.20,1.29,y),knee=smooth(.47,.57,y);
   const armIndex=x>=0?2:4,legIndex=x>=0?6:8,footIndex=x>=0?10:11,foot=1-smooth(.12,.21,y);
-  weights.push([[0,trunk],[1,head],[armIndex,arm*elbow],[armIndex+1,arm*(1-elbow)],[legIndex,leg*knee],[legIndex+1,leg*(1-knee)*(1-foot)],[footIndex,leg*(1-knee)*foot]].filter(([,w])=>w>0));
+  // Blend along the wrist's anatomical axis. A world-X mask gave opposite
+  // sides of the same wrist different hand/forearm weights, pinching and
+  // twisting its cross-section when a palm was placed against the wall.
+  const side=x>=0?0:1,wrist=REST[side?8:5],axis=wristAxes[side];
+  const wristDistance=(x-wrist[0])*axis.x+(y-wrist[1])*axis.y+(base[i+2]-wrist[2])*axis.z;
+  const handIndex=12+side,hand=smooth(-.045,.055,wristDistance);
+  weights.push([[0,trunk],[1,head],[armIndex,arm*elbow],[armIndex+1,arm*(1-elbow)*(1-hand)],[handIndex,arm*(1-elbow)*hand],[legIndex,leg*knee],[legIndex+1,leg*(1-knee)*(1-foot)],[footIndex,leg*(1-knee)*foot]].filter(([,w])=>w>0));
  }
  return weights;
+}
+// Fit palm pronation once to each avatar's actual hand surface. Stature changes
+// the authored joint direction and male/female hands have different thickness.
+export function calibratePalmRoll(base,weights,rest=REST){
+ const target=.04*rest[0][1]/.94;
+ return [[5,17,12,1],[8,18,13,-1]].map(([wrist,finger,bone,side])=>{
+  const rotation=new THREE.Quaternion().setFromUnitVectors(vec(rest[finger]).sub(vec(rest[wrist])).normalize(),new THREE.Vector3(0,0,1));
+  const points=[];
+  for(let i=0;i<weights.length;i++)if(weights[i].some(([index,weight])=>index===bone&&weight>.8))points.push(new THREE.Vector3().fromArray(base,i*3).sub(vec(rest[wrist])).applyQuaternion(rotation));
+  if(!points.length)return side*.9;
+  let low=.35,high=1.25;
+  for(let iteration=0;iteration<14;iteration++){
+   const angle=(low+high)/2,cos=Math.cos(angle),sin=Math.sin(angle)*side;
+   const minimum=Math.min(...points.map(point=>point.y*cos+point.x*sin));
+   if(minimum < -target)high=angle;else low=angle;
+  }
+  return side*(low+high)/2;
+ });
 }
 // Normalized dual-quaternion blending preserves rigid volume around bent joints.
 // Original implementation of the published algorithm (Kavan et al., 2008).
 export function deformSurface(base,weights,joints,target,rest=REST,ground=true){
- const transforms=BONES.map(([a,b])=>{
-  const rotation=new THREE.Quaternion().setFromUnitVectors(vec(rest[b]).sub(vec(rest[a])).normalize(),vec(joints[b]).sub(vec(joints[a])).normalize());
+ const transforms=BONES.map(([a,b],index)=>{
+  const authored=joints.boneRotations?.[index];
+  const rotation=authored?new THREE.Quaternion().fromArray(authored).normalize():new THREE.Quaternion().setFromUnitVectors(vec(rest[b]).sub(vec(rest[a])).normalize(),vec(joints[b]).sub(vec(joints[a])).normalize());
+  const roll=index===0?joints.bodyRoll:index===1?(joints.headRoll??joints.bodyRoll):0;
+  if(roll)rotation.premultiply(new THREE.Quaternion().setFromAxisAngle(vec(joints[b]).sub(vec(joints[a])).normalize(),roll));
+  if(index>=12&&joints.handRoll?.[index-12])rotation.premultiply(new THREE.Quaternion().setFromAxisAngle(vec(joints[b]).sub(vec(joints[a])).normalize(),joints.handRoll[index-12]));
   const t=vec(joints[a]).sub(vec(rest[a]).applyQuaternion(rotation));
   const dual=new THREE.Quaternion(t.x,t.y,t.z,0).multiply(rotation);
   return {real:rotation.toArray(),dual:dual.toArray().map(v=>v*.5)};
  });
- const v=new THREE.Vector3(),q=new THREE.Quaternion(),d=new THREE.Quaternion(),translation=new THREE.Quaternion();
+ const v=new THREE.Vector3(),q=new THREE.Quaternion(),d=new THREE.Quaternion(),translation=new THREE.Quaternion(),conjugate=new THREE.Quaternion();
+ const spineAxis=joints.spineFlex?vec(joints[1]).sub(vec(joints[0])):null;
+ const spineLengthSquared=spineAxis?Math.max(1e-8,spineAxis.lengthSq()):1;
  for(let i=0;i<weights.length;i++){
-  const real=[0,0,0,0],dual=[0,0,0,0],anchor=transforms[weights[i][0]?.[0]||0].real;
+  let rx=0,ry=0,rz=0,rw=0,dx=0,dy=0,dz=0,dw=0;
+  const anchor=transforms[weights[i][0]?.[0]||0].real;
   for(const [bone,w] of weights[i]){
-   const tr=transforms[bone],sign=tr.real.reduce((n,x,k)=>n+x*anchor[k],0)<0?-1:1;
-   for(let k=0;k<4;k++){real[k]+=tr.real[k]*w*sign;dual[k]+=tr.dual[k]*w*sign;}
+   const tr=transforms[bone],r=tr.real,du=tr.dual;
+   const factor=w*(r[0]*anchor[0]+r[1]*anchor[1]+r[2]*anchor[2]+r[3]*anchor[3]<0?-1:1);
+   rx+=r[0]*factor;ry+=r[1]*factor;rz+=r[2]*factor;rw+=r[3]*factor;
+   dx+=du[0]*factor;dy+=du[1]*factor;dz+=du[2]*factor;dw+=du[3]*factor;
   }
-  const length=Math.hypot(...real);
+  const length=Math.hypot(rx,ry,rz,rw);
   if(length<1e-8){for(let k=0;k<3;k++)target[i*3+k]=base[i*3+k];continue;}
-  q.fromArray(real.map(x=>x/length));d.fromArray(dual.map(x=>x/length));
-  translation.copy(d).multiply(q.clone().conjugate());
+  q.set(rx/length,ry/length,rz/length,rw/length);d.set(dx/length,dy/length,dz/length,dw/length);
+  translation.copy(d).multiply(conjugate.copy(q).conjugate());
   v.fromArray(base,i*3).applyQuaternion(q);v.x+=2*translation.x;v.y+=2*translation.y;v.z+=2*translation.z;v.toArray(target,i*3);
+  if(joints.spineFlex){
+   const trunkWeight=weights[i].find(([bone])=>bone===0)?.[1]||0;
+   if(trunkWeight){const u=THREE.MathUtils.clamp(((v.x-joints[0][0])*spineAxis.x+(v.y-joints[0][1])*spineAxis.y+(v.z-joints[0][2])*spineAxis.z)/spineLengthSquared,0,1);target[i*3+1]+=trunkWeight*joints.spineFlex*Math.sin(Math.PI*u);}
+  }
  }
  if(ground){let floor=Infinity;for(let i=1;i<target.length;i+=3)floor=Math.min(floor,target[i]);for(let i=1;i<target.length;i+=3)target[i]+=.015-floor;}
  return target;

@@ -11,7 +11,6 @@ os.environ.setdefault('SYNEX_HEALTH_DEMO_SEED', 'true')
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
-    monkeypatch.setenv('DEMO_ACCESS_CODE', 'test-only-demo-code')
     monkeypatch.setenv('SYNEX_HEALTH_DB_PATH', str(tmp_path / 'health.sqlite3'))
     monkeypatch.setenv('SYNEX_HEALTH_AUTH_SESSION_PATH', str(tmp_path / 'auth.sqlite3'))
     # Reimport fresh so the store picks up the tmp-path DB.
@@ -20,32 +19,21 @@ def client(tmp_path, monkeypatch):
             del sys.modules[mod]
     from starlette.testclient import TestClient
     from app.main import app
-    # Explicit server-side fixture allowlist for tests of isolation and empty accounts.
-    from app.services.auth import DEMO_USERS
-    for uid in ['nobody', 'new-student-1', 'victim', 'other', 'student-minsu']:
-        monkeypatch.setitem(DEMO_USERS, uid, {'role':'student'})
     with TestClient(app) as c:
-        c.demo_sessions = {}
-        c.headers.update(student_headers(c))
         yield c
 
 
-def student_headers(client, uid='student-jimin'):
-    if uid not in client.demo_sessions:
-        response = client.post('/api/auth/demo-login', json={'access_code':'test-only-demo-code','demo_user_id':uid, 'transport':'native'})
-        assert response.status_code == 200, response.text
-        client.demo_sessions[uid] = {'Authorization':'Bearer ' + response.json()['session_token']}
-        assert client.post('/api/consents', headers=client.demo_sessions[uid], json={'privacy_collection':True,'sensitive_health':True,'age_14_or_over':True}).status_code == 200
-    return client.demo_sessions[uid]
+def student_headers(uid='student-jimin'):
+    return {'X-Synex-Demo-User': uid}
 
 
-def counselor_headers(client):
-    return student_headers(client, 'counselor-demo')
+def counselor_headers():
+    return {'X-Synex-Demo-User': 'counselor-demo'}
 
 
 # --- Body composition CRUD -----------------------------------------------------------------
 def test_latest_measurement_is_seeded_demo_data(client):
-    r = client.get('/api/body-composition/latest', headers=student_headers(client))
+    r = client.get('/api/body-composition/latest', headers=student_headers())
     assert r.status_code == 200
     data = r.json()
     assert data['source'] == 'mock'
@@ -55,13 +43,13 @@ def test_latest_measurement_is_seeded_demo_data(client):
 def test_create_measurement_manual(client):
     payload = {'measurement_date': '2026-09-01', 'weight': 58.0, 'body_fat_percentage': 25.0,
                'segments': [{'segment': 'LEFT_LEG', 'lean_mass_kg': 6.3}]}
-    r = client.post('/api/body-composition', headers=student_headers(client), json=payload)
+    r = client.post('/api/body-composition', headers=student_headers(), json=payload)
     assert r.status_code == 200
     body = r.json()
     assert body['source'] == 'manual'
     assert body['weight'] == 58.0
 
-    r2 = client.get('/api/body-composition/latest', headers=student_headers(client))
+    r2 = client.get('/api/body-composition/latest', headers=student_headers())
     assert r2.json()['measurement_date'] == '2026-09-01'
 
 
@@ -69,7 +57,7 @@ def test_csv_import(client):
     csv_text = ('measurement_date,weight,body_fat_percentage,LEFT_LEG_lean_kg,RIGHT_LEG_lean_kg\n'
                 '2026-08-01,58.5,25.0,6.0,6.2\n')
     files = {'file': ('measurements.csv', csv_text, 'text/csv')}
-    r = client.post('/api/body-composition/import-csv', headers=student_headers(client), files=files)
+    r = client.post('/api/body-composition/import-csv', headers=student_headers(), files=files)
     assert r.status_code == 200
     body = r.json()
     assert len(body) == 1
@@ -122,7 +110,7 @@ def test_comparison_handles_missing_previous_gracefully():
 
 
 def test_body_map_endpoint_end_to_end(client):
-    r = client.get('/api/body-map/latest', headers=student_headers(client))
+    r = client.get('/api/body-map/latest', headers=student_headers())
     assert r.status_code == 200
     data = r.json()
     assert len(data['segment_deltas']) == 5
@@ -130,7 +118,7 @@ def test_body_map_endpoint_end_to_end(client):
 
 
 def test_body_map_404_without_measurement(client):
-    r = client.get('/api/body-composition/latest', headers=student_headers(client, 'nobody'))
+    r = client.get('/api/body-composition/latest', headers=student_headers('nobody'))
     assert r.status_code == 404
 
 
@@ -138,15 +126,15 @@ def test_body_map_404_without_measurement(client):
 def test_routine_generation_requires_profile(client):
     # student-jimin (the seeded demo account) already has a demo ExerciseProfile -- use a fresh,
     # unseeded demo-mode identity to exercise the "no profile yet" path.
-    r = client.post('/api/exercise-routines/generate', headers=student_headers(client, 'new-student-1'))
+    r = client.post('/api/exercise-routines/generate', headers=student_headers('new-student-1'))
     assert r.status_code == 422
 
 
 def test_routine_generation_end_to_end(client):
-    client.put('/api/exercise-profile', headers=student_headers(client),
+    client.put('/api/exercise-profile', headers=student_headers(),
                json={'goal': 'BALANCE', 'experience_level': 'BEGINNER', 'days_per_week': 3,
                      'minutes_per_session': 40, 'exercise_location': 'gym', 'available_equipment': ['dumbbell']})
-    r = client.post('/api/exercise-routines/generate', headers=student_headers(client))
+    r = client.post('/api/exercise-routines/generate', headers=student_headers())
     assert r.status_code == 200
     routine = r.json()
     assert routine['days_per_week'] == 3
@@ -155,9 +143,9 @@ def test_routine_generation_end_to_end(client):
 
 
 def test_safety_screening_blocks_generation(client):
-    client.put('/api/exercise-profile', headers=student_headers(client), json={'goal': 'BALANCE'})
-    client.put('/api/exercise-profile', headers=student_headers(client), json={'safety_chest_pain': True})
-    r = client.post('/api/exercise-routines/generate', headers=student_headers(client))
+    client.put('/api/exercise-profile', headers=student_headers(), json={'goal': 'BALANCE'})
+    client.put('/api/exercise-profile', headers=student_headers(), json={'safety_chest_pain': True})
+    r = client.post('/api/exercise-routines/generate', headers=student_headers())
     assert r.status_code == 409
     assert '상담' in r.json()['detail']
 
@@ -177,7 +165,7 @@ def test_llm_json_parse_fallback():
 def test_health_agent_analyze_deterministic_fallback(client, monkeypatch):
     monkeypatch.delenv('ANTHROPIC_API_KEY', raising=False)
     monkeypatch.setenv('HEALTH_AGENT_MODE', 'llm')  # no API key -> must fail closed to deterministic
-    r = client.post('/api/health-agent/analyze', headers=student_headers(client))
+    r = client.post('/api/health-agent/analyze', headers=student_headers())
     assert r.status_code == 200
     data = r.json()
     assert data['generated_by'] == 'deterministic'
@@ -185,7 +173,7 @@ def test_health_agent_analyze_deterministic_fallback(client, monkeypatch):
 
 
 def test_health_agent_never_names_individual_muscles(client):
-    r = client.post('/api/health-agent/analyze', headers=student_headers(client))
+    r = client.post('/api/health-agent/analyze', headers=student_headers())
     body = r.json()
     banned = ['이두근', '삼두근', '대퇴사두근', '햄스트링']
     text = ' '.join([body['summary'], body['balance_analysis'], body['body_fat_analysis']])
@@ -193,7 +181,7 @@ def test_health_agent_never_names_individual_muscles(client):
 
 
 def test_update_profile_cannot_self_escalate_role(client):
-    r = client.put('/api/health/profile', headers=student_headers(client), json={'role': 'admin', 'height': 170})
+    r = client.put('/api/health/profile', headers=student_headers(), json={'role': 'admin', 'height': 170})
     assert r.status_code == 200
     body = r.json()
     assert body['role'] == 'student'
@@ -202,20 +190,20 @@ def test_update_profile_cannot_self_escalate_role(client):
 
 # --- RBAC ----------------------------------------------------------------------------------------
 def test_student_cannot_read_counselor_roster(client):
-    r = client.get('/api/counselor/students', headers=student_headers(client))
+    r = client.get('/api/counselor/students', headers=student_headers())
     assert r.status_code == 403
 
 
 def test_counselor_can_read_roster_but_not_write_measurement(client):
-    r = client.get('/api/counselor/students', headers=counselor_headers(client))
+    r = client.get('/api/counselor/students', headers=counselor_headers())
     assert r.status_code == 200
-    r2 = client.post('/api/body-composition', headers=counselor_headers(client),
+    r2 = client.post('/api/body-composition', headers=counselor_headers(),
                       json={'measurement_date': '2026-09-01', 'weight': 60})
     assert r2.status_code == 403
 
 
 def test_counselor_student_detail(client):
-    r = client.get('/api/counselor/students/student-jimin', headers=counselor_headers(client))
+    r = client.get('/api/counselor/students/student-jimin', headers=counselor_headers())
     assert r.status_code == 200
     body = r.json()
     assert body['user']['id'] == 'student-jimin'
@@ -229,10 +217,10 @@ def test_missing_bearer_or_session_in_oidc_mode(client, monkeypatch):
 
 # Regression coverage for personalized plans and school isolation.
 def test_profile_cannot_overwrite_another_student(client):
-    client.put('/api/exercise-profile', headers=student_headers(client, 'victim'), json={'goal':'MUSCLE_GAIN'})
-    r=client.put('/api/exercise-profile', headers=student_headers(client), json={'user_id':'victim','goal':'BALANCE'})
+    client.put('/api/exercise-profile', headers=student_headers('victim'), json={'goal':'MUSCLE_GAIN'})
+    r=client.put('/api/exercise-profile', headers=student_headers(), json={'user_id':'victim','goal':'BALANCE'})
     assert r.status_code==200 and r.json()['user_id']=='student-jimin'
-    assert client.get('/api/exercise-profile',headers=student_headers(client, 'victim')).json()['goal']=='MUSCLE_GAIN'
+    assert client.get('/api/exercise-profile',headers=student_headers('victim')).json()['goal']=='MUSCLE_GAIN'
 
 
 def test_missing_balance_is_not_improvement():
@@ -256,7 +244,7 @@ def test_equal_sides_have_no_weak_side():
 def test_profile_validation(client,patch):
     if patch.get('minutes_per_session')==float('inf'):
         patch={'minutes_per_session':'Infinity'}
-    assert client.put('/api/exercise-profile',headers=student_headers(client),json=patch).status_code==422
+    assert client.put('/api/exercise-profile',headers=student_headers(),json=patch).status_code==422
 
 
 @pytest.mark.parametrize('payload',[
@@ -267,7 +255,7 @@ def test_profile_validation(client,patch):
     {'measurement_date':'not-a-date'},
 ])
 def test_bad_measurements_rejected(client,payload):
-    assert client.post('/api/body-composition',headers=student_headers(client),json=payload).status_code==422
+    assert client.post('/api/body-composition',headers=student_headers(),json=payload).status_code==422
 
 
 def test_csv_batch_rejects_without_partial_import(client):
@@ -314,7 +302,7 @@ def test_workout_identity_idempotency_and_pain(client):
     from datetime import date
     payload={'routine_id':routine['id'],'routine_exercise_id':exercise['exercise_id'], 'day_number':exercise['day_number'],
              'date':date.today().isoformat(),'exercise_name':exercise['exercise_name'],'difficulty':'moderate','mutation_id':'initial-workout'}
-    assert client.post('/api/workouts',json=payload,headers=student_headers(client, 'other')).status_code==404
+    assert client.post('/api/workouts',json=payload,headers=student_headers('other')).status_code==404
     a=client.post('/api/workouts',json=payload).json();b=client.post('/api/workouts',json=payload).json()
     assert a['id']==b['id']
     assert len(client.get('/api/workouts').json())==1
@@ -343,17 +331,17 @@ def test_school_change_and_consent_isolate_all_routes(client):
     measurement=client.get('/api/body-composition/latest').json()
     paths=['/api/counselor/students/student-jimin',f"/api/body-composition/{measurement['id']}",f"/api/exercise-routines/{routine['id']}"]
     for path in paths:
-        assert client.get(path,headers=student_headers(client, 'other-counselor')).status_code==404
-        assert client.get(path,headers=counselor_headers(client)).status_code==200
-    assert client.post('/api/counselor/students/student-jimin/notes',json={'note':'x'},headers=student_headers(client, 'other-counselor')).status_code==404
+        assert client.get(path,headers=student_headers('other-counselor')).status_code==404
+        assert client.get(path,headers=counselor_headers()).status_code==200
+    assert client.post('/api/counselor/students/student-jimin/notes',json={'note':'x'},headers=student_headers('other-counselor')).status_code==404
     assert client.put('/api/health/school',json={'school_id':'yonsei-mirae','share_with_center':False}).status_code==200
     for path in paths:
-        assert client.get(path,headers=counselor_headers(client)).status_code==404
-    assert client.get('/api/counselor/students',headers=counselor_headers(client)).json()==[]
+        assert client.get(path,headers=counselor_headers()).status_code==404
+    assert client.get('/api/counselor/students',headers=counselor_headers()).json()==[]
     assert client.put('/api/health/school',json={'school_id':'snu','share_with_center':True}).status_code==200
     for path in paths:
-        assert client.get(path,headers=counselor_headers(client)).status_code==404
-        assert client.get(path,headers=student_headers(client, 'other-counselor')).status_code==200
+        assert client.get(path,headers=counselor_headers()).status_code==404
+        assert client.get(path,headers=student_headers('other-counselor')).status_code==200
 
 
 def test_gender_reaches_body_map_and_seed_does_not_reset(client):
@@ -373,17 +361,17 @@ def test_school_directory_and_request(client):
     assert all(s['integration_status']=='not_connected' for s in schools)
     assert client.post('/api/schools/request',json={'name':'새 학교'}).status_code==200
     assert client.get('/api/admin/school-requests').status_code==403
-    assert client.get('/api/admin/school-requests',headers=student_headers(client, 'admin-demo')).json()[0]['name']=='새 학교'
+    assert client.get('/api/admin/school-requests',headers=student_headers('admin-demo')).json()[0]['name']=='새 학교'
 
 
 def test_admin_registers_school_and_assigns_counselor(client):
-    admin=student_headers(client, 'admin-demo')
+    admin=student_headers('admin-demo')
     school={'id':'new-campus','name':'추가 대학','region':'서울'}
     assert client.post('/api/admin/schools',json=school).status_code==403
     assert client.post('/api/admin/schools',json=school,headers=admin).status_code==200
     assert any(s['id']=='new-campus' for s in client.get('/api/schools').json())
     assert client.put('/api/admin/counselors/counselor-demo/school',json={'school_id':'new-campus'},headers=admin).status_code==200
-    assert client.get('/api/counselor/students',headers=counselor_headers(client)).json()==[]
+    assert client.get('/api/counselor/students',headers=counselor_headers()).json()==[]
 
 
 def test_profile_change_marks_plan_stale(client):
@@ -416,7 +404,7 @@ def test_billing_demo_lifecycle_and_isolation(client, monkeypatch):
     monkeypatch.setenv('BILLING_MODE', 'demo')
     active = client.post('/api/billing/demo', json={'action':'activate'}).json()
     assert active['active'] and active['will_renew']
-    assert not client.get('/api/billing/subscription', headers=student_headers(client, 'other')).json()['active']
+    assert not client.get('/api/billing/subscription', headers=student_headers('other')).json()['active']
     cancelled = client.post('/api/billing/demo', json={'action':'cancel'}).json()
     assert cancelled['active'] and not cancelled['will_renew']
     assert client.get('/api/billing/report?month=2026-06').status_code == 200

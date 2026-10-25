@@ -15,8 +15,8 @@ it('morphs height, fat, muscle and independent sides with finite bounded positio
  const tall=morphPositions(base,{...m,height:200},p);expect(Math.max(...tall)).toBeGreaterThan(Math.max(...a));
 });
 it('missing measurement deltas remain unknown, percent uses difference',()=>{const d=measurementDeltas({weight:60},{weight:58});expect(d[0].value).toBe(-2);expect(d[1].value).toBeNull();});
-it('deforms every 3D-enabled motion; holds preserve pose',()=>{
- const weights=bindSurface(base);for(const id of Object.keys(MOTIONS).filter(id=>!MOTIONS[id].twoDimensionalOnly)){const a=deformSurface(base,weights,poseJoints(id,0),new Float32Array(base.length));const b=deformSurface(base,weights,poseJoints(id,.31),new Float32Array(base.length));expect(b.every(Number.isFinite)).toBe(true);if(MOTIONS[id].hold)expect(a).toEqual(b);else expect(a,id).not.toEqual(b);}
+it('deforms every 3D-enabled motion; holds preserve pose with bounded plank breathing',()=>{
+ const weights=bindSurface(base);for(const id of Object.keys(MOTIONS).filter(id=>!MOTIONS[id].twoDimensionalOnly)){const a=deformSurface(base,weights,poseJoints(id,0),new Float32Array(base.length));const b=deformSurface(base,weights,poseJoints(id,.31),new Float32Array(base.length));expect(b.every(Number.isFinite)).toBe(true);if(id==='plank'){const displacement=b.reduce((maximum,value,index)=>Math.max(maximum,Math.abs(value-a[index])),0);expect(displacement).toBeLessThan(.01);expect(a).not.toEqual(b);}else if(MOTIONS[id].hold)expect(a).toEqual(b);else expect(a,id).not.toEqual(b);}
 },20000);
 it('pose math and confidence guard do not count unobserved repetitions',()=>{
  expect(jointAngle({x:0,y:1},{x:0,y:0},{x:1,y:0})).toBeCloseTo(90);

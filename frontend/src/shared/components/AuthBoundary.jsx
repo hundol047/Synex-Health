@@ -1,4 +1,4 @@
-import {getDemoAccessCode,setDemoAccessCode} from '../lib/demoAccess.js';
+import {LOCAL_ONLY,LOCAL_ACCOUNT,LOCAL_NAMESPACE} from '../lib/localMode.js';
 import React,{createContext,useContext,useEffect,useState,useRef} from 'react';
 import {selectLoginConfig,validateLoginRequest,authorizationParameters} from '../lib/login.js';
 import { Capacitor } from '@capacitor/core';
@@ -6,7 +6,7 @@ import { setAccessToken,configureRefresh } from '../lib/session.js';
 import {clearRememberedSession,rememberNativeSession,restoreRememberedSession} from '../lib/persistentSession.js';
 import {clearLocalAccount} from '../lib/accountLifecycle.js';
 import {bindOfflineAccount,offlineState} from '../lib/offline.js';
-import { api,BASE,getDemoUser,loginDemo } from '../lib/api.js';
+import { api,BASE,getDemoUser } from '../lib/api.js';
 const AuthContext=createContext({demo:true,role:'student'});
 export const useAuth=()=>useContext(AuthContext);
 const b64=bytes=>btoa(String.fromCharCode(...bytes)).replaceAll('+','-').replaceAll('/','_').replaceAll('=','');
@@ -23,7 +23,28 @@ async function discovery(config){
  return info;
 }
 export default function AuthBoundary({children}){
- const [demoCode,setDemoCode]=useState('');
+ return LOCAL_ONLY?<DeviceBoundary>{children}</DeviceBoundary>:<ServerAuthBoundary>{children}</ServerAuthBoundary>;
+}
+export function DeviceBoundary({children}){
+ const [ready,setReady]=useState(false),[error,setError]=useState('');
+ const attempt=useRef(0),timer=useRef(null),controller=useRef(null);
+ async function open(){
+  const current=++attempt.current;clearTimeout(timer.current);controller.current?.abort();setError('');
+  const pending=new AbortController();controller.current=pending;
+  timer.current=setTimeout(()=>{if(attempt.current===current){attempt.current++;pending.abort();setError('기기 저장소의 응답이 늦어지고 있습니다. 다시 시도하거나 앱을 완전히 종료한 뒤 열어주세요.');}},20000);
+  try{
+   await bindOfflineAccount(LOCAL_ACCOUNT,LOCAL_NAMESPACE,{signal:pending.signal});
+   if(attempt.current!==current)return;
+   if(!offlineState().ready)throw Error(offlineState().storageError||'기기 저장소를 열 수 없습니다.');
+   setReady(true);
+  }catch(e){if(attempt.current===current)setError(e.message);}
+  finally{if(attempt.current===current)clearTimeout(timer.current);}
+ }
+ useEffect(()=>{open();return()=>{attempt.current++;clearTimeout(timer.current);controller.current?.abort();};},[]);
+ if(!ready)return <main className="health-main"><section className="card"><h1>이 폰에서 사용</h1><p>로그인 서버 없이 기기 내 암호화 저장소를 엽니다.</p>{error?<><p role="alert">{error}</p><button className="btn" onClick={open}>기기 저장소 다시 열기</button></>:<p role="status">기기 저장소 여는 중…</p>}</section></main>;
+ return <AuthContext.Provider value={{demo:false,local:true,role:'student'}}>{children}</AuthContext.Provider>;
+}
+function ServerAuthBoundary({children}){
  const [remember,setRemember]=useState(false),[notice,setNotice]=useState(''),[schoolSettingsError,setSchoolSettingsError]=useState('');
  const callbackRunning=useRef(false);
  const [reviewEnabled,setReviewEnabled]=useState(false),[reviewName,setReviewName]=useState(''),[reviewPassword,setReviewPassword]=useState('');
@@ -34,9 +55,9 @@ export default function AuthBoundary({children}){
   const health=await api('/api/health/status');
   setReviewEnabled(health.review_login===true);
   if(health.demo&&import.meta.env.VITE_RELEASE_BUILD==='true')throw Error('운영 서버 인증 설정이 올바르지 않습니다.');
-  if(health.demo){if(!getDemoAccessCode()){setAuth({demo:true,login:true});return;}try{const session=await loginDemo();await bindOfflineAccount(session.id,BASE);setAuth({demo:true,role:session.role});}catch(e){setDemoAccessCode('');setAuth({demo:true,login:true});setError(e.message);}return;}
+  if(health.demo){await bindOfflineAccount(getDemoUser(),BASE);setAuth({demo:true,role:'student'});return;}
   const me=await api('/api/health/profile');await bindOfflineAccount(me.id,BASE);setAuth({demo:false,role:me.role});
-
+  if(me.role==='student')void api('/api/integrations/inbody').then(async status=>{if(!status)return;const last=Date.parse(status.last_sync_time||'');if(['MAPPED','SYNCED','ERROR'].includes(status.operational_state)&&(!Number.isFinite(last)||Date.now()-last>=6*60*60*1000))await api('/api/integrations/inbody/sync?trigger=app_login',{});}).catch(e=>{if(e.status!==429)setNotice('건강센터 데이터를 가져오지 못했습니다. 기존 기록은 계속 사용할 수 있습니다.');});
  }catch(e){if(e.status===401){setAuth({demo:false,login:true});}else setError(e.message);}}
  async function callback(url){
   const received=new URL(url),target=new URL(redirect());
@@ -88,12 +109,10 @@ export default function AuthBoundary({children}){
   loadSettings();
   if(location.pathname==='/auth/callback') callback(location.href); else restoreRememberedSession(BASE).catch(()=>setNotice('저장된 로그인을 불러오지 못했습니다. 다시 로그인해 주세요.')).then(load);
   let handle;
-  const expired=()=>{setDemoAccessCode('');setAccessToken('');clearRememberedSession().catch(()=>setNotice('저장된 로그인 정보를 지우지 못했습니다. 기기 상태를 확인하세요.'));setAuth({demo:false,login:true});};
-  const switched=()=>{const id=getDemoUser();setAuth({demo:true,role:id==='admin-demo'?'admin':id==='counselor-demo'?'counselor':'student',account:id});};
-  window.addEventListener('synex-demo-account-changed',switched);
+  const expired=()=>{setAccessToken('');clearRememberedSession().catch(()=>setNotice('저장된 로그인 정보를 지우지 못했습니다. 기기 상태를 확인하세요.'));setAuth({demo:false,login:true});};
   window.addEventListener('synex-session-expired',expired);
   const listener=native?import('@capacitor/app').then(({App})=>App.addListener('appUrlOpen',({url})=>callback(url))).then(h=>{handle=h;}).catch(()=>setNotice('앱 로그인 연결을 초기화하지 못했습니다. 앱을 완전히 종료한 뒤 다시 시도해 주세요.')):Promise.resolve();
-  return()=>{window.removeEventListener('synex-demo-account-changed',switched);listener.then(()=>handle?.remove()).catch(()=>{});window.removeEventListener('synex-session-expired',expired);};
+  return()=>{listener.then(()=>handle?.remove()).catch(()=>{});window.removeEventListener('synex-session-expired',expired);};
  },[]);
  async function login(){setPending(true);setError('');try{
   const selected=school?schools.find(c=>c.school_id===school):provider;
@@ -104,7 +123,6 @@ export default function AuthBoundary({children}){
   const url=new URL(info.authorization_endpoint);url.search=authorizationParameters(config,{state,challenge,redirectUri:redirect()}).toString();
   if(native){const {Browser}=await import('@capacitor/browser');await Browser.open({url:url.href});setPending(false);}else location.assign(url.href);
  }catch(e){setError(e.message);setPending(false);}}
- if(auth?.demo&&auth.login)return <main className="health-main"><form className="card" onSubmit={async e=>{e.preventDefault();setPending(true);setError('');try{const session=await loginDemo(getDemoUser(),demoCode);await bindOfflineAccount(session.id,BASE);setAuth({demo:true,role:session.role});setDemoCode('');}catch(err){setError(err.message);}finally{setPending(false);}}}><h1>데모 접근 코드</h1><p>시연용 가상 데이터만 사용하세요. 실제 건강정보를 입력하지 마세요.</p><label>데모 접근 코드<input type="password" autoComplete="off" value={demoCode} onChange={e=>setDemoCode(e.target.value)}/></label>{error&&<p role="alert">{error}</p>}<button disabled={pending||!demoCode}>데모 열기</button></form></main>;
- if(auth&&!auth.login)return <AuthContext.Provider key={auth.account || getDemoUser()} value={{...auth,logout:async()=>{if((offlineState().pending||offlineState().drafts)&&!window.confirm('미전송 또는 진행 중 임시 기록이 있습니다. 로그아웃하면 이 기기의 미전송·진행 중 기록이 삭제됩니다. 먼저 전송하는 것을 권장합니다. 그래도 로그아웃할까요?'))return;try{try{await api('/api/auth/logout',{});}catch(err){if(err.status!==401)throw err;}await api('/api/auth/session',undefined,{method:'DELETE'});await clearLocalAccount();setDemoAccessCode('');setAuth({demo:false,login:true});}catch{window.alert('로그아웃을 완료하지 못했습니다. 네트워크와 기기 상태를 확인한 뒤 다시 시도하세요.');}}}}>{notice&&<p role="status">{notice}</p>}{children}</AuthContext.Provider>;
+ if(auth&&!auth.login)return <AuthContext.Provider value={{...auth,logout:async()=>{if((offlineState().pending||offlineState().drafts)&&!window.confirm('미전송 또는 진행 중 임시 기록이 있습니다. 로그아웃하면 이 기기의 미전송·진행 중 기록이 삭제됩니다. 먼저 전송하는 것을 권장합니다. 그래도 로그아웃할까요?'))return;try{try{await api('/api/auth/logout',{});}catch(err){if(err.status!==401)throw err;}await api('/api/auth/session',undefined,{method:'DELETE'});await clearLocalAccount();setAuth({demo:false,login:true});}catch{window.alert('로그아웃을 완료하지 못했습니다. 네트워크와 기기 상태를 확인한 뒤 다시 시도하세요.');}}}}>{notice&&<p role="status">{notice}</p>}{children}</AuthContext.Provider>;
  return <main className="health-main"><section className="membership-hero"><span className="eyebrow">SYNEX HEALTH</span><h1>나의 건강 기록을 안전하게</h1><p>내 계정으로 로그인하여 건강 기록을 연결하세요. 회원가입과 비밀번호 재설정은 연결된 인증 서비스에서 진행합니다. 학교 연동은 선택할 수 있습니다.</p></section><section className="card">{notice&&<p role="status">{notice}</p>}{schoolSettingsError&&<p role="alert">{schoolSettingsError} <button className="btn" onClick={loadSettings}>학교 설정 다시 불러오기</button></p>}{settingsError&&<p role="alert">{settingsError} <button className="btn" onClick={loadSettings}>다시 불러오기</button></p>}{settingsLoaded&&!settingsError&&!provider&&!schools.length&&<p role="status">계정 로그인 연결을 준비 중입니다. 연결이 완료되면 회원가입과 로그인을 이용할 수 있습니다.</p>}{error&&<p role="alert">{error}</p>}{schools.length>0&&<label>학교 로그인 <select value={school} onChange={e=>setSchool(e.target.value)}><option value="">일반 계정 로그인</option>{schools.map(s=><option key={s.school_id} value={s.school_id}>{s.school_id}</option>)}</select></label>}{reviewEnabled&&<form onSubmit={async e=>{e.preventDefault();setPending(true);try{const r=await api('/api/auth/review',{username:reviewName,password:reviewPassword});setAccessToken(r.access_token);setReviewPassword('');await load();}catch(err){setError(err.message);}finally{setPending(false);}}}><h2>App Review · 심사 계정</h2><label>심사 ID<input autoComplete="username" value={reviewName} onChange={e=>setReviewName(e.target.value)}/></label><label>비밀번호<input type="password" autoComplete="current-password" value={reviewPassword} onChange={e=>setReviewPassword(e.target.value)}/></label><button className="btn" disabled={pending}>심사 로그인</button></form>}{auth?.login&&<label><input type="checkbox" checked={remember} onChange={e=>setRemember(e.target.checked)}/>이 기기에서 로그인 유지 (최대 8시간 · 공용 기기에서는 끄세요)</label>}{auth?.login?<button className="btn btn-primary" disabled={pending||!settingsLoaded||(!school&&!provider)} onClick={login}>{pending?'로그인 중…':school?'학교 계정으로 로그인':'로그인 · 회원가입'}</button>:<><p>서버 연결을 확인하고 있습니다.</p><button className="btn" onClick={load}>다시 연결</button></>}</section></main>;
 }

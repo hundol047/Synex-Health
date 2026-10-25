@@ -6,8 +6,6 @@ Unlike SynexAgent's Clinical Workspace (which keeps patient data in-memory via a
 Health data is genuinely persisted here: measurements/routines/workouts must survive a server
 restart between a student's first measurement and their re-measurement weeks later.
 """
-from app.services.release_config import auth_mode
-
 import json, os, sqlite3, uuid
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -103,7 +101,7 @@ class HealthStore:
         return value
 
     def assign_inbody_mapping(self, uid, mapping):
-        """Serialize global provider subject ownership and clear stale sync atomically."""
+        """Serialize provider-account ownership within its institution connection."""
         with self.connect() as db:
             if self.database:
                 db.execute("SELECT pg_advisory_xact_lock(?)", (73820146,))
@@ -113,7 +111,8 @@ class HealthStore:
             for other, payload in rows:
                 prior = json.loads(payload)
                 if other != uid and (
-                    prior.get('subject', '').strip() == mapping['subject'] or
+                    (prior.get('provider_scope','global') == mapping.get('provider_scope','global') and
+                     prior.get('subject', '').strip() == mapping['subject']) or
                     (prior.get('school_id') == mapping['school_id'] and
                      prior.get('school_user_id', '').strip() == mapping['school_user_id'])
                 ):
@@ -203,7 +202,7 @@ class HealthStore:
         if height is not None:
             in_height = [r for r in candidates if (r.height_min is None or height >= r.height_min) and (r.height_max is None or height <= r.height_max)]
             candidates = in_height
-        if os.getenv('APP_ENV')=='production' or auth_mode()!='demo':
+        if os.getenv('APP_ENV')=='production' or os.getenv('AUTH_MODE','demo')!='demo':
             candidates=[r for r in candidates if r.source!='demo' and r.publication and r.version and r.effective_date]
         candidates.sort(key=lambda r: (r.source == 'demo', r.gender == 'any'))
         return candidates[0] if candidates else None

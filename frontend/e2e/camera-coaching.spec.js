@@ -1,5 +1,5 @@
-import {test,expect} from './fixtures.js';
-test.use({viewport:{width:390,height:844},permissions:['camera'],launchOptions:{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE||undefined,args:['--enable-unsafe-swiftshader','--disable-dev-shm-usage','--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream']}});
+import {test,expect} from '@playwright/test';
+test.use({viewport:{width:390,height:844},permissions:['camera'],launchOptions:{args:['--enable-unsafe-swiftshader','--disable-dev-shm-usage','--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream']}});
 test('camera split screen stays silent until opted in and releases preview on exercise change',async({page},info)=>{
  let analysisRequests=0;const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.addInitScript(()=>localStorage.setItem('synex-onboarding-v1','done'));

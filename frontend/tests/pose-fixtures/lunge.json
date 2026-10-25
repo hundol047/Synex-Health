@@ -1236,9 +1236,9 @@
       ]
     },
     {
-      "name": "narrow_stance",
+      "name": "standing_feet_together_not_a_form_error",
       "expected_detected": true,
-      "expected_correction": "발 간격",
+      "expected_correction": null,
       "frames": [
         {
           "time_ms": 0,

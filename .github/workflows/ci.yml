@@ -6,9 +6,6 @@ on:
 permissions:
   contents: read
 env:
-  AUTH_MODE: demo
-  SYNEX_ALLOW_DEMO: "true"
-  DEMO_ACCESS_CODE: ci-only-demo-access-code
   VITE_BUILD_COMMIT: ${{ github.sha }}
   SYNEX_VERSION_CODE: ${{ github.run_number }}
   SYNEX_VERSION_NAME: 1.0.${{ github.run_number }}
@@ -94,8 +91,6 @@ jobs:
       - run: pip install -r backend/requirements.txt
       - run: npm ci
         working-directory: frontend
-      - run: npm run pose:setup
-        working-directory: frontend
       - run: npx playwright install --with-deps chromium
         working-directory: frontend
       - run: npx playwright test
@@ -111,8 +106,7 @@ jobs:
   android-compile:
     runs-on: ubuntu-latest
     env:
-      # Debug preview opens the local test entry; production uses android-release.yml.
-      VITE_API_BASE: ""
+      VITE_API_BASE: ${{ vars.VITE_API_BASE }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -193,7 +187,7 @@ jobs:
           fi
       - name: Verify served model, legal pages and release marker
         run: |
-          docker run -d --name synex-smoke -p 8123:8000 -e APP_ENV=development -e AUTH_MODE=demo -e SYNEX_ALLOW_DEMO=true -e DEMO_ACCESS_CODE=ci-only-demo-access-code synex-release-test
+          docker run -d --name synex-smoke -p 8123:8000 -e APP_ENV=development -e AUTH_MODE=demo synex-release-test
           python scripts/verify-container.py
       - name: Container logs
         if: failure()

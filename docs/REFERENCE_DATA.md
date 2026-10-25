@@ -8,3 +8,11 @@ Evidence registry: backend/app/health/evidence.json. Deterministic recommendatio
 
 
 Status definitions: VERIFIED means a named automated/browser check passed; IMPLEMENTED / NOT DEVICE VERIFIED means code exists without physical-device evidence; EXTERNAL SETUP REQUIRED needs operator systems; NOT IMPLEMENTED means no working feature is claimed.
+
+## Personal mannequin literature comparison
+
+The personal mannequin now exposes published whole-body MRI SMM means as a
+separate literature comparison. It does not register a clinically reviewed
+server cohort or generate regional means. Source access and verification depth,
+research population and device-method limits are documented in
+[PERSONAL_MANNEQUIN.md](PERSONAL_MANNEQUIN.md).

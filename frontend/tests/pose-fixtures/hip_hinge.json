@@ -620,9 +620,9 @@
       ]
     },
     {
-      "name": "torso_lean",
+      "name": "forward_lean_not_a_form_error",
       "expected_detected": true,
-      "expected_correction": "상체 기울기",
+      "expected_correction": null,
       "frames": [
         {
           "time_ms": 0,
@@ -1236,9 +1236,9 @@
       ]
     },
     {
-      "name": "squat_like",
+      "name": "front_view_knee_flexion_not_assessed",
       "expected_detected": true,
-      "expected_correction": "스쿼트와 구분",
+      "expected_correction": null,
       "frames": [
         {
           "time_ms": 0,

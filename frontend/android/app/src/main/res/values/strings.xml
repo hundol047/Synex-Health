@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Synex Health</string>
-    <string name="title_activity_main">Synex Health</string>
-    <string name="package_name">com.synex.health</string>
-    <string name="custom_url_scheme">com.synex.health</string>
+    <string name="app_name">Synex Health 개인용</string>
+    <string name="title_activity_main">Synex Health 개인용</string>
+    <string name="package_name">com.synex.health.personal</string>
+    <string name="custom_url_scheme">com.synex.health.personal</string>
 </resources>

@@ -3,8 +3,8 @@ import {Capacitor} from '@capacitor/core';
 import {clearRememberedSession} from './persistentSession.js';
 import {setAccessToken} from './session.js';
 import {logoutPurchases} from './subscriptions.js';
-export async function clearLocalAccount(userId,namespace){
- await clearOffline(userId,namespace);
+export async function clearLocalAccount(){
+ await clearOffline();
  setAccessToken('');
  await clearRememberedSession();
  for(const storage of [localStorage,sessionStorage])for(const key of Object.keys(storage))if(key.startsWith('synex'))storage.removeItem(key);

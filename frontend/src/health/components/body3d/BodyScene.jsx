@@ -5,82 +5,138 @@ import * as THREE from 'three';
 import { Line } from '@react-three/drei';
 import HumanBody from './HumanBody.jsx';
 import MuscleOverlay from './MuscleOverlay.jsx';
+import Mannequin from './Mannequin.jsx';
+import {BODY_FOCUS_AREAS,focusCameraFrame} from './mannequinFocus.js';
 import {MODEL_NOTICE} from './overlayMath.js';
 import {RenderPerformance} from './renderPerformance.js';
 import {recordRenderer} from './rendererStats.js';
 import { Skeleton } from '../../../shared/components/ui.jsx';
 
-export default function BodyScene({gender='unspecified',segmentColors,onSelect,selectedSegment,onHover,height=480,interactive=true,measurement,profile,layer='body',slice,sharedCamera,sceneId='body',performanceMode='my_body',overlay}) {
+export default function BodyScene({gender='unspecified',segmentColors,onSelect,selectedSegment,onHover,height=480,interactive=true,measurement,profile,layer='body',slice,sharedCamera,sceneId='body',performanceMode='my_body',overlay,mannequin,focusRegion='whole',focusRevision=0,onFocusReset,containerRef}) {
+  const mannequinProfile=useMemo(()=>({...profile,gender}),[profile,gender]);
   const planes=useMemo(()=>!slice?.enabled?[]:[new THREE.Plane(new THREE.Vector3(...({horizontal:[0,-1,0],sagittal:[-1,0,0],coronal:[0,0,-1]}[slice.axis])),slice.position)], [slice?.enabled,slice?.axis,slice?.position]);
   const [visible,setVisible]=useState(true),[quality,setQuality]=useState('Balanced');
   const lowPower=quality==='Low Power',setLowPower=v=>setQuality(typeof v==='function'?(v(lowPower)?'Low Power':'Balanced'):(v?'Low Power':'Balanced'));
   const effectiveOverlay=overlay&&lowPower?{...overlay,options:{...overlay.options,referenceStyle:'wireframe',interpolate:false}}:overlay;
+  const paired=!!(mannequin?.referenceMeasurement&&mannequin.options.layout==='side-by-side'&&mannequin.options.showMy&&mannequin.options.showReference);
+  const cameraWidth=paired?2.95:1.45,cameraSpacing=mannequin&&interactive?1.17:1;
   const lastTap=useRef(0);
   useEffect(()=>{const changed=()=>setVisible(!document.hidden);document.addEventListener('visibilitychange',changed);return()=>document.removeEventListener('visibilitychange',changed);},[]);
   const [view,setView]=useState('front');const controls=useRef();const canvas=useRef();
-  function nudge(angle=0,zoom=1){const c=controls.current;if(!c)return;if(sharedCamera)sharedCamera.current.owner=sceneId;const damping=c.enableDamping;c.enableDamping=false;c.update();c.object.position.applyAxisAngle(new THREE.Vector3(0,1,0),angle);c.object.position.multiplyScalar(zoom).clampLength(1.3,8);c.update();c.enableDamping=damping;}
+  const [cameraRequest,setCameraRequest]=useState({view:'front',revision:0});
+  useEffect(()=>{const next=BODY_FOCUS_AREAS.find(a=>a.id===focusRegion)?.view||'front';setView(next);setCameraRequest(r=>({view:next,revision:r.revision+1}));},[focusRegion,focusRevision]);
+  function nudge(angle=0,zoom=1){const c=controls.current;if(!c)return;if(sharedCamera)sharedCamera.current.owner=sceneId;const damping=c.enableDamping;c.enableDamping=false;c.update();c.object.position.sub(c.target).applyAxisAngle(new THREE.Vector3(0,1,0),angle).multiplyScalar(zoom).clampLength(mannequin&&focusRegion!=='whole'?.35:1.3,8).add(c.target);c.update();c.enableDamping=damping;}
   function preset(id){
+    if(mannequin&&interactive){setView(id);setCameraRequest(r=>({view:id,revision:r.revision+1}));return;}
     const control=controls.current;if(!control)return;
-    const d=fitDistance(control.object.aspect,(measurement?.height||profile?.height_cm||178)/178);
+    const d=fitDistance(control.object.aspect,(measurement?.height||profile?.height_cm||178)/178,cameraWidth)*cameraSpacing;
     const positions={front:[0,.05,d],back:[0,.05,-d],left:[d,.05,0],right:[-d,.05,0]};
     const damping=control.enableDamping;control.enableDamping=false;control.update();
     if(sharedCamera)sharedCamera.current.owner=sceneId;control.object.position.set(...positions[id]);control.target.set(0,0,0);control.update();control.enableDamping=damping;setView(id);
   }
-  return <div className="body-scene" style={{height,position:'relative',borderRadius:'var(--radius)',overflow:'hidden',background:'radial-gradient(ellipse at 50% 40%,#fff,#edf0f3)'}}>
-    <div style={{position:'absolute',top:10,left:10,zIndex:1,display:'flex',gap:4,flexWrap:'wrap'}}>
+  function resetView(){onFocusReset?.();preset('front');}
+  return <div ref={containerRef} className={`body-scene ${mannequin?'mannequin-scene':''} ${paired?'mannequin-paired-scene':''}`} style={{height,position:'relative',borderRadius:'var(--radius)',overflow:'hidden',background:mannequin?'#f1f5f7':'radial-gradient(ellipse at 50% 40%,#fff,#edf0f3)'}}>
+    {interactive&&<div style={{position:'absolute',top:10,left:10,zIndex:1,display:'flex',gap:4,flexWrap:'wrap'}}>
       {[['front','정면'],['back','후면'],['left','왼쪽'],['right','오른쪽']].map(([id,label])=><button type="button" aria-pressed={view===id} className={`btn ${view===id?'btn-primary':'btn-ghost'}`} style={{fontSize:'.72rem',padding:'6px 9px'}} key={id} onClick={()=>preset(id)}>{label}</button>)}
-      <button className="btn btn-ghost" onClick={()=>preset('front')}>초기화</button><label>품질 <select aria-label="3D 품질" value={quality} onChange={e=>setQuality(e.target.value)}>{['High','Balanced','Low Power'].map(q=><option key={q}>{q}</option>)}</select></label><button className="btn btn-ghost" aria-pressed={lowPower} onClick={()=>setLowPower(v=>!v)}>저전력 모드 {lowPower?'켜짐':'꺼짐'}</button>
-    </div>
+      <button className="btn btn-ghost" style={mannequin?{fontSize:'.72rem',padding:'6px 9px'}:undefined} onClick={resetView}>초기화</button>{!mannequin&&<><label>품질 <select aria-label="3D 품질" value={quality} onChange={e=>setQuality(e.target.value)}>{['High','Balanced','Low Power'].map(q=><option key={q}>{q}</option>)}</select></label><button className="btn btn-ghost" aria-pressed={lowPower} onClick={()=>setLowPower(v=>!v)}>저전력 모드 {lowPower?'켜짐':'꺼짐'}</button></>}
+    </div>}
     {interactive&&<div className="body-zoom-controls"><button className="btn btn-ghost" aria-label="3D 확대" onClick={()=>nudge(0,.85)}>＋</button><button className="btn btn-ghost" aria-label="3D 축소" onClick={()=>nudge(0,1.15)}>−</button></div>}
     <Suspense fallback={<Skeleton height={height}/>}>
       <Canvas frameloop={visible?'demand':'never'} fallback={<p role="status">3D를 지원하지 않는 환경입니다. 아래 수치 비교를 이용하세요.</p>} tabIndex={interactive?0:-1} onKeyDown={e=>{if(!interactive)return;if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();nudge(e.key==='ArrowLeft'?.2:-.2);}if(e.key==='+'||e.key==='-'){e.preventDefault();nudge(0,e.key==='+'?.85:1.15);}}} ref={canvas} onCreated={({gl})=>{gl.localClippingEnabled=true;}} shadows={!lowPower} camera={{position:[0,.05,3.05],fov:38}} dpr={lowPower?.75:quality==='Balanced'?[1,1.25]:[1,2]}
-        style={{touchAction:interactive?'none':'auto',cursor:interactive?'grab':'default'}}
+        style={{touchAction:interactive?'none':'auto',cursor:interactive?'grab':'default',...(mannequin&&interactive?{position:'absolute',top:104,left:0,width:'100%',height:'calc(100% - 104px)'}:{})}}
         title={MODEL_NOTICE} aria-label="3D 인체 모형. 한 손가락으로 회전, 두 손가락으로 확대·축소할 수 있습니다."
         onPointerDown={()=>{if(canvas.current)canvas.current.style.cursor='grabbing';}}
-        onPointerUp={e=>{if(canvas.current)canvas.current.style.cursor='grab';if(e.pointerType==='touch'){const t=performance.now();if(t-lastTap.current<300)preset('front');lastTap.current=t;}}} onDoubleClick={()=>preset('front')}>
-        <ambientLight intensity={.8}/>
-        <directionalLight position={[-3,4,4]} intensity={2.1} castShadow={!lowPower} shadow-mapSize={quality==='High'?[1024,1024]:[512,512]}/>
-        <directionalLight position={[3,1,2]} intensity={.65}/>
-        <directionalLight position={[0,2,-3]} intensity={1.1}/>
-        <group position={[0,-.89*Math.max(.6,Math.min(1.4,(measurement?.height||profile?.height_cm||178)/178)),0]}>
-          <OverlayGuard key={overlay?'overlay':'body'} fallback={<HumanBody measurement={measurement} profile={profile} gender={gender} segmentColors={{}}/>}>{overlay?<MuscleOverlay {...effectiveOverlay} gender={gender} height={measurement?.height||profile?.height_cm||178} clippingPlanes={planes} selectedSegment={selectedSegment} onSelect={onSelect} onHover={onHover}/>:<HumanBody measurement={measurement} profile={profile} layer={layer} clippingPlanes={planes} gender={gender} segmentColors={segmentColors} onSelect={onSelect} selectedSegment={selectedSegment} onHover={onHover}/>}</OverlayGuard>
+        onPointerUp={e=>{if(canvas.current)canvas.current.style.cursor='grab';if(e.pointerType==='touch'){const t=performance.now();if(t-lastTap.current<300)resetView();lastTap.current=t;}}} onDoubleClick={resetView}>
+        <ambientLight intensity={mannequin?.7:.8}/>
+        <directionalLight position={[-3,4,4]} intensity={mannequin?1.5:2.1} castShadow={!lowPower} shadow-mapSize={quality==='High'?[1024,1024]:[512,512]}/>
+        <directionalLight position={[3,1,2]} intensity={mannequin?.5:.65}/>
+        <directionalLight position={[0,2,-3]} intensity={mannequin?.4:1.1}/>
+        <group position={[0,-(mannequin&&interactive?1:.89)*(mannequin?(measurement?.height||profile?.height_cm||178)/178:Math.max(.6,Math.min(1.4,(measurement?.height||profile?.height_cm||178)/178))),0]}>
+          <OverlayGuard key={mannequin?'mannequin':overlay?'overlay':'body'} fallback={<HumanBody measurement={measurement} profile={profile} gender={gender} segmentColors={{}}/>}>{mannequin?<Mannequin {...mannequin} {...{measurement,profile:mannequinProfile,selectedSegment:focusRegion==='whole'?selectedSegment:null,onSelect,onHover,clippingPlanes:planes}}/>:overlay?<MuscleOverlay {...effectiveOverlay} gender={gender} height={measurement?.height||profile?.height_cm||178} clippingPlanes={planes} selectedSegment={selectedSegment} onSelect={onSelect} onHover={onHover}/>:<HumanBody measurement={measurement} profile={profile} layer={layer} clippingPlanes={planes} gender={gender} segmentColors={segmentColors} onSelect={onSelect} selectedSegment={selectedSegment} onHover={onHover}/>}</OverlayGuard>
           {layer==='skeleton'&&<IllustrativeSkeleton scale={(measurement?.height||profile?.height_cm||178)/178}/>}
-          {!overlay&&!lowPower&&<ContactShadows position={[0,.006,0]} opacity={.3} scale={2.4} blur={2.8} far={1}/>}
+          {!overlay&&!mannequin&&!lowPower&&<ContactShadows position={[0,.006,0]} opacity={.3} scale={2.4} blur={2.8} far={1}/>}
         </group>
-        <RendererMonitor performanceMode={performanceMode} quality={quality} overlay={overlay} canvas={canvas} lowPower={lowPower} onSlow={()=>setLowPower(true)}/>
-        <FitCamera scale={(measurement?.height||profile?.height_cm||178)/178}/>
+        <RendererMonitor performanceMode={performanceMode} quality={quality} overlay={mannequin?.referenceMeasurement||overlay} mannequin={mannequin} focusRegion={focusRegion} canvas={canvas} lowPower={lowPower} onSlow={()=>setLowPower(true)}/>
+        {mannequin&&interactive?<MannequinCamera controls={controls} focusRegion={focusRegion} request={cameraRequest} spacing={cameraSpacing} width={cameraWidth} scale={(measurement?.height||profile?.height_cm||178)/178}/>:<FitCamera spacing={cameraSpacing} width={cameraWidth} scale={(measurement?.height||profile?.height_cm||178)/178}/>}
         <CameraSync controls={controls} canvas={canvas} shared={sharedCamera} id={sceneId}/>
         <OrbitControls ref={controls} enabled={interactive} enablePan={false} enableRotate enableZoom
           enableDamping dampingFactor={.08} rotateSpeed={.75} zoomSpeed={.8}
-          minDistance={1.3} maxDistance={8} minPolarAngle={Math.PI/5} maxPolarAngle={Math.PI*.78}
+          minDistance={mannequin&&focusRegion!=='whole'?.35:1.3} maxDistance={8} minPolarAngle={Math.PI/5} maxPolarAngle={Math.PI*.78}
           touches={{ONE:THREE.TOUCH.ROTATE,TWO:THREE.TOUCH.DOLLY_PAN}}
           target={[0,0,0]} onStart={()=>{setView('custom');if(sharedCamera)sharedCamera.current.owner=sceneId;}}
           onChange={()=>{if(canvas.current&&controls.current){if(sharedCamera&&sharedCamera.current.owner===sceneId)sharedCamera.current.position=controls.current.object.position.toArray();canvas.current.dataset.camera=controls.current.object.position.toArray().map(n=>n.toFixed(4)).join(',');}}}/>
       </Canvas>
     </Suspense>
-    {interactive&&<div style={{position:'absolute',bottom:10,left:0,right:0,textAlign:'center',pointerEvents:'none',fontSize:'.73rem',color:'#536172'}}>한 손가락 드래그로 회전 · 두 손가락으로 확대·축소 · 부위 터치로 선택</div>}
+    {mannequin&&interactive&&<div className="mannequin-scene-key" aria-label="3D 비교 색상과 골격근량">
+      {mannequin.options.showMy&&<span className="own"><i/>내 몸 <strong>{Number.isFinite(measurement?.skeletal_muscle_mass)?Number(measurement.skeletal_muscle_mass.toFixed(2))+' kg':'—'}</strong></span>}
+      {mannequin.options.showReference&&mannequin.referenceMeasurement&&<span className="reference"><i/>평균 <strong>{Number.isFinite(mannequin.referenceMeasurement.skeletal_muscle_mass)?Number(mannequin.referenceMeasurement.skeletal_muscle_mass.toFixed(2))+' kg':'—'}</strong></span>}
+    </div>}
+    {interactive&&<div style={{position:'absolute',bottom:10,left:0,right:0,textAlign:'center',pointerEvents:'none',fontSize:'.73rem',color:mannequin?'#4e6268':'#536172'}}>드래그로 회전 · 두 손가락으로 확대 · 부위 터치로 선택</div>}
   </div>;
 }
 
-function CameraSync({controls,canvas,shared,id}){useFrame(()=>{const c=controls.current;if(!c)return;if(shared?.current.position&&shared.current.owner!==id){const damping=c.enableDamping;c.enableDamping=false;c.update();c.object.position.fromArray(shared.current.position);c.target.set(0,0,0);c.update();c.enableDamping=damping;}if(canvas.current)canvas.current.dataset.camera=c.object.position.toArray().map(n=>n.toFixed(4)).join(',');});return null;}
+function CameraSync({controls,canvas,shared,id}){useFrame(()=>{const c=controls.current;if(!c)return;if(shared?.current.position&&shared.current.owner!==id){const damping=c.enableDamping;c.enableDamping=false;c.update();c.object.position.fromArray(shared.current.position);c.target.set(0,0,0);c.update();c.enableDamping=damping;}if(canvas.current){canvas.current.dataset.camera=c.object.position.toArray().map(n=>n.toFixed(4)).join(',');canvas.current.dataset.cameraTarget=c.target.toArray().map(n=>n.toFixed(4)).join(',');}});return null;}
 function IllustrativeSkeleton({scale=1}){const paths=[[[0,1.68,0],[0,1.4,0],[0,1,0]],[[.25,1.42,0],[0,1.42,0],[-.25,1.42,0]],[[.25,1.42,0],[.37,1.17,0],[.48,.95,0]], [[-.25,1.42,0],[-.37,1.17,0],[-.48,.95,0]], [[.1,1,0],[.1,.53,0],[.1,.08,0]], [[-.1,1,0],[-.1,.53,0],[-.1,.08,0]]];return <group scale={scale}>{paths.map((points,i)=><Line key={i} points={points} color="#54647d" lineWidth={4}/>)}</group>;}
 
-const fitDistance=(aspect,scale)=>Math.max(3.05,2.9*scale,1.45*scale/Math.max(.25,aspect)/(2*Math.tan(19*Math.PI/180)));
-function FitCamera({scale}){const {camera,size}=useThree();useEffect(()=>{camera.position.normalize().multiplyScalar(fitDistance(size.width/size.height,scale));camera.updateProjectionMatrix();},[camera,size.width,size.height,scale]);return null;}
+const fitDistance=(aspect,scale,width=1.45)=>Math.max(3.05,2.9*scale,width*scale/Math.max(.25,aspect)/(2*Math.tan(19*Math.PI/180)));
+function FitCamera({scale,spacing=1,width=1.45}){const {camera,size,invalidate}=useThree();useEffect(()=>{camera.position.normalize().multiplyScalar(fitDistance(size.width/size.height,scale,width)*spacing);camera.updateProjectionMatrix();invalidate();},[camera,size.width,size.height,scale,spacing,width,invalidate]);return null;}
+
+function MannequinCamera({controls,focusRegion,request,scale,spacing,width}){
+ const {scene,camera,size,invalidate}=useThree(),previous=useRef(''),remaining=useRef(0);
+ useFrame(()=>{
+  const control=controls.current;if(!control)return;
+  const meshes=['my-muscle','reference-average'].map(name=>scene.getObjectByName(name)).filter(Boolean);
+  if(!meshes.length)return;
+  const key=[focusRegion,request.view,request.revision,scale,spacing,width,size.width,size.height,...meshes.map(m=>m.geometry.id)].join(':');
+  if(key!==previous.current){previous.current=key;remaining.current=2;}
+  if(!remaining.current)return;
+  const direction=new THREE.Vector3(...({front:[0,0,1],back:[0,0,-1],left:[1,0,0],right:[-1,0,0]}[request.view]));
+  const bounds=new THREE.Box3();
+  for(const mesh of meshes){
+   const box=mesh.geometry.userData.focusBounds?.[focusRegion];
+   if(box&&!box.isEmpty()){mesh.updateWorldMatrix(true,false);bounds.union(box.clone().applyMatrix4(mesh.matrixWorld));}
+  }
+  const frame=focusRegion!=='whole'&&!bounds.isEmpty()?focusCameraFrame(bounds,direction,size.width/size.height,camera.fov):
+   {target:new THREE.Vector3(),position:direction.multiplyScalar(fitDistance(size.width/size.height,scale,width)*spacing)};
+  const damping=control.enableDamping;control.enableDamping=false;control.update();
+  control.target.copy(frame.target);camera.position.copy(frame.position);camera.updateProjectionMatrix();control.update();control.enableDamping=damping;
+  // A second frame lets camera-facing paired placements settle before fitting.
+  remaining.current--;invalidate();
+ },-.5);
+ return null;
+}
 
 class OverlayGuard extends React.Component {
  constructor(props){super(props);this.state={failed:false};}
  static getDerivedStateFromError(){return {failed:true};}
  render(){return this.state.failed?this.props.fallback:this.props.children;}
 }
-function RendererMonitor({performanceMode,quality,overlay,canvas,lowPower,onSlow}){
+function RendererMonitor({performanceMode,quality,overlay,mannequin,focusRegion,canvas,lowPower,onSlow}){
  const {gl,scene,camera,size}=useThree();const monitor=useRef(new RenderPerformance());
  useEffect(()=>{if(!lowPower)monitor.current=new RenderPerformance();},[lowPower,performanceMode,quality]);
  useFrame(()=>{const start=performance.now();gl.render(scene,camera);const t=performance.now();const perf=monitor.current.sample(t,t-start);
   if(perf.fallbackActive&&!lowPower)onSlow();
-  let meshes=0,vertices=0;const layers=[];scene.traverse(o=>{if(o.isMesh){meshes++;vertices+=o.geometry?.attributes.position?.count||0;if(o.name==='my-muscle'||o.name==='reference-average')layers.push({name:o.name,opacity:o.material[1]?.opacity,wireframe:o.material[1]?.wireframe,regions:o.geometry.userData.regions,regionPixels:import.meta.env.DEV?Object.fromEntries(Object.entries(o.geometry.userData.regions||{}).map(([key,r])=>{const v=o.localToWorld(new THREE.Vector3(...r.center)).project(camera);return [key,[(v.x+1)*size.width/2,(1-v.y)*size.height/2]];})):undefined});}});
+  let meshes=0,vertices=0,contour=null,ownContour=null;const layers=[];scene.traverse(o=>{
+   if(o.name==='my-contour')ownContour={segments:o.userData.segmentCount||0,color:`#${o.material.color.getHexString()}`,opacity:o.material.opacity,depthTest:o.material.depthTest,source:'personal-mesh-edges',dashed:o.material.dashed===true,lineWidth:o.material.linewidth};
+   if(o.name==='reference-contour')contour={segments:o.userData.segmentCount||0,color:`#${o.material.color.getHexString()}`,opacity:o.material.opacity,depthTest:o.material.depthTest,source:'reference-mesh-edges',dashed:o.material.dashed===true,lineWidth:o.material.linewidth};
+   if(o.isMesh){meshes++;vertices+=o.geometry?.attributes.position?.count||0;if(o.name==='my-muscle'||o.name==='reference-average'){
+   const bounds=o.geometry.boundingBox,screenBounds=bounds?projectBounds(o,bounds,camera,size):undefined;
+   const regionBounds=o.geometry.userData.focusBounds?.[focusRegion],focusScreenBounds=regionBounds&&!regionBounds.isEmpty()?projectBounds(o,regionBounds,camera,size):null;
+   const depth=scene.getObjectByName(o.userData.headDepthSource),head=o.geometry.groups.find(g=>g.materialIndex===0),headOcclusion=depth?{sourceBody:depth.name.replace('-head-depth',''),colorWrite:depth.material.colorWrite,depthWrite:depth.material.depthWrite,depthTest:depth.material.depthTest,sharedPositions:depth.geometry.attributes.position.array===o.geometry.attributes.position.array,triangles:depth.geometry.index.count/3,surfaceTriangles:head?.count/3,polygonOffset:o.material[0]?.polygonOffset,lessEqual:o.material[0]?.depthFunc===THREE.LessEqualDepth}:null;
+   layers.push({name:o.name,opacity:o.material[1]?.opacity,color:o.material[1]?.color?`#${o.material[1].color.getHexString()}`:undefined,headColor:o.material[0]?.color?`#${o.material[0].color.getHexString()}`:undefined,headVisible:o.material[0]?.visible,headOcclusion,roughness:o.material[1]?.roughness,wireframe:o.material[1]?.wireframe,placement:{origin:o.getWorldPosition(new THREE.Vector3()).toArray(),rotation:o.getWorldQuaternion(new THREE.Quaternion()).toArray(),scale:o.getWorldScale(new THREE.Vector3()).toArray()},geometryId:o.geometry.id,shapeFingerprint:o.geometry.userData.shapeFingerprint,vertexCount:o.geometry.attributes.position.count,screenBounds,focusScreenBounds,regions:o.geometry.userData.regions,regionPixels:import.meta.env.DEV?Object.fromEntries(Object.entries(o.geometry.userData.regions||{}).map(([key,r])=>{const v=o.localToWorld(new THREE.Vector3(...r.center)).project(camera);return [key,[(v.x+1)*size.width/2,(1-v.y)*size.height/2]];})):undefined});
+  }}});
   const stats={performanceMode,quality,renderer:gl.getContext().getParameter(gl.getContext().RENDERER),webgl:gl.capabilities.isWebGL2?'WebGL 2':'WebGL 1',overlayAvailable:!!overlay,meshCount:meshes,vertices,...perf,fallbackActive:lowPower,overlayEnabled:!!overlay,mode:'contiguous demand frames; CPU render submission ms, not GPU time',geometryBuffers:gl.info.memory.geometries,layers};
   if(import.meta.env.DEV){stats.renderer=gl.getContext().getParameter(gl.getContext().RENDERER);if(canvas.current)canvas.current.dataset.overlay=JSON.stringify(stats);}
+  // Record only render state, without body measurements, after the real draw.
+  // This also verifies the two actual meshes in the packaged production app.
+  if(mannequin&&canvas.current)canvas.current.dataset.mannequin=JSON.stringify({focusRegion,layout:mannequin.options.layout,meshCount:meshes,contour,ownContour,layers:layers.map(({name,opacity,color,headColor,headVisible,headOcclusion,roughness,wireframe,placement,geometryId,shapeFingerprint,vertexCount,screenBounds,focusScreenBounds})=>({name,opacity,color,headColor,headVisible,headOcclusion,roughness,wireframe,placement,geometryId,shapeFingerprint,vertexCount,screenBounds,focusScreenBounds}))});
   recordRenderer(stats);
  },1);return null;
+}
+function projectBounds(mesh,bounds,camera,size){
+ const pixels=[];
+ for(const x of [bounds.min.x,bounds.max.x])for(const y of [bounds.min.y,bounds.max.y])for(const z of [bounds.min.z,bounds.max.z]){
+  const point=mesh.localToWorld(new THREE.Vector3(x,y,z)).project(camera);pixels.push([(point.x+1)*size.width/2,(1-point.y)*size.height/2]);
+ }
+ return {left:Math.min(...pixels.map(p=>p[0])),right:Math.max(...pixels.map(p=>p[0])),top:Math.min(...pixels.map(p=>p[1])),bottom:Math.max(...pixels.map(p=>p[1]))};
 }

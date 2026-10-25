@@ -67,10 +67,3 @@ it('persists checksum, client identity, revision and failed/conflict states',asy
  await expect(offline.syncWorkouts(async()=>{expect(offline.offlineState().entries[0].status).toBe('SYNCING');throw Error('offline');})).rejects.toThrow();
  expect(offline.offlineState().entries[0].status).toBe('FAILED');
 });
-it('explicit deletion removes locked account ciphertext after consent withdrawal',async()=>{
- await offline.bindOfflineAccount('withdrawn-account','server');await offline.queueWorkout(body());
- await offline.saveDraft('record:test',{memo:'private'});
- offline.lockOffline();await offline.clearOffline('withdrawn-account','server');
- await offline.bindOfflineAccount('withdrawn-account','server');
- expect(offline.offlineState().pending).toBe(0);expect(await offline.loadDraft('record:test')).toBeNull();
-});

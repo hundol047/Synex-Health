@@ -102,10 +102,13 @@ class MeasurementValidation(BaseModel):
         if self.body_fat_percentage is not None and not 0 <= self.body_fat_percentage <= 100:
             raise ValueError('체지방률은 0–100% 범위입니다.')
         if self.weight is not None:
-            for name in ('skeletal_muscle_mass', 'body_fat_mass', 'fat_free_mass', 'total_body_water'):
+            for name in ('skeletal_muscle_mass', 'body_fat_mass', 'fat_free_mass', 'total_body_water', 'bone_mass', 'mineral_mass'):
                 value = getattr(self, name, None)
                 if value is not None and value > self.weight:
                     raise ValueError(f'{name}: 체중보다 클 수 없습니다.')
+            if self.skeletal_muscle_mass is not None and self.body_fat_percentage is not None:
+                if self.skeletal_muscle_mass + self.weight * self.body_fat_percentage / 100 > self.weight + 0.01:
+                    raise ValueError('골격근량과 체지방량의 합은 체중보다 클 수 없습니다.')
         if len({s.segment for s in self.segments}) != len(self.segments):
             raise ValueError('측정 부위가 중복되었습니다.')
         return self
@@ -126,6 +129,10 @@ class BodyCompositionMeasurement(MeasurementValidation):
     total_body_water: Optional[float] = None
     basal_metabolic_rate: Optional[float] = None
     waist_circumference: Optional[float] = Field(default=None,ge=30,le=250,allow_inf_nan=False)
+    chest_circumference: Optional[float] = Field(default=None,ge=30,le=250,allow_inf_nan=False)
+    hip_circumference: Optional[float] = Field(default=None,ge=30,le=250,allow_inf_nan=False)
+    bone_mass: Optional[float] = Field(default=None,ge=0,le=20,allow_inf_nan=False)
+    mineral_mass: Optional[float] = Field(default=None,ge=0,le=20,allow_inf_nan=False)
     visceral_fat_level: Optional[float] = None
     smi: Optional[float] = None
     device_name: str = ''
@@ -147,6 +154,10 @@ class BodyCompositionCreateRequest(MeasurementValidation):
     total_body_water: Optional[float] = None
     basal_metabolic_rate: Optional[float] = None
     waist_circumference: Optional[float] = Field(default=None,ge=30,le=250,allow_inf_nan=False)
+    chest_circumference: Optional[float] = Field(default=None,ge=30,le=250,allow_inf_nan=False)
+    hip_circumference: Optional[float] = Field(default=None,ge=30,le=250,allow_inf_nan=False)
+    bone_mass: Optional[float] = Field(default=None,ge=0,le=20,allow_inf_nan=False)
+    mineral_mass: Optional[float] = Field(default=None,ge=0,le=20,allow_inf_nan=False)
     visceral_fat_level: Optional[float] = None
     smi: Optional[float] = None
     device_name: str = ''

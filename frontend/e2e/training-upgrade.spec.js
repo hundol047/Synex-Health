@@ -1,4 +1,4 @@
-import {test,expect} from './fixtures.js';
+import {test,expect} from '@playwright/test';
 test('mobile replacement, set recording and weekly progress round trip',async({page},info)=>{
  await page.addInitScript(()=>localStorage.setItem('synex-onboarding-v1','done'));
  await page.setViewportSize({width:390,height:844});await page.goto('/health/routine');

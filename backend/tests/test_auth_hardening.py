@@ -52,9 +52,6 @@ def test_cached_keys_rotation_expiry_and_failed_fetch_are_bounded(monkeypatch):
 def setup_login(client,monkeypatch):
     import jwt
     from app.services import auth
-    # End the fixture's demo session before exercising the independent OIDC flow.
-    assert client.post('/api/auth/logout').status_code == 200
-    client.headers.pop('Authorization', None)
     client.base_url='https://testserver'
     monkeypatch.setenv('AUTH_MODE','oidc')
     monkeypatch.setenv('OIDC_ISSUER','https://id.test/')

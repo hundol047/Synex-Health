@@ -1,0 +1,80 @@
+name: Android Personal APK (no deployment)
+on:
+  push:
+    branches: [fix/android-local]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  personal-apk:
+    runs-on: ubuntu-latest
+    env:
+      VITE_BUILD_COMMIT: ${{ github.sha }}
+      SYNEX_VERSION_CODE: ${{ github.run_number }}
+      SYNEX_VERSION_NAME: 1.0.${{ github.run_number }}
+      SYNEX_APPLICATION_ID: com.synex.health.personal
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
+      - run: npm ci
+        working-directory: frontend
+      - run: npm test
+        working-directory: frontend
+      - run: npx playwright install --with-deps chromium && npx playwright test --config playwright.local.config.js
+        working-directory: frontend
+      - run: npm run android:local
+        working-directory: frontend
+      - name: Enable KVM for native Android checks
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Verify startup on Android WebView and Keystore
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: cd frontend/android && ./gradlew :app:connectedDebugAndroidTest --no-daemon
+      - name: Verify personal mode inside the APK
+        run: |
+          python - <<'PY'
+          import json, os, zipfile, subprocess
+          with zipfile.ZipFile('frontend/android/app/build/outputs/apk/debug/app-debug.apk') as apk:
+              marker=json.loads(apk.read('assets/public/release-config.json'))
+              assert marker['localOnly'] is True and marker['release'] is False
+              assert not marker['api']
+              scripts=b'\n'.join(apk.read(n) for n in apk.namelist() if n.startswith('assets/public/') and n.endswith('.js'))
+              assert b'device-basic-v1' in scripts
+              assert os.environ['VITE_BUILD_COMMIT'][:8].encode() in scripts
+          badging=subprocess.check_output([os.environ['ANDROID_HOME']+'/build-tools/36.0.0/aapt','dump','badging','frontend/android/app/build/outputs/apk/debug/app-debug.apk'],text=True)
+          assert "name='com.synex.health.personal'" in badging
+          assert 'Synex Health 개인용' in badging
+          print('Verified personal mode, package ID, app label, local algorithm and current build ID')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Synex-Health-Android-Personal-${{ github.sha }}
+          path: frontend/android/app/build/outputs/apk/debug/app-debug.apk
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: personal-screen-checks
+          path: frontend/test-results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-native-test-results
+          path: frontend/android/app/build/outputs/androidTest-results

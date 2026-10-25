@@ -112,8 +112,9 @@ export default function ProgressPage() {
         </div>
       </Card>
 
-      <Card title="그래프 수치 확인"><div className="data-table-wrap"><table><caption>선택 기간 체성분 측정값</caption><thead><tr><th>날짜</th><th>체중 kg</th><th>골격근량 kg</th><th>체지방 %</th><th>BMI</th></tr></thead><tbody>{chartData.map((r,i)=><tr key={r.date+i}>{['date','weight','muscle','fatPercent','bmi'].map(k=><td key={k}>{r[k]??'측정 없음'}</td>)}</tr>)}</tbody></table></div></Card>
-      <Card title="부위별 제지방량 변화">
+      <Card title="그래프 수치 확인"><div className="data-table-wrap"><table><caption>선택 기간 체성분 측정값</caption><thead><tr><th>날짜</th><th>체중 kg</th><th>골격근량 kg</th><th>체지방률 %</th><th>BMI</th></tr></thead><tbody>{chartData.map((r,i)=><tr key={r.date+i}>{['date','weight','muscle','fatPercent','bmi'].map(k=><td key={k}>{r[k]??'측정 없음'}</td>)}</tr>)}</tbody></table></div></Card>
+      <Card title="팔·다리 근육 분석 값의 변화">
+        <p className="muted">결과지의 부위별 근육 분석 값(제지방량)입니다. 근육과 수분 등 다른 조직을 포함한 무게이며 전신 골격근량과는 다릅니다.</p>
         <div style={{ width: '100%', height: 260 }}>
           <ResponsiveContainer>
             <LineChart data={segmentData}>

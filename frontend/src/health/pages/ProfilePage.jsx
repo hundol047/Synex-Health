@@ -1,3 +1,4 @@
+import {LOCAL_ONLY} from '../../shared/lib/localMode.js';
 import {saveProfileChanges} from '../lib/saveProfileChanges.js';
 import {registerDraftNavigation} from '../../shared/lib/draftNavigation.js';
 import {EQUIPMENT_LABELS} from '../lib/exerciseLabels.js';
@@ -54,6 +55,8 @@ export default function ProfilePage() {
 
   const confirmedHealth=useRef(null);
   const [heightInput, setHeightInput] = useState('');
+  const [name,setName]=useState('');
+  const [birthDate,setBirthDate]=useState('');
   const [gender,setGender]=useState('unspecified');
   const [form, setForm] = useState(null);
   const [equipmentSet, setEquipmentSet] = useState(new Set());
@@ -65,9 +68,9 @@ export default function ProfilePage() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    if(profile.data)confirmedHealth.current={height:profile.data.height,gender:profile.data.gender};
+    if(profile.data)confirmedHealth.current={height:profile.data.height,gender:profile.data.gender,birth_date:profile.data.birth_date||null};
     if (profile.data?.height != null) setHeightInput(String(profile.data.height));
-    setGender(profile.data?.gender||'unspecified');
+    setGender(profile.data?.gender||'unspecified');setName(profile.data?.name||'');setBirthDate(profile.data?.birth_date||'');
   }, [profile.data]);
 
   useEffect(() => {
@@ -94,7 +97,7 @@ export default function ProfilePage() {
     try {
       const heightNum = heightInput === '' ? null : Number(heightInput);
       const current=confirmedHealth.current||profile.data;
-      const health=current&&(heightNum!==current.height||gender!==current.gender)?{height:heightNum,gender}:null;
+      const health=current&&(heightNum!==current.height||gender!==current.gender||(LOCAL_ONLY&&(name!==profile.data?.name||(birthDate||null)!==current.birth_date)))?{height:heightNum,gender,...(LOCAL_ONLY?{name,birth_date:birthDate||null}: {})}:null;
       await saveProfileChanges(HealthAPI,health,{
         experience_level: form.experience_level,
         goal: form.goal,
@@ -127,14 +130,14 @@ export default function ProfilePage() {
 
   return (
     <>
-      <section className="card"><h2>나의 건강 메뉴</h2><div className="membership-actions"><Link className="btn btn-ghost" to="/health/goals">목표</Link><Link className="btn btn-ghost" to="/health/subscription">멤버십</Link><Link className="btn btn-ghost" to="/health/library">운동 라이브러리</Link><Link className="btn btn-ghost" to="/health/pose">카메라 자세 코치</Link><Link className="btn btn-ghost" to="/health/connections">기기·알림 연동</Link><Link className="btn btn-ghost" to="/health/privacy">개인정보 관리</Link></div><div className="membership-actions"><Link className="btn btn-ghost" to="/health/workout">운동 기록</Link><Link className="btn btn-ghost" to="/health/progress">변화 추적</Link><Link className="btn btn-ghost" to="/health/comparison">측정 비교</Link><Link className="btn btn-ghost" to="/health/agent">AI 코치</Link><Link className="btn btn-ghost" to="/health/report">월별 리포트</Link></div></section>
+      <section className="card"><h2>나의 건강 메뉴</h2><div className="membership-actions"><Link className="btn btn-ghost" to="/health/goals">목표</Link>{!LOCAL_ONLY&&<Link className="btn btn-ghost" to="/health/subscription">멤버십</Link>}<Link className="btn btn-ghost" to="/health/library">운동 라이브러리</Link><Link className="btn btn-ghost" to="/health/pose">운동 카메라 코치</Link><Link className="btn btn-ghost" to="/health/connections">학교·기기·알림 연결</Link><Link className="btn btn-ghost" to="/health/privacy">개인정보 관리</Link></div><div className="membership-actions"><Link className="btn btn-ghost" to="/health/workout">운동 기록</Link><Link className="btn btn-ghost" to="/health/progress">변화 추적</Link><Link className="btn btn-ghost" to="/health/comparison">측정 비교</Link>{!LOCAL_ONLY&&<Link className="btn btn-ghost" to="/health/agent">AI 코치</Link>}{!LOCAL_ONLY&&<Link className="btn btn-ghost" to="/health/report">월별 리포트</Link>}</div></section>
       <SchoolSelector profile={profile.data} onSaved={profile.reload}/>
       <MeasurementEntry />
       <div onChangeCapture={()=>{setDirty(true);setSaved(false);}}><fieldset disabled={saving} style={{border:0,padding:0,minWidth:0}}><Card title="내 정보">
         <div className="profile-grid">
           <div>
             <label className="field-label">이름</label>
-            <p>{profile.data.name || '—'}</p>
+            {LOCAL_ONLY?<input aria-label="이름" className="text-input" maxLength={30} value={name} onChange={e=>setName(e.target.value)} placeholder="이름 또는 별명"/>:<p>{profile.data.name || '—'}</p>}
           </div>
           <div>
             <label className="field-label">성별</label>
@@ -142,7 +145,7 @@ export default function ProfilePage() {
           </div>
           <div>
             <label className="field-label">생년월일</label>
-            <p>{profile.data.birth_date || '측정되지 않음'}</p>
+            {LOCAL_ONLY?<><input aria-label="생년월일" className="text-input" type="date" min="1900-01-01" max={new Date().toISOString().slice(0,10)} value={birthDate} onChange={e=>setBirthDate(e.target.value)}/><p className="muted">측정일 기준 나이로 문헌 평균 대상 연령을 확인합니다.</p></>:<p>{profile.data.birth_date || '측정되지 않음'}</p>}
           </div>
           <div>
             <label className="field-label" htmlFor="height-input">키 (cm)</label>

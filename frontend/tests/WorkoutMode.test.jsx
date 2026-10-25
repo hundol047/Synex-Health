@@ -14,7 +14,7 @@ it('records completed sets/RPE/reps, advances, and pain stops the workout with a
  await user.type(screen.getByLabelText('이번 세트 반복 횟수'),'10');await user.type(screen.getByLabelText('이번 세트 중량 kg'),'12.5');await user.click(screen.getByRole('button',{name:/세트 완료/}));await user.type(screen.getByLabelText('운동 힘듦 (RPE 1–10)'),'6');await user.click(screen.getByRole('button',{name:'완료 기록 · 다음 운동'}));
  expect(await screen.findByText('운동 따라하기 · 2 / 2')).toBeTruthy();expect(HealthAPI.createWorkout.mock.calls[0][0]).toMatchObject({set_records:[{reps:10,weight_kg:12.5,kind:'working'}],sets_completed:1,reps_completed:'10',rpe:6,completed:true});
  await user.clear(screen.getByLabelText('통증 (0–10)'));await user.type(screen.getByLabelText('통증 (0–10)'),'3');await user.click(screen.getByRole('button',{name:'통증 기록 · 운동 중단'}));
- expect(await screen.findByText('오늘의 운동 요약')).toBeTruthy();expect(screen.getByRole('alert').textContent).toContain('진행을 중단');expect(HealthAPI.createWorkout.mock.calls[1][0]).toMatchObject({pain:3,completed:false,sets_completed:0});
+ expect(await screen.findByText('오늘의 운동 요약')).toBeTruthy();expect(screen.getAllByRole('alert').some(el=>el.textContent.includes('진행을 중단'))).toBe(true);expect(HealthAPI.createWorkout.mock.calls[1][0]).toMatchObject({pain:3,completed:false,sets_completed:0});
 });
 it('pauses active time, blocks set completion while paused, and guards unsaved exit',async()=>{
  let now=100000;const clock=vi.spyOn(Date,'now').mockImplementation(()=>now),confirm=vi.spyOn(window,'confirm').mockReturnValue(false);
@@ -26,4 +26,11 @@ it('pauses active time, blocks set completion while paused, and guards unsaved e
   await user.click(screen.getByRole('button',{name:'세트 완료'}));await user.click(screen.getByRole('button',{name:'완료 기록 · 다음 운동'}));
   expect(HealthAPI.createWorkout.mock.lastCall[0].actual_minutes).toBe(2);
  }finally{clock.mockRestore();confirm.mockRestore();}
+});
+it('skips each exercise without saving completion or losing access to the final result',async()=>{
+ HealthAPI.createWorkout.mockClear();const user=userEvent.setup();render(<WorkoutMode routine={{id:'skip'}} exercises={exercises} onSaved={vi.fn()} onClose={vi.fn()}/>);
+ expect(screen.getAllByRole('button',{name:'이 운동 건너뛰기'})).toHaveLength(1);
+ await user.type(screen.getByLabelText('이번 세트 반복 횟수'),'5');await user.click(screen.getByRole('button',{name:'이 운동 건너뛰기'}));
+ expect(await screen.findByText('운동 따라하기 · 2 / 2')).toBeTruthy();await user.click(screen.getByRole('button',{name:'이 운동 건너뛰기'}));
+ expect(await screen.findByText('오늘의 운동 결과')).toBeTruthy();expect(HealthAPI.createWorkout).not.toHaveBeenCalled();expect(screen.getByLabelText('운동 1 실제 운동 분').value).toBe('0');expect(screen.getByLabelText('운동 2 실제 운동 분').value).toBe('0');expect(screen.queryByText('자동 진행 중')).toBeNull();
 });

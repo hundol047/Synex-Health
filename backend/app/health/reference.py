@@ -1,6 +1,4 @@
 """Coherent cohort means. Never derive a mean from a reference band or device percentage."""
-from app.services.release_config import auth_mode
-
 import hashlib
 import json
 import os
@@ -55,7 +53,7 @@ def average_comparison(user, measurement, references):
     height = measurement.height or user.height
     bmi = measurement.bmi
     if bmi is None and measurement.weight and height: bmi = measurement.weight / (height / 100) ** 2
-    strict = os.getenv('PILOT_MODE')=='true' or os.getenv('APP_ENV') == 'production' or auth_mode() != 'demo'
+    strict = os.getenv('PILOT_MODE')=='true' or os.getenv('APP_ENV') == 'production' or os.getenv('AUTH_MODE', 'demo') != 'demo'
     buckets = {}
     incompatible=False
     for r in references:

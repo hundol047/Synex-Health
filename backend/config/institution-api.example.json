@@ -1,0 +1,43 @@
+{
+  "replace-with-registered-campus-id": {
+    "enabled": false,
+    "connection_id": "approved-center-v1",
+    "approval_reference": "https://internal.example.org/approvals/replace-with-real-record",
+    "base_url": "https://official-api.example.org",
+    "api_key_env": "APPROVED_CENTER_API_KEY",
+    "auth_style": "api_key",
+    "api_key_header": "X-API-Key",
+    "contract": {
+      "request": {
+        "path": "/replace-with-official-readings-path",
+        "method": "GET",
+        "subject_location": "query",
+        "subject_key": "member_id"
+      },
+      "records_path": "/data/measurements",
+      "subject_path": "/member_id",
+      "fields": {
+        "external_id": {"path": "/measurement_id"},
+        "measurement_date": {"path": "/measured_at", "date_format": "iso"},
+        "height": {"path": "/height_cm", "unit": "cm"},
+        "weight": {"path": "/weight_kg", "unit": "kg", "required": true},
+        "skeletal_muscle_mass": {"path": "/skeletal_muscle_kg", "unit": "kg"},
+        "body_fat_percentage": {"path": "/body_fat_percent", "unit": "percent"},
+        "bone_mass": {"path": "/bone_mass_kg", "unit": "kg"}
+      },
+      "segments": [
+        {"segment": "LEFT_ARM", "fields": {"lean_mass_kg": {"path": "/segments/left_arm/lean_kg", "unit": "kg"}, "lean_reference_percent": {"path": "/segments/left_arm/reference_percent", "unit": "percent"}}},
+        {"segment": "RIGHT_ARM", "fields": {"lean_mass_kg": {"path": "/segments/right_arm/lean_kg", "unit": "kg"}, "lean_reference_percent": {"path": "/segments/right_arm/reference_percent", "unit": "percent"}}},
+        {"segment": "LEFT_LEG", "fields": {"lean_mass_kg": {"path": "/segments/left_leg/lean_kg", "unit": "kg"}, "lean_reference_percent": {"path": "/segments/left_leg/reference_percent", "unit": "percent"}}},
+        {"segment": "RIGHT_LEG", "fields": {"lean_mass_kg": {"path": "/segments/right_leg/lean_kg", "unit": "kg"}, "lean_reference_percent": {"path": "/segments/right_leg/reference_percent", "unit": "percent"}}},
+        {"segment": "TRUNK", "fields": {"lean_mass_kg": {"path": "/segments/trunk/lean_kg", "unit": "kg"}, "lean_reference_percent": {"path": "/segments/trunk/reference_percent", "unit": "percent"}}}
+      ],
+      "pagination": {
+        "location": "query",
+        "request_key": "cursor",
+        "next_cursor_path": "/next_cursor",
+        "max_pages": 20
+      }
+    }
+  }
+}

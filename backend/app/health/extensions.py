@@ -23,12 +23,8 @@ def advanced_body(user:User=Depends(require('measurement:read'))):
 
 @router.get('/advanced/pose')
 def pose_access(user:User=Depends(require('health:read'))):
-    from .consents import ensure_consent
-    ensure_consent(user.id)
-    from .pose_release import enforce_pose_release
-    enforce_pose_release()
     plus(user)
-    return {'enabled':True,'upload_video':False,'exercises':[e['id'] for e in __import__('app.health.exercise_catalog',fromlist=['CATALOG']).CATALOG],'notice':'설명용 자세 추정. 진단·정확한 관절각 측정이 아닙니다.'}
+    return {'enabled':True,'upload_video':False,'exercises':['squat','lunge','push_up','plank','shoulder_press','curl','lateral_raise','bent_row','hip_hinge','glute_bridge','front_raise','side_lunge'],'notice':'설명용 자세 추정. 진단·정확한 관절각 측정이 아닙니다.'}
 
 class GoalRequest(BaseModel):
     model_config=ConfigDict(allow_inf_nan=False)
@@ -80,7 +76,6 @@ def purge(uid,account=False):
         db.execute('DELETE FROM counselor_notes WHERE student_id=?',(uid,))
         db.execute('UPDATE users SET share_with_center=0 WHERE id=?',(uid,))
         if account:
-            db.execute('DELETE FROM processing_consents WHERE user_id=?',(uid,))
             db.execute('DELETE FROM users WHERE id=?',(uid,))
             db.execute('DELETE FROM billing_accounts WHERE user_id=?',(uid,))
             db.execute('DELETE FROM school_requests WHERE user_id=?',(uid,))
@@ -133,33 +128,31 @@ def delete_workout(wid:str,user:User=Depends(require('workout:write'))):
 
 @router.get('/integrations/inbody')
 def provider_status(user:User=Depends(require('health:read'))):
-    from .providers.configured import inbody
-    adapter=inbody(store)
+    from .providers.configured import inbody,mapping_matches
     state=store.preference(user.id,'inbody_sync',{})
     mapping=store.preference(user.id,'inbody_mapping',{})
     u=_require_user_record(user.id)
+    adapter=inbody(store,u.school_id)
     membership=store.preference(user.id,'membership',{})
-    mapped=bool(mapping.get('subject') and mapping.get('school_id')==u.school_id and membership.get('verified') and membership.get('school_id')==u.school_id)
+    mapped=bool(mapping_matches(adapter,mapping,u.school_id) and membership.get('verified') and membership.get('school_id')==u.school_id)
     ready=adapter.configured() and mapped
-    operational='DISCONNECTED' if not adapter.configured() else 'ERROR' if state.get('status')=='error' else 'SYNCED' if ready and state.get('status')=='connected' else 'MAPPED' if ready else 'AUTHENTICATED' if state.get('authenticated_at') else 'CONFIGURED'
+    operational='DISCONNECTED' if not adapter.configured() else 'CONFIGURED' if not ready else 'ERROR' if state.get('status')=='error' else 'SYNCED' if state.get('status')=='connected' else 'MAPPED'
     latest=store.latest_measurement(user.id)
-    return {'operational_state':operational,'last_measurement_date':latest.measurement_date if latest else None,'sync_policy':{'manual_refresh':'available','app_login':'available on explicit request','scheduled_server':'scripts/sync_inbody.py','webhook':'EXTERNAL SETUP REQUIRED'},'status':state.get('status','pending') if ready else 'not_connected','last_sync_time':state.get('last_sync_time'),'message':'공식 계약 adapter 설정됨. 동기화 성공 전까지 연결을 확인하세요.' if ready else '공식 API 계약 adapter와 외부 계정 매핑이 필요합니다. 수동/CSV 입력을 이용하세요.'}
+    return {'operational_state':operational,'last_measurement_date':latest.measurement_date if latest else None,'sync_policy':{'manual_refresh':'available','app_login':'available on explicit request','scheduled_server':'scripts/sync_inbody.py','webhook':'EXTERNAL SETUP REQUIRED'},'status':state.get('status','pending') if ready else 'not_connected','last_sync_time':state.get('last_sync_time') if ready else None,'message':'공식 계약 adapter 설정됨. 동기화 성공 전까지 연결을 확인하세요.' if ready else '공식 API 계약 adapter와 외부 계정 매핑이 필요합니다. 수동/CSV 입력을 이용하세요.'}
 
 @router.post('/integrations/inbody/sync')
 def provider_sync(user:User=Depends(require('measurement:write')), trigger:Literal['manual_refresh','app_login','scheduled_server']='manual_refresh'):
-    from .consents import ensure_consent
-    ensure_consent(user.id)
-    from .providers.configured import inbody
+    from .providers.configured import inbody,mapping_matches
     from .providers.inbody import ProviderFailure
     from .providers.base import ProviderNotConfigured
     from .router import _regenerate_after_measurement
     u=_require_user_record(user.id)
     membership=store.preference(user.id,'membership',{})
     mapping=store.preference(user.id,'inbody_mapping',{})
-    if not (membership.get('verified') and membership.get('school_id')==u.school_id and mapping.get('school_id')==u.school_id and mapping.get('subject')):
+    adapter=inbody(store,u.school_id)
+    if not (membership.get('verified') and membership.get('school_id')==u.school_id and mapping_matches(adapter,mapping,u.school_id)):
         raise HTTPException(501,'학교 인증과 공식 외부 계정 매핑이 아직 연결되지 않았습니다.')
     prior=store.preference(user.id,'inbody_sync',{})
-    adapter=inbody(store)
     from datetime import datetime,timezone
     import time,math
     retry_remaining=math.ceil(prior.get('retry_not_before',0)-time.time())
@@ -191,7 +184,10 @@ class ProviderMapping(BaseModel):
 def set_provider_mapping(uid:str,req:ProviderMapping,user:User=Depends(require('user:admin'))):
     u=_require_user_record(uid)
     if req.school_id!=u.school_id:raise HTTPException(422,'사용자의 소속 학교와 일치해야 합니다.')
-    mapping={**req.model_dump(),'subject':req.subject.strip(),'school_user_id':req.school_user_id.strip(),'verified_by':user.id,'verified_at':now()}
+    from .providers.configured import inbody
+    adapter=inbody(store,u.school_id)
+    if adapter.scope=='unconfigured':raise HTTPException(409,'해당 학교의 승인된 측정 서버 설정이 먼저 필요합니다.')
+    mapping={**req.model_dump(),'provider_scope':adapter.scope,'subject':req.subject.strip(),'school_user_id':req.school_user_id.strip(),'verified_by':user.id,'verified_at':now()}
     if not mapping['subject'] or not mapping['school_user_id']:raise HTTPException(422,'검증된 학교 사용자 ID와 외부 계정이 필요합니다.')
     try:store.assign_inbody_mapping(uid,mapping)
     except ValueError as exc:raise HTTPException(409,str(exc)) from None
@@ -235,8 +231,13 @@ def admin_dashboard(user:User=Depends(require('user:admin'))):
         students=[u for u in store.list_students() if u.school_id==sid]
         shared=[u for u in students if u.share_with_center]
         from .router import _days_since
-        configured=release['checks']['InBody']!='DISCONNECTED'
-        sync_states=[store.preference(u.id,'inbody_sync',{}).get('status') for u in students]
+        from .providers.configured import inbody,mapping_matches
+        adapter=inbody(store,sid)
+        configured=adapter.configured()
+        sync_states=[store.preference(u.id,'inbody_sync',{}).get('status') for u in students
+                     if mapping_matches(adapter,store.preference(u.id,'inbody_mapping',{}),sid)
+                     and store.preference(u.id,'membership',{}).get('verified')
+                     and store.preference(u.id,'membership',{}).get('school_id')==sid]
         school_provider='DISCONNECTED' if not configured else 'ERROR' if 'error' in sync_states else 'SYNCED' if 'connected' in sync_states else 'CONFIGURED'
         overview.append({'school_id':sid,'name':school['name'],'students':len(students),'consented':len(shared),'recent_measurements':sum(bool((m:=store.latest_measurement(u.id)) and _days_since(m.measurement_date)<=30) for u in shared),'unsynced':sum(not store.preference(u.id,'inbody_sync',{}).get('last_sync_time') for u in students),'sync_errors':sum(store.preference(u.id,'inbody_sync',{}).get('status')=='error' for u in students),'provider':school_provider,'reference_versions':sorted({r.version for r in store.list_reference_ranges() if r.version and __import__('app.health.reference',fromlist=['production_eligible']).production_eligible(r)}),'sso':'ERROR' if sso_error else 'CONFIGURED' if sid in sso_schools else 'NOT CONFIGURED'})
     return {'school_overview':overview,'release':release,'schools':list(_school_directory().values()),'users':users,'school_requests':store.list_school_requests(),'subscriptions':subscriptions,'providers':{'inbody':release['checks']['InBody'],'biogram':'not_connected'},'references':store.list_reference_ranges(),'system':{'database':'ok'}}

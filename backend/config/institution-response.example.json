@@ -1,0 +1,17 @@
+{
+  "data": {
+    "measurements": [
+      {
+        "measurement_id": "fictional-reading-1",
+        "member_id": "fictional-member",
+        "measured_at": "2026-10-01T09:00:00+09:00",
+        "height_cm": 178,
+        "weight_kg": 70,
+        "skeletal_muscle_kg": 32,
+        "body_fat_percent": 20,
+        "segments": {"left_arm": {"lean_kg": 3.2, "reference_percent": 102}}
+      }
+    ]
+  },
+  "next_cursor": null
+}

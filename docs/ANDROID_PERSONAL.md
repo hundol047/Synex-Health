@@ -1,0 +1,48 @@
+# 개인용 안드로이드 (서버 배포 없음)
+
+`fix/android-local` 브랜치의 별도 빌드입니다. 서버 주소, 학교 SSO, 일반 로그인 없이 기기 저장소를 연 뒤 홈에 들어갑니다. 실제 체성분 수동 입력, 남/여 3D 모형과 터치 회전, 기존 운동 동작 안내, 기본 운동 계획, 운동 기록, 변화 추적과 학교 소속 저장을 제공합니다.
+
+건강 기록은 기존 AES-GCM 저장소에 암호화합니다. 안드로이드의 키는 Secure Storage로 관리하며 백업은 기존 설정대로 비활성화됩니다. 서버로 기록을 보내지 않습니다. 앱 삭제/기기 분실 시 기록을 복구할 수 없으므로 필요한 기록은 내보내세요. 실기기 암호화·회전·저장 성능은 아직 직접 검증하지 않았습니다.
+
+추천은 `device-basic-v1` 기본 규칙입니다. 기존 서버의 전체 알고리즘과 동일하지 않습니다. 입력한 체중/키, 골격근량의 이전 측정 대비 변화, 경험, 장소, 기구, 시간, 목표와 최근 통증/부담을 반영합니다. 제한 사항 또는 안전 문진이 있으면 자동 생성을 중단합니다. 근육량에서 적정 중량을 추정하거나 검증된 평균 수치를 만들어 내지 않습니다.
+
+학교 선택은 자기 신고 소속입니다. 건강센터 공유, 자동 InBody 연동, 학교 상담, 원격 AI 대화와 구독 결제는 제공하지 않습니다. 무료 개인용 기능입니다. 서버 모드의 인증은 그대로 유지되며 서버 인증 실패 시 개인용으로 전환하지 않습니다.
+
+맨몸운동 카메라 코치는 별도 서버 없이 제공됩니다. 위쪽의 3D 시범과 아래쪽 카메라 화면으로 맨몸운동 42종을 촬영하며, 이 중 7종만 실시간 관절 추적·교정을 지원합니다. `동영상 촬영`을 직접 누르면 음성 없이 최대 60초 녹화하고 앱에서 재생합니다. `휴대폰에 저장`·`공유`도 직접 선택해야 하며 자동 업로드하지 않습니다. 백그라운드 전환·화면 종료·운동 변경 시 카메라와 분석을 종료하고 진행 중 촬영·내보내지 않은 영상을 버립니다. 자세 모델과 WASM은 APK에 포함합니다.
+
+Android 10 이상에서는 영상을 `다운로드/Synex Health`에 저장하며 이전 Android는 시스템 공유 창을 사용합니다. 내보낸 영상과 공유용 임시 파일은 암호화하지 않은 파일로, AES-GCM 건강 기록 저장소와 별개입니다. 이미 저장한 영상은 앱을 나가거나 기록을 삭제해도 남으므로 파일 앱에서 따로 관리하세요. 공유받는 앱은 사용자의 선택에 따라 파일을 전송할 수 있습니다. 실기기 영상 저장·공유는 아직 직접 검증하지 않았습니다. 사용과 검증 범위는 [맨몸운동 카메라 코치](BODYWEIGHT_POSE_COACH.md)를 참고하세요.
+
+## 설치 파일
+
+GitHub Actions의 `Android Personal APK (no deployment)` 실행에서 APK ZIP을 받습니다. ZIP을 풀어 `app-debug.apk`를 폰에 옮겨 설치합니다. 앱 이름은 `Synex Health 개인용`, ID는 `com.synex.health.personal`로 기존 앱과 구분됩니다. Play Store 등록/웹 배포를 수행하지 않습니다. 이 브랜치는 root/frontend `vercel.json`에서 자동 배포가 비활성화되어 있습니다.
+
+## Windows에서 직접 APK 생성
+
+Node.js, JDK 21, Android Studio와 SDK 36이 필요합니다. SDK의 경로를 `ANDROID_HOME`에 설정한 뒤 저장소 루트에서 PowerShell로 실행합니다.
+
+```powershell
+cd frontend
+npm ci
+npm run android:local
+```
+
+결과: `frontend/android/app/build/outputs/apk/debug/app-debug.apk`.
+
+`npm run build`만 실행하면 기본 서버 모드입니다. 개인용 APK는 반드시 `npm run android:local`로 생성합니다. 스토어용 release와 `VITE_LOCAL_ONLY=true`를 동시에 설정하면 빌드 검증에서 거부합니다.
+
+## 첫 실행 저장소 복구
+
+안내의 마지막 `시작하기` 뒤에는 암호화 키와 기존 기록 복원이 모두 끝난 후 홈을 엽니다. DB 또는 기기 보안 저장소가 응답하지 않으면 요청별 8초 제한으로 대기를 종료하고 `기기 저장소 다시 열기`를 제공합니다. 화면 전체의 20초 제한이나 화면 종료 시에는 해당 초기화를 취소합니다. 같은 계정으로 재시도해도 실패 상태를 재사용하지 않고 저장소를 다시 엽니다.
+
+늦게 도착한 DB 연결은 닫고 취소된 트랜잭션은 중단합니다. 기기 암호화 키 쓰기가 아직 끝나지 않았다면 다른 키를 덮어쓰지 않습니다. 저장 완료 응답만 누락된 경우에는 같은 키가 저장돼 있는지 확인한 뒤 복구하며, 아직 저장되지 않았다면 원래 작업의 완료를 기다립니다. 이 복구 과정에서 기존 기록이나 키를 삭제하거나 평문 저장소로 전환하지 않습니다.
+
+회귀 테스트는 일시적 저장소 실패 후 재시도, 응답 없는 DB/네이티브 호출, 늦은 응답, 암호화 키 보존 및 재실행 후 기록 복원을 확인합니다. `npm test`와 `npx playwright test --config playwright.local.config.js`로 실행합니다.
+
+## InBody mannequin update
+
+The personal build now opens a translucent composition mannequin at
+`/health/body`, with actual result-sheet inputs and optional torso girths,
+separate bone/mineral records, and eligible adult literature muscle comparison.
+See [PERSONAL_MANNEQUIN.md](PERSONAL_MANNEQUIN.md) for shape limits, source
+verification depth and offline validation. Keep the installed storagefix
+application ID/signing key and increase the version code for updates.
