@@ -35,6 +35,6 @@ describe('RoutinePage', () => {
     render(<MemoryRouter><RoutinePage /></MemoryRouter>);
 
     expect(await screen.findByText('아직 생성된 루틴이 없어요')).toBeTruthy();
-    expect(screen.getByText('오늘의 루틴 시작하기')).toBeTruthy();
+    expect(screen.getByText('내 운동 계획 만들기')).toBeTruthy();
   });
 });

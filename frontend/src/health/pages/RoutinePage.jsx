@@ -81,7 +81,7 @@ export default function RoutinePage() {
           <EmptyState
             title="아직 생성된 루틴이 없어요"
             description="최신 체성분·운동환경·수행 피드백에 맞춰 동작 안내가 있는 루틴을 만듭니다."
-            action={<button className="btn btn-primary" onClick={generate} disabled={generating}>{generating ? '생성 중...' : '오늘의 루틴 시작하기'}</button>}
+            action={<button className="btn btn-primary" onClick={generate} disabled={generating}>{generating ? '생성 중...' : '내 운동 계획 만들기'}</button>}
           />
         </Card>
       )}
@@ -118,6 +118,7 @@ export default function RoutinePage() {
           {latest.day_timing?.[day]&&<div className="plan-stats" aria-label={`${day}일차 시간 구성`}><div className="plan-stat"><span>직접 준비운동</span><strong>{latest.day_timing[day].warmup_seconds}초</strong></div><div className="plan-stat"><span>실제 운동</span><strong>{Math.round(latest.day_timing[day].work_seconds/6)/10}분</strong></div><div className="plan-stat"><span>휴식·동작 전환</span><strong>{latest.day_timing[day].rest_seconds}초</strong></div></div>}
           <p className="muted">{latest.schedule?.[day-1] || '작은 시범으로 동작을 확인하고 자세히 보기를 눌러 확대하세요.'}</p>
           {latest.day_timing?.[day]&&<p className="muted">시작 전 가벼운 걷기·제자리걷기로 준비하세요. 예상 시간은 기본 시범 속도 기준이며, 운동 후 자동 추천 스트레칭은 별도입니다. 몸 상태에 따라 쉬는 시간을 늘리거나 중단할 수 있습니다.</p>}
+          {!latest.needs_review&&<Link className="btn btn-primary" to={`/health/workout?mode=tempo&day=${day}&routine=${encodeURIComponent(latest.id)}`}>{day}일차 루틴 시작</Link>}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {exs.map((ex,i)=><ExerciseCard key={`${latest.id}-${ex.exercise_id||i}`} exercise={ex}><ExerciseReplacement routine={latest} exercise={ex} onReplaced={()=>Promise.all([routines.reload(),history.reload()])}/></ExerciseCard>)}
           </div>

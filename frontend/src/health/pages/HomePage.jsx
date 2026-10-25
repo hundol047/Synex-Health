@@ -77,7 +77,7 @@ export default function HomePage() {
         </ol>}
         {measurement.loading||routines.loading?<Skeleton height={70}/>:routines.error?<ErrorState message={routines.error.message} onRetry={routines.reload}/>:measurement.error&&!noMeasurement?<ErrorState message={measurement.error.message} onRetry={measurement.reload}/>:<>
         <p>{noMeasurement?'체성분을 입력하면 내 변화와 운동 계획을 확인할 수 있어요.':routines.data?.[0]?.needs_review?'측정값이나 운동 조건이 바뀌었어요. 계획을 먼저 갱신하세요.':!routines.data?.length?'운동 방식과 이용할 기구를 정하고 첫 계획을 만들어 보세요.':'준비된 운동을 하나씩 따라 하고 오늘의 기록을 남겨 보세요.'}</p>
-        <Link className="btn btn-primary" to={noMeasurement?'/health/profile':!routines.data?.length||routines.data?.[0]?.needs_review?'/health/routine':'/health/workout'}>{noMeasurement?'1. 체성분 입력하기':routines.data?.[0]?.needs_review?'변경된 조건으로 계획 갱신':!routines.data?.length?'2. 내 운동 계획 만들기':'3. 오늘 운동 시작하기'}{LOCAL_ONLY&&<ArrowUpRight size={18}/>}</Link></>}
+        <Link className="btn btn-primary" to={noMeasurement?'/health/profile':!routines.data?.length||routines.data?.[0]?.needs_review?'/health/routine':'/health/workout?mode=tempo'}>{noMeasurement?'1. 체성분 입력하기':routines.data?.[0]?.needs_review?'변경된 조건으로 계획 갱신':!routines.data?.length?'2. 내 운동 계획 만들기':'3. 오늘 운동 시작하기'}{LOCAL_ONLY&&<ArrowUpRight size={18}/>}</Link></>}
         <div className={LOCAL_ONLY?'home-quick-links':'motion-controls'}>{!LOCAL_ONLY&&<><Link className="btn btn-secondary" to="/health/pose">맨몸·헬스장 카메라 코치</Link><Link className="btn btn-secondary" to="/health/body">내 3D 마네킹 보기</Link></>}<Link to="/health/library">맨몸·헬스장 운동 찾기 <ArrowUpRight size={14}/></Link><Link to="/health/progress">내 기록과 변화 보기 <ArrowUpRight size={14}/></Link></div>
       </Card>
 
@@ -129,7 +129,7 @@ export default function HomePage() {
         </Card>
       )}
 
-      {(!LOCAL_ONLY||hasRoutine)&&<Link to="/health/workout" className="btn btn-primary btn-block">오늘의 루틴 시작하기</Link>}
+      {(!LOCAL_ONLY||hasRoutine)&&<Link to="/health/workout?mode=tempo" className="btn btn-primary btn-block">오늘의 루틴 시작하기</Link>}
 
       <Card
         title="측정값 해설"

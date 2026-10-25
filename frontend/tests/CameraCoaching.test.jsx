@@ -211,3 +211,11 @@ it('bodyweight variants support correction while video-only capture never starts
  act(()=>{recorder().ondataavailable({data:new Blob(['wall push video'])});recorder().onstop();});expect(screen.getByLabelText('촬영한 운동 동영상')).toBeTruthy();
  expect(createPoseRunner).not.toHaveBeenCalled();expect(fetch).not.toHaveBeenCalled();expect(api).not.toHaveBeenCalled();
 });
+it('continuous routine keeps the opted-in camera and resets analysis for the next exercise',async()=>{
+ const view=render(<CameraCoaching continuousSession motion="squat"/>);await camera();await enable();
+ view.rerender(<CameraCoaching continuousSession motion="lunge"/>);
+ await waitFor(()=>expect(createPoseRunner).toHaveBeenCalledTimes(2));
+ expect(detector.close).toHaveBeenCalledTimes(1);expect(track.stop).not.toHaveBeenCalled();expect(getMedia).toHaveBeenCalledTimes(1);
+ expect(screen.getByText('3D 시범 · lunge')).toBeTruthy();
+ view.unmount();expect(track.stop).toHaveBeenCalledTimes(1);
+});

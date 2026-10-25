@@ -12,7 +12,7 @@ async function prepareRoutine(page) {
  await page.getByRole('button',{name:'측정값 저장',exact:true}).click();
  await expect(page.getByText('측정값을 저장했습니다.')).toBeVisible();
  await page.goto('/health/routine');
- await page.getByRole('button',{name:'오늘의 루틴 시작하기'}).click();
+ await page.getByRole('button',{name:'내 운동 계획 만들기'}).click();
  await expect(page.getByText('이 폰에서 생성한 기본 운동 계획입니다.',{exact:false})).toBeVisible();
  await page.goto('/health/workout');
 }

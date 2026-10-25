@@ -41,7 +41,7 @@ function cameraError(e){
  if(e.name==='NotReadableError')return '다른 앱이 카메라를 사용하고 있습니다. 카메라를 사용하는 앱을 닫고 다시 시작해 주세요.';
  return e.message||'카메라를 시작하지 못했습니다. 다시 시도해 주세요.';
 }
-export default function CameraCoaching({motion='squat',paused=false,onEvaluation,immersive=false,standaloneSession=true,playback:externalPlayback,exercise}){
+export default function CameraCoaching({motion='squat',paused=false,onEvaluation,immersive=false,standaloneSession=true,continuousSession=false,playback:externalPlayback,exercise}){
  const video=useRef(null),stream=useRef(null),cameraVersion=useRef(0),analysisVersion=useRef(0),resources=useRef({}),voiceRef=useRef(false),speechAt=useRef(-Infinity),releaseCamera=useRef(null);
  const recordingSession=useRef(null),recordingVersion=useRef(0),clipUrl=useRef(null),saveVersion=useRef(0),saveAbort=useRef(null),cameraTimer=useRef(null);
  const recordingReport=useRef(null),playbackRef=useRef(null),lastSpoken=useRef(null);
@@ -80,10 +80,13 @@ export default function CameraCoaching({motion='squat',paused=false,onEvaluation
  useLayoutEffect(()=>{
   if(previousMotion.current===motion)return;
   previousMotion.current=motion;
-  // Preserve the expensive WebGL instructor while opening a fresh, opted-out
-  // camera session. Old permission/inference results are invalidated before
-  // the new exercise can be painted with the preceding exercise's feedback.
-  stopCamera({clearClip:true});setError('');setFacing('user');setLayout('split');
+  // Discard old results before repainting. Continuous routines keep the
+  // opted-in preview; independent exercise selection closes the camera.
+  if(continuousSession&&running&&!paused){
+   const resumeAnalysis=feedback;recordingVersion.current++;recordingSession.current?.cancel();recordingSession.current=null;setRecordingPhase('idle');setRecordPending(false);clearRecording();stopAnalysis();setError('');
+   if(resumeAnalysis)void startAnalysis();
+  }else{stopCamera({clearClip:true});setError('');setFacing('user');}
+  setLayout('split');
  },[motion]);
  useEffect(()=>{if(paused)stopCamera({clearClip:true});},[paused]);
  useEffect(()=>{if(externalPlayback===undefined&&tempo.state.status==='complete')stopCamera();},[tempo.state.status,externalPlayback]);
@@ -208,7 +211,7 @@ export default function CameraCoaching({motion='squat',paused=false,onEvaluation
    <PoseFeedbackDetails feedback={detail} report={clipReport}/>
    <div className="coach-preferences"><label><input type="checkbox" role="switch" checked={feedback} disabled={!analysisSupported||!running||paused||recording||finishing||recordPending} onChange={e=>e.target.checked?startAnalysis():stopAnalysis()}/> 자세 피드백 받기</label><label><input type="checkbox" checked={voice} disabled={!feedback||preparing||!speechAvailable()} onChange={e=>{voiceRef.current=e.target.checked;setVoice(e.target.checked);speechAt.current=-Infinity;lastSpoken.current=null;resources.current.speechUntil=0;resources.current.spokenIssue=null;if(!e.target.checked)stopWorkoutSpeech('pose');}}/> 음성으로도 듣기</label></div>
    {error&&<p className="coach-error" role="alert">{error}</p>}
-   <p className="muted">자세 분석은 실험 기능입니다. 실촬영 정확도는 아직 검증 중이며, 근육의 실제 힘이나 통증 원인을 측정하지 않습니다.</p><details className="coach-help"><summary>촬영 방법과 자세 분석 안내</summary><p>권장 방향: {guide?.cameraView||CAMERA_DIRECTIONS[motion]}. 한 사람의 전신과 바닥 지지점이 보이도록 촬영하세요. 기기에서 관절 위치를 추정해, 화면에 보이는 각도와 정렬을 운동별 기준과 비교합니다. 실제 깊이나 근육의 힘을 측정하는 기능은 아닙니다.</p><p>촬영·분석 함께 시작을 누르면 최대 60초 영상과 관찰 요약을 함께 만듭니다. 마이크는 사용하지 않습니다. 영상 저장·공유는 직접 누를 때 실행됩니다. 카메라만 켜면 분석하지 않습니다. 잘 보이지 않는 관절은 판정을 보류합니다.</p><p>자동 따라하기의 시범·카운트·휴식은 같은 타이머로 움직입니다. 내 실제 동작 속도에 맞춰 시범이 바뀌지는 않습니다. 촬영 파일은 원본 영상이며 관절 표시와 음성은 합성하지 않습니다. 화면을 벗어나거나 운동을 바꾸면 촬영이 취소되고 저장하지 않은 영상·요약이 지워집니다.</p>{result?.detected&&<p>{TRACKING_LABELS[result.tracking_quality]} · 화면상 관찰 가동 범위 {result.range_of_motion??'—'}° · {result.rep_seconds!=null?`${result.rep_seconds}초/회`:'반복 속도 측정 중'}</p>}</details>
+   <p className="muted">자세 분석은 실험 기능입니다. 실촬영 정확도는 아직 검증 중이며, 근육의 실제 힘이나 통증 원인을 측정하지 않습니다.</p><details className="coach-help"><summary>촬영 방법과 자세 분석 안내</summary><p>권장 방향: {guide?.cameraView||CAMERA_DIRECTIONS[motion]}. 한 사람의 전신과 바닥 지지점이 보이도록 촬영하세요. 기기에서 관절 위치를 추정해, 화면에 보이는 각도와 정렬을 운동별 기준과 비교합니다. 실제 깊이나 근육의 힘을 측정하는 기능은 아닙니다.</p><p>촬영·분석 함께 시작을 누르면 최대 60초 영상과 관찰 요약을 함께 만듭니다. 마이크는 사용하지 않습니다. 영상 저장·공유는 직접 누를 때 실행됩니다. 카메라만 켜면 분석하지 않습니다. 잘 보이지 않는 관절은 판정을 보류합니다.</p><p>자동 따라하기의 시범·카운트·휴식은 같은 타이머로 움직입니다. 내 실제 동작 속도에 맞춰 시범이 바뀌지는 않습니다. 촬영 파일은 원본 영상이며 관절 표시와 음성은 합성하지 않습니다. 화면을 벗어나거나 운동을 바꾸면 촬영이 취소되고 저장하지 않은 영상·요약이 지워집니다. 자동 루틴에서는 켜 둔 카메라를 유지하고 다음 운동의 분석 기준을 적용합니다.</p>{result?.detected&&<p>{TRACKING_LABELS[result.tracking_quality]} · 화면상 관찰 가동 범위 {result.range_of_motion??'—'}° · {result.rep_seconds!=null?`${result.rep_seconds}초/회`:'반복 속도 측정 중'}</p>}</details>
   </div>
  </section>;
 }

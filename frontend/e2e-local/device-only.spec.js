@@ -38,7 +38,7 @@ test('personal mode opens without a server and restores records on restart',asyn
  await page.getByLabel('체중 (kg)',{exact:true}).fill('60');await page.getByLabel('키 (cm)',{exact:true}).first().fill('165');await page.getByLabel('골격근량 (kg)',{exact:true}).fill('24');await page.getByLabel('체지방률 (%)', {exact:true}).fill('25');
  await page.getByRole('button',{name:'측정값 저장',exact:true}).click();await expect(page.getByText('측정값을 저장했습니다.')).toBeVisible();
  await page.getByLabel('소속 학교').selectOption('yonsei-mirae');await expect(page.getByRole('checkbox').first()).toBeDisabled();await page.getByRole('button',{name:'학교·공유 설정 저장'}).click();await expect(page.getByText('학교 소속을 이 기기에 저장했습니다. 자동 연동은 설정되지 않았습니다.',{exact:true})).toBeVisible();
- await page.goto('/health/routine');await page.getByRole('button',{name:'오늘의 루틴 시작하기'}).click();await expect(page.getByText('이 폰에서 생성한 기본 운동 계획입니다.',{exact:false})).toBeVisible();
+ await page.goto('/health/routine');await page.getByRole('button',{name:'내 운동 계획 만들기'}).click();await expect(page.getByText('이 폰에서 생성한 기본 운동 계획입니다.',{exact:false})).toBeVisible();
  await page.screenshot({path:'test-results/android-local-routine.png',fullPage:true});
  await page.goto('/health/workout');await page.getByRole('button',{name:'자동 시범 · 휴식 맞춰 따라하기'}).click();
  await expect(page.getByRole('heading',{name:'자동 운동 따라하기'})).toBeVisible();
@@ -48,7 +48,7 @@ test('personal mode opens without a server and restores records on restart',asyn
  await page.clock.install({time:new Date('2026-10-19T00:00:00Z')});
  await page.evaluate(()=>{window.requestAnimationFrame=window.__renderFrame;window.cancelAnimationFrame=window.__cancelRenderFrame;});
  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+1000));
- await page.getByRole('button',{name:'자동 따라하기 시작'}).click();
+ await page.getByRole('button',{name:'템포 종료'}).click();await page.getByRole('button',{name:'자동 따라하기 시작'}).click();
  for(let tick=0;tick<6;tick++)await page.clock.fastForward(1000);
  await expect(page.getByRole('region',{name:'자동 운동 템포'})).toHaveAttribute('data-stage','work',{timeout:15000});
  await page.clock.resume();
@@ -77,10 +77,16 @@ test('ten-minute fat-management starts a balanced multi-movement session',async(
   await localApi('/api/body-composition',{measurement_date:'2026-01-01',weight:60,height:165,skeletal_muscle_mass:24,body_fat_percentage:25,segments:[]});
   await localApi('/api/exercise-profile',{goal:'FAT_MANAGEMENT',minutes_per_session:10},{method:'PUT'});
  });
- await page.goto('/health/routine');await page.getByRole('button',{name:'오늘의 루틴 시작하기'}).click();
+ await page.goto('/health/routine');await page.getByRole('button',{name:'내 운동 계획 만들기'}).click();
  await expect(page.getByText('1일차 · 5개 운동',{exact:true})).toBeVisible();
- await page.goto('/health/workout');await page.getByRole('button',{name:'자동 시범 · 휴식 맞춰 따라하기'}).click();
- await expect(page.getByRole('region',{name:'자동 운동 템포'})).toContainText('5개 운동');
- await page.getByRole('button',{name:'자동 따라하기 시작'}).click();
+ await page.getByRole('link',{name:'1일차 루틴 시작',exact:true}).click();
+ await expect(page.getByRole('button',{name:'템포 일시정지'})).toBeVisible();
  await expect(page.getByRole('region',{name:'자동 운동 템포'})).toContainText('운동 1 / 5');
+ for(const viewport of [{width:393,height:852},{width:360,height:640}]){
+ await page.setViewportSize(viewport);
+ for(const selector of ['.coach-example','.coach-camera','.coach-demo .motion-3d-canvas']){
+  const box=await page.locator(selector).boundingBox();expect(box.height).toBeGreaterThan(60);expect(box.y).toBeGreaterThanOrEqual(0);expect(box.y+box.height).toBeLessThanOrEqual(viewport.height);
+ }
+ }
+ await page.screenshot({path:'test-results/routine-split-camera.png'});
 });

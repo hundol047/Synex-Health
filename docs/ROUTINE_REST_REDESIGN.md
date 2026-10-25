@@ -27,3 +27,9 @@ Old device-basic-v1 plans are marked for regeneration rather than deleting measu
 Regression coverage checks the original ten-minute fat-management failure, 315 combinations of duration, week frequency, experience and location, gym equipment selection, recovery-day variety, playback budget consistency, single-set continuous cardio, final-rest removal, voice introductions and manual progression. Browser checks cover actual personal-mode generation, automatic playback, manual multi-set completion and persistence.
 
 Local validation: 465 frontend tests passed; seven targeted browser scenarios passed at mobile sizes, including the original ten-minute failure and manual multi-set saving; personal production build passed. These checks are browser/simulation validation, not a claim of physical-phone or training-outcome validation.
+
+## Direct routine playback and split view
+
+Home start links and per-day routine start links open automatic playback directly. Plan generation is labelled separately. The runner starts once after mounting, counts down preparation, runs set rest and movement transitions, and completes without requiring another start tap. A fixed viewport layout keeps instructor and camera stacked; camera controls scroll independently. Smaller portrait screens hide secondary instructor controls to preserve the full-body canvas. Camera access remains an explicit permission-based action. Once enabled, the continuous routine keeps preview across exercises while disposing previous analysis and restarting with the new movement; unsaved recordings are still cancelled on a movement change.
+
+Validation: the existing 465 tests passed; new auto-start/transition and continuous-camera regressions passed (27 targeted tests including existing camera coverage). Five device-only browser scenarios passed, with an additional 393×852 and 360×640 viewport check. This does not establish real-device pose-estimation accuracy.
