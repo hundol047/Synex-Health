@@ -1,3 +1,4 @@
+import {balancedLocalDays,LOCAL_ROUTINE_VERSION} from './localRoutinePlan.js';
 import catalog from './localCatalog.json';
 import schools from './localSchools.json';
 import {loadLocalDocument,saveLocalDocument} from './offline.js';
@@ -43,29 +44,17 @@ export function generateLocalRoutine(s){
  const previous=[...s.measurements].filter(x=>x.measurement_date<m.measurement_date).sort((a,b)=>a.measurement_date.localeCompare(b.measurement_date)).at(-1);
  const muscleDown=previous&&m.skeletal_muscle_mass<previous.skeletal_muscle_mass;
  const gentle=p.experience_level==='BEGINNER'||(bmi!=null&&bmi<18.5)||muscleDown||recent.some(w=>(w.rpe??0)>=8);
- const allowed=catalog.filter(x=>x.auto_recommend!==false&&x.difficulty!=='advanced'&&x.locations.includes(p.exercise_location)&&x.equipment.every(k=>p.available_equipment.includes(k))&&(p.training_mode!=='bodyweight'||!x.equipment.length));
- const byPattern=pattern=>allowed.filter(x=>x.pattern===pattern).sort((a,b)=>{
-  const score=x=>(gentle&&x.easy?10:0)+(p.training_mode==='equipment'&&x.equipment.length?8:0)+(['sit_stand','wall_push','scapular','bridge','dead_bug','walk'].includes(x.id)?3:0);
-  return score(b)-score(a);
- })[0];
- const moves=['squat','push','pull','hinge','core'].map(byPattern).filter(Boolean);
- if(!moves.length)fail('선택한 환경에 맞는 운동이 없습니다. 운동 기구와 장소를 확인하세요.');
- const sets=gentle?1:p.experience_level==='ADVANCED'?3:2;
- const strengthDays=Math.min(3,p.days_per_week),exercises=[],day_minutes={};
- for(let day=1;day<=p.days_per_week;day++){
-  let used=0;const fatGoal=p.goal==='FAT_MANAGEMENT'||['fat_loss','weight_loss'].includes(s.goal?.strategy);const choices=day<=strengthDays?[...(fatGoal?[byPattern('cardio')].filter(Boolean):[]),...moves]:[byPattern('cardio')].filter(Boolean);
-  for(const x of choices){const minutes=x.pattern==='cardio'?Math.min(10,p.minutes_per_session):sets*2;if(used+minutes>p.minutes_per_session)continue;used+=minutes;
-   exercises.push({exercise_id:`d${day}-${x.id}`,motion_id:x.id,exercise_name:x.name,day_number:day,target_regions:x.regions,training_type:x.training_type,equipment:x.equipment,instructions:x.instructions,cautions:x.cautions,sets:x.pattern==='cardio'?null:sets,reps:'6–10',duration:x.pattern==='cardio'?`${minutes}분`:null,dose_type:x.dose_type,rest_seconds:60,estimated_minutes:minutes,intensity:'편안한 범위 · 통증 없는 동작',reason:gentle?'경험·최근 측정·수행 부담을 고려해 적은 세트로 시작합니다.':'선택한 운동 경험·장소·기구에 맞춘 기본 동작입니다.'});
-  }day_minutes[day]=used;
- }
- if(!exercises.length)fail('운동 시간이 너무 짧습니다. 프로필의 회당 시간을 확인하세요.');
- return {id:secureUUID(),user_id:LOCAL_ACCOUNT,created_at:now(),based_on_measurement_id:m.id,goal:({GENERAL_HEALTH:'기본 체력 관리',GENERAL_FITNESS:'전반적인 체력 향상',MUSCLE_GAIN:'근력·근육량 향상',FAT_MANAGEMENT:'체지방 관리',BALANCE:'균형 있는 움직임'})[p.goal]||'나의 운동 계획',summary:'이 폰에서 생성한 기본 운동 계획입니다. 최대 3일의 근력 운동 사이에 휴식일을 두고, 남은 날은 편안한 걷기를 선택하세요.',duration_weeks:4,days_per_week:p.days_per_week,exercises,day_minutes,generated_by:'local_rules',algorithm_version:'device-basic-v1',needs_review:false,rationale:[`운동 경험: ${{BEGINNER:'처음 시작',INTERMEDIATE:'꾸준히 운동 중',ADVANCED:'운동 경험이 많음'}[p.experience_level]} · ${{home:'집',gym:'헬스장',outdoor:'실외'}[p.exercise_location]}`,`측정 체중 ${m.weight}kg · 골격근량 ${m.skeletal_muscle_mass}kg`,muscleDown?'이전보다 낮은 골격근량 기록이 있어 부담을 낮췄습니다. 측정 차이만으로 근력 저하를 진단하지 않습니다.':'근육량만으로 실제 근력·적정 중량을 추정하지 않습니다.'],notices:['개인용 기본 규칙이며 서버의 전체 추천 알고리즘과 다릅니다.','부위별 측정값과 실제 인구 평균은 만들거나 추정하지 않습니다.','통증·어지럼·흉통이 있으면 즉시 중단하세요.'],sources:[],input_snapshot:{weight_kg:m.weight,muscle_kg:m.skeletal_muscle_mass,body_fat_percent:m.body_fat_percentage,profile:structuredClone(p)},schedule:Array.from({length:p.days_per_week},(_,i)=>i<strengthDays?'근력 운동 · 다음 근력 운동까지 휴식일 확보':'편안한 걷기 · 회복'),progression:gentle?'적은 세트부터 시작하고 통증과 수행 부담을 기록하세요.':'실제 수행 기록을 확인한 뒤 재생성하세요. 중량은 자동으로 올리지 않습니다.'};
+ const cautious=(bmi!=null&&bmi<18.5)||muscleDown||recent.some(w=>(w.rpe??0)>=8);
+ const fatGoal=p.goal==='FAT_MANAGEMENT'||['fat_loss','weight_loss'].includes(s.goal?.strategy);
+ const {exercises,day_minutes,day_timing,schedule}=balancedLocalDays(p,{gentle,cautious,fatGoal});
+ return {id:secureUUID(),user_id:LOCAL_ACCOUNT,created_at:now(),based_on_measurement_id:m.id,goal:({GENERAL_HEALTH:'기본 체력 관리',GENERAL_FITNESS:'전반적인 체력 향상',MUSCLE_GAIN:'근력·근육량 향상',FAT_MANAGEMENT:'체지방 관리',BALANCE:'균형 있는 움직임'})[p.goal]||'나의 운동 계획',summary:'이 폰에서 생성한 기본 운동 계획입니다. 여러 근력 동작을 먼저 배정하고 남는 시간에 유산소를 더합니다. 준비운동·실제 시범·휴식을 합산한 시간이며, 근력 세션 사이에는 회복일을 두세요.',duration_weeks:4,days_per_week:p.days_per_week,exercises,day_minutes,day_timing,generated_by:'local_rules',algorithm_version:LOCAL_ROUTINE_VERSION,needs_review:false,rationale:[`운동 경험: ${{BEGINNER:'처음 시작',INTERMEDIATE:'꾸준히 운동 중',ADVANCED:'운동 경험이 많음'}[p.experience_level]} · ${{home:'집',gym:'헬스장',outdoor:'실외'}[p.exercise_location]}`,`측정 체중 ${m.weight}kg · 골격근량 ${m.skeletal_muscle_mass}kg`,muscleDown?'이전보다 낮은 골격근량 기록이 있어 부담을 낮췄습니다. 측정 차이만으로 근력 저하를 진단하지 않습니다.':'근육량만으로 실제 근력·적정 중량을 추정하지 않습니다.'],notices:['개인용 기본 규칙이며 서버의 전체 추천 알고리즘과 다릅니다.','부위별 측정값과 실제 인구 평균은 만들거나 추정하지 않습니다.','통증·어지럼·흉통이 있으면 즉시 중단하세요.'],sources:[{title:'Fitbod · 목표·장비·회복을 고려한 운동 구성',url:'https://fitbod.me/'},{title:'Strong · 사용자 조절 타이머와 운동 기록',url:'https://www.strong.app/'},{title:'Nike Training Club · 단계별 프로그램',url:'https://www.nike.com/ntc-app'}],input_snapshot:{weight_kg:m.weight,muscle_kg:m.skeletal_muscle_mass,body_fat_percent:m.body_fat_percentage,profile:structuredClone(p)},schedule,progression:gentle?'적은 세트부터 시작하고 통증과 수행 부담을 기록하세요.':'실제 수행 기록을 확인한 뒤 재생성하세요. 중량은 자동으로 올리지 않습니다.'};
 }
 let chain=Promise.resolve();
 export function localApi(path,b,{method,signal}={}){
  const execute=async()=>{if(signal?.aborted)throw new DOMException('Aborted','AbortError');const s=await loadLocalDocument()||initial(),m=method||(b===undefined?'GET':'POST'),url=new URL(path,'https://device.invalid'),p=url.pathname;let result,write=false;
  if(s.version!==1)fail('현재 앱에서 지원하지 않는 기록 버전입니다. 앱을 업데이트하세요. 기록은 변경하지 않았습니다.',409);
  if(s.profile.birth_date&&ageAt(s.profile.birth_date,localDate())<14&&m!=='GET'&&m!=='DELETE'&&!p.startsWith('/api/privacy/')&&p!=='/api/health/profile')fail('만 14세 이상만 사용할 수 있습니다. 개인정보 화면에서 기록을 내보내거나 삭제하세요.',403);
+ for(const routine of s.routines)if(routine.generated_by==='local_rules'&&routine.algorithm_version==='device-basic-v1'&&!routine.needs_review){routine.needs_review=true;routine.review_reason='운동 구성·휴식 기준이 개선되었습니다. 기록은 유지되며, 루틴 페이지에서 재생성하면 새 기준을 적용합니다.';}
  const save=x=>{result=x;write=true;};
  if(p==='/api/health/status')result={status:'ok',service:'synex-health',demo:false,local:true};
  else if(p==='/api/health/profile'){if(m==='PUT'){if(b.height!=null)numeric(b.height,50,250,'키');if(b.gender&&!['male','female','unspecified'].includes(b.gender))fail('성별 값이 잘못되었습니다.');if(b.name!=null&&(typeof b.name!=='string'||b.name.length>30))fail('이름은 30자 이내로 입력하세요.');if(b.birth_date!=null&&(b.birth_date<'1900-01-01'||ageAt(b.birth_date,localDate())==null))fail('올바른 오늘 이전 생년월일을 입력하세요.');if(b.birth_date!=null&&ageAt(b.birth_date,localDate())<14)fail('만 14세 이상만 사용할 수 있습니다.');s.profile={...s.profile,...(Object.hasOwn(b,'birth_date')?{birth_date:b.birth_date}:{}),...(b.name!=null?{name:b.name.trim()}:{}),height:Object.hasOwn(b,'height')?b.height:s.profile.height,gender:b.gender||s.profile.gender};review(s);save(s.profile);}else result=s.profile;}

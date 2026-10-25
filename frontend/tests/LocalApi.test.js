@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto';
 import {webcrypto} from 'node:crypto';
 import {it,expect,beforeEach,afterEach,vi} from 'vitest';
 import {localApi} from '../src/shared/lib/localApi.js';
-import {bindOfflineAccount,clearOffline,lockOffline,loadLocalDocument} from '../src/shared/lib/offline.js';
+import {bindOfflineAccount,clearOffline,lockOffline,loadLocalDocument,saveLocalDocument} from '../src/shared/lib/offline.js';
 import {LOCAL_ACCOUNT,LOCAL_NAMESPACE} from '../src/shared/lib/localMode.js';
 const measurement={measurement_date:'2026-01-01',weight:60,height:165,skeletal_muscle_mass:24,body_fat_percentage:25,segments:[]};
 beforeEach(async()=>{vi.stubGlobal('crypto',webcrypto);await bindOfflineAccount(LOCAL_ACCOUNT,LOCAL_NAMESPACE);});
@@ -53,4 +53,16 @@ it('preserves body girths, bone/mineral fields and reference eligibility through
  await localApi('/api/body-composition',values);lockOffline();await bindOfflineAccount(LOCAL_ACCOUNT,LOCAL_NAMESPACE);
  expect((await localApi('/api/body-map/latest')).body_profile.birth_date).toBe('1996-01-01');
  expect((await localApi('/api/privacy/export')).measurements[0]).toMatchObject(values);
+});
+
+it('requires regenerating legacy routines without losing health or workout records',async()=>{
+ await localApi('/api/body-composition',measurement);
+ const routine=await localApi('/api/exercise-routines/generate',{});
+ await localApi('/api/workouts',{date:'2026-01-01',exercise_name:'걷기',pain:0,mutation_id:'legacy-record'});
+ const doc=await loadLocalDocument();doc.routines[0].algorithm_version='device-basic-v1';await saveLocalDocument(doc);
+ expect((await localApi('/api/exercise-routines'))[0]).toMatchObject({id:routine.id,needs_review:true});
+ expect(await localApi('/api/workouts')).toHaveLength(1);
+ const next=await localApi('/api/exercise-routines/generate',{});
+ expect(next).toMatchObject({algorithm_version:'device-balanced-v2',needs_review:false});
+ expect((await localApi('/api/body-composition/latest')).weight).toBe(60);
 });

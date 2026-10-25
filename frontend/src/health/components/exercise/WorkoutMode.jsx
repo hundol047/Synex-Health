@@ -61,7 +61,7 @@ export default function WorkoutMode({routine,exercises,workouts=[],onSaved,onClo
  }
  if(exercise.dose_type==='hold'){if(timerSeconds<=0){setError('먼저 유지시간을 측정하세요.');return;}setTimedSets(old=>[...old,timerSeconds]);setTimerSeconds(0);}
  if(exercise.dose_type==='duration'){if(timerSeconds<=0){setError('먼저 운동 시간을 측정하세요.');return;}setPerformedSeconds(timerSeconds);setTimerSeconds(0);}
- const next=sets+1;setSets(next);notify('세트를 완료했습니다.');setRestUntil(Date.now()+(exercise.rest_seconds??60)*1000);}
+ const next=sets+1;setSets(next);notify('세트를 완료했습니다.');setRestUntil(next<(exercise.sets||1)?Date.now()+(exercise.rest_seconds??45)*1000:null);}
  async function save(){if(busy||!draft.ready)return;pause();setBusy(true);setError('');try{
   const set_records=normalizeSets(setRows);
   const stopping=Number(pain)>0;

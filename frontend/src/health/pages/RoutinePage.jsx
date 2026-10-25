@@ -102,7 +102,7 @@ export default function RoutinePage() {
           {latest.progression && <div className="motion-intensity"><strong>이번 계획의 조정</strong><p>{latest.progression}</p></div>}
           <details style={{marginTop:16}}><summary>추천 기준과 확인할 사항</summary>
             <ul className="plan-notices">{(latest.notices||[]).map(t=><li key={t}>{t}</li>)}</ul>
-            <div className="plan-sources">{(latest.sources||[]).map(source=><a key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.title}</a>)}</div>
+            {latest.algorithm_version==='device-balanced-v2'&&<p>앱 구성 비교 참고 · 아래 자료는 의료·운동 처방의 근거가 아닙니다.</p>}<div className="plan-sources">{(latest.sources||[]).map(source=><a key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.title}</a>)}</div>
           </details>
           <p className="muted" style={{fontSize:'.76rem',marginTop:12}}>검토 가능한 규칙 기반 맞춤 추천 · 새 측정값을 등록하면 기존 루틴을 자동 재검토합니다.</p>
           <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
@@ -114,8 +114,10 @@ export default function RoutinePage() {
 
 
       {!safetyBlocked && days.map(([day, exs]) => (
-        <Card key={day} title={`${day}일차`} action={latest.day_minutes?.[String(day)] != null ? <Badge>약 {latest.day_minutes[String(day)]}분</Badge> : null}>
+        <Card key={day} title={`${day}일차 · ${exs.length}개 운동`} action={latest.day_minutes?.[String(day)] != null ? <Badge>약 {latest.day_minutes[String(day)]}분</Badge> : null}>
+          {latest.day_timing?.[day]&&<div className="plan-stats" aria-label={`${day}일차 시간 구성`}><div className="plan-stat"><span>직접 준비운동</span><strong>{latest.day_timing[day].warmup_seconds}초</strong></div><div className="plan-stat"><span>실제 운동</span><strong>{Math.round(latest.day_timing[day].work_seconds/6)/10}분</strong></div><div className="plan-stat"><span>휴식·동작 전환</span><strong>{latest.day_timing[day].rest_seconds}초</strong></div></div>}
           <p className="muted">{latest.schedule?.[day-1] || '작은 시범으로 동작을 확인하고 자세히 보기를 눌러 확대하세요.'}</p>
+          {latest.day_timing?.[day]&&<p className="muted">시작 전 가벼운 걷기·제자리걷기로 준비하세요. 예상 시간은 기본 시범 속도 기준이며, 운동 후 자동 추천 스트레칭은 별도입니다. 몸 상태에 따라 쉬는 시간을 늘리거나 중단할 수 있습니다.</p>}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {exs.map((ex,i)=><ExerciseCard key={`${latest.id}-${ex.exercise_id||i}`} exercise={ex}><ExerciseReplacement routine={latest} exercise={ex} onReplaced={()=>Promise.all([routines.reload(),history.reload()])}/></ExerciseCard>)}
           </div>

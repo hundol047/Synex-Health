@@ -37,7 +37,7 @@ export function tempoAnnouncement(session,exercises){
  const elapsed=Math.floor(state.elapsed/1000),prefix=`${state.index}:`;
  const name=exercises[segment.exerciseIndex]?.exercise_name||exercises[segment.exerciseIndex]?.name||'운동';
  if(segment.kind==='prepare')return elapsed<2?{key:prefix+'intro',text:`${name}. 준비하세요.`}:{key:prefix+frame.remaining,text:`${frame.remaining}`};
- if(segment.kind==='rest')return elapsed<2?{key:prefix+'rest',text:`휴식 ${Math.ceil(segment.durationMs/1000)}초`}:{key:prefix+frame.remaining,text:`${frame.remaining}초`};
- if(segment.prescription.kind==='reps')return {key:prefix+frame.rep,text:`${frame.rep}회`};
+ if(segment.kind==='rest')return elapsed<2?{key:prefix+'rest',text:segment.restType==='transition'?`다음 운동 ${exercises[segment.nextExerciseIndex]?.exercise_name||exercises[segment.nextExerciseIndex]?.name||''}. 준비 ${Math.ceil(segment.durationMs/1000)}초`:`휴식 ${Math.ceil(segment.durationMs/1000)}초`}:{key:prefix+frame.remaining,text:`${frame.remaining}초`};
+ if(segment.prescription.kind==='reps')return {key:prefix+frame.rep,text:elapsed===0?`${name}. ${segment.set}세트 시작. ${frame.rep}회`:`${frame.rep}회`};
  return {key:prefix+elapsed,text:elapsed===0?`${name}, 시작`:`${elapsed}초`};
 }

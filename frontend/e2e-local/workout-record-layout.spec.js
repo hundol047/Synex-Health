@@ -49,6 +49,8 @@ for(const width of [360,393])test(`${width}px effort and pain stay aligned and p
  expect(Math.abs(weightBox.width-repsBox.width)).toBeLessThan(1);
  expect(weightBox.height).toBeGreaterThanOrEqual(44);
  await weight.fill('10');await reps.fill('8');await manual.rpe.fill('6');
+ await form.getByRole('button',{name:'세트 추가',exact:true}).click();
+ await form.getByLabel('2세트 중량 kg').fill('10');await form.getByLabel('2세트 횟수').fill('8');
  await form.getByRole('button',{name:'완료 기록',exact:true}).click();
  await expect(form.getByText('완료 기록을 저장했습니다.',{exact:true})).toBeVisible();
  await page.reload();

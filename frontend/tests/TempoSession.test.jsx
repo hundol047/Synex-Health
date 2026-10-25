@@ -9,17 +9,17 @@ vi.mock('../src/health/components/exercise/ExerciseMotion3D.jsx',()=>({default:(
 afterEach(()=>{cleanup();vi.useRealTimers();vi.restoreAllMocks();Object.defineProperty(document,'hidden',{configurable:true,value:false});});
 const squat={motion_id:'squat',exercise_name:'스쿼트',sets:1,reps:'1',rest_seconds:10};
 describe('automatic guided timing',()=>{
- it('includes bounded recovery after every set and the final exercise',()=>{
+ it('bounds set recovery and transitions without resting after the final exercise',()=>{
   for(const seconds of [-20,0,10,65,120,500])expect(recommendedRest({...squat,rest_seconds:seconds}).seconds).toBeGreaterThanOrEqual(10);
   expect(recommendedRest({...squat,rest_seconds:500}).seconds).toBe(120);
   const plan=buildTempoPlan([{...squat,sets:2},{motion_id:'plank',sets:1,hold_seconds:25}]);
-  expect(plan.map(s=>s.kind)).toEqual(['prepare','work','rest','work','rest','prepare','work','rest']);
-  expect(plan[6].durationMs).toBe(25000);expect(plan.at(-1).durationMs).toBe(45000);
+  expect(plan.map(s=>s.kind)).toEqual(['prepare','work','rest','work','rest','work']);
+  expect(plan.at(-1).durationMs).toBe(25000);expect(plan[4].restType).toBe('transition');
  });
  it('keeps timed dose separate from recovery and parses each-side counts',()=>{
   expect(tempoPrescription({motion_id:'lunge',reps:'각 8–12회'}).reps).toBe(16);
   const plan=buildTempoPlan([{motion_id:'plank',hold_seconds:40,sets:1,rest_seconds:15}]);
-  expect(plan[1].durationMs).toBe(40000);expect(plan[2].durationMs).toBe(15000);
+  expect(plan[1].durationMs).toBe(40000);expect(plan).toHaveLength(2);
   const walk=buildTempoPlan([{motion_id:'walk',dose_type:'duration',duration:'5분',sets:1}]);
   expect(walk[1].durationMs).toBe(300000);
  });
@@ -29,13 +29,13 @@ describe('automatic guided timing',()=>{
   expect(tempoFrame(work,3000)).toMatchObject({progress:.25,rep:1,side:'첫 번째 쪽'});
   expect(tempoFrame(work,9000)).toMatchObject({progress:.75,rep:2,side:'반대쪽'});
  });
- it('automatically goes from prepare to work, rest, next exercise and final recovery',()=>{
+ it('automatically goes from prepare to work, rest, next exercise and immediate completion',()=>{
   vi.useFakeTimers();const exercises=[squat,{...squat,motion_id:'hinge'}];
   const {result}=renderHook(()=>useTempoSession(exercises));
   act(()=>result.current.start());act(()=>vi.advanceTimersByTime(5100));
   expect(result.current.segment.kind).toBe('work');act(()=>vi.advanceTimersByTime(7100));
   expect(result.current.segment.kind).toBe('rest');act(()=>vi.advanceTimersByTime(10100));
-  expect(result.current.segment).toMatchObject({kind:'prepare',exerciseIndex:1});
+  expect(result.current.segment).toMatchObject({kind:'work',exerciseIndex:1});
   act(()=>vi.advanceTimersByTime(22500));expect(result.current.state.status).toBe('complete');
  });
  it('pauses without advancing while hidden, then resumes at the same position',()=>{

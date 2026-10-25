@@ -15,7 +15,7 @@ it('skips all remaining sets/rest, never creates work time, preserves pause and 
  vi.useFakeTimers();const {result}=renderHook(()=>useTempoSession(exercises));
  act(()=>result.current.start());act(()=>vi.advanceTimersByTime(6100));act(()=>result.current.pause());
  const work=result.current.state.workMs[0];expect(work).toBeGreaterThan(0);expect(work).toBeLessThan(1300);
- act(()=>result.current.skipExercise());expect(result.current.segment).toMatchObject({exerciseIndex:1,kind:'prepare'});expect(result.current.state.status).toBe('paused');expect(result.current.state.workMs).toEqual({0:work});
+ act(()=>result.current.skipExercise());expect(result.current.segment).toMatchObject({exerciseIndex:1,kind:'work'});expect(result.current.state.status).toBe('paused');expect(result.current.state.workMs).toEqual({0:work});
  act(()=>result.current.skipExercise());expect(result.current.state.status).toBe('complete');expect(result.current.state.skipped).toEqual([0,1]);expect(result.current.state.workMs[1]).toBeUndefined();
  act(()=>result.current.start());expect(result.current.state.skipped).toEqual([]);expect(result.current.state.workMs).toEqual({});
 });

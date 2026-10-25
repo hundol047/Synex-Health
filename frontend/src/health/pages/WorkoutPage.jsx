@@ -67,7 +67,7 @@ export default function WorkoutPage() {
   if (latest.needs_review) return <Card><EmptyState title="운동 계획을 먼저 갱신하세요" description={latest.review_reason}
     action={<Link className="btn btn-primary" to="/health/routine">루틴 재생성</Link>}/></Card>;
 
-  if(workoutMode==='tempo')return <Card><TempoWorkout measurement={measurement.data} exercises={dayExercises} onClose={()=>setWorkoutMode(false)}/></Card>;
+  if(workoutMode==='tempo')return <Card>{latest.day_timing?.[activeDay]&&<p>시작 전 가벼운 걷기·제자리걷기 {latest.day_timing[activeDay].warmup_seconds}초로 준비하세요. 오늘은 {dayExercises.length}개 운동을 이어서 진행합니다.</p>}<TempoWorkout measurement={measurement.data} exercises={dayExercises} onClose={()=>setWorkoutMode(false)}/></Card>;
   if(workoutMode)return <Card><WorkoutMode measurement={measurement.data} routine={latest} exercises={dayExercises} workouts={workouts.data||[]} onSaved={workouts.reload} onClose={()=>setWorkoutMode(false)}/></Card>;
 
   return (

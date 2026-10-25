@@ -86,7 +86,7 @@ jobs:
               assert marker['localOnly'] is True and marker['release'] is False
               assert not marker['api']
               scripts=b'\n'.join(apk.read(n) for n in apk.namelist() if n.startswith('assets/public/') and n.endswith('.js'))
-              assert b'device-basic-v1' in scripts
+              assert b'device-balanced-v2' in scripts
               assert os.environ['VITE_BUILD_COMMIT'][:8].encode() in scripts
           badging=subprocess.check_output([os.environ['ANDROID_HOME']+'/build-tools/36.0.0/aapt','dump','badging','frontend/android/app/build/outputs/apk/debug/app-debug.apk'],text=True)
           assert "name='com.synex.health.personal'" in badging
