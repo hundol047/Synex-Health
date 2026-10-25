@@ -1,5 +1,5 @@
 // Screen-space heuristic configuration. Change rule version with any tuning; validate against external labels.
-export const POSE_VERSIONS=Object.freeze({pose_algorithm_version:"3.0.0",pose_rule_version:"2026.10.24",model_version:import.meta.env?.VITE_POSE_MODEL_URL?"external-custom-model-unverified":"mediapipe-pose-landmarker-lite-float16-v1"});
+export const POSE_VERSIONS=Object.freeze({pose_algorithm_version:"3.0.0",pose_rule_version:"2026.10.25",model_version:import.meta.env?.VITE_POSE_MODEL_URL?"external-custom-model-unverified":"mediapipe-pose-landmarker-lite-float16-v1"});
 export const TRACKING_LABELS={HIGH:"추적 안정",MEDIUM:"추적 보통",LOW:"추적 불안정",LOST:"추적 불가"};
 export const RULE_THRESHOLDS=Object.freeze({visibility:.7,highVisibility:.85,minTorso:.04,torsoLean:55,kneeDepth:125,asymmetry:25,lungeStance:.35,hipFlexion:145,sideStance:.6,alignment:150,hipOffset:.15,support:.65,hipAsymmetry:.3,bridgeKnee:155,wristDrift:.6,elbowDrift:.55,raiseElbow:100,rowLean:20,upperLean:30,shoulderAsymmetry:.3,sway:18});
 export const POSE_EXERCISES={

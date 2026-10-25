@@ -38,8 +38,8 @@ function Equipment({motion,joints}){const prop=MOTIONS[motion]?.prop,mat=prop===
  {prop==='wall'&&<mesh position={[0,1,.9]}><boxGeometry args={[2,2,.06]}/><meshStandardMaterial color="#c6d4e4" transparent opacity={.4}/></mesh>}
  {prop==='band'&&<>{[5,8].map(i=><Line key={i} points={[[0,.9,.8],joints[i]]} color="#d38d35" lineWidth={3}/>)}<mesh position={[0,.9,.8]}><boxGeometry args={[.08,1.8,.08]}/><meshStandardMaterial color="#667789"/></mesh></>}
  </>;}
-export default function ExerciseMotion3D({motion,progress,mirror,measurement,profile,compact=false}){
- const twin=useApiData(()=>measurement?Promise.resolve({measurement,body_profile:profile}):api('/api/body-map/latest').catch(async e=>{if(e.status!==404)throw e;const u=await api('/api/health/profile');return {measurement:{},body_profile:{gender:u.gender,height_cm:u.height},standard:true};}),[measurement,profile]);
+export default function ExerciseMotion3D({motion,progress,mirror,measurement,profile,compact=false,standard=false}){
+ const twin=useApiData(()=>measurement?Promise.resolve({measurement,body_profile:profile,standard}):api('/api/body-map/latest').catch(async e=>{if(e.status!==404)throw e;const u=await api('/api/health/profile');return {measurement:{},body_profile:{gender:u.gender,height_cm:u.height},standard:true};}),[measurement,profile,standard]);
  const controls=useRef(),[view,setView]=useState('45');const m=twin.data?.measurement,p=twin.data?.body_profile;
  if(twin.loading)return <p role="status">나의 운동 아바타를 준비합니다.</p>;
  if(twin.error)return <div role="alert">체형 정보를 불러오지 못했습니다.<button onClick={twin.reload}>다시 시도</button></div>;

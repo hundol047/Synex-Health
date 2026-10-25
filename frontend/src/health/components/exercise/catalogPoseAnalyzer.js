@@ -9,10 +9,10 @@ const avg=values=>values.reduce((a,b)=>a+b,0)/values.length;
 export class CatalogPoseAnalyzer{
  constructor(id){if(!profiles[id])throw Error('Unsupported exercise');this.id=id;this.profile=profiles[id];this.reps=0;this.lastTime=null;this.startAngle=null;this.min=Infinity;this.max=-Infinity;this.previous=null;this.activeMs=0;this.phase='ready';this.extremeAt=null;}
  update(raw,time,aspect=1){
-  const c=this.profile,valid=Number.isFinite(time)&&Number.isFinite(aspect)&&aspect>0&&c.joints.every(i=>{const p=raw?.[i];return p&&[p.x,p.y,p.z??0,p.visibility].every(Number.isFinite)&&p.visibility>=.7&&p.x>=0&&p.x<=1&&p.y>=0&&p.y<=1;});
+  const c=this.profile,valid=Array.isArray(raw)&&raw.length===33&&Number.isFinite(time)&&Number.isFinite(aspect)&&aspect>0&&c.joints.every(i=>{const p=raw?.[i];return p&&[p.x,p.y,p.z??0,p.visibility].every(Number.isFinite)&&p.visibility>=.7&&p.x>=0&&p.x<=1&&p.y>=0&&p.y<=1;});
   const base={exercise_id:this.id,...POSE_VERSIONS,validation:c.validation,reps:this.reps,repetition_count:this.reps,hold_seconds:null,rep_seconds:null,range_of_motion:null,tempo:null,left_right_balance:null,metrics:{},corrections:[],warnings:[],target_guidance:`운동 안내: ${c.target.join(', ')}을 사용하는 동작입니다. 실제 힘·근활성은 카메라로 측정하지 않습니다.`,limitations:'단일 카메라 참고 분석: 기구 경로·중량·근육 힘·신체 내부 정렬은 측정하지 않습니다.'};
   if(!valid){this.lastTime=null;this.previous=null;this.phase='ready';this.startAngle=null;this.extremeAt=null;this.min=Infinity;this.max=-Infinity;return {...base,detected:false,confidence:0,tracking_quality:'LOST',movement_phase:'unknown',phase:'unknown',feedback:`${c.label}: ${c.camera}에서 필요한 관절이 모두 보이게 촬영하세요.`,completion_state:'tracking_lost'};}
-  const p=raw.map(x=>({...x,y:x.y*aspect}));const torso=avg([distance(p[11],p[23]),distance(p[12],p[24])]);
+  const p=raw.map(x=>x?({...x,y:x.y*aspect}):x);const torso=avg([distance(p[11],p[23]),distance(p[12],p[24])]);
   if(torso<.04)return this.update([],time,aspect);
   const pair=(a,b,d)=>[angle(p[a],p[b],p[d]),angle(p[a+1],p[b+1],p[d+1])];
   const knees=pair(23,25,27),hips=pair(11,23,25),elbows=pair(11,13,15),shoulders=pair(23,11,13);
@@ -56,11 +56,12 @@ export class CatalogPoseAnalyzer{
   if(this.lastTime==null||gap<=0||gap>500){this.phase='ready';this.startAngle=null;this.extremeAt=null;this.previous=null;}
   if(this.previous&&Math.abs(lean-this.previous.torso_inclination)>18)check(true,'sway','이전 프레임보다 몸통 움직임이 큽니다. 반동과 촬영 흔들림을 줄이세요.');
   const value=Math.min(...metric);this.min=Math.min(this.min,value);this.max=Math.max(this.max,value);
-  // Count a return to the initial range after a sustained excursion; never count subtle mobility as reps.
+  // Arm only at a protocol endpoint; a partial excursion must not count as a full rep.
   if(c.dose_type==='reps'&&c.family!=='mobility'){
-   this.startAngle??=value;
-   if(this.phase==='ready'&&Math.abs(value-this.startAngle)>Math.max(15,(c.up-c.down)*.7)){this.extremeAt=time;this.phase='outward';}
-   if(this.phase==='outward'&&Math.abs(value-this.startAngle)<10){if(time-this.extremeAt>=350)this.reps++;this.phase='ready';this.extremeAt=null;}
+   const endpoint=value<=c.down?'low':value>=c.up?'high':null;
+   if(this.startAngle==null&&endpoint){this.startAngle=endpoint;this.phase='ready';}
+   if(this.startAngle&&this.phase==='ready'&&endpoint&&endpoint!==this.startAngle){this.extremeAt=time;this.phase='outward';}
+   if(this.phase==='outward'&&endpoint===this.startAngle){if(time-this.extremeAt>=350)this.reps++;this.phase='ready';this.extremeAt=null;}
   }
   if(c.dose_type!=='reps'&&corrections.length===0&&this.lastTime!=null&&gap>0&&gap<=500)this.activeMs+=gap;
   this.lastTime=time;this.previous=metrics;const confidence=Math.min(...c.joints.map(i=>raw[i].visibility));

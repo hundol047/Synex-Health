@@ -8,7 +8,9 @@ import {createPoseRunner} from './poseRunner.js';
 import {createExercisePoseAnalyzer,SUPPORTED_POSE_EXERCISES,CAMERA_DIRECTIONS} from './poseCoach.js';
 const ExerciseMotion3D=lazy(()=>import('./ExerciseMotion3D.jsx'));
 const CONNECTIONS=[[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28]];
-function Demo({motion,paused}){
+const PREVIEW_MEASUREMENT={height:178,weight:70,body_fat_percentage:20,skeletal_muscle_mass:32};
+const PREVIEW_PROFILE={height_cm:178};
+function Demo({motion,paused,localPreview}){
  const [playing,setPlaying]=useState(false),[progress,setProgress]=useState(0);
  useEffect(()=>{if(paused)setPlaying(false);},[paused]);
  useEffect(()=>{
@@ -18,9 +20,9 @@ function Demo({motion,paused}){
   frame=requestAnimationFrame(tick);document.addEventListener('visibilitychange',hide);
   return()=>{cancelAnimationFrame(frame);document.removeEventListener('visibilitychange',hide);};
  },[playing]);
- return <><div className="coach-pane-title"><strong>운동 시범 · {SUPPORTED_POSE_EXERCISES[motion].label}</strong><button type="button" className="btn btn-ghost" disabled={paused} onClick={()=>setPlaying(p=>!p)}>{playing?'시범 정지':'시범 재생'}</button></div><p className="muted">영상으로 힘·근활성·기구 안전을 측정할 수 없습니다. 자세 피드백은 검증 전 참고 정보입니다.</p><div className="coach-demo"><Suspense fallback={<p>시범 준비 중…</p>}><ExerciseMotion3D motion={motion} progress={progress} mirror={false} compact/></Suspense></div></>;
+ return <><div className="coach-pane-title"><strong>운동 시범 · {SUPPORTED_POSE_EXERCISES[motion].label}</strong><button type="button" className="btn btn-ghost" disabled={paused} onClick={()=>setPlaying(p=>!p)}>{playing?'시범 정지':'시범 재생'}</button></div><p className="muted">영상으로 힘·근활성·기구 안전을 측정할 수 없습니다. 자세 피드백은 검증 전 참고 정보입니다.</p><div className="coach-demo"><Suspense fallback={<p>시범 준비 중…</p>}><ExerciseMotion3D motion={motion} progress={progress} mirror={false} measurement={localPreview?PREVIEW_MEASUREMENT:undefined} profile={localPreview?PREVIEW_PROFILE:undefined} standard={localPreview} compact/></Suspense></div></>;
 }
-export default function CameraCoaching({motion='squat',paused=false,onEvaluation}){
+export default function CameraCoaching({motion='squat',paused=false,onEvaluation,localPreview=false}){
  const video=useRef(null),stream=useRef(null),cameraVersion=useRef(0),analysisVersion=useRef(0),resources=useRef({}),voiceRef=useRef(false),speechAt=useRef(-Infinity),releaseCamera=useRef(null);
  const [running,setRunning]=useState(false),[busy,setBusy]=useState(false),[feedback,setFeedback]=useState(false),[preparing,setPreparing]=useState(false),[voice,setVoice]=useState(false),[error,setError]=useState(''),[result,setResult]=useState(null),[points,setPoints]=useState([]),[size,setSize]=useState([640,480]),[layout,setLayout]=useState('split');
  function stopAnalysis(){
@@ -53,13 +55,16 @@ export default function CameraCoaching({motion='squat',paused=false,onEvaluation
   const r={abort:new AbortController()};resources.current=r;
   r.prepareTimer=setTimeout(()=>{if(active()){stopAnalysis();setError('피드백 준비 시간이 초과되었습니다. 연결을 확인하고 다시 켜 주세요.');}},20000);
   try{
-   await api('/api/advanced/pose',undefined,{signal:r.abort.signal});if(!active())return;
+   if(!(localPreview&&import.meta.env.VITE_RELEASE_BUILD!=='true'))await api('/api/advanced/pose',undefined,{signal:r.abort.signal});if(!active())return;
    const model=import.meta.env.VITE_POSE_MODEL_URL||'/pose/pose_landmarker_lite.task';
    const asset=await fetch(model,{method:'HEAD',signal:r.abort.signal});if(!active())return;
-   if(!asset.ok||!(asset.headers.get('content-type')||'').includes('octet-stream'))throw Error('분석 모델을 준비하지 못했습니다. 카메라만 보기는 계속 사용할 수 있습니다.');
+   // Bundled .task assets can have no MIME header in WebViews/static servers.
+   // Reject HTML fallbacks; the model loader validates the actual model bytes.
+   const contentType=(asset.headers.get('content-type')||'').toLowerCase();
+   if(!asset.ok||(contentType&&!contentType.includes('octet-stream')&&!contentType.includes('application/zip')))throw Error('분석 모델을 준비하지 못했습니다. 카메라만 보기는 계속 사용할 수 있습니다.');
    const detector=await createPoseRunner(model,{signal:r.abort.signal});if(!active()){detector.close();return;}
    r.detector=detector;clearTimeout(r.prepareTimer);
-   r.timer=setInterval(()=>api('/api/advanced/pose').catch(()=>{if(active()){stopAnalysis();setError('분석 권한을 확인할 수 없어 피드백을 껐습니다. 카메라는 계속 볼 수 있습니다.');}}),60000);
+   if(!(localPreview&&import.meta.env.VITE_RELEASE_BUILD!=='true'))r.timer=setInterval(()=>api('/api/advanced/pose').catch(()=>{if(active()){stopAnalysis();setError('분석 권한을 확인할 수 없어 피드백을 껐습니다. 카메라는 계속 볼 수 있습니다.');}}),60000);
    const coach=createExercisePoseAnalyzer(motion),calibration=new PoseCalibration();let last=-Infinity;
    const watch=()=>{clearTimeout(r.staleTimer);r.staleTimer=setTimeout(()=>{if(active()){stopAnalysis();setError('새 분석 결과가 없어 피드백을 중지했습니다. 카메라 상태를 확인하고 다시 켜 주세요.');}},3000);};
    watch();
@@ -89,7 +94,7 @@ export default function CameraCoaching({motion='squat',paused=false,onEvaluation
  return <section className="camera-coaching" aria-label="선택형 카메라 코칭">
   <div className="coach-toolbar"><label>화면 배치<select value={layout} onChange={e=>{setLayout(e.target.value);if(e.target.value==='demo')stopCamera();}}><option value="split">반반 보기</option><option value="camera">카메라 크게</option><option value="demo">시범만 보기</option></select></label><span>권장 촬영: {CAMERA_DIRECTIONS[motion]}</span></div>
   <div className={`coach-stage coach-stage-${layout}`}>
-   <div className="coach-pane coach-example"><Demo motion={motion} paused={paused}/></div>
+   <div className="coach-pane coach-example"><Demo motion={motion} paused={paused} localPreview={localPreview&&import.meta.env.VITE_RELEASE_BUILD!=='true'}/></div>
    <div className="coach-pane coach-camera" hidden={layout==='demo'}><div className="coach-pane-title"><strong>내 모습</strong><span>{running?'카메라 켜짐':'카메라 꺼짐'}</span></div><div className="coach-feed"><video ref={video} muted playsInline aria-label="내 운동 모습"/><svg aria-hidden="true" viewBox={`0 0 ${size[0]} ${size[1]}`} preserveAspectRatio="xMidYMid meet">{feedback&&CONNECTIONS.map(([a,b])=>valid(points[a])&&valid(points[b])?<line key={`${a}-${b}`} x1={points[a].x*size[0]} y1={points[a].y*size[1]} x2={points[b].x*size[0]} y2={points[b].y*size[1]} stroke="#5df5cb" strokeWidth="4"/>:null)}</svg>{!running&&<p className="coach-camera-empty">카메라를 켜면 여기에 내 모습이 보여요.</p>}</div></div>
   </div>
   <div className="motion-controls"><button type="button" className="btn btn-primary" disabled={busy||running||paused||layout==='demo'} onClick={startCamera}>{busy?'카메라 준비 중…':'카메라 켜기'}</button><button type="button" className="btn btn-ghost" disabled={!busy&&!running} onClick={stopCamera}>카메라 끄기</button></div>

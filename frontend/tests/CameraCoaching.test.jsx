@@ -89,3 +89,14 @@ it('aborts a hanging model asset check at the preparation deadline',async()=>{
  render(<CameraCoaching/>);await camera();vi.useFakeTimers({toFake:['setTimeout','clearTimeout','setInterval','clearInterval','Date']});fetch.mockReturnValueOnce(new Promise(()=>{}));fireEvent.click(screen.getByRole('switch'));
  await act(async()=>vi.advanceTimersByTimeAsync(20001));expect(fetch.mock.calls[0][1].signal.aborted).toBe(true);expect(createPoseRunner).not.toHaveBeenCalled();expect(screen.getByRole('switch').checked).toBe(false);expect(track.stop).not.toHaveBeenCalled();
 });
+it('explicit local test preview starts bundled analysis without sending health data to a server',async()=>{
+ render(<CameraCoaching localPreview/>);await camera();await enable();expect(api).not.toHaveBeenCalled();
+});
+it('release builds still require server authorization even if a caller requests local preview',async()=>{
+ vi.stubEnv('VITE_RELEASE_BUILD','true');
+ try{render(<CameraCoaching localPreview/>);await camera();await enable();expect(api).toHaveBeenCalledWith('/api/advanced/pose',undefined,expect.any(Object));}
+ finally{vi.unstubAllEnvs();}
+});
+it('loads a bundled task with an omitted MIME header instead of rejecting a valid local asset',async()=>{
+ fetch.mockResolvedValueOnce({ok:true,headers:new Headers()});render(<CameraCoaching localPreview/>);await camera();await enable();expect(screen.queryByRole('alert')).toBeNull();
+});

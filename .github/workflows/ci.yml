@@ -109,7 +109,8 @@ jobs:
   android-compile:
     runs-on: ubuntu-latest
     env:
-      VITE_API_BASE: ${{ vars.VITE_API_BASE }}
+      # Debug preview opens the local test entry; production uses android-release.yml.
+      VITE_API_BASE: ""
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
