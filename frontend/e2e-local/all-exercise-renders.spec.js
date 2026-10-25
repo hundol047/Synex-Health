@@ -21,7 +21,8 @@ test('all 74 exercises render an actual mobile 3D surface and complete their mot
     await page.getByRole('button', { name: `${exercise.name} 동작 보기`, exact: true }).click();
     const stage = page.getByRole('region', { name: '선택한 운동 시범' });
     const canvas = stage.locator('canvas');
-    await expect(canvas).toHaveAttribute('data-exercise-rendered', exercise.motion_id);
+    // Cold software WebGL compilation on hosted CI can exceed the default five seconds.
+    await expect(canvas).toHaveAttribute('data-exercise-rendered', exercise.motion_id, {timeout:20000});
     expect(Number(await canvas.getAttribute('data-exercise-vertices'))).toBeGreaterThan(10000);
     await expect(page.locator('canvas')).toHaveCount(1);
     const images = [];

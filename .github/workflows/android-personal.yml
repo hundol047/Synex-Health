@@ -6,6 +6,33 @@ on:
 permissions:
   contents: read
 jobs:
+  browser-checks:
+    name: Personal browser checks (${{ matrix.shard }}/3)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: npm run pose:setup
+        working-directory: frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: npx playwright test --config playwright.local.config.js --shard=${{ matrix.shard }}/3
+        working-directory: frontend
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: personal-browser-checks-${{ matrix.shard }}
+          path: frontend/test-results
   personal-apk:
     runs-on: ubuntu-latest
     env:
@@ -34,8 +61,6 @@ jobs:
       - run: npm run pose:setup
         working-directory: frontend
       - run: npm test
-        working-directory: frontend
-      - run: npx playwright install --with-deps chromium && npx playwright test --config playwright.local.config.js
         working-directory: frontend
       - run: npm run android:local
         working-directory: frontend
@@ -82,3 +107,10 @@ jobs:
         with:
           name: android-native-test-results
           path: frontend/android/app/build/outputs/androidTest-results
+
+  personal-download-ready:
+    name: Personal APK download checks
+    needs: [browser-checks, personal-apk]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "All browser shards and Android startup checks passed for $GITHUB_SHA"
