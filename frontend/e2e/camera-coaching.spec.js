@@ -1,5 +1,5 @@
 import {test,expect} from '@playwright/test';
-test.use({viewport:{width:390,height:844},permissions:['camera'],launchOptions:{args:['--enable-unsafe-swiftshader','--disable-dev-shm-usage','--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream']}});
+test.use({viewport:{width:390,height:844},permissions:['camera'],launchOptions:{...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE?{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE}:{}),args:['--enable-unsafe-swiftshader','--disable-dev-shm-usage','--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream']}});
 test('camera split screen stays silent until opted in and releases preview on exercise change',async({page},info)=>{
  let analysisRequests=0;const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.addInitScript(()=>localStorage.setItem('synex-onboarding-v1','done'));
@@ -16,6 +16,6 @@ test('camera split screen stays silent until opted in and releases preview on ex
  expect(await page.locator('video').evaluate(v=>v.srcObject.getVideoTracks()[0].readyState)).toBe('live');
  await page.locator('video').evaluate(v=>{window.priorCameraTrack=v.srcObject.getVideoTracks()[0];});
  await page.getByLabel('따라 할 운동').selectOption('plank');await expect(feedback).not.toBeChecked();await expect(feedback).toBeDisabled();expect(await page.evaluate(()=>window.priorCameraTrack.readyState)).toBe('ended');
- await page.getByRole('button',{name:'카메라 켜기',exact:true}).click();await expect(feedback).toBeEnabled();await page.getByLabel('화면 배치').selectOption('demo');await expect(page.locator('video')).not.toBeVisible();await expect(feedback).toBeDisabled();
+ await page.getByRole('button',{name:'카메라 켜기',exact:true}).click();await expect(feedback).toBeEnabled();await page.locator('video').evaluate(v=>{window.priorCameraTrack=v.srcObject.getVideoTracks()[0];});await page.getByRole('button',{name:'카메라 끄기',exact:true}).click();await expect(feedback).toBeDisabled();expect(await page.evaluate(()=>window.priorCameraTrack.readyState)).toBe('ended');
  expect(errors).toEqual([]);
 });

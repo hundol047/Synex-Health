@@ -17,7 +17,7 @@ test('mobile replacement, set recording and weekly progress round trip',async({p
  await page.goto('/health/workout');const exercise=page.locator('.exercise-card').filter({has:page.getByRole('button',{name:'세트 추가',exact:true})}).first();
  await exercise.getByRole('button',{name:'세트 추가',exact:true}).click();
  await exercise.getByLabel('1세트 중량 kg',{exact:true}).fill('20');await exercise.getByLabel('1세트 횟수',{exact:true}).fill('12');
- await exercise.getByText('운동 시간·힘듦·메모 추가하기',{exact:true}).click();
+ await exercise.getByText('운동 시간·메모 추가하기',{exact:true}).click();
  await exercise.getByLabel('메모',{exact:true}).fill('수정해도 유지할 메모');
  await exercise.getByLabel('실제 운동 시간 (분)',{exact:true}).fill('12.5');
  await exercise.getByLabel('운동 힘듦 (RPE 1–10)',{exact:true}).fill('7');

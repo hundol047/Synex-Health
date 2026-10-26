@@ -17,6 +17,14 @@ android {
         }
     }
     signingConfigs {
+        debug {
+            if (System.getenv("PERSONAL_SIGNING_REQUIRED") == "true") {
+                storeFile file(System.getenv("SYNEX_KEYSTORE_PATH") ?: "MISSING-KEYSTORE")
+                storePassword System.getenv("SYNEX_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("SYNEX_KEY_ALIAS")
+                keyPassword System.getenv("SYNEX_KEY_PASSWORD")
+            }
+        }
         release {
             if (System.getenv("SYNEX_KEYSTORE_PATH")) {
                 storeFile file(System.getenv("SYNEX_KEYSTORE_PATH"))
@@ -66,6 +74,11 @@ try {
 
 // Never accidentally publish an unsigned release from the normal release tasks.
 gradle.taskGraph.whenReady { graph ->
+    if (System.getenv('PERSONAL_SIGNING_REQUIRED') == 'true') {
+        ['SYNEX_KEYSTORE_PATH','SYNEX_KEYSTORE_PASSWORD','SYNEX_KEY_ALIAS','SYNEX_KEY_PASSWORD','PERSONAL_SIGNER_SHA256'].each {
+            if (!System.getenv(it)) throw new GradleException('Persistent personal signing configuration is incomplete')
+        }
+    }
     if (graph.allTasks.any { it.name == 'bundleRelease' || it.name == 'assembleRelease' }) {
         ['SYNEX_KEYSTORE_PATH','SYNEX_KEYSTORE_PASSWORD','SYNEX_KEY_ALIAS','SYNEX_KEY_PASSWORD'].each {
             if (!System.getenv(it)) throw new GradleException('Release signing environment is incomplete')

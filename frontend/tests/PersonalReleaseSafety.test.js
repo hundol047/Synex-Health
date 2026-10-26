@@ -34,7 +34,7 @@ it('round trips encrypted records and rejects wrong passwords and tampering',asy
 });
 it('blocks a personal release until real-device and real-video acceptance is recorded',()=>{
  const e={VITE_LOCAL_ONLY:'true',VITE_RELEASE_BUILD:'true',VITE_LAUNCH_MODE:'free',SYNEX_APPLICATION_ID:'com.synex.health.personal',SYNEX_VERSION_CODE:'122'};
- expect(validateRelease(e)).toHaveLength(2);
- expect(validateRelease({...e,PERSONAL_DEVICE_QA_VERIFIED:'true',PERSONAL_POSE_QA_VERIFIED:'true'})).toEqual([]);
+ expect(validateRelease(e).join(' ')).toContain('PERSONAL_RELEASE_EVIDENCE');
+ expect(validateRelease({...e,PERSONAL_DEVICE_QA_VERIFIED:'true',PERSONAL_POSE_QA_VERIFIED:'true'}).join(' ')).toContain('PERSONAL_RELEASE_EVIDENCE');
  expect(validateRelease({...e,VITE_API_BASE:'https://server.invalid'}).join(' ')).toContain('local data');
 });

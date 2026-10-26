@@ -39,12 +39,12 @@ test('same viewer renders both meshes, opacity/selection/camera/mobile and origi
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
  await page.locator('.overlay-viewer').screenshot({path:info.outputPath('overlay-390.png')});
  await page.screenshot({path:info.outputPath('body-page-390.png'),fullPage:true});
- await page.getByRole('button',{name:'Fat · 체지방',exact:true}).click();await expect(page.getByRole('table')).toContainText('체지방량');
+ await page.getByRole('button',{name:'체지방량',exact:true}).click();await expect(page.getByRole('table')).toContainText('체지방량');
  await page.getByRole('button',{name:'근육 분석 값 (제지방)',exact:true}).click();
  await page.getByText('레이어 · 투명도 · 겹쳐보기 설정').click();await page.getByRole('checkbox',{name:/My Body →/}).check();await page.getByLabel('표면 전환',{exact:true}).fill('1');await page.getByRole('checkbox',{name:/My Body →/}).uncheck();await page.getByText('레이어 · 투명도 · 겹쳐보기 설정').click();
  await page.getByRole('button',{name:/이전 기록과 비교/}).click();
  await expect(page.getByRole('table')).toContainText('이전 측정');
- await page.getByRole('button',{name:/Range View/}).click();await expect(page.getByText('기준 범위',{exact:true})).toBeVisible();
+ await page.getByRole('button',{name:"기준 범위",exact:true}).click();await expect(page.getByRole('button',{name:'기준 범위',exact:true})).toHaveAttribute('aria-pressed','true');
  expect(errors).toEqual([]);
 });
 
@@ -85,7 +85,7 @@ test('routine previews and instructions visible; workout flow persists feedback 
  await page.getByLabel('통증 (0–10)',{exact:true}).fill('3');
  await page.getByRole('button',{name:'통증 기록 · 운동 중단',exact:true}).click();
  await expect(page.getByRole('heading',{name:'오늘의 운동 요약'})).toBeVisible();
- await expect(page.getByRole('alert')).toContainText('진행을 중단');
+ await expect(page.getByRole('alert').filter({hasText:'진행을 중단'})).toHaveCount(1);
  const logs=await(await page.request.get('/api/workouts')).json();expect(logs.some(w=>w.rpe===6&&w.completed)).toBeTruthy();expect(logs.some(w=>w.pain===3&&!w.completed)).toBeTruthy();
- await page.goto('/health/pose');await expect(page.getByText('촬영 준비와 개인정보')).toBeVisible();await expect(page.getByText(/권장 촬영/)).toBeVisible();
+ await page.goto('/health/pose');await page.getByText('촬영 방법과 자세 분석 안내',{exact:true}).click();await expect(page.getByText(/권장 방향:/)).toBeVisible();
 });

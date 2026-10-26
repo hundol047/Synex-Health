@@ -23,7 +23,7 @@ public class PersonalStartupTest {
             .getString("timeoutMultiplier", "1")));
     }
 
-    private String evaluate(ActivityScenario<MainActivity> scenario, String script) throws Exception {
+    protected String evaluate(ActivityScenario<MainActivity> scenario, String script) throws Exception {
         AtomicReference<String> result = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
         scenario.onActivity(activity -> {
@@ -35,7 +35,7 @@ public class PersonalStartupTest {
         return String.valueOf(value);
     }
 
-    private void waitFor(ActivityScenario<MainActivity> scenario, String expression) throws Exception {
+    protected void waitFor(ActivityScenario<MainActivity> scenario, String expression) throws Exception {
         long until = System.currentTimeMillis() + 45000 * timeoutMultiplier();
         while (System.currentTimeMillis() < until) {
             if ("true".equals(evaluate(scenario, expression))) return;
