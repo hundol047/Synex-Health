@@ -1,4 +1,5 @@
 import {validateRelease} from './release-config.mjs';
+import {readFileSync,writeFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {resolve,dirname} from 'node:path';
@@ -8,5 +9,6 @@ const env={...process.env,VITE_LOCAL_ONLY:'true',VITE_RELEASE_BUILD:release?'tru
 if(release){const errors=validateRelease(env);if(!process.env.SYNEX_APPLICATION_ID)errors.push('Explicit existing distribution SYNEX_APPLICATION_ID required');for(const name of ['SYNEX_KEYSTORE_PATH','SYNEX_KEYSTORE_PASSWORD','SYNEX_KEY_ALIAS','SYNEX_KEY_PASSWORD'])if(!env[name])errors.push(`${name} required`);if(errors.length)throw Error(errors.join('\n'));}
 function run(command,args,cwd=root){const r=spawnSync(command,args,{cwd,env,stdio:'inherit',shell:process.platform==='win32'});if(r.error)throw r.error;if(r.status!==0)process.exit(r.status||1);}
 run('node',['scripts/install-pose-model.mjs']);run('npm',['run','prebuild']);run('npx',['vite','build']);run('npx',['cap','sync','android']);
+if(env.SYNEX_APPLICATION_ID==='com.synex.health.personal.preview'){const f=resolve(root,'android/app/src/main/res/values/strings.xml');writeFileSync(f,readFileSync(f,'utf8').replaceAll('Synex Health 개인용','Synex Health 검증판').replaceAll('com.synex.health.personal<','com.synex.health.personal.preview<'));}
 run(process.platform==='win32'?'gradlew.bat':'./gradlew',[release?'bundleRelease':'assembleDebug','--no-daemon'],resolve(root,'android'));
 console.log(release?'Bundle: frontend/android/app/build/outputs/bundle/release/app-release.aab':'Install: frontend/android/app/build/outputs/apk/debug/app-debug.apk');

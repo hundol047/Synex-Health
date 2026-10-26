@@ -38,3 +38,12 @@ it('blocks a personal release until real-device and real-video acceptance is rec
  expect(validateRelease({...e,PERSONAL_DEVICE_QA_VERIFIED:'true',PERSONAL_POSE_QA_VERIFIED:'true'}).join(' ')).toContain('PERSONAL_RELEASE_EVIDENCE');
  expect(validateRelease({...e,VITE_API_BASE:'https://server.invalid'}).join(' ')).toContain('local data');
 });
+it('validates backup previews without replacing current records, and rejects the same corrupt data as restore',async()=>{
+ await localApi('/api/health/profile',{name:'현재 기록'},{method:'PUT'});
+ const backup=await localApi('/api/privacy/backup');backup.document.profile.name='옮길 기록';
+ expect(await localApi('/api/privacy/restore-preview',{backup})).toMatchObject({name:'옮길 기록',measurements:0,workouts:0});
+ expect((await localApi('/api/privacy/export')).profile.name).toBe('현재 기록');
+ backup.document.exercise.days_per_week=99;
+ await expect(localApi('/api/privacy/restore-preview',{backup})).rejects.toThrow('운동 일수');
+ expect((await localApi('/api/privacy/export')).profile.name).toBe('현재 기록');
+});

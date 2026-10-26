@@ -41,7 +41,7 @@ export default function StretchRecovery({exercises=[],pain=false,autoStart=true}
  function skip(){setIndex(i=>i+1);setElapsed(0);setPreparing(true);if(index+1>=queue.length)setRunning(false);}
  function restart(){setQueue(recommended);setIndex(0);setElapsed(0);setPreparing(true);setRunning(!pain);}
  return <section className="stretch-recovery" aria-label="운동 후 스트레칭">
-  <header><span className="recovery-kicker">RECOVERY · 운동에 맞춘 마무리</span><h2>사용한 근육을 부드럽게 풀어요</h2><p>수행한 운동의 사용 부위와 연결된 부위에 맞춰 {recommended.length||'4~5'}개를 추천했어요. 5초 준비 후 순서대로 자동 진행합니다.</p></header>
+  <header><span className="recovery-kicker">RECOVERY · 운동에 맞춘 마무리</span><h2>사용한 근육을 부드럽게 풀어요</h2><p>{recommended.length?`수행한 운동의 사용 부위와 연결된 부위에 맞춰 ${recommended.length}개를 추천했어요. 5초 준비 후 순서대로 자동 진행합니다.`:'아직 수행한 운동이 없어 자동 추천을 시작하지 않았어요.'}</p></header>
   <p>당기는 느낌이 약한 범위에서 반동 없이 20초씩, 양쪽 동작은 반대쪽도 이어집니다. 실제 피로도 측정이나 근육통·회복 효과를 보장하는 추천은 아닙니다.</p>
   <label><input type="checkbox" checked={voice} onChange={e=>setVoice(e.target.checked)}/> 스트레칭 음성 안내</label>{voiceError&&<p role="status">{voiceError}</p>}
   {pain&&<p role="alert">통증이 기록되어 자동 스트레칭을 멈췄어요. 아픈 부위를 늘리기보다 쉬고, 통증이 지속되면 전문가와 상담하세요.</p>}

@@ -3,6 +3,11 @@ on:
   push:
     branches: [main, fix/android-local]
   workflow_dispatch:
+    inputs:
+      isolated_preview:
+        description: Build a separate install candidate for local persistent signing
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -41,7 +46,8 @@ jobs:
       VITE_BUILD_COMMIT: ${{ github.sha }}
       SYNEX_VERSION_CODE: ${{ github.run_number }}
       SYNEX_VERSION_NAME: 1.0.${{ github.run_number }}
-      SYNEX_APPLICATION_ID: com.synex.health.personal
+      SYNEX_APPLICATION_ID: ${{ inputs.isolated_preview && 'com.synex.health.personal.preview' || 'com.synex.health.personal' }}
+      VITE_ISOLATED_PREVIEW: ${{ inputs.isolated_preview && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -66,6 +72,7 @@ jobs:
         working-directory: frontend
       - name: Restore persistent personal signing key or mark build as CI only
         id: signing
+        if: inputs.isolated_preview != true
         env:
           KEYSTORE: ${{ secrets.PERSONAL_ANDROID_KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.PERSONAL_ANDROID_KEYSTORE_PASSWORD }}
@@ -116,13 +123,13 @@ jobs:
               assert b'device-balanced-v2' in scripts
               assert os.environ['VITE_BUILD_COMMIT'][:8].encode() in scripts
           badging=subprocess.check_output([os.environ['ANDROID_HOME']+'/build-tools/36.0.0/aapt','dump','badging','frontend/android/app/build/outputs/apk/debug/app-debug.apk'],text=True)
-          assert "name='com.synex.health.personal'" in badging
-          assert 'Synex Health 개인용' in badging
+          assert "name='"+os.environ['SYNEX_APPLICATION_ID']+"'" in badging
+          assert ('Synex Health 검증판' if os.environ.get('VITE_ISOLATED_PREVIEW')=='true' else 'Synex Health 개인용') in badging
           print('Verified personal mode, package ID, app label, local algorithm and current build ID')
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.signing.outputs.ready == 'true' && 'Synex-Health-Android-Personal' || 'CI-ONLY-NOT-FOR-DISTRIBUTION' }}-${{ github.sha }}
+          name: ${{ inputs.isolated_preview && 'ISOLATED-CANDIDATE-LOCAL-SIGNING-REQUIRED' || steps.signing.outputs.ready == 'true' && 'Synex-Health-Android-Personal' || 'CI-ONLY-NOT-FOR-DISTRIBUTION' }}-${{ github.sha }}
           path: frontend/android/app/build/outputs/apk/debug/app-debug.apk
       - uses: actions/upload-artifact@v4
         if: always()

@@ -1,0 +1,6 @@
+{
+  "application_id": "com.synex.health.personal.preview",
+  "certificate_sha256": "62552472fcb89d4318e6837cae19f2778ef1a8260038e1d06b46bcc0128007b2",
+  "kind": "isolated-personal-preview",
+  "release": false
+}

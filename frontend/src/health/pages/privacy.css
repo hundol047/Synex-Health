@@ -1,0 +1,14 @@
+.privacy-action-status:not(:empty){position:sticky;top:8px;z-index:20;padding:12px 16px;margin:0 0 16px;border:1px solid #b7cce8;border-radius:12px;background:#eff6ff;color:#153c6a;box-shadow:0 3px 12px #183c6212;line-height:1.6;overflow-wrap:anywhere}
+#personal-backup{display:grid;gap:12px;margin-top:24px}
+#personal-backup>label{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+#personal-backup input[type=password],#personal-backup input[type=text]{width:100%;min-width:0;padding:12px;border:1px solid #b9c9dd;border-radius:10px;font:inherit}
+#personal-backup input[type=file]{max-width:100%;min-width:0}
+.backup-preview{padding:16px;border:1px solid #bad1ee;border-radius:12px;background:#f3f8ff;overflow-wrap:anywhere}
+.backup-preview button{margin:4px 8px 4px 0}
+.privacy-action-status:not(:empty){display:flex;align-items:center;gap:8px}
+.privacy-action-status:has(>span:empty){display:none}
+.privacy-action-status button{flex-shrink:0;min-height:40px;padding:6px 10px}
+.backup-file-picker{position:relative;justify-content:center;min-height:48px;padding:10px;border:1px solid #8daed8;border-radius:10px;color:#214d82;background:#edf5ff;cursor:pointer;text-align:center;font-weight:600}
+.backup-file-picker input[type=file]{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.backup-file-picker:focus-within{outline:3px solid #6095df;outline-offset:2px}
+.backup-file-picker:has(input:disabled){opacity:.5;cursor:default}

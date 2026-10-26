@@ -9,7 +9,7 @@ export default function WorkoutResults({exercises,measurement,records:recordedWo
  const [weight,setWeight]=useState(()=>String(measurement?.weight_kg??measurement?.weight??''));
  const [rows,setRows]=useState(()=>exercises.map((ex,i)=>({minutes:skipped.includes(i)?'0':recordedActiveMinutes(records.find(r=>r.routine_exercise_id===ex.exercise_id)),met:String(calorieActivity(ex).met)})));
  const [confirmed,setConfirmed]=useState(false),[error,setError]=useState('');
- function change(i,key,value){setConfirmed(false);setRows(old=>old.map((r,j)=>i===j?{...r,[key]:value}:r));}
+ function change(i,key,value){setConfirmed(false);setError('');setRows(old=>old.map((r,j)=>i===j?{...r,[key]:value}:r));}
  const estimates=rows.map(r=>r.minutes.trim()===''?null:estimateCalories(Number(weight),Number(r.minutes),Number(r.met)));
  const total=estimates.reduce((s,v)=>s+(v?.gross||0),0),active=estimates.reduce((s,v)=>s+(v?.active||0),0);
  const muscle=measurement?.skeletal_muscle_mass??measurement?.skeletal_muscle_mass_kg;
@@ -19,6 +19,7 @@ export default function WorkoutResults({exercises,measurement,records:recordedWo
   <StretchRecovery exercises={performed} pain={records.some(r=>r.pain>0)}/><h3>칼로리 확인</h3>
   <div className="recovery-measurements"><label>계산할 몸무게 (kg)<input type="number" min="20" max="350" step="0.1" value={weight} onChange={e=>{setWeight(e.target.value);setConfirmed(false);}}/></label><p>최근 골격근량 <strong>{Number.isFinite(muscle)?`${muscle} kg`:'미입력'}</strong><small>골격근량은 신체 정보로 표시합니다. 근육량만으로 운동 칼로리를 정확히 환산할 수 없어 계산 계수로 사용하지 않습니다.</small></p></div>
   <form onSubmit={e=>{e.preventDefault();if(estimates.some(v=>v===null)){setError('몸무게 20~350kg, 각 운동의 실제 시간 0~240분을 입력하세요. 안 한 운동은 0분입니다.');return;}setError('');setConfirmed(true);}}>
+   {Object.values(workMs).some(ms=>ms>0)&&<div><button type="button" className="btn btn-secondary" onClick={()=>{setConfirmed(false);setError('');setRows(old=>old.map((r,i)=>r.minutes===''&&workMs[i]>0?{...r,minutes:String(Math.min(240,Math.round(workMs[i]/60000*100)/100))}:r));}}>빈 시간에 운동 타이머 값 가져오기</button><p>준비·휴식을 뺀 시범 진행 시간입니다. 실제로 따라 한 시간으로 수정한 뒤 계산하세요. 직접 입력한 시간과 건너뛴 운동은 유지합니다.</p></div>}
    <div className="calorie-rows">{exercises.map((ex,i)=><fieldset key={ex.exercise_id||`${ex.motion_id}-${i}`}><legend>{ex.exercise_name||ex.name}{skipped.includes(i)?' · 건너뜀':''}</legend>{workMs[i]>0&&<small>시범 진행 {(workMs[i]/60000).toFixed(1)}분 · 실제 수행 시간은 직접 확인하세요.</small>}<label>실제 운동 시간 (분)<input aria-label={`${ex.exercise_name||ex.name} 실제 운동 분`} type="number" min="0" max="240" step="0.01" value={rows[i].minutes} onChange={e=>change(i,'minutes',e.target.value)}/></label><label>활동 강도<select aria-label={`${ex.exercise_name||ex.name} 활동 강도`} value={rows[i].met} onChange={e=>change(i,'met',e.target.value)}>{calorieOptions(ex).map(option=><option key={option.met} value={option.met}>{option.label} · {option.met} MET</option>)}</select></label>{confirmed&&<strong>약 {Math.round(estimates[i].gross)} kcal</strong>}</fieldset>)}</div>
    <p>준비·휴식·일시정지 시간은 빼고 입력하세요. 건너뛴 운동은 기본 0분이며, 일부 수행했다면 그 시간만 입력할 수 있습니다.</p>{error&&<p role="alert">{error}</p>}<button className="btn btn-primary" type="submit">실제 시간 확인 · 칼로리 계산</button>
   </form>

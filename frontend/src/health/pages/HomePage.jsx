@@ -48,6 +48,7 @@ export default function HomePage() {
 
   return (
     <div className={LOCAL_ONLY?'health-home personal-home':'health-home'}>
+      {import.meta.env.VITE_ISOLATED_PREVIEW==='true'&&<Card title="기존 앱과 함께 쓰는 검증판"><p>기존 앱과 기록은 그대로 유지됩니다. 기록을 옮기려면 기존 앱의 개인정보 화면에서 암호화 백업을 저장한 뒤 여기에서 확인·복원하세요.</p><Link className="btn btn-secondary" to="/health/privacy#personal-backup">백업 확인·복원 열기</Link></Card>}
       <div className="home-greeting">
         {LOCAL_ONLY&&<span className="home-eyebrow">나의 건강 공간</span>}
         <h1>{profile.loading ? <Skeleton height={28} width={220} /> : `안녕하세요${name ? `, ${name}님` : ''}`}</h1>

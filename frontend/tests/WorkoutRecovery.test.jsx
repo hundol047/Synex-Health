@@ -57,3 +57,12 @@ it('does not automatically stretch after a pain stop or when every exercise was 
  render(<WorkoutResults exercises={exercises} skipped={[0,1]}/>);expect(screen.queryByTestId('stretch-model')).toBeNull();cleanup();
  render(<WorkoutResults exercises={exercises} records={[]} skipped={[1]}/>);expect(screen.queryByTestId('stretch-model')).toBeNull();
 });
+it('imports only empty timer durations and keeps manual and skipped values until user confirms calories',()=>{
+ render(<WorkoutResults exercises={[...exercises,{exercise_id:'p',motion_id:'plank',exercise_name:'플랭크'}]} skipped={[1]} workMs={{0:90000,1:20000,2:30000}} measurement={{weight:70}}/>);
+ fireEvent.change(screen.getByLabelText('플랭크 실제 운동 분'),{target:{value:'2'}});
+ fireEvent.click(screen.getByRole('button',{name:'빈 시간에 운동 타이머 값 가져오기'}));
+ expect(screen.getByLabelText('스쿼트 실제 운동 분').value).toBe('1.5');
+ expect(screen.getByLabelText('컬 실제 운동 분').value).toBe('0');
+ expect(screen.getByLabelText('플랭크 실제 운동 분').value).toBe('2');
+ expect(screen.queryByText('운동 시간 동안의 예상 소모량')).toBeNull();
+});

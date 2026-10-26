@@ -1,0 +1,32 @@
+import {test,expect} from '@playwright/test';
+import {readFile} from 'node:fs/promises';
+
+test('encrypted backup can be checked without overwriting records, then explicitly restored on mobile',async({page},info)=>{
+ await page.setViewportSize({width:360,height:800});
+ await page.addInitScript(()=>{localStorage.setItem('synex-personal-onboarding-v1','done');localStorage.setItem('synex-personal-consent-v1','accepted');});
+ await page.goto('/health/profile');await page.getByLabel('이름',{exact:true}).fill('백업 원본');
+ await page.getByRole('button',{name:'저장하기',exact:true}).click();await expect(page.getByText('저장되었습니다.',{exact:true})).toBeVisible();
+ await page.goto('/health/privacy');
+ await page.getByLabel('백업 암호',{exact:true}).fill('safe-backup-test-password');
+ const downloading=page.waitForEvent('download');await page.getByRole('button',{name:'암호화 백업 저장',exact:true}).click();
+ const file=await downloading,location=info.outputPath('encrypted-fixture.json');await file.saveAs(location);
+ expect(await readFile(location,'utf8')).not.toContain('백업 원본');
+ await expect(page.getByRole('status').filter({hasText:'암호화 백업 파일을 생성'})).toBeInViewport();
+ await page.goto('/health/profile');await page.getByLabel('이름',{exact:true}).fill('현재 기록');await page.getByRole('button',{name:'저장하기',exact:true}).click();await expect(page.getByText('저장되었습니다.',{exact:true})).toBeVisible();
+ await page.goto('/health/privacy');
+ await page.getByLabel('백업 암호',{exact:true}).fill('wrong-backup-password');
+ await page.getByLabel('암호화 백업 파일 확인').setInputFiles(location);
+ await expect(page.getByRole('status').filter({hasText:'암호가 다르거나'})).toBeInViewport();
+ await expect(page.getByRole('button',{name:'확인한 백업으로 복원'})).toHaveCount(0);
+ await page.getByLabel('백업 암호',{exact:true}).fill('safe-backup-test-password');
+ await page.getByLabel('암호화 백업 파일 확인').setInputFiles(location);
+ await expect(page.getByText('백업 원본 · 체성분 0건 · 운동 기록 0건')).toBeVisible();
+ await page.goto('/health/profile');await expect(page.getByLabel('이름',{exact:true})).toHaveValue('현재 기록');
+ await page.goto('/health/privacy');await page.getByLabel('백업 암호',{exact:true}).fill('safe-backup-test-password');await page.getByLabel('암호화 백업 파일 확인').setInputFiles(location);
+ await expect(page.getByRole('button',{name:'확인한 백업으로 복원'})).toBeVisible();
+ page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'확인한 백업으로 복원'}).click();
+ await expect(page.getByRole('status').filter({hasText:'복원이 완료되었습니다'})).toBeInViewport();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.screenshot({path:info.outputPath('backup-preview-mobile.png')});
+ await page.goto('/health/profile');await expect(page.getByLabel('이름',{exact:true})).toHaveValue('백업 원본');
+});
