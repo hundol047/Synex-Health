@@ -14,7 +14,7 @@ test('mobile catalog separates bodyweight/gym, filters equipment, and opens a ma
  // Wait for the first 3D guide mount; keep the subsequent behavior assertions unchanged.
  await expect(page.getByRole('heading',{name:'준비부터 마무리까지'})).toBeVisible({timeout:20000});
  await expect(page.locator('canvas')).toHaveAttribute('data-exercise-rendered','leg_press');
- await expect(page.getByRole('button',{name:'동작 재생',exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:'일시정지',exact:true})).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await page.screenshot({path:info.outputPath('gym-library-390.png'),fullPage:true});expect(errors).toEqual([]);
 });
