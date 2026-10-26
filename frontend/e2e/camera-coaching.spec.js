@@ -5,6 +5,8 @@ test('camera split screen stays silent until opted in and releases preview on ex
  await page.addInitScript(()=>localStorage.setItem('synex-onboarding-v1','done'));
  await page.route('**/api/advanced/pose',route=>{analysisRequests++;return route.fulfill({status:403,contentType:'application/json',body:JSON.stringify({detail:'분석 권한 확인 필요'})});});
  await page.goto('/health/pose?motion=squat');const feedback=page.getByRole('switch',{name:'자세 피드백 받기'});
+ // Cold Vite/SwiftShader initialization on CI may finish after the default 5s assertion window.
+ await expect(feedback).toBeVisible({timeout:20000});
  await expect(feedback).not.toBeChecked();await expect(page.locator('.coach-demo canvas')).toBeVisible();
  await page.getByRole('button',{name:'카메라 켜기',exact:true}).click();await expect(feedback).toBeEnabled();
  await expect.poll(()=>page.locator('video').evaluate(v=>v.videoWidth)).toBeGreaterThan(0);expect(analysisRequests).toBe(0);
