@@ -1,0 +1,17 @@
+{
+  "baseline": {
+    "application_id": "com.synex.health.personal.preview",
+    "version_code": 200055,
+    "signer_sha256": "62552472fcb89d4318e6837cae19f2778ef1a8260038e1d06b46bcc0128007b2",
+    "sha256": "57274b532803733b841c341767553f3cad547e163ccdfd17af022e05c4866077"
+  },
+  "candidate": {
+    "application_id": "com.synex.health.personal.preview",
+    "version_code": 200061,
+    "signer_sha256": "62552472fcb89d4318e6837cae19f2778ef1a8260038e1d06b46bcc0128007b2",
+    "sha256": "f9341689c7894acd5142d98a129ae33ac7def92bdf0e37532c4ce9eff908d24a"
+  },
+  "compatibility": "passed",
+  "record_preservation": "not tested with final signed APKs",
+  "physical_device": false
+}
