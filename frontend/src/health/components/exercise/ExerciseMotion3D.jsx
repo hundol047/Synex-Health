@@ -16,6 +16,7 @@ import { bindSurface, calibratePalmRoll, deformSurface, poseJoints, REST } from 
 import { MOTIONS } from './motions.js';
 import {FLOOR_STRETCHES} from './stretchRig.js';
 import MotionFigure from './MotionFigure.jsx';
+import { applyMannequinColors, mannequinGuide, mannequinMaterials } from './instructionMannequin.js';
 
 const FLOOR_MOTIONS = /plank|bridge|dead_bug|bird_dog|push_?up|clamshell|prone_y|heel_slide|cat_cow|floor_press|bench_press/;
 const PLANTED_FLOOR_MOTIONS = new Set(['full_pushup', 'push_up', 'plank', 'bridge', 'glute_bridge']);
@@ -57,7 +58,7 @@ function SceneCamera({ motion, view, mirror, heightScale, controls }) {
   return null;
 }
 
-function Athlete({ motion, progress, mirror, measurement, profile, compact }) {
+function Athlete({ motion, progress, mirror, measurement, profile, compact, appearance }) {
   const actor = useRef();
   const { invalidate } = useThree();
   const model = useMemo(() => {
@@ -71,8 +72,10 @@ function Athlete({ motion, progress, mirror, measurement, profile, compact }) {
     rest.heelContactHeights=heelContactHeights(shoes,rest);
     rest.handGripScale = calibrateGripScale(wear.positions, weights, rest);
     rest.wallSupport = calibrateWallSupport(wear.positions, weights, rest);
-    return { base: wear.positions, weights, rest, scale, palmRoll: calibratePalmRoll(wear.positions, weights, rest), geometry: exerciseAvatarGeometry(wear, scale), appearance: exerciseMaterials(), shoes };
-  }, [measurement, profile]);
+    const geometry = exerciseAvatarGeometry(wear, scale);
+    if (appearance === 'mannequin') applyMannequinColors(geometry, scale, motion);
+    return { base: wear.positions, weights, rest, scale, palmRoll: calibratePalmRoll(wear.positions, weights, rest), geometry, appearance: appearance === 'mannequin' ? mannequinMaterials() : exerciseMaterials(), shoes };
+  }, [measurement, profile, appearance, motion]);
   const joints = useMemo(() => {
     const posed = poseJoints(motion, progress, model.rest);
     if (posed.handRoll && !posed.boneRotations?.[12]) posed.handRoll = model.palmRoll;
@@ -105,6 +108,7 @@ function Athlete({ motion, progress, mirror, measurement, profile, compact }) {
     <group ref={actor}>
       <mesh name="exercise-athlete" geometry={model.geometry} material={model.appearance.materials} castShadow={!compact} receiveShadow onAfterRender={(renderer) => {
         renderer.domElement.dataset.exerciseRendered = motion;
+        renderer.domElement.dataset.exerciseAppearance = appearance;
         renderer.domElement.dataset.exerciseProgress = String(progress);
         renderer.domElement.dataset.exerciseVertices = String(model.geometry.attributes.position.count);
       }}/>
@@ -193,6 +197,8 @@ export default function ExerciseMotion3D({ motion, progress, mirror, measurement
   const controls = useRef();
   const initialView = defaultView || (FLOOR_MOTIONS.test(motion) ? 'side' : '45');
   const [view, setView] = useState(initialView);
+  const [appearance, setAppearance] = useState('mannequin');
+  const anatomy = mannequinGuide(motion);
   useEffect(() => setView(initialView), [motion, initialView]);
   // The instructor has a consistent demonstration build. Personal body
   // composition remains on the separate mannequin; it must not move a
@@ -201,14 +207,24 @@ export default function ExerciseMotion3D({ motion, progress, mirror, measurement
   const heightScale = morphParameters(m, p).heightScale;
   const fallback = fallbackContent||<MotionFigure exercise={{ motion_id: motion, exercise_name: '운동' }} progress={progress} mirror={mirror}/>;
   return <>
+    {!compact && <div className="motion-appearance-controls" role="group" aria-label="시범 인체 표현">
+      <button type="button" aria-pressed={appearance === 'mannequin'} onClick={() => setAppearance('mannequin')}>부위 강조 인체</button>
+      <button type="button" aria-pressed={appearance === 'athlete'} onClick={() => setAppearance('athlete')}>운동복 인체</button>
+    </div>}
     <div className="motion-controls motion-view-controls">{compact ? <select aria-label="운동 시범 방향" value={view} onChange={event => setView(event.target.value)}><option value="front">정면</option><option value="45">45°</option><option value="side">측면</option></select> : [['front', '정면'], ['45', '45°'], ['side', '측면'], ['back', '후면'], ['free', '자유']].map(([id, label]) => <button key={id} type="button" className="btn btn-ghost" aria-label={`${label} 운동 시범 보기`} aria-pressed={view === id} onClick={() => setView(id)}>{label}</button>)}</div>
-    <div className="motion-3d-canvas" style={{ height: compact ? undefined : 340, flex: compact ? '1 1 0' : undefined, minHeight: compact ? 0 : undefined, touchAction: 'none' }}>
-      <SceneBoundary motion={motion} fallback={fallback}><Canvas shadows={!compact} dpr={[1, compact ? 1.5 : 2]} frameloop="demand" gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }} camera={{ position: [3, 1.5, 3], fov: 36 }} fallback={fallback} aria-label="운동복을 입은 3D 운동 시범">
+    <div className="motion-3d-canvas" style={{ position: 'relative', height: compact ? undefined : 340, flex: compact ? '1 1 0' : undefined, minHeight: compact ? 0 : undefined, touchAction: 'none' }}>
+      <SceneBoundary motion={motion} fallback={fallback}><Canvas shadows={!compact} dpr={[1, compact ? 1.5 : 2]} frameloop="demand" gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }} camera={{ position: [3, 1.5, 3], fov: 36 }} fallback={fallback} aria-label={appearance === 'mannequin' ? '운동 부위를 강조한 3D 운동 시범' : '운동복을 입은 3D 운동 시범'}>
         <SceneCamera motion={motion} view={view} mirror={mirror} heightScale={heightScale} controls={controls}/><Studio compact={compact} heightScale={heightScale} motion={motion}/>
-        <Athlete {...{ motion, progress, mirror, compact }} measurement={m} profile={p}/>
+        <Athlete {...{ motion, progress, mirror, compact, appearance }} measurement={m} profile={p}/>
         <OrbitControls ref={controls} enabled={view === 'free'} enablePan={false} minDistance={1.2 * heightScale} maxDistance={6 * heightScale} maxPolarAngle={Math.PI / 2 - .02}/>
       </Canvas></SceneBoundary>
+      {compact && appearance === 'mannequin' && anatomy.primary.length > 0 && <span className="motion-anatomy-badge" title={`주요 부위: ${anatomy.primaryLabel}. 운동 안내이며 실제 근육 사용량 측정이 아닙니다.`}>파랑 · 주요 운동 부위</span>}
     </div>
+    {!compact && appearance === 'mannequin' && <div className="motion-anatomy-legend" aria-label="운동 부위 색상 안내">
+      {anatomy.primary.length > 0 && <span><i className="primary"/>주요 부위 · {anatomy.primaryLabel}</span>}
+      {!compact && anatomy.secondary.length > 0 && <span><i className="secondary"/>보조 부위 · {anatomy.secondaryLabel}</span>}
+      <small>{anatomy.primary.length ? '색상은 운동 부위 안내이며 실제 근육 사용량 측정이 아닙니다.' : '이 동작은 특정 근육 색상 없이 전신 움직임을 안내합니다.'}</small>
+    </div>}
     {!compact && <p className="muted">{measurement ? '나의 체형' : '표준 시범 체형'} · 자유 방향에서 드래그로 돌려 보세요.</p>}
   </>;
 }

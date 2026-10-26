@@ -1,0 +1,23 @@
+import { test, expect } from '@playwright/test';
+test('reference-style instruction preserves playback when changing appearance and viewing the back', async ({ page }, info) => {
+  await page.addInitScript(() => {localStorage.setItem('synex-personal-onboarding-v1','done');localStorage.setItem('synex-personal-consent-v1','accepted');});
+  await page.goto('/health/library');
+  await page.getByLabel('운동·근육 검색').fill('맨몸 스쿼트');
+  await page.getByRole('button',{name:'맨몸 스쿼트 동작 보기',exact:true}).click();
+  const stage = page.getByRole('region',{name:'선택한 운동 시범'}), canvas = stage.locator('canvas');
+  await expect(canvas).toHaveAttribute('data-exercise-appearance','mannequin',{timeout:20000});
+  await expect(stage.getByLabel('운동 부위 색상 안내')).toContainText('대퇴사두근');
+  await stage.getByLabel('동작 구간',{exact:true}).fill('50');
+  await expect(canvas).toHaveAttribute('data-exercise-progress','0.5');
+  await canvas.screenshot({path:info.outputPath('mannequin-squat-front.png')});
+  await stage.getByRole('button',{name:'후면 운동 시범 보기',exact:true}).click();
+  await canvas.screenshot({path:info.outputPath('mannequin-squat-back.png')});
+  await stage.getByRole('button',{name:'운동복 인체',exact:true}).click();
+  await expect(canvas).toHaveAttribute('data-exercise-appearance','athlete');
+  await expect(canvas).toHaveAttribute('data-exercise-progress','0.5');
+  await stage.getByRole('button',{name:'부위 강조 인체',exact:true}).click();
+  await expect(canvas).toHaveAttribute('data-exercise-appearance','mannequin');
+  await stage.getByRole('button',{name:'동작 재생',exact:true}).click();
+  await expect.poll(async()=>Number(await canvas.getAttribute('data-exercise-progress'))).not.toBe(.5);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});
