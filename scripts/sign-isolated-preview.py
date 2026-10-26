@@ -28,7 +28,7 @@ for f in [a.keystore,a.password_file]:
     if not f.is_file() or f.stat().st_mode&0o077:raise SystemExit('Retained signing files must be private (0600)')
 a.output.parent.mkdir(parents=True,exist_ok=True)
 try:
-    run('java','-jar',str(a.apksigner),'sign','--ks',str(a.keystore),'--ks-key-alias','personal-preview','--ks-pass','file:'+str(a.password_file),'--key-pass','file:'+str(a.password_file),'--out',str(a.output),str(a.source))
+    run('java','-jar',str(a.apksigner),'sign','--ks',str(a.keystore),'--ks-key-alias','personal-preview','--ks-pass','file:'+str(a.password_file),'--out',str(a.output),str(a.source))
     verified=run('java','-jar',str(a.apksigner),'verify','--verbose','--print-certs',str(a.output))
     certs=re.findall(r'Signer #\d+ certificate SHA-256 digest: ([a-f0-9]{64})',verified)
     if certs!=[pin['certificate_sha256']]:raise ValueError('Signing certificate differs from repository pin')
