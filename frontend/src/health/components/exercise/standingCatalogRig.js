@@ -295,7 +295,7 @@ export function standingCatalogPose(id, progress, rest) {
     } else if (seated || id === 'wall_sit') {
       target = [side * .20 * h, (.75 - (id === 'hamstring_stretch' ? .10 * bend : 0)) * h, (.23 + (id === 'hamstring_stretch' ? .13 * bend : 0)) * h];
       toward = [side * .3, -1, 0];
-      hand = [0, -1, .1];
+      hand = null; // Rested hands follow the forearm instead of bending down at the wrist.
     } else if (id === 'standing_knee_crunch') {
       target = [side * .15 * h, joints[root][1] - .17 * h - .08 * h * lift, joints[root][2] + .24 * h];
       toward = [side * .5, -1, 0];

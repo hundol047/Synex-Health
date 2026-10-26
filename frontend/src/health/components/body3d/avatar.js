@@ -1,8 +1,8 @@
 import data from './assets/human-mesh.json';
 import {morphPositions} from './morph.js';
+import {displayBodyBase} from './displaySurface.js';
 export function personalizedVertices(measurement={},profile={}) {
- const known=data.profiles[profile.gender];
- const base=Float32Array.from(known||data.profiles.male,(v,i)=>(known?v:(v+data.profiles.female[i])/2)*data.scale);
+ const base=displayBodyBase(profile.gender);
  return morphPositions(base,measurement,profile);
 }
 // Original, unbranded garments share the body's topology and joint weights.

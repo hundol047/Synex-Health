@@ -1,9 +1,10 @@
 import data from './assets/human-mesh.json';
+import {displayBodyBase} from './displaySurface.js';
 import { anatomicalFrame, centralTorsoLoop, clamp, smooth } from './mannequinAnatomy.js';
 const valid=v=>Number.isFinite(v)&&v>0;
 export const GIRTH_FIELDS=[['chest_circumference','가슴둘레 (cm)',1.34],['waist_circumference','허리둘레 (cm)',1.10],['hip_circumference','엉덩이둘레 (cm)',.94]];
 export function mannequinBase(gender){
- return Float32Array.from(data.profiles[gender]||data.profiles.male.map((v,i)=>(v+data.profiles.female[i])/2),v=>v*data.scale);
+ return displayBodyBase(gender);
 }
 // Measure the actual central CLOSED surface loop. Segment-selection labels
 // cannot be used to remove arms: doing so also cuts some chest/hip triangles.

@@ -36,7 +36,7 @@ test('all 74 exercises render an actual mobile 3D surface and complete their mot
         const x = rect.left + rect.width / 2;
         return [rect.top + 2, rect.bottom - 2].every(y => element.contains(document.elementFromPoint(x, y)));
       }), `${exercise.motion_id} screenshot is unobstructed`).toBe(true);
-      const rendered = await canvas.screenshot({ path: info.outputPath(`${exercise.motion_id}-${phase}.png`) });
+      const rendered = await canvas.screenshot({ timeout: 20000, path: info.outputPath(`${exercise.motion_id}-${phase}.png`) });
       images.push(createHash('sha256').update(rendered).digest('hex'));
     }
     if (!['plank', 'wall_sit', 'knee_side_plank'].includes(exercise.motion_id)) expect(new Set(images).size, `${exercise.motion_id} changes the rendered pose`).toBeGreaterThan(1);

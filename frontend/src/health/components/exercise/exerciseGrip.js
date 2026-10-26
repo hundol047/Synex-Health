@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import handMesh from '../body3d/assets/human-mesh.json' with { type: 'json' };
+const referenceHands = Float32Array.from(handMesh.profiles.male, value => value * handMesh.scale);
 import { orientation, scaleFor, smoothStep, vector } from './poseMath.js';
 
 // Hand-plane calibration for the bundled CC0 human topology. Wrist joints are
@@ -62,10 +64,32 @@ function fingerArc(distance, length, flexion) {
   return { forward, normal, angle: angleAt(distance) };
 }
 
+// Keep the shared surface connected while fingers curl. Adjacent vertices must
+// not stretch into long spikes at the thumb web or between finger regions.
+const handEdges = (() => {
+  const edges = new Set(), pairs=[];
+  for(let i=0;i<handMesh.indices.length;i+=3)for(let k=0;k<3;k++){
+    const a=handMesh.indices[i+k],b=handMesh.indices[i+(k+1)%3],key=Math.min(a,b)+':'+Math.max(a,b);
+    if(!edges.has(key)){edges.add(key);pairs.push([a,b]);}
+  }
+  return pairs;
+})();
+function constrainFingerSurface(base, output, mobility) {
+  if(base.length!==referenceHands.length)return;
+  const edges=handEdges.filter(([a,b])=>mobility[a]>0||mobility[b]>0).map(([a,b])=>[a,b,Math.hypot(base[a*3]-base[b*3],base[a*3+1]-base[b*3+1],base[a*3+2]-base[b*3+2])]);
+  for(let iteration=0;iteration<96;iteration++)for(const [a,b,length] of edges){
+    const ma=mobility[a],mb=mobility[b],total=ma+mb;if(!total||!length)continue;
+    const ax=a*3,bx=b*3,dx=output[bx]-output[ax],dy=output[bx+1]-output[ax+1],dz=output[bx+2]-output[ax+2],distance=Math.hypot(dx,dy,dz);
+    if(distance<=length*1.35||distance<1e-8)continue;
+    const correction=(distance-length*1.35)/distance*.8;
+    for(const [k,delta] of [[0,dx],[1,dy],[2,dz]]){output[ax+k]+=delta*correction*ma/total;output[bx+k]-=delta*correction*mb/total;}
+  }
+}
+
 // Unsupported hands curl gently; support palms retain the calibrated flat
 // surface. Arrays allow one hand to support while the other holds or relaxes.
 export function gripSurface(base, weights, rest, grip) {
-  const output = base.slice();
+  const output = base.slice(), mobility = new Float32Array(weights.length);
   const stature = scaleFor(rest), scales = rest.handGripScale || calibrateGripScale(base, weights, rest);
   for (let side = 0; side < 2; side++) {
     const shape = Array.isArray(grip) ? grip[side] : grip;
@@ -73,48 +97,52 @@ export function gripSurface(base, weights, rest, grip) {
     const closure = shape === 'relaxed' ? .32 : shape === 'clasp' ? .70 : 1;
     const h = stature * scales[side];
     const { wrist, sign, along, back, across } = handRestFrame(rest, side), origin = vector(rest[wrist]);
+    const referenceAlong = new THREE.Vector3(sign*.12,-.14,.12).normalize();
+    const referenceBack = new THREE.Vector3(sign*.68,.71,.18);
+    referenceBack.addScaledVector(referenceAlong,-referenceBack.dot(referenceAlong)).normalize();
+    const referenceAcross = referenceBack.clone().cross(referenceAlong).normalize();
     for (let i = 0; i < weights.length; i++) {
       const influence = weights[i].find(([bone]) => bone === 12 + side)?.[1] || 0;
       if (influence < .5) continue;
-      const relative = new THREE.Vector3().fromArray(base, i * 3).sub(origin);
-      const d = relative.dot(along) / h, width = sign * relative.dot(across) / h, normal = relative.dot(back) / h;
-      if (d <= .125) continue;
-      let nextD = d, nextN = normal, nextW = width;
-      const thumb = width < -.105 && d < .191;
-      if (thumb) {
-        const blend = smoothStep(.102, .123, -width) * smoothStep(.125, .145, d);
-        const angle = -1.03 * closure * blend, dw = width + .102, dd = d - .133;
-        nextW = -.102 + dw * Math.cos(angle) - dd * Math.sin(angle);
-        nextD = .133 + dw * Math.sin(angle) + dd * Math.cos(angle);
-        nextN = normal - .027 * closure * blend;
-      } else {
-        let digit, distance = Infinity;
-        for (const candidate of DIGITS) {
-          const slope = (candidate.tipW - candidate.w) / (candidate.tipD - candidate.d);
-          const separation = Math.abs(width - (candidate.w + slope * Math.max(0, d - candidate.d)));
-          if (separation < distance) { digit = candidate; distance = separation; }
+      // Both profiles share topology: use the same anatomical digit assignment.
+      // Reclassifying a smaller hand by world coordinates split single fingers.
+      const canonical = base.length === referenceHands.length;
+      const relative = new THREE.Vector3().fromArray(canonical ? referenceHands : base, i * 3).sub(canonical ? vector(side ? [-.445,1.105,.13] : [.445,1.105,.13]) : origin);
+      const unit = canonical ? 1 : h;
+      const d = relative.dot(canonical?referenceAlong:along) / unit, width = sign * relative.dot(canonical?referenceAcross:across) / unit, normal = relative.dot(canonical?referenceBack:back) / unit;
+      const actualForward = new THREE.Vector3().fromArray(base,i*3).sub(origin).dot(along)/h;
+      if (d <= .125 || actualForward <= .125) continue;
+      let nextD = 0, nextN = 0, nextW = 0, total = 0;
+      for (const digit of DIGITS) {
+        const slope = (digit.tipW-digit.w)/(digit.tipD-digit.d);
+        const separation = width-(digit.w+slope*Math.max(0,d-digit.d));
+        const weight = 1 / (separation*separation + .000016) ** 3;
+        const length = Math.hypot(digit.tipW-digit.w,digit.tipD-digit.d);
+        const aw=(digit.tipW-digit.w)/length,ad=(digit.tipD-digit.d)/length;
+        const dw=width-digit.w,dd=d-digit.d,forward=dw*aw+dd*ad,lateral=dw*ad-dd*aw;
+        let fw=width,fd=d,fn=normal;
+        if(forward>0){
+          const arc=fingerArc(forward,length,closure),spread=Math.atan2(aw,ad)*(1-closure*.55),crossSection=normal-.021;
+          const bent=arc.forward+crossSection*Math.sin(arc.angle),web=smoothStep(0,.025,forward);
+          fw=THREE.MathUtils.lerp(width,digit.w+Math.sin(spread)*bent+Math.cos(spread)*lateral,web);
+          fd=THREE.MathUtils.lerp(d,digit.d+Math.cos(spread)*bent-Math.sin(spread)*lateral,web);
+          fn=THREE.MathUtils.lerp(normal,.021+arc.normal+crossSection*Math.cos(arc.angle),web);
         }
-        const length = Math.hypot(digit.tipW - digit.w, digit.tipD - digit.d);
-        const aw = (digit.tipW - digit.w) / length, ad = (digit.tipD - digit.d) / length;
-        const dw = width - digit.w, dd = d - digit.d;
-        const forward = dw * aw + dd * ad, lateral = dw * ad - dd * aw;
-        if (forward <= 0) continue;
-        const arc = fingerArc(forward, length, closure);
-        const spread = Math.atan2(aw, ad) * (1 - closure * .55);
-        const crossSection = normal - .021;
-        const bentForward = arc.forward + crossSection * Math.sin(arc.angle);
-        nextW = digit.w + Math.sin(spread) * bentForward + Math.cos(spread) * lateral;
-        nextD = digit.d + Math.cos(spread) * bentForward - Math.sin(spread) * lateral;
-        nextN = .021 + arc.normal + crossSection * Math.cos(arc.angle);
-        const web = smoothStep(0, .012, forward);
-        nextW = THREE.MathUtils.lerp(width, nextW, web);
-        nextD = THREE.MathUtils.lerp(d, nextD, web);
-        nextN = THREE.MathUtils.lerp(normal, nextN, web);
+        nextW+=fw*weight;nextD+=fd*weight;nextN+=fn*weight;total+=weight;
       }
-      const folded = origin.clone().addScaledVector(along, nextD * h).addScaledVector(across, sign * nextW * h).addScaledVector(back, nextN * h);
+      nextW/=total;nextD/=total;nextN/=total;
+      // A continuous web transition replaces the sharp thumb cutoff at d=.191.
+      const thumb=smoothStep(.09,.135,-width)*(1-smoothStep(.175,.225,d));
+      const bend=smoothStep(.125,.155,d),angle=-1.03*closure*bend,dw=width+.102,dd=d-.133;
+      nextW=THREE.MathUtils.lerp(nextW,-.102+dw*Math.cos(angle)-dd*Math.sin(angle),thumb);
+      nextD=THREE.MathUtils.lerp(nextD,.133+dw*Math.sin(angle)+dd*Math.cos(angle),thumb);
+      nextN=THREE.MathUtils.lerp(nextN,normal-.027*closure*bend,thumb);
+      const folded = new THREE.Vector3().fromArray(base,i*3).addScaledVector(along,(nextD-d)*h).addScaledVector(across,sign*(nextW-width)*h).addScaledVector(back,(nextN-normal)*h);
+      mobility[i] = smoothStep(.125,.16,Math.min(d,actualForward))*smoothStep(.5,.85,influence);
       const blend = smoothStep(.5, .85, influence);
       new THREE.Vector3().fromArray(base, i * 3).lerp(folded, blend).toArray(output, i * 3);
     }
   }
+  constrainFingerSurface(base,output,mobility);
   return output;
 }

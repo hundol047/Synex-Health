@@ -1,14 +1,17 @@
 import {equipmentText} from '../../lib/exerciseLabels.js';
-import React, { useState, lazy, Suspense } from 'react';
+import React, { useState, useRef, useCallback, lazy, Suspense } from 'react';
 import { Play, ChevronUp, Video, ChevronRight } from 'lucide-react';
 const CameraCoaching=lazy(()=>import('./CameraCoaching.jsx'));
 const ExerciseMotion=lazy(()=>import('./ExerciseMotion.jsx'));
 import ExercisePreview from './ExercisePreview.jsx';
-import ExerciseDemoDialog from './ExerciseDemoDialog.jsx';
 import {coachingMotionId} from './coachingCatalog.js';
 
 export default function ExerciseCard({ exercise, children, paused=false, focused=false,onPoseEvaluation, onSelect, selected=false, compact=false }) {
   const [open,setOpen]=useState(focused),[camera,setCamera]=useState(false);
+  const card=useRef(null),trigger=useRef(null),returnY=useRef(0);
+  const showDemo=()=>{returnY.current=window.scrollY;setCamera(false);setOpen(true);};
+  const closeDemo=()=>{setOpen(false);if(focused)return;requestAnimationFrame(()=>{window.scrollTo({top:returnY.current,behavior:'instant'});trigger.current?.focus({preventScroll:true});});};
+  const revealDemo=useCallback(()=>{requestAnimationFrame(()=>card.current?.scrollIntoView?.({block:'start',behavior:'instant'}));},[]);
   const recordingMotion=coachingMotionId(exercise.motion_id);
   const cameraSupported=!!recordingMotion;
   if(compact) return <article id={exercise.exercise_id} className={`exercise-card exercise-catalog-card ${selected?'is-selected':''}`}>
@@ -18,19 +21,23 @@ export default function ExerciseCard({ exercise, children, paused=false, focused
       <div className="exercise-catalog-footer"><span>{cameraSupported?<><Video size={12}/> 카메라 코칭</>:recordingMotion?<><Video size={12}/> 동영상 촬영</>:'3D 시범'}</span><button type="button" onClick={onSelect} aria-label={`${exercise.exercise_name} 동작 보기`} aria-pressed={selected}><ChevronRight size={18}/></button></div>
     </div>
   </article>;
-  return <article id={exercise.exercise_id} className={`exercise-card exercise-experience-card ${open?'exercise-card-open':''}`}>
-    <div className="exercise-card-top"><div className="exercise-card-info">
+  return <article ref={card} id={exercise.exercise_id} className={`exercise-card exercise-experience-card ${open?'exercise-card-open':''}`}>
+    {(!open||focused)&&<><div className="exercise-card-top"><div className="exercise-card-info">
       <div className="exercise-regions">{(exercise.target_regions||[]).join(' · ')}</div>
       <strong>{exercise.exercise_name}</strong>{exercise.training_type&&<p className="muted">{exercise.training_type==='bodyweight'?'맨몸운동':'헬스장·기구 운동'} · {equipmentText(exercise.equipment)}</p>}
       <p className="muted">{exercise.duration || `${exercise.sets??'-'}세트 × ${exercise.reps??'-'}`}{exercise.rest_seconds!=null?` · 휴식 ${exercise.rest_seconds}초`:''}</p>
-    </div><ExercisePreview exercise={exercise} onOpen={()=>{setCamera(false);setOpen(true);}}/></div><button className="btn btn-secondary" type="button" onClick={()=>{setCamera(false);setOpen(x=>!x);}} aria-expanded={open} aria-label={`${exercise.exercise_name} 동작 ${open?'닫기':'보기'}`}>
-      {open?<ChevronUp size={16}/>:<Play size={16}/>} {open?'접기':'동작 보기'}</button>
+    </div><ExercisePreview exercise={exercise} onOpen={showDemo}/></div><button ref={trigger} className="btn btn-secondary" type="button" onClick={open?closeDemo:showDemo} aria-expanded={open} aria-label={`${exercise.exercise_name} 동작 ${open?'닫기':'보기'}`}>
+      {open?<ChevronUp size={16}/>:<Play size={16}/>} {open?'접기':'동작 보기'}</button></>}
+    {!focused&&open&&!camera&&<section className="exercise-inline-demo" aria-label={`${exercise.exercise_name} 카드 내 동작 시범`}>
+      <div className="exercise-inline-demo-heading"><strong>{exercise.exercise_name}</strong><button className="btn btn-secondary" type="button" onClick={closeDemo}>시범 접기</button></div>
+      <Suspense fallback={<p role="status">동작을 불러오는 중입니다.</p>}><ExerciseMotion autoPlay exercise={exercise} paused={paused} onReady={revealDemo}/></Suspense>
+    </section>}
     <span className="badge">{cameraSupported?'카메라 자세 코칭 지원':'동작 시범 제공'}</span>
-    <details open={!focused}><summary>운동 설명</summary><ul className="exercise-cues">{(exercise.instructions||[]).slice(0,2).map(t=><li key={t}>{t}</li>)}</ul>
+    <details open={!focused&&!open}><summary>운동 설명</summary><ul className="exercise-cues">{(exercise.instructions||[]).slice(0,2).map(t=><li key={t}>{t}</li>)}</ul>
     <p className="muted exercise-reason">{exercise.reason}</p></details>
     {recordingMotion&&<button type="button" className="btn btn-secondary" aria-expanded={camera} onClick={()=>setCamera(v=>!v)}>{camera?'촬영 화면 닫기':cameraSupported?'동영상 촬영·자세 교정 열기':'동영상 촬영 열기'}</button>}
     {camera&&recordingMotion&&<Suspense fallback={<p>카메라 화면 준비 중…</p>}><CameraCoaching standaloneSession={!focused} exercise={exercise} onEvaluation={onPoseEvaluation} key={exercise.exercise_id||exercise.motion_id} motion={recordingMotion} paused={paused}/></Suspense>}
-    {!camera && open && (focused ? <Suspense fallback={<p role="status">동작을 불러오는 중입니다.</p>}><ExerciseMotion autoPlay standaloneSession={false} exercise={exercise} paused={paused}/></Suspense> : <ExerciseDemoDialog name={exercise.exercise_name} onClose={()=>setOpen(false)}><Suspense fallback={<p role="status">동작을 불러오는 중입니다.</p>}><ExerciseMotion autoPlay exercise={exercise} paused={paused}/></Suspense></ExerciseDemoDialog>)}
+    {!camera && open && focused&&<Suspense fallback={<p role="status">동작을 불러오는 중입니다.</p>}><ExerciseMotion autoPlay standaloneSession={false} exercise={exercise} paused={paused}/></Suspense>}
     {children}
   </article>;
 }

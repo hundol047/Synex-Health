@@ -86,15 +86,29 @@ export function calibratePalmRoll(base,weights,rest=REST){
   return side*(low+high)/2;
  });
 }
+// One rotation rule for the mesh and audits. A hand's pronation must continue
+// through its forearm, not abruptly twist at the wrist blend seam.
+export function rigRotation(joints,index,rest=REST){
+ const [a,b]=BONES[index],authored=joints.boneRotations?.[index];
+ if(!authored&&(index===3||index===5)){
+  const side=index===3?0:1,hand=12+side;
+  if(joints.boneRotations?.[hand]||joints.handRoll?.[side]){
+   const palm=rigRotation(joints,hand,rest);
+   const from=vec(rest[b]).sub(vec(rest[a])).normalize().applyQuaternion(palm);
+   const to=vec(joints[b]).sub(vec(joints[a])).normalize();
+   return new THREE.Quaternion().setFromUnitVectors(from,to).multiply(palm);
+  }
+ }
+ const rotation=authored?new THREE.Quaternion().fromArray(authored).normalize():new THREE.Quaternion().setFromUnitVectors(vec(rest[b]).sub(vec(rest[a])).normalize(),vec(joints[b]).sub(vec(joints[a])).normalize());
+ const roll=index===0?joints.bodyRoll:index===1?(joints.headRoll??joints.bodyRoll):index>=12?joints.handRoll?.[index-12]:0;
+ if(roll)rotation.premultiply(new THREE.Quaternion().setFromAxisAngle(vec(joints[b]).sub(vec(joints[a])).normalize(),roll));
+ return rotation;
+}
 // Normalized dual-quaternion blending preserves rigid volume around bent joints.
 // Original implementation of the published algorithm (Kavan et al., 2008).
 export function deformSurface(base,weights,joints,target,rest=REST,ground=true){
  const transforms=BONES.map(([a,b],index)=>{
-  const authored=joints.boneRotations?.[index];
-  const rotation=authored?new THREE.Quaternion().fromArray(authored).normalize():new THREE.Quaternion().setFromUnitVectors(vec(rest[b]).sub(vec(rest[a])).normalize(),vec(joints[b]).sub(vec(joints[a])).normalize());
-  const roll=index===0?joints.bodyRoll:index===1?(joints.headRoll??joints.bodyRoll):0;
-  if(roll)rotation.premultiply(new THREE.Quaternion().setFromAxisAngle(vec(joints[b]).sub(vec(joints[a])).normalize(),roll));
-  if(index>=12&&joints.handRoll?.[index-12])rotation.premultiply(new THREE.Quaternion().setFromAxisAngle(vec(joints[b]).sub(vec(joints[a])).normalize(),joints.handRoll[index-12]));
+  const rotation=rigRotation(joints,index,rest);
   const t=vec(joints[a]).sub(vec(rest[a]).applyQuaternion(rotation));
   const dual=new THREE.Quaternion(t.x,t.y,t.z,0).multiply(rotation);
   return {real:rotation.toArray(),dual:dual.toArray().map(v=>v*.5)};

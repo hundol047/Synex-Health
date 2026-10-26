@@ -295,6 +295,11 @@ export function equipmentCatalogPose(id, progress, rest) {
       }
     }
   }
+  // Keep load-bearing grips aligned with the forearm throughout the lift.
+  // Fixed world-up/down directions bent pressing and seated wrists >50 degrees.
+  for(const [,elbow,wrist,finger] of arm){
+    joints[finger]=v(joints[wrist]).addScaledVector(v(joints[wrist]).sub(v(joints[elbow])).normalize(),length(wrist,finger)).toArray();
+  }
   data.wristAnchors = [joints[5].slice(), joints[8].slice()];
   data.grip = 'closed';
   joints.boneRotations ||= {};
