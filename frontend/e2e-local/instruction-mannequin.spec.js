@@ -6,6 +6,8 @@ test('reference-style instruction preserves playback when changing appearance an
   await page.getByRole('button',{name:'맨몸 스쿼트 동작 보기',exact:true}).click();
   const stage = page.getByRole('region',{name:'선택한 운동 시범'}), canvas = stage.locator('canvas');
   await expect(canvas).toHaveAttribute('data-exercise-appearance','mannequin',{timeout:20000});
+  await expect(stage.getByRole('button',{name:'일시정지',exact:true})).toBeVisible();
+  await expect.poll(async()=>Number(await canvas.getAttribute('data-exercise-progress'))).toBeGreaterThan(0);
   await expect(stage.getByLabel('운동 부위 색상 안내')).toContainText('대퇴사두근');
   await stage.getByLabel('동작 구간',{exact:true}).fill('50');
   await expect(canvas).toHaveAttribute('data-exercise-progress','0.5');

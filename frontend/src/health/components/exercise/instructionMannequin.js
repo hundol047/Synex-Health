@@ -3,7 +3,7 @@ import catalog from '../../../shared/lib/localCatalog.json' with { type: 'json' 
 
 const entries = new Map(catalog.map(exercise => [exercise.motion_id, exercise]));
 const aliases = { push_up: 'full_pushup', hip_hinge: 'hinge', glute_bridge: 'bridge' };
-export const MANNEQUIN_COLORS = { neutral: '#d4dce3', primary: '#2467cc', secondary: '#7ba9b7' };
+export const MANNEQUIN_COLORS = { neutral: '#d4dce3', primary: '#c93e43', secondary: '#df9b9b' };
 // Broad surface regions for instruction, not individual segmented muscles or
 // an estimate of measured activation. Masks are authored in the neutral pose
 // and deform with the same vertices as the body, including wrist/hip motion.

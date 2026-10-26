@@ -218,7 +218,7 @@ export default function ExerciseMotion3D({ motion, progress, mirror, measurement
         <Athlete {...{ motion, progress, mirror, compact, appearance }} measurement={m} profile={p}/>
         <OrbitControls ref={controls} enabled={view === 'free'} enablePan={false} minDistance={1.2 * heightScale} maxDistance={6 * heightScale} maxPolarAngle={Math.PI / 2 - .02}/>
       </Canvas></SceneBoundary>
-      {compact && appearance === 'mannequin' && anatomy.primary.length > 0 && <span className="motion-anatomy-badge" title={`주요 부위: ${anatomy.primaryLabel}. 운동 안내이며 실제 근육 사용량 측정이 아닙니다.`}>파랑 · 주요 운동 부위</span>}
+      {compact && appearance === 'mannequin' && anatomy.primary.length > 0 && <span className="motion-anatomy-badge" title={`주요 부위: ${anatomy.primaryLabel}. 운동 안내이며 실제 근육 사용량 측정이 아닙니다.`}>빨강 · 주요 운동 부위</span>}
     </div>
     {!compact && appearance === 'mannequin' && <div className="motion-anatomy-legend" aria-label="운동 부위 색상 안내">
       {anatomy.primary.length > 0 && <span><i className="primary"/>주요 부위 · {anatomy.primaryLabel}</span>}

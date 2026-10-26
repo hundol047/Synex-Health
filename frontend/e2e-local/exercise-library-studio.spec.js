@@ -35,7 +35,7 @@ test('catalogue keeps static previews and one large selected 3D stage on a small
   await expect(control).toBeInViewport();
   expect(await control.evaluate(button=>{const rect=button.getBoundingClientRect(),top=document.elementFromPoint(rect.x+rect.width/2,rect.y+rect.height/2);return button===top||button.contains(top);})).toBe(true);
  }
- await expect(stage.getByRole('button',{name:'동작 재생',exact:true})).toBeVisible();
+ await expect(stage.getByRole('button',{name:'일시정지',exact:true})).toBeVisible();
  await stage.getByRole('button',{name:'골반·무릎 확인 구간 보기'}).click();
  await expect(stage.getByLabel('동작 구간',{exact:true})).toHaveValue('43');
  await expect(stage.getByRole('button',{name:'골반·무릎 확인 구간 보기'})).toHaveAttribute('aria-current','step');
@@ -82,8 +82,8 @@ test('changing the selected exercise resets the stage and keeps directions and p
  await page.getByRole('button',{name:'레그 프레스 동작 보기',exact:true}).click();
  stage=page.getByRole('region',{name:'선택한 운동 시범'});
  await expect(stage.locator('canvas')).toBeVisible();
- await expect(stage.getByLabel('동작 구간',{exact:true})).toHaveValue('0');
- await expect(stage.getByRole('button',{name:'동작 재생',exact:true})).toBeVisible();
+ await expect.poll(async()=>Number(await stage.locator('canvas').getAttribute('data-exercise-progress'))).toBeGreaterThan(0);
+ await expect(stage.getByRole('button',{name:'일시정지',exact:true})).toBeVisible();
  for(const name of ['정면 운동 시범 보기','측면 운동 시범 보기','후면 운동 시범 보기']){
   await stage.getByRole('button',{name,exact:true}).click();
   await expect(stage.getByRole('button',{name,exact:true})).toHaveAttribute('aria-pressed','true');

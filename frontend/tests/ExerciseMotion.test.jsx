@@ -9,6 +9,18 @@ import { resolveBodyProfile } from '../src/health/components/body3d/bodyProfiles
 vi.mock('../src/health/components/exercise/ExerciseMotion3D.jsx',()=>({default:({progress})=> <div data-testid="motion-render" data-progress={progress}>3D 시범</div>}));
 
 describe('motion guidance',()=>{
+  it('autoplays a newly opened guide and permits immediate pause',()=>{
+    const exercise={motion_id:'squat',exercise_name:'스쿼트',instructions:[],cautions:[]};
+    const {rerender}=render(<ExerciseMotion autoPlay exercise={exercise}/>);
+    expect(screen.getByRole('button',{name:'일시정지',exact:true})).toBeTruthy();
+    fireEvent.click(screen.getByRole('button',{name:'일시정지',exact:true}));
+    expect(screen.getByRole('button',{name:'동작 재생',exact:true})).toBeTruthy();
+    rerender(<ExerciseMotion autoPlay exercise={{...exercise,motion_id:'leg_press'}}/>);
+    expect(screen.getByRole('button',{name:'일시정지',exact:true})).toBeTruthy();
+    rerender(<ExerciseMotion autoPlay paused exercise={{...exercise,motion_id:'leg_press'}}/>);
+    expect(screen.getByRole('button',{name:'동작 재생',exact:true}).disabled).toBe(true);
+  });
+
   it('has finite, moving poses for every backend catalogue entry',()=>{
     const catalog=readFileSync('../backend/app/health/exercise_catalog.py','utf8');
     const ids=[...catalog.matchAll(/movement\('([^']+)'/g)].map(m=>m[1]);

@@ -9,28 +9,29 @@ import useTempoSession from './useTempoSession.js';
 import WorkoutResults from './WorkoutResults.jsx';
 import TempoControls from './TempoControls.jsx';
 
-export default function ExerciseMotion({ exercise, measurement, profile, paused=false, onReady, standaloneSession=true, playback:externalPlayback }) {
+export default function ExerciseMotion({ exercise, measurement, profile, autoPlay=false, paused=false, onReady, standaloneSession=true, playback:externalPlayback }) {
   const tempoExercises=useMemo(()=>[exercise],[exercise]);
   const tempo=useTempoSession(tempoExercises,{disabled:paused||externalPlayback!==undefined});
   const playback=externalPlayback!==undefined?externalPlayback:tempo.playback;
   const motion = MOTIONS[exercise.motion_id], guide = getMotionGuide(exercise.motion_id);
   const [dimension, setDimension] = useState('3d');
   const [loop, setLoop] = useState(true);
-  const [playing, setPlaying] = useState(false);
+  const [playing, setPlaying] = useState(autoPlay && !paused && !playback);
   const [speed, setSpeed] = useState(1);
   const [localProgress, setProgress] = useState(0);
   const progress=playback?.progress??localProgress;
   const [mirror, setMirror] = useState(false);
   const phase = useRef(0), viewer = useRef(null);
   const currentPhase = motionPhase(exercise.motion_id, progress);
-  useEffect(() => { setPlaying(false); setDimension('3d'); phase.current = 0; setProgress(0); }, [exercise.motion_id]);
+  useEffect(() => { setPlaying(autoPlay && !paused && !playback); setDimension('3d'); phase.current = 0; setProgress(0); }, [exercise.motion_id, autoPlay]);
   useEffect(() => { onReady?.(); }, [exercise.motion_id, onReady]);
   useEffect(() => { if (paused) setPlaying(false); }, [paused]);
   useEffect(() => { if (playback) setPlaying(false); }, [!!playback]);
   useEffect(() => {
     const media = window.matchMedia?.('(prefers-reduced-motion: reduce)');
     const pause = () => setPlaying(false);
-    const observer = typeof IntersectionObserver === 'undefined' ? null : new IntersectionObserver(([entry]) => { if (!entry.isIntersecting) pause(); }, { threshold: .05 });
+    let seen = false;
+    const observer = typeof IntersectionObserver === 'undefined' ? null : new IntersectionObserver(([entry]) => { if (entry.isIntersecting) seen = true; else if (seen) pause(); }, { threshold: .05 });
     if (viewer.current) observer?.observe(viewer.current);
     media?.addEventListener?.('change', pause);
     return () => { observer?.disconnect(); media?.removeEventListener?.('change', pause); };

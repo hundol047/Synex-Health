@@ -29,7 +29,7 @@ export default function ExerciseCard({ exercise, children, paused=false, focused
     <p className="muted exercise-reason">{exercise.reason}</p></details>
     {recordingMotion&&<button type="button" className="btn btn-secondary" aria-expanded={camera} onClick={()=>setCamera(v=>!v)}>{camera?'촬영 화면 닫기':cameraSupported?'동영상 촬영·자세 교정 열기':'동영상 촬영 열기'}</button>}
     {camera&&recordingMotion&&<Suspense fallback={<p>카메라 화면 준비 중…</p>}><CameraCoaching standaloneSession={!focused} exercise={exercise} onEvaluation={onPoseEvaluation} key={exercise.exercise_id||exercise.motion_id} motion={recordingMotion} paused={paused}/></Suspense>}
-    {!camera && open && <Suspense fallback={<p role="status">동작을 불러오는 중입니다.</p>}><ExerciseMotion standaloneSession={!focused} exercise={exercise} paused={paused}/></Suspense>}
+    {!camera && open && <Suspense fallback={<p role="status">동작을 불러오는 중입니다.</p>}><ExerciseMotion autoPlay standaloneSession={!focused} exercise={exercise} paused={paused}/></Suspense>}
     {children}
   </article>;
 }

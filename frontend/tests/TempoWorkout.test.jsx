@@ -15,3 +15,13 @@ it('starts once, runs the transition countdown and automatically starts the next
  act(()=>vi.advanceTimersByTime(10100));expect(screen.getByTestId('split').dataset.kind).toBe('work');expect(screen.getByTestId('split').dataset.motion).toBe('hip_hinge');
  act(()=>vi.advanceTimersByTime(8100));expect(screen.getByText('운동 결과')).toBeTruthy();expect(screen.queryByTestId('split')).toBeNull();
 });
+
+it('finishes timed exercises, rests, starts the next timed motion and opens results without further taps',()=>{
+ vi.useFakeTimers();
+ render(<TempoWorkout autoStart onClose={()=>{}} exercises={[{motion_id:'plank',exercise_name:'플랭크',sets:1,dose_type:'hold',hold_seconds:5,transition_seconds:10},{motion_id:'march',exercise_name:'제자리 걷기',sets:1,dose_type:'duration',duration_seconds:5}]}/>);
+ act(()=>vi.advanceTimersByTime(1));
+ act(()=>vi.advanceTimersByTime(5100));expect(screen.getByTestId('split').dataset.kind).toBe('work');
+ act(()=>vi.advanceTimersByTime(5100));expect(screen.getByText('다음 운동 준비')).toBeTruthy();
+ act(()=>vi.advanceTimersByTime(10100));expect(screen.getByTestId('split').dataset.motion).toBe('march');expect(screen.getByTestId('split').dataset.kind).toBe('work');
+ act(()=>vi.advanceTimersByTime(5100));expect(screen.getByText('운동 결과')).toBeTruthy();
+});
