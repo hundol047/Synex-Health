@@ -1,0 +1,151 @@
+{
+  "schema": 1,
+  "reviewer": null,
+  "tested_at": null,
+  "build": {
+    "commit": null,
+    "application_id": "com.synex.health.personal",
+    "version_code": null,
+    "signer_sha256": null,
+    "apk": {
+      "file": null,
+      "sha256": null
+    }
+  },
+  "devices": [
+    {
+      "physical_device": false,
+      "model": null,
+      "os": null,
+      "tester": null,
+      "apk_sha256": null,
+      "checks": {
+        "upgrade_records": {
+          "status": "NOT TESTED",
+          "file": null,
+          "sha256": null
+        },
+        "backup_restore": {
+          "status": "NOT TESTED",
+          "file": null,
+          "sha256": null
+        },
+        "camera_permission_recovery": {
+          "status": "NOT TESTED",
+          "file": null,
+          "sha256": null
+        },
+        "background_return": {
+          "status": "NOT TESTED",
+          "file": null,
+          "sha256": null
+        },
+        "incoming_call": {
+          "status": "NOT TESTED",
+          "file": null,
+          "sha256": null
+        },
+        "recording_export_share": {
+          "status": "NOT TESTED",
+          "file": null,
+          "sha256": null
+        },
+        "storage_full": {
+          "status": "NOT TESTED",
+          "file": null,
+          "sha256": null
+        },
+        "offline_restart": {
+          "status": "NOT TESTED",
+          "file": null,
+          "sha256": null
+        },
+        "delete_records": {
+          "status": "NOT TESTED",
+          "file": null,
+          "sha256": null
+        },
+        "sustained_camera_15min": {
+          "status": "NOT TESTED",
+          "file": null,
+          "sha256": null
+        }
+      }
+    },
+    {
+      "physical_device": false,
+      "model": null,
+      "os": null,
+      "tester": null,
+      "apk_sha256": null,
+      "checks": {
+        "upgrade_records": {
+          "status": "NOT TESTED",
+          "file": null,
+          "sha256": null
+        },
+        "backup_restore": {
+          "status": "NOT TESTED",
+          "file": null,
+          "sha256": null
+        },
+        "camera_permission_recovery": {
+          "status": "NOT TESTED",
+          "file": null,
+          "sha256": null
+        },
+        "background_return": {
+          "status": "NOT TESTED",
+          "file": null,
+          "sha256": null
+        },
+        "incoming_call": {
+          "status": "NOT TESTED",
+          "file": null,
+          "sha256": null
+        },
+        "recording_export_share": {
+          "status": "NOT TESTED",
+          "file": null,
+          "sha256": null
+        },
+        "storage_full": {
+          "status": "NOT TESTED",
+          "file": null,
+          "sha256": null
+        },
+        "offline_restart": {
+          "status": "NOT TESTED",
+          "file": null,
+          "sha256": null
+        },
+        "delete_records": {
+          "status": "NOT TESTED",
+          "file": null,
+          "sha256": null
+        },
+        "sustained_camera_15min": {
+          "status": "NOT TESTED",
+          "file": null,
+          "sha256": null
+        }
+      }
+    }
+  ],
+  "video_pipeline": {
+    "status": "NOT TESTED",
+    "file": null,
+    "sha256": null,
+    "apk_sha256": null,
+    "model_version": null,
+    "reviewer": null
+  },
+  "pose": {
+    "file": null,
+    "sha256": null,
+    "dataset": {
+      "file": null,
+      "sha256": null
+    }
+  }
+}

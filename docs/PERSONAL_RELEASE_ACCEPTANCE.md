@@ -40,13 +40,13 @@ Use consented, independently labelled participant videos with anonymized subject
 
 `node frontend/scripts/validate-external-pose.mjs /protected/dataset.json /protected/pose-report.json` accepts a JSON array of labelled sessions. See `validation/pose` and the evaluator schema. Each session now requires `lighting`. The evaluator records correction/warning recall as well as precision so suppressing all feedback cannot appear accurate. Samples without enough evidence produce null/unvalidated results.
 
-Release engineering acceptance targets are detection recall >= .90, false-positive detection rate <= .05, correction precision >= .90, correction recall >= .80, phase accuracy >= .80, and supported repetition MAE <= 1. These are product acceptance targets, not validated medical thresholds. Until met on external data, remain an experimental preview.
+Release engineering acceptance targets are detection recall >= .90, false-positive detection rate <= .05, correction precision >= .90, correction recall >= .80, phase accuracy >= .80, and supported repetition MAE <= 1, and hold duration MAE <= 2 seconds for hold exercises. These are product acceptance targets, not validated medical thresholds. Until met on external data, remain an experimental preview.
 
 ## Evidence gate and exact artifact promotion
 
 Boolean `PERSONAL_DEVICE_QA_VERIFIED` / `PERSONAL_POSE_QA_VERIFIED` flags no longer unlock a personal release. `PERSONAL_RELEASE_EVIDENCE` must point to a reviewed JSON manifest. Bind it to `VITE_BUILD_COMMIT` (full 40-char SHA), `SYNEX_APPLICATION_ID`, `SYNEX_VERSION_CODE`, and `PERSONAL_SIGNER_SHA256`.
 
-Manifest schema 1 includes `reviewer`, `tested_at` (within 30 days), `build` (`commit`, `application_id`, `version_code`, `signer_sha256`, `apk: {file, sha256}`), `devices`, and `pose`. All evidence paths are relative to the manifest directory, checksummed and constrained to that directory (including symlinks).
+Manifest schema 1 includes `reviewer`, `tested_at` (within 30 days), `build` (`commit`, `application_id`, `version_code`, `signer_sha256`, `apk: {file, sha256}`), `devices`, `video_pipeline`, and `pose`. All evidence paths are relative to the manifest directory, checksummed and constrained to that directory (including symlinks).
 
 Each device has `physical_device: true`, `model`, `os`, `tester`, `apk_sha256`, and `checks`. Required check keys are exported as `DEVICE_SCENARIOS` from `frontend/scripts/personal-release-evidence.mjs`. Each check has `status: passed`, `file`, `sha256`. The pose entry has `file`, `sha256`, `dataset: {file, sha256}`. The reviewed pose report includes `commit_sha`, `apk_sha256`, `data_origin: external_human`, `reviewed: true`, `reviewer`, evaluator/model versions and the evaluator's `per_exercise` results. The gate recomputes the attached labelled dataset; manually changing report numbers is rejected.
 
@@ -57,3 +57,5 @@ python scripts/verify-personal-distribution.py /protected/candidate.apk --build-
 ```
 
 This final check verifies the actual APK signature, package and version and compares its bytes with the reviewed candidate. A changed APK requires renewed evidence. Human truthfulness/independent review of submitted video and device reports remains necessary; no file validator can prove that an attested physical test actually occurred.
+
+The `video_pipeline` entry requires `status: passed`, `file`, `sha256`, `apk_sha256`, `model_version`, and `reviewer`. Its report must document real camera/video inference through the bundled model, not merely already-extracted landmark analysis. Source consent and independent annotation review remain external responsibilities.

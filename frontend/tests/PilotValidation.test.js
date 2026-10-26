@@ -11,3 +11,10 @@ it('reports non-counting catalog exercises without a fabricated count accuracy',
  // A metadata fixture checks evaluator behavior; it does not attest to actual human validation.
  const result=evaluateExternal([sample]);expect(result.per_exercise.cat_cow.samples).toBe(1);expect(result.per_exercise.cat_cow.correction_recall).toBe(0);expect(result.per_exercise.cat_cow.subject_count).toBe(1);expect(result.per_exercise.cat_cow.detection_rate).toBe(0);expect(result.per_exercise.cat_cow.rep_count_MAE).toBeNull();expect(result.per_exercise.squat.status).toBe('EXTERNAL VALIDATION DATA REQUIRED');
 });
+it('requires independent hold-time labels instead of treating missing duration as zero',()=>{
+ const sample={sample_id:'hold-fixture',exercise:'plank',camera_angle:'side',device:'fixture',lighting:'indoor',fps:30,subject_id_anonymized:'fixture',ground_truth_phase:'holding',ground_truth_rep_count:0,known_form_issue:'none',label_source:'unit fixture',reviewer:'test',consent_status:'approved',data_origin:'external_human',category:'problem',frames:[{time_ms:1,landmarks:[],person_count:0,expected_detected:false,phase:'unknown',expected_warnings:[],expected_corrections:[]}]};
+ expect(()=>evaluateExternal([sample])).toThrow('hold duration');
+ const result=evaluateExternal([{...sample,ground_truth_hold_seconds:12}]);
+ expect(result.per_exercise.plank.hold_seconds_MAE).toBe(12);
+ expect(result.per_exercise.plank.rep_count_MAE).toBeNull();
+});

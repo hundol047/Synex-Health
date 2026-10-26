@@ -31,6 +31,9 @@ export function verifyPersonalEvidence(env,apk){
    if(d.physical_device!==true||!d.model?.trim()||!d.os?.trim()||!d.tester?.trim()||d.apk_sha256!==b.apk.sha256)throw Error('Physical device identity, tester and exact APK hash required');
    for(const scenario of DEVICE_SCENARIOS){const row=d.checks?.[scenario];if(row?.status!=='passed')throw Error(`${d.model}: ${scenario} not passed`);checkedFile(root,row);}
   }
+  const pipeline=m.video_pipeline;
+  if(pipeline?.status!=='passed'||pipeline.apk_sha256!==b.apk.sha256||pipeline.model_version!==POSE_VERSIONS.model_version||!pipeline.reviewer?.trim())throw Error('Reviewed end-to-end video/model inference evidence required, not landmark rules alone');
+  checkedFile(root,pipeline);
   const report=JSON.parse(fs.readFileSync(checkedFile(root,m.pose),'utf8'));
   if(report.commit_sha!==b.commit||report.apk_sha256!==b.apk.sha256||report.data_origin!=='external_human'||report.reviewed!==true||!report.reviewer?.trim()||!hash(report.dataset_sha256))throw Error('Real-video review must identify the exact APK, commit and dataset');
   const dataset=JSON.parse(fs.readFileSync(checkedFile(root,m.pose.dataset),'utf8'));
@@ -43,6 +46,7 @@ export function verifyPersonalEvidence(env,apk){
    const r=report.per_exercise?.[id];
    if(!r||r.minimum_sample_target_met!==true||!bounded(r.categories?.normal,20,1e9)||!bounded(r.categories?.imperfect,20,1e9)||!bounded(r.categories?.problem,10,1e9)||!bounded(r.subject_count,5,1e9)||!bounded(r.device_count,2,1e9)||!bounded(r.angle_count,2,1e9)||!bounded(r.lighting_count,2,1e9))throw Error(`${id}: insufficient real-video coverage`);
    if(!bounded(r.detection_recall,.9,1)||!bounded(r.false_positive_rate,0,.05)||!bounded(r.correction_precision,.9,1)||!bounded(r.correction_recall,.8,1)||!bounded(r.phase_accuracy,.8,1))throw Error(`${id}: pose acceptance thresholds not met`);
+   if(COACHING_CATALOG[id].hold&&(!bounded(r.holdSamples,1,1e9)||!bounded(r.hold_seconds_MAE,0,2)))throw Error(`${id}: hold duration evidence missing or error too high`);
    if(r.countSamples>0&&!bounded(r.rep_count_MAE,0,1))throw Error(`${id}: repetition error too high`);
   }
   return [];

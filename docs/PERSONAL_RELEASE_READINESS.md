@@ -16,7 +16,7 @@ The screenshot-era personal UI and local encrypted namespace remain the baseline
 
 `cd frontend && npm run android:personal:release` builds a signed AAB with local mode preserved. Required inputs: `SYNEX_APPLICATION_ID`, `SYNEX_VERSION_CODE` (higher than the existing installation), signing environment `SYNEX_KEYSTORE_PATH`, `SYNEX_KEYSTORE_PASSWORD`, `SYNEX_KEY_ALIAS`, `SYNEX_KEY_PASSWORD`. Preserve the existing application ID and signing certificate for upgrades. Never uninstall to fix an upgrade failure without a tested backup.
 
-Only set `PERSONAL_DEVICE_QA_VERIFIED=true` and `PERSONAL_POSE_QA_VERIFIED=true` after recording the corresponding acceptance evidence. These are reviewer attestations, not automated proof. Server API and remote model URLs are forbidden in this personal release path.
+The old boolean QA flags no longer unlock a release. Supply the checksummed, build-bound manifest described in [PERSONAL_RELEASE_ACCEPTANCE.md](PERSONAL_RELEASE_ACCEPTANCE.md), then verify the exact reviewed APK before distribution. Server API and remote model URLs are forbidden in this personal release path.
 
 ## Remaining external acceptance — not completed by simulations
 

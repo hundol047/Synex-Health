@@ -7,7 +7,7 @@ qa_dir="$RUNNER_TEMP/synex-update"
 mkdir -p "$qa_dir"
 cp app/build/outputs/apk/debug/app-debug.apk "$qa_dir/baseline.apk"
 export SYNEX_VERSION_CODE=$((SYNEX_VERSION_CODE + 1))
-./gradlew assembleDebug assembleDebugAndroidTest --no-daemon
+./gradlew :app:assembleDebug :app:assembleDebugAndroidTest --no-daemon
 cp app/build/outputs/apk/debug/app-debug.apk "$qa_dir/candidate.apk"
 tool_dir="$ANDROID_HOME/build-tools/36.0.0"
 actual_pin=$("$tool_dir/apksigner" verify --print-certs "$qa_dir/candidate.apk" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')

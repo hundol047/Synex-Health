@@ -1,5 +1,5 @@
 """Verify the exact reviewed Android APK, including its cryptographic signer, before distribution."""
-import argparse, importlib.util, os, subprocess, sys
+import argparse, hashlib, importlib.util, json, os, subprocess, sys, zipfile
 from pathlib import Path
 spec=importlib.util.spec_from_file_location('android_update',Path(__file__).with_name('verify-android-update.py'))
 update=importlib.util.module_from_spec(spec);spec.loader.exec_module(update)
@@ -9,7 +9,12 @@ if __name__=='__main__':
         identity=update.identity(args.apk,args.build_tools)
         expected={'application_id':os.environ['SYNEX_APPLICATION_ID'],'version_code':int(os.environ['SYNEX_VERSION_CODE']),'signer_sha256':os.environ['PERSONAL_SIGNER_SHA256']}
         if any(identity[k]!=v for k,v in expected.items()):raise ValueError('APK signer/package/version does not match the reviewed release identity')
+        with zipfile.ZipFile(args.apk) as apk:
+            marker=json.loads(apk.read('assets/public/release-config.json'))
+            if marker.get('localOnly') is not True or marker.get('api'):raise ValueError('Not a local-only personal APK')
+            model=apk.read('assets/public/pose/pose_landmarker_lite.task')
+            if hashlib.sha256(model).hexdigest()!='59929e1d1ee95287735ddd833b19cf4ac46d29bc7afddbbf6753c459690d574a':raise ValueError('Bundled model checksum does not match the reviewed model')
         root=Path(__file__).resolve().parents[1]
         subprocess.run(['node',str(root/'frontend/scripts/personal-release-evidence.mjs'),str(args.apk.resolve())],check=True)
-    except (KeyError,ValueError,OSError,subprocess.CalledProcessError) as e:
+    except (KeyError,ValueError,OSError,zipfile.BadZipFile,subprocess.CalledProcessError) as e:
         print('DISTRIBUTION BLOCKED: '+str(e));sys.exit(1)
