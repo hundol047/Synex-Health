@@ -25,6 +25,7 @@ test('all 74 exercises render an actual mobile 3D surface and complete their mot
     await expect(canvas).toHaveAttribute('data-exercise-rendered', exercise.motion_id, {timeout:20000});
     expect(Number(await canvas.getAttribute('data-exercise-vertices'))).toBeGreaterThan(10000);
     await expect(page.locator('canvas')).toHaveCount(1);
+    await stage.getByRole('button', { name: '처음 자세로', exact: true }).click();
     const images = [];
     for (const phase of [0, 25, 50]) {
       await stage.getByLabel('동작 구간', { exact: true }).fill(String(phase));
