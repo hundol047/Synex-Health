@@ -1,0 +1,37 @@
+import { test, expect } from '@playwright/test';
+
+test('opening a routine exercise shows its playing demo immediately and returns to the same card',async({page},info)=>{
+ await page.setViewportSize({width:360,height:640});
+ await page.addInitScript(()=>{localStorage.setItem('synex-personal-onboarding-v1','done');localStorage.setItem('synex-personal-consent-v1','accepted');});
+ await page.goto('/health/profile');
+ await page.getByLabel('체중 (kg)',{exact:true}).fill('60');
+ await page.getByLabel('키 (cm)',{exact:true}).first().fill('165');
+ await page.getByLabel('골격근량 (kg)',{exact:true}).fill('24');
+ await page.getByLabel('체지방률 (%)',{exact:true}).fill('25');
+ await page.getByRole('button',{name:'측정값 저장',exact:true}).click();
+ await expect(page.getByText('측정값을 저장했습니다.')).toBeVisible();
+ await page.goto('/health/routine');
+ await page.getByRole('button',{name:'내 운동 계획 만들기'}).click();
+ const trigger=page.locator('.exercise-experience-card').first().getByRole('button',{name:/동작 보기$/});
+ await trigger.scrollIntoViewIfNeeded();
+ const y=await page.evaluate(()=>window.scrollY);
+ await trigger.click();
+ const dialog=page.getByRole('dialog'),canvas=dialog.locator('canvas');
+ await expect(dialog).toBeVisible();
+ await expect(canvas).toHaveAttribute('data-exercise-appearance','mannequin',{timeout:20000});
+ await expect.poll(async()=>Number(await canvas.getAttribute('data-exercise-progress'))).toBeGreaterThan(0);
+ const bounds=await canvas.boundingBox();expect(bounds.y).toBeGreaterThanOrEqual(0);expect(bounds.y+bounds.height).toBeLessThanOrEqual(640);
+ await expect(dialog.getByRole('button',{name:'동작 시범 닫기'})).toBeInViewport();
+ await dialog.getByRole('button',{name:'일시정지',exact:true}).click();
+ await page.screenshot({path:info.outputPath('immediate-exercise-demo.png')});
+ await page.keyboard.press('Escape');
+ await expect(dialog).toHaveCount(0);
+ await expect(trigger).toBeFocused();
+ expect(Math.abs(await page.evaluate(()=>window.scrollY)-y)).toBeLessThan(2);
+ await trigger.click();
+ await expect(dialog).toBeVisible();
+ await dialog.getByRole('button',{name:'동작 시범 닫기'}).click();
+ await expect(dialog).toHaveCount(0);
+ expect(await page.evaluate(()=>document.body.style.overflow)).not.toBe('hidden');
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});

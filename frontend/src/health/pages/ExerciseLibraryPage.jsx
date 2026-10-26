@@ -15,7 +15,7 @@ export default function ExerciseLibraryPage(){
  const {data,loading,error,reload}=useApiData(()=>api('/api/exercise-catalog'),[]);
  const [query,setQuery]=useState(''),[category,setCategory]=useState('all'),[type,setType]=useState('all'),[equipment,setEquipment]=useState('all'),[limit,setLimit]=useState(12),[poseOnly,setPoseOnly]=useState(false);
  const [selectedId,setSelectedId]=useState(null),[headerHeight,setHeaderHeight]=useState(65),stage=useRef(null);
- const scrollToStage=useCallback(()=>{requestAnimationFrame(()=>stage.current?.scrollIntoView?.({behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'}));},[]);
+ const scrollToStage=useCallback(()=>{requestAnimationFrame(()=>stage.current?.scrollIntoView?.({behavior:'instant',block:'start'}));},[]);
  useEffect(()=>{
   const header=document.querySelector('.health-topbar');
   if(!header)return;

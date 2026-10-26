@@ -219,3 +219,18 @@
 .motion-anatomy-legend small { flex-basis:100%; color:#536579; font-size:10px; }
 
 .motion-anatomy-badge { position:absolute; bottom:6px; left:8px; z-index:1; pointer-events:none; padding:2px 5px; border-radius:4px; background:rgba(255,255,255,.9); color:#a52a30; font-size:9px; line-height:1.5; }
+
+.exercise-demo-dialog { position:fixed; inset:0; margin:auto; width:min(720px,calc(100vw - 20px)); max-width:none; height:min(900px,92dvh); max-height:92dvh; padding:0; border:1px solid #dbe5f3; border-radius:18px; background:#fff; color:#1e293b; overflow:hidden; box-shadow:0 20px 70px #152c4d40; }
+.exercise-demo-dialog::backdrop { background:rgba(18,33,52,.48); }
+.exercise-demo-dialog[open] { display:flex; flex-direction:column; }
+.exercise-demo-dialog-heading { flex:none; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 14px; border-bottom:1px solid #e2e8f0; background:#fff; }
+.exercise-demo-dialog-heading strong { font-size:16px; }
+.exercise-demo-dialog-heading button { display:flex; align-items:center; gap:4px; min-height:44px; flex:none; }
+.exercise-demo-dialog-content { min-height:0; overflow-y:auto; overscroll-behavior:contain; padding:8px 12px 16px; }
+.exercise-demo-dialog .motion-layout { display:block; }
+.exercise-demo-dialog .motion-studio-heading { display:none; }
+.exercise-demo-dialog .motion-3d-canvas { height:clamp(150px,43dvh,380px)!important; }
+.exercise-demo-dialog .motion-viewer { margin:0; padding:0; border:0; }
+@media(max-width:600px) { .exercise-demo-dialog { width:100vw; height:100dvh; max-height:100dvh; border:0; border-radius:0; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); } }
+
+.exercise-library-stage .motion-studio-heading { display:none; }
