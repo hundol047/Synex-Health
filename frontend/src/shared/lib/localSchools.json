@@ -1,1 +1,359 @@
-[{"id": "yonsei-mirae", "name": "연세대학교 미래캠퍼스", "region": "강원 원주", "integration_status": "not_connected", "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."}, {"id": "yonsei-sinchon", "name": "연세대학교 신촌캠퍼스", "region": "서울", "integration_status": "not_connected", "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."}, {"id": "yonsei-international", "name": "연세대학교 국제캠퍼스", "region": "인천", "integration_status": "not_connected", "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."}, {"id": "korea-seoul", "name": "고려대학교 서울캠퍼스", "region": "서울", "integration_status": "not_connected", "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."}, {"id": "korea-sejong", "name": "고려대학교 세종캠퍼스", "region": "세종", "integration_status": "not_connected", "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."}, {"id": "hongik-seoul", "name": "홍익대학교 서울캠퍼스", "region": "서울", "integration_status": "not_connected", "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."}, {"id": "hongik-sejong", "name": "홍익대학교 세종캠퍼스", "region": "세종", "integration_status": "not_connected", "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."}, {"id": "snu", "name": "서울대학교", "region": "서울", "integration_status": "not_connected", "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."}, {"id": "hanyang-seoul", "name": "한양대학교 서울캠퍼스", "region": "서울", "integration_status": "not_connected", "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."}, {"id": "hanyang-erica", "name": "한양대학교 ERICA", "region": "경기 안산", "integration_status": "not_connected", "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."}, {"id": "skku", "name": "성균관대학교", "region": "서울·경기", "integration_status": "not_connected", "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."}, {"id": "ewha", "name": "이화여자대학교", "region": "서울", "integration_status": "not_connected", "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."}, {"id": "khu", "name": "경희대학교", "region": "서울·경기", "integration_status": "not_connected", "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."}, {"id": "kangwon", "name": "강원대학교", "region": "강원", "integration_status": "not_connected", "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."}, {"id": "kaist", "name": "한국과학기술원(KAIST)", "region": "대전", "integration_status": "not_connected", "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."}, {"id": "postech", "name": "포항공과대학교", "region": "경북 포항", "integration_status": "not_connected", "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."}, {"id": "pusan", "name": "부산대학교", "region": "부산·경남", "integration_status": "not_connected", "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."}, {"id": "chungnam", "name": "충남대학교", "region": "대전", "integration_status": "not_connected", "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."}, {"id": "chonnam", "name": "전남대학교", "region": "광주·전남", "integration_status": "not_connected", "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."}, {"id": "jeonbuk", "name": "전북대학교", "region": "전북", "integration_status": "not_connected", "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."}]
+[
+  {
+    "id": "yonsei-mirae",
+    "name": "연세대학교 미래캠퍼스",
+    "region": "강원 원주",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "yonsei-sinchon",
+    "name": "연세대학교 신촌캠퍼스",
+    "region": "서울",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "yonsei-international",
+    "name": "연세대학교 국제캠퍼스",
+    "region": "인천",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "korea-seoul",
+    "name": "고려대학교 서울캠퍼스",
+    "region": "서울",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "korea-sejong",
+    "name": "고려대학교 세종캠퍼스",
+    "region": "세종",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "hongik-seoul",
+    "name": "홍익대학교 서울캠퍼스",
+    "region": "서울",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "hongik-sejong",
+    "name": "홍익대학교 세종캠퍼스",
+    "region": "세종",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "snu",
+    "name": "서울대학교",
+    "region": "서울",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "hanyang-seoul",
+    "name": "한양대학교 서울캠퍼스",
+    "region": "서울",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "hanyang-erica",
+    "name": "한양대학교 ERICA",
+    "region": "경기 안산",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "skku",
+    "name": "성균관대학교",
+    "region": "서울·경기",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "ewha",
+    "name": "이화여자대학교",
+    "region": "서울",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "khu",
+    "name": "경희대학교",
+    "region": "서울·경기",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "kangwon",
+    "name": "강원대학교",
+    "region": "강원",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "kaist",
+    "name": "한국과학기술원(KAIST)",
+    "region": "대전",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "postech",
+    "name": "포항공과대학교",
+    "region": "경북 포항",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "pusan",
+    "name": "부산대학교",
+    "region": "부산·경남",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "chungnam",
+    "name": "충남대학교",
+    "region": "대전",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "chonnam",
+    "name": "전남대학교",
+    "region": "광주·전남",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "jeonbuk",
+    "name": "전북대학교",
+    "region": "전북",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "uos",
+    "name": "서울시립대학교",
+    "region": "서울",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "sungshin",
+    "name": "성신여자대학교",
+    "region": "서울",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "seoultech",
+    "name": "서울과학기술대학교",
+    "region": "서울",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "jangan",
+    "name": "장안대학교",
+    "region": "경기 화성",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "ulsan-college",
+    "name": "울산과학대학교",
+    "region": "울산",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "hanbat",
+    "name": "국립한밭대학교",
+    "region": "대전",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "yeungnam",
+    "name": "영남대학교",
+    "region": "경북 경산",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "hknu-pyeongtaek",
+    "name": "한경국립대학교 평택캠퍼스",
+    "region": "경기 평택",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "pyeongtaek",
+    "name": "평택대학교",
+    "region": "경기 평택",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "gachon-global",
+    "name": "가천대학교 글로벌캠퍼스",
+    "region": "경기 성남",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "incheon",
+    "name": "인천대학교",
+    "region": "인천",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "inha",
+    "name": "인하대학교",
+    "region": "인천",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "hallym",
+    "name": "한림대학교",
+    "region": "강원 춘천",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "chungbuk",
+    "name": "충북대학교",
+    "region": "충북 청주",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "ulsan",
+    "name": "울산대학교",
+    "region": "울산",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "woosong-college",
+    "name": "우송정보대학",
+    "region": "대전",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "mokwon",
+    "name": "목원대학교",
+    "region": "대전",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "daegu-haany",
+    "name": "대구한의대학교",
+    "region": "경북 경산",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "gnu",
+    "name": "경상국립대학교",
+    "region": "경남 진주",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "daegu-catholic",
+    "name": "대구가톨릭대학교",
+    "region": "경북 경산",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "gist",
+    "name": "광주과학기술원(GIST)",
+    "region": "광주",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "kyungpook",
+    "name": "경북대학교",
+    "region": "대구",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "daegu",
+    "name": "대구대학교",
+    "region": "경북 경산",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "dongseo",
+    "name": "동서대학교",
+    "region": "부산 사상",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "pukyong",
+    "name": "국립부경대학교",
+    "region": "부산",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "sogang",
+    "name": "서강대학교",
+    "region": "서울",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "hufs-seoul",
+    "name": "한국외국어대학교 서울캠퍼스",
+    "region": "서울",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "sunmoon",
+    "name": "선문대학교",
+    "region": "충남 아산",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "jeonju",
+    "name": "전주대학교",
+    "region": "전북 전주",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "donga",
+    "name": "동아대학교",
+    "region": "부산",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  },
+  {
+    "id": "kyungnam",
+    "name": "경남대학교",
+    "region": "경남 창원",
+    "integration_status": "not_connected",
+    "integration_message": "기기 전용 모드: 건강센터에 연결하거나 데이터를 공유하지 않습니다."
+  }
+]

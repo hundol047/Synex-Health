@@ -37,7 +37,7 @@ test('personal mode opens without a server and restores records on restart',asyn
  await page.goto('/health/profile');await expect(page.getByRole('heading',{name:'체성분 측정값 등록'})).toBeVisible();
  await page.getByLabel('체중 (kg)',{exact:true}).fill('60');await page.getByLabel('키 (cm)',{exact:true}).first().fill('165');await page.getByLabel('골격근량 (kg)',{exact:true}).fill('24');await page.getByLabel('체지방률 (%)', {exact:true}).fill('25');
  await page.getByRole('button',{name:'측정값 저장',exact:true}).click();await expect(page.getByText('측정값을 저장했습니다.')).toBeVisible();
- await page.getByLabel('소속 학교').selectOption('yonsei-mirae');await expect(page.getByRole('checkbox').first()).toBeDisabled();await page.getByRole('button',{name:'학교·공유 설정 저장'}).click();await expect(page.getByText('학교 소속을 이 기기에 저장했습니다. 자동 연동은 설정되지 않았습니다.',{exact:true})).toBeVisible();
+ await page.getByLabel('소속 학교').selectOption('yonsei-mirae');await expect(page.getByRole('checkbox',{name:/기기 전용 모드에서는 학교 소속만/})).toBeDisabled();await page.getByRole('button',{name:'학교·공유 설정 저장'}).click();await expect(page.getByText('학교 소속을 이 기기에 저장했습니다. 자동 연동은 설정되지 않았습니다.',{exact:true})).toBeVisible();
  await page.goto('/health/routine');await page.getByRole('button',{name:'내 운동 계획 만들기'}).click();await expect(page.getByText('이 폰에서 생성한 기본 운동 계획입니다.',{exact:false})).toBeVisible();
  await page.screenshot({path:'test-results/android-local-routine.png',fullPage:true});
  await page.goto('/health/workout');await page.getByRole('button',{name:'자동 시범 · 휴식 맞춰 따라하기'}).click();

@@ -1,3 +1,4 @@
+import {filterSchools} from '../lib/schoolDirectory.js';
 import {UNIVERSITY_CENTERS} from '../lib/universityCenters.js';
 import OfficialCenterLink from './OfficialCenterLink.jsx';
 import {schoolStatusLabel} from '../lib/integrationStatus.js';
@@ -10,12 +11,14 @@ import { Card, ErrorState } from '../../shared/components/ui.jsx';
 export default function SchoolSelector({profile,onSaved}) {
   const connection=useApiData(()=>api('/api/health/school-connection'),[]);
   const schools=useApiData(()=>HealthAPI.schools(),[]);
+  const [region,setRegion]=useState(''),[centerOnly,setCenterOnly]=useState(false);
   const [query,setQuery]=useState(''),[selected,setSelected]=useState(profile?.school_id||'');
   const [share,setShare]=useState(!!profile?.share_with_center),[saving,setSaving]=useState(false);
   const [error,setError]=useState(null),[message,setMessage]=useState(''),[requested,setRequested]=useState('');
   useEffect(()=>{setSelected(profile?.school_id||'');setShare(!!profile?.share_with_center);},[profile?.school_id,profile?.share_with_center]);
   useEffect(()=>{if(window.location.hash==='#school-connection')document.getElementById('school-connection')?.scrollIntoView?.({block:'start'});},[]);
-  const options=(schools.data||[]).filter(s=>s.name.includes(query)||s.region.includes(query)||s.id===selected);
+  const matched=filterSchools(schools.data||[],query,region,centerOnly,new Set(UNIVERSITY_CENTERS.map(c=>c.schoolId)));
+  const options=[...matched,...(schools.data||[]).filter(s=>s.id===selected&&!matched.some(m=>m.id===s.id))];
   const current=(schools.data||[]).find(s=>s.id===selected);
   async function save(){
     setSaving(true);setError(null);setMessage('');
@@ -33,10 +36,15 @@ export default function SchoolSelector({profile,onSaved}) {
     <p><a className="btn btn-ghost" href="/health/connections#university-centers">국내 대학 센터 찾기</a></p>
     <div className="profile-grid">
       <label>학교 검색<input className="text-input" placeholder="학교명 또는 지역" value={query} onChange={e=>setQuery(e.target.value)}/></label>
+      <label>학교 지역<select className="text-input" value={region} onChange={e=>setRegion(e.target.value)}><option value="">전국</option>{['서울','부산','대구','인천','광주','대전','울산','세종','경기','강원','충북','충남','전북','전남','경북','경남','제주'].map(r=><option key={r}>{r}</option>)}</select></label>
       <label>소속 학교<select className="text-input" disabled={schools.loading} value={selected} onChange={e=>{setSelected(e.target.value);setShare(false);setMessage('');}}>
         <option value="">선택하지 않음</option>{options.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
       </select></label>
     </div>
+    <p aria-live="polite">등록 학교·캠퍼스 {schools.data?.length||0}곳 · 검색 결과 {matched.length}곳</p>
+    <label><input type="checkbox" checked={centerOnly} onChange={e=>setCenterOnly(e.target.checked)}/> 공식 시설 안내가 확인된 학교만</label>
+    {(query||region||centerOnly)&&<button type="button" className="btn btn-ghost" onClick={()=>{setQuery('');setRegion('');setCenterOnly(false);}}>전체 학교 보기</button>}
+    {!matched.length&&!schools.loading&&<p>검색 결과가 없습니다. 학교명 일부나 지역으로 다시 검색하세요. 목록에 없더라도 해당 학교에 시설이 없다는 뜻은 아닙니다.</p>}
     <p>센터가 있는 학교라도 자동으로 연결되지는 않습니다. 기관의 공식 연결 지원, 학교 계정 인증과 본인 측정 계정 확인이 필요합니다. 학교 이름만 선택해 다른 학생의 기록에 접근할 수는 없습니다.</p>
     {current&&<div className="motion-intensity" style={{marginTop:14}}><strong>{current.name}</strong><p>{current.integration_message}</p><div className="membership-actions">{UNIVERSITY_CENTERS.filter(c=>c.schoolId===selected).map(c=><OfficialCenterLink key={c.id} center={c}/>)}</div><p>기관 연결: {LOCAL_ONLY?'기기 전용 · 미연결':schoolStatusLabel(current.integration_status)}</p><p>측정 기록은 결과지를 직접 입력할 수 있습니다. 자동 가져오기는 연결 화면에서 본인 계정의 상태를 확인하세요.</p></div>}
     <label style={{display:'flex',gap:10,margin:'16px 0',fontSize:'.85rem',lineHeight:1.7}}>

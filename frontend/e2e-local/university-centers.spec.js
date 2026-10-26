@@ -1,4 +1,6 @@
 import {test,expect} from '@playwright/test';
+import {readFileSync} from 'node:fs';
+const centers=JSON.parse(readFileSync(new URL('../src/health/data/universityCenters.json',import.meta.url),'utf8')).centers;
 
 test.beforeEach(async({page})=>{
   await page.addInitScript(()=>(localStorage.setItem('synex-personal-onboarding-v1','done'),localStorage.setItem('synex-personal-consent-v1','accepted')));
@@ -8,7 +10,7 @@ test('reviewed Korean centers are searchable offline at 360px with qualified mea
   await page.goto('/health/connections#university-centers');
   const directory=page.locator('#university-centers');
   await expect(directory).toBeInViewport();
-  await expect(directory.getByRole('article')).toHaveCount(6);
+  await expect(directory.getByRole('article')).toHaveCount(centers.length);
   await expect(directory).toContainText('대한민국 전체 대학 목록이나 데이터 연동 제휴 목록은 아닙니다');
   await context.setOffline(true);
   const search=page.getByRole('searchbox',{name:'대학·캠퍼스·지역 검색'});
@@ -17,7 +19,7 @@ test('reviewed Korean centers are searchable offline at 360px with qualified mea
   await expect(directory).toContainText('검사 여부 문의');
   await search.fill('');
   await page.getByRole('checkbox',{name:'체성분 검사 안내가 있는 곳만'}).check();
-  await expect(directory.getByRole('article')).toHaveCount(3);
+  await expect(directory.getByRole('article')).toHaveCount(centers.filter(c=>c.kind==='measurement').length);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.getByRole('heading',{name:'국내 대학 센터 찾기'}).scrollIntoViewIfNeeded();
   await page.screenshot({path:info.outputPath('university-centers-360.png')});
@@ -55,4 +57,20 @@ test('a saved school shows its matching official center and result entry remains
   await page.getByRole('link',{name:'내 결과지 입력하기'}).click();
   await expect(page.locator('#segment-measurements')).toHaveAttribute('open','');
   await expect(page.getByLabel('소속 학교')).toHaveValue('korea-seoul');
+});
+
+test('new schools can be filtered, selected and retained offline',async({page,context})=>{
+ await page.goto('/health/profile');
+ await expect(page.getByLabel('소속 학교').getByRole('option',{name:'한림대학교',exact:true})).toBeAttached();
+ await context.setOffline(true);
+ await page.getByRole('combobox',{name:/^학교 지역/}).selectOption('강원');
+ await page.getByLabel('학교 검색',{exact:true}).fill('한림대');
+ await page.getByLabel('소속 학교').selectOption('hallym');
+ await page.getByRole('button',{name:'학교·공유 설정 저장'}).click();
+ await expect(page.getByText('학교 소속을 이 기기에 저장했습니다. 자동 연동은 설정되지 않았습니다.')).toBeVisible();
+ await page.getByRole('button',{name:'전체 학교 보기',exact:true}).click();
+ await expect(page.getByLabel('소속 학교').getByRole('option',{name:'경남대학교',exact:true})).toBeAttached();
+ await context.setOffline(false); await page.reload();
+ await expect(page.getByLabel('소속 학교')).toHaveValue('hallym');
+ await expect(page.getByRole('link',{name:'한림대학교 본교 보건진료소 공식 안내 열기'})).toBeVisible();
 });
