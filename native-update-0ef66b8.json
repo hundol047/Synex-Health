@@ -1,0 +1,17 @@
+{
+  "baseline": {
+    "application_id": "com.synex.health.personal.preview",
+    "version_code": 200072,
+    "signer_sha256": "099c1c6579a27eff547c5d13348cf75296f48b8677687ea1bc27a609a893a8f4",
+    "sha256": "2627ab589a2730b4cf0b6d78c3ddd516ab5301803dd624b00f71aaedf733e92d"
+  },
+  "candidate": {
+    "application_id": "com.synex.health.personal.preview",
+    "version_code": 200073,
+    "signer_sha256": "099c1c6579a27eff547c5d13348cf75296f48b8677687ea1bc27a609a893a8f4",
+    "sha256": "a76b08b9d5cd38ca81dd183482acd451ee63914765fc10323e51a9b046aa17a8"
+  },
+  "compatibility": "passed",
+  "record_preservation": "passed",
+  "physical_device": false
+}

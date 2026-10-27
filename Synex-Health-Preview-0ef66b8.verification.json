@@ -1,0 +1,9 @@
+{
+  "application_id": "com.synex.health.personal.preview",
+  "version_code": 200073,
+  "certificate_sha256": "62552472fcb89d4318e6837cae19f2778ef1a8260038e1d06b46bcc0128007b2",
+  "apk_sha256": "06029e5c0345a9729216ef4b8c5e3c738f278cfbcedc57c9676fac76d9f25b57",
+  "bytes": 33987203,
+  "payload_identical_to_tested_candidate": true,
+  "release": false
+}

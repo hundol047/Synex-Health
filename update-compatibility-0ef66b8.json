@@ -1,0 +1,17 @@
+{
+  "baseline": {
+    "application_id": "com.synex.health.personal.preview",
+    "version_code": 200061,
+    "signer_sha256": "62552472fcb89d4318e6837cae19f2778ef1a8260038e1d06b46bcc0128007b2",
+    "sha256": "f9341689c7894acd5142d98a129ae33ac7def92bdf0e37532c4ce9eff908d24a"
+  },
+  "candidate": {
+    "application_id": "com.synex.health.personal.preview",
+    "version_code": 200073,
+    "signer_sha256": "62552472fcb89d4318e6837cae19f2778ef1a8260038e1d06b46bcc0128007b2",
+    "sha256": "06029e5c0345a9729216ef4b8c5e3c738f278cfbcedc57c9676fac76d9f25b57"
+  },
+  "compatibility": "passed",
+  "record_preservation": "candidate emulator test passed; final signed APK pair not installed on physical device",
+  "physical_device": false
+}
