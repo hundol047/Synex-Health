@@ -270,7 +270,8 @@ function clamshell(rest, t, h) {
 
 function proneY(rest, t, h) {
   const rise = -.032;
-  const joints = makeFrame(rest, [0, .145 * h, -.10 * h], [0, rise, Math.sqrt(1 - rise * rise)], [0, -1, 0]);
+  // Fit the smoothed chest and clothing across both body profiles.
+  const joints = makeFrame(rest, [0, .150 * h, -.10 * h], [0, rise, Math.sqrt(1 - rise * rise)], [0, -1, 0]);
   supportedNeck(joints, rest, [0, .16, Math.sqrt(1 - .16 ** 2)], [0, -1, 0]);
   for (const [side, [hip, knee, ankle]] of legIndices.entries()) {
     const direction = new THREE.Vector3(0, -.04, -Math.sqrt(1 - .04 ** 2));
