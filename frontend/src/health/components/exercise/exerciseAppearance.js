@@ -7,7 +7,17 @@ const gaussian = (x, y, cx, cy, sx, sy) => Math.exp(-(((x - cx) / sx) ** 2 + ((y
 // Classify in the neutral body, before skeletal deformation. The neck follows
 // a rounded crew-neck opening, and each sleeve ends across the upper arm
 // rather than along a vertical plane through the world.
-export function exerciseGarmentAt(x, y, z, original = 'skin') {
+export function exerciseGarmentAt(x, y, z, original = 'skin', character) {
+  if(character){
+    if(y<.13)return 'shoes';
+    if(y<.965&&Math.abs(x)>.32)return 'skin';
+    if(y<.965)return (character.pants==='shorts'&&y<.70)?'skin':'bottom';
+    const arm=Math.abs(x)>.185;
+    if(arm&&y<1.42){
+      if(character.outfit==='tank')return 'skin';
+      if(character.outfit==='long')return y>1.14?'top':'skin';
+    }
+  }
   if (original === 'bottom' || original === 'shoes' || y <= .965) return original;
   const front = clamp((z - .02) / .07, 0, 1);
   const neckline = Math.min(1.543, 1.511 - .022 * front + .048 * Math.min(1, (x / .1) ** 2));
@@ -44,6 +54,7 @@ export function exerciseAvatarGeometry(wear, stature = 1, character) {
     if (y > 1.54) color.lerp(hairColor, THREE.MathUtils.smoothstep(y, hairline, hairline + .018));
     color.toArray(colors, i * 3);
   }
+  geometry.setAttribute('characterRest',new THREE.BufferAttribute(Float32Array.from(wear.positions,v=>v/stature),3));
   geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
   const indices = [], groups = [[], [], [], [], []];
   const garmentIndex = { skin: 0, top: 1, bottom: 2, shoes: 3 };
@@ -53,7 +64,7 @@ export function exerciseAvatarGeometry(wear, stature = 1, character) {
       let x = 0, y = 0, z = 0;
       for (const index of face) { x += wear.positions[index * 3]; y += wear.positions[index * 3 + 1]; z += wear.positions[index * 3 + 2]; }
       x /= 3 * stature; y /= 3 * stature; z /= 3 * stature;
-      const garment = exerciseGarmentAt(x, y, z, original);
+      const garment = exerciseGarmentAt(x, y, z, original, character);
       const hairline = z > .095 ? 1.728 - .013 * Math.cos(x * 35) : 1.638;
       const material = garment === 'skin' && y > hairline + .012 ? 4 : garmentIndex[garment];
       groups[material].push(...face);
@@ -131,6 +142,27 @@ export function exerciseMaterials(character) {
       }
     }
   }
+  if(character)for(const material of materials.slice(0,3)){
+    material.vertexColors=true;material.color.set('#ffffff');material.map=null;
+    material.onBeforeCompile=shader=>{
+      shader.uniforms.characterTop={value:new THREE.Color(character.top)};shader.uniforms.characterBottom={value:new THREE.Color(character.bottom)};
+      shader.vertexShader='attribute vec3 characterRest; varying vec3 vCharacterRest;\n'+shader.vertexShader;
+      shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvCharacterRest=characterRest;');
+      shader.fragmentShader='uniform vec3 characterTop; uniform vec3 characterBottom; varying vec3 vCharacterRest;\n'+shader.fragmentShader;
+      shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
+        float ax=abs(vCharacterRest.x),y=vCharacterRest.y,z=vCharacterRest.z;
+        float sleeve=((ax-.185)*.14-(y-1.42)*.17)/(.14*.14+.17*.17);
+        float neck=min(1.543,1.511-.022*clamp((z-.02)/.07,0.,1.)+.048*min(1.,pow(ax/.1,2.)));
+        float shirt=smoothstep(.959,.967,y)*(1.-smoothstep(neck-.002,neck+.002,y));
+        shirt*=1.-smoothstep(${character.outfit==='tank'?'.08':character.outfit==='long'?'1.48':'.61'}-.015,${character.outfit==='tank'?'.08':character.outfit==='long'?'1.48':'.61'}+.015,sleeve)*smoothstep(.18,.19,ax);
+        ${character.outfit==='tank'?'shirt*=1.-smoothstep(.14,.175,ax)*smoothstep(1.24,1.30,y);':''}
+        float pants=smoothstep(${character.pants==='shorts'?'.698':'.13'},${character.pants==='shorts'?'.702':'.14'},y)*(1.-smoothstep(.959,.967,y))*(1.-smoothstep(.30,.32,ax));
+        diffuseColor.rgb=mix(diffuseColor.rgb,characterBottom,pants);
+        diffuseColor.rgb=mix(diffuseColor.rgb,characterTop,shirt);
+      `);
+    };
+    material.customProgramCacheKey=()=>`outfit-${character.outfit}-${character.pants}`;
+  }
   let disposed = false;
   return { materials, dispose: () => {
     if (disposed) return;
@@ -138,4 +170,19 @@ export function exerciseMaterials(character) {
     materials.forEach(material => material.dispose());
     [fabric, tailored, pores, hair].forEach(texture => texture.dispose());
   } };
+}
+
+// Garment volume follows the same deforming surface; there is no separate
+// intersecting skin layer underneath the selected garment faces.
+export function fitExerciseClothing(wear,scale,character){
+ if(!character)return wear;
+ const positions=wear.positions.slice();
+ for(let i=0;i<positions.length;i+=3){
+  const x=positions[i]/scale,y=positions[i+1]/scale,z=positions[i+2]/scale;
+  if(character.pants==='joggers'&&y>.17&&y<.94&&Math.abs(x)<.3){
+   const center=Math.sign(x)*(.10+Math.max(0,.9-y)*.11),t=Math.sin((y-.17)/.77*Math.PI);
+   positions[i]+=(x-center)*.22*t;positions[i+2]+=(z-.04)*.16*t;
+  }
+ }
+ return {...wear,positions};
 }

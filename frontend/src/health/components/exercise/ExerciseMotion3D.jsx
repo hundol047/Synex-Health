@@ -1,3 +1,4 @@
+import HeadDetail from '../character/HeadDetail.jsx';
 import {useCharacter,characterSurface} from '../character/character.js';
 import React, { useMemo, useEffect, useRef, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
@@ -5,7 +6,7 @@ import { OrbitControls, ContactShadows } from '@react-three/drei';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import Footwear, { footwearAnchors } from '../body3d/Footwear.jsx';
-import { exerciseAvatarGeometry, exerciseMaterials } from './exerciseAppearance.js';
+import { exerciseAvatarGeometry, exerciseMaterials, fitExerciseClothing } from './exerciseAppearance.js';
 import ExerciseEquipment from './ExerciseEquipment.jsx';
 import { exerciseCameraPreset } from './exerciseCamera.js';
 import { calibrateGripScale, gripSurface } from './exerciseGrip.js';
@@ -45,17 +46,18 @@ export function heelContactHeights(shoes,rest){
   });
 }
 
-function SceneCamera({ motion, view, mirror, heightScale, controls }) {
+function SceneCamera({ motion, view, mirror, heightScale, controls, faceFocus }) {
   const { camera, size, invalidate } = useThree();
   useEffect(() => {
-    if (view === 'free') return;
+    if (view === 'free' && !faceFocus) return;
     const preset = exerciseCameraPreset(motion, view, heightScale, size.width / Math.max(1, size.height), mirror);
+    if(faceFocus){const angle=view==='side'?Math.PI/2:view==='back'?Math.PI:view==='front'?0:Math.PI/6;preset.target=[0,1.68*heightScale,.025*heightScale];preset.position=[Math.sin(angle)*.64*heightScale,1.70*heightScale,(.025+Math.cos(angle)*.64)*heightScale];}
     camera.position.set(...preset.position);
     camera.lookAt(...preset.target);
     camera.updateProjectionMatrix();
     if (controls.current) { controls.current.target.set(...preset.target); controls.current.update(); }
     invalidate();
-  }, [motion, view, mirror, heightScale, size.width, size.height, camera, controls, invalidate]);
+  }, [motion, view, mirror, heightScale, size.width, size.height, camera, controls, invalidate, faceFocus]);
   return null;
 }
 
@@ -66,7 +68,7 @@ function Athlete({ motion, progress, mirror, measurement, profile, compact, appe
     const base = characterSurface(personalizedVertices(measurement, profile),character,morphParameters(measurement, profile).heightScale);
     const scale = morphParameters(measurement, profile).heightScale;
     const neutral = personalizedVertices({ height: 178, weight: 70, body_fat_percentage: 20, skeletal_muscle_mass: 32 }, { gender: profile?.gender });
-    const weights = bindSurface(neutral), wear = sportswear(base, scale, profile?.gender);
+    const weights = bindSurface(neutral), wear = fitExerciseClothing(sportswear(base, scale, profile?.gender),scale,character);
     const flat = morphPositions(Float32Array.from(REST.flat()), measurement, profile);
     const rest = REST.map((_, i) => Array.from(flat.slice(i * 3, i * 3 + 3)));
     const shoes=footwearAnchors(base);
@@ -77,7 +79,7 @@ function Athlete({ motion, progress, mirror, measurement, profile, compact, appe
     const surface = appearance === 'mannequin' ? mannequinMaterials() : exerciseMaterials(character);
     if (appearance === 'mannequin') applyMannequinColors(geometry, scale, motion);
     else if(highlight) applyAthleteHighlights(geometry, scale, motion, surface.materials);
-    return { base: wear.positions, weights, rest, scale, palmRoll: calibratePalmRoll(wear.positions, weights, rest), geometry, appearance: surface, shoes };
+    return { headBase: base, base: wear.positions, weights, rest, scale, palmRoll: calibratePalmRoll(wear.positions, weights, rest), geometry, appearance: surface, shoes };
   }, [measurement, profile, appearance, motion, JSON.stringify(character),highlight]);
   const joints = useMemo(() => {
     const posed = poseJoints(motion, progress, model.rest);
@@ -118,6 +120,7 @@ function Athlete({ motion, progress, mirror, measurement, profile, compact, appe
         renderer.domElement.dataset.exerciseProgress = String(progress);
         renderer.domElement.dataset.exerciseVertices = String(model.geometry.attributes.position.count);
       }}/>
+      {appearance === 'athlete' && <HeadDetail base={model.headBase} scale={model.scale} rest={model.rest} joints={joints} character={character}/>}
       <Footwear anchors={shoes}/>
     </group>
     <ExerciseEquipment motion={motion} joints={joints} rest={model.rest} progress={progress} heightScale={model.scale}/>
@@ -199,7 +202,7 @@ class SceneBoundary extends React.Component {
   render() { return this.state.failed ? this.props.fallback : this.props.children; }
 }
 
-export default function ExerciseMotion3D({ motion, progress, mirror, measurement, profile, compact = false, defaultView, fallbackContent, onReady, character: overrideCharacter, highlight=true }) {
+export default function ExerciseMotion3D({ motion, progress, mirror, measurement, profile, compact = false, defaultView, fallbackContent, onReady, character: overrideCharacter, highlight=true, faceFocus=false }) {
   const controls = useRef();
   const savedCharacter = useCharacter();
   const character = overrideCharacter || savedCharacter;
@@ -207,7 +210,7 @@ export default function ExerciseMotion3D({ motion, progress, mirror, measurement
   const [view, setView] = useState(initialView);
   const [appearance, setAppearance] = useState('athlete');
   const anatomy = mannequinGuide(motion);
-  useEffect(() => setView(initialView), [motion, initialView]);
+  useEffect(() => setView(initialView), [motion, initialView,faceFocus]);
   // The instructor has a consistent demonstration build. Personal body
   // composition remains on the separate mannequin; it must not move a
   // machine's calibrated seat or make a supported palm float off the mat.
@@ -222,7 +225,7 @@ export default function ExerciseMotion3D({ motion, progress, mirror, measurement
     <div className="motion-controls motion-view-controls">{compact ? <select aria-label="운동 시범 방향" value={view} onChange={event => setView(event.target.value)}><option value="front">정면</option><option value="45">45°</option><option value="side">측면</option></select> : [['front', '정면'], ['45', '45°'], ['side', '측면'], ['back', '후면'], ['free', '자유']].map(([id, label]) => <button key={id} type="button" className="btn btn-ghost" aria-label={`${label} 운동 시범 보기`} aria-pressed={view === id} onClick={() => setView(id)}>{label}</button>)}</div>
     <div className="motion-3d-canvas" style={{ position: 'relative', height: compact ? undefined : 340, flex: compact ? '1 1 0' : undefined, minHeight: compact ? 0 : undefined, touchAction: 'none' }}>
       <SceneBoundary motion={motion} fallback={fallback}><Canvas shadows={!compact} dpr={[1, compact ? 1.5 : 2]} frameloop="demand" gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }} camera={{ position: [3, 1.5, 3], fov: 36 }} fallback={fallback} aria-label={appearance === 'mannequin' ? '운동 부위를 강조한 3D 운동 시범' : '운동복을 입은 3D 운동 시범'}>
-        <SceneCamera motion={motion} view={view} mirror={mirror} heightScale={heightScale} controls={controls}/><Studio compact={compact} heightScale={heightScale} motion={motion}/>
+        <SceneCamera motion={motion} view={view} mirror={mirror} heightScale={heightScale} controls={controls} faceFocus={faceFocus}/><Studio compact={compact} heightScale={heightScale} motion={motion}/>
         <Athlete {...{ motion, progress, mirror, compact, appearance, onReady, character, highlight }} measurement={m} profile={p}/>
         <OrbitControls ref={controls} enabled={view === 'free'} enablePan={false} minDistance={1.2 * heightScale} maxDistance={6 * heightScale} maxPolarAngle={Math.PI / 2 - .02}/>
       </Canvas></SceneBoundary>

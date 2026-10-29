@@ -73,14 +73,16 @@ export function applyAthleteHighlights(geometry, stature, motion, materials) {
   geometry.setAttribute('exerciseHighlight', new THREE.BufferAttribute(weights, 1));
   const red = new THREE.Color(MANNEQUIN_COLORS.primary);
   for (const material of materials.slice(0,3)) {
+    const previousCompile=material.onBeforeCompile,previousKey=material.customProgramCacheKey();
     material.onBeforeCompile = shader => {
+      previousCompile?.(shader);
       shader.uniforms.exerciseRed = {value:red};
       shader.vertexShader = 'attribute float exerciseHighlight; varying float vExerciseHighlight;\n' + shader.vertexShader;
       shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvExerciseHighlight = exerciseHighlight;');
       shader.fragmentShader = 'uniform vec3 exerciseRed; varying float vExerciseHighlight;\n' + shader.fragmentShader;
       shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb = mix(diffuseColor.rgb, exerciseRed, vExerciseHighlight);');
     };
-    material.customProgramCacheKey = () => 'athlete-muscle-guide-v1';
+    material.customProgramCacheKey = () => previousKey+'-athlete-muscle-guide-v1';
     material.needsUpdate = true;
   }
 }
