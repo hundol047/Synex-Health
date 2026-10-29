@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useCallback, useRef, useState } from 'react';
 import { Play, Pause, RotateCcw, FlipHorizontal2, Repeat2, Check, ChevronDown } from 'lucide-react';
 import ExerciseMotion3D from './ExerciseMotion3D.jsx';
 import { MOTIONS } from './motions.js';
@@ -15,6 +15,9 @@ export default function ExerciseMotion({ exercise, measurement, profile, autoPla
   const playback=externalPlayback!==undefined?externalPlayback:tempo.playback;
   const motion = MOTIONS[exercise.motion_id], guide = getMotionGuide(exercise.motion_id);
   const [dimension, setDimension] = useState('3d');
+  const [sceneReady,setSceneReady] = useState(false);
+  const markSceneReady = useCallback(() => setSceneReady(true), []);
+  useEffect(() => setSceneReady(false), [exercise.motion_id,dimension]);
   const [loop, setLoop] = useState(true);
   const [playing, setPlaying] = useState(autoPlay && !paused && !playback);
   const [speed, setSpeed] = useState(1);
@@ -24,18 +27,19 @@ export default function ExerciseMotion({ exercise, measurement, profile, autoPla
   const phase = useRef(0), viewer = useRef(null);
   const currentPhase = motionPhase(exercise.motion_id, progress);
   useEffect(() => { setPlaying(autoPlay && !paused && !playback); setDimension('3d'); phase.current = 0; setProgress(0); }, [exercise.motion_id, autoPlay]);
-  useEffect(() => { onReady?.(); }, [exercise.motion_id, onReady]);
+  useEffect(() => { if(sceneReady || dimension==='2d') onReady?.(); }, [exercise.motion_id, onReady,sceneReady,dimension]);
   useEffect(() => { if (paused) setPlaying(false); }, [paused]);
   useEffect(() => { if (playback) setPlaying(false); }, [!!playback]);
   useEffect(() => {
+    if(!sceneReady && dimension==='3d') return;
     const media = window.matchMedia?.('(prefers-reduced-motion: reduce)');
     const pause = () => setPlaying(false);
-    let seen = false;
-    const observer = typeof IntersectionObserver === 'undefined' ? null : new IntersectionObserver(([entry]) => { if (entry.isIntersecting) seen = true; else if (seen) pause(); }, { threshold: .05 });
+    let seen = false, hiddenTimer;
+    const observer = typeof IntersectionObserver === 'undefined' ? null : new IntersectionObserver(([entry]) => { clearTimeout(hiddenTimer); if (entry.isIntersecting) seen = true; else if (seen) hiddenTimer = setTimeout(pause, 350); }, { threshold: .05 });
     if (viewer.current) observer?.observe(viewer.current);
     media?.addEventListener?.('change', pause);
-    return () => { observer?.disconnect(); media?.removeEventListener?.('change', pause); };
-  }, [exercise.motion_id]);
+    return () => { clearTimeout(hiddenTimer); observer?.disconnect(); media?.removeEventListener?.('change', pause); };
+  }, [exercise.motion_id,sceneReady,dimension]);
   useEffect(() => {
     if (playback || !playing || !motion) return;
     if (document.hidden) { setPlaying(false); return; }
@@ -68,7 +72,7 @@ export default function ExerciseMotion({ exercise, measurement, profile, autoPla
   return <div className="motion-layout exercise-motion-experience">
     <div className="motion-viewer" ref={viewer}>
       <div className="motion-studio-heading"><div><span className="motion-studio-kicker">동작 가이드</span><strong>{dimension === '3d' ? '3D 동작 시범' : '간단 동작 안내'}</strong></div><span className="motion-studio-status"><i className={(playback?playback.running:playing) ? 'is-playing' : ''}/>{(playback?playback.running:playing) ? '재생 중' : '정지 화면'}</span></div>
-      {dimension === '3d' ? <ExerciseMotion3D motion={exercise.motion_id} progress={progress} mirror={mirror} measurement={measurement} profile={profile} defaultView={guide?.defaultView}/> : <MotionFigure exercise={exercise} progress={progress} mirror={mirror}/>}
+      {dimension === '3d' ? <ExerciseMotion3D onReady={markSceneReady} motion={exercise.motion_id} progress={progress} mirror={mirror} measurement={measurement} profile={profile} defaultView={guide?.defaultView}/> : <MotionFigure exercise={exercise} progress={progress} mirror={mirror}/>}
       {!playback&&<div className="motion-playback-controls">
         <button className="btn btn-primary" type="button" disabled={paused} onClick={playPause}>{playing ? <Pause size={17} fill="currentColor"/> : <Play size={17} fill="currentColor"/>}{playing ? '일시정지' : '동작 재생'}</button>
         <button className="motion-icon-control" aria-label="처음 자세로" title="처음 자세로" type="button" onClick={() => setPhase(0)}><RotateCcw size={18}/></button>

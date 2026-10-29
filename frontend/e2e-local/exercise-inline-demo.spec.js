@@ -20,7 +20,7 @@ test('opening a routine exercise plays inside the same card without a dialog or 
  await expect(page.getByRole('dialog')).toHaveCount(0);
  await expect(page).toHaveURL(/\/health\/routine$/);
  await expect(dialog).toBeVisible();
- await expect(canvas).toHaveAttribute('data-exercise-appearance','mannequin',{timeout:20000});
+ await expect(canvas).toHaveAttribute('data-exercise-appearance','athlete',{timeout:20000});
  await expect.poll(async()=>Number(await canvas.getAttribute('data-exercise-progress'))).toBeGreaterThan(0);
  const bounds=await canvas.boundingBox();expect(bounds.y).toBeGreaterThanOrEqual(0);expect(bounds.y+bounds.height).toBeLessThanOrEqual(640);
  await expect(dialog.getByRole('button',{name:'시범 접기'})).toBeInViewport();

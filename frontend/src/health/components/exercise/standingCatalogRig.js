@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { handRestFrame } from './exerciseGrip.js';
-import { orientation } from './poseMath.js';
+import { orientation, repetition } from './poseMath.js';
 
 // Authored demonstrations. World support anchors and two-bone IK replace the
 // old 2D-to-3D projection; these paths are not captured or personal biomechanics.
@@ -20,7 +20,7 @@ const ease = (a, b, value) => {
   const t = THREE.MathUtils.clamp((value - a) / (b - a), 0, 1);
   return t * t * t * (t * (t * 6 - 15) + 10);
 };
-const rep = t => ease(.07, .42, t) * (1 - ease(.58, .94, t));
+const rep = repetition;
 const normalized = p => vec(p).normalize();
 
 function solveLimb(origin, target, upper, lower, toward) {

@@ -16,7 +16,7 @@ import { bindSurface, calibratePalmRoll, deformSurface, poseJoints, REST } from 
 import { MOTIONS } from './motions.js';
 import {FLOOR_STRETCHES} from './stretchRig.js';
 import MotionFigure from './MotionFigure.jsx';
-import { applyMannequinColors, mannequinGuide, mannequinMaterials } from './instructionMannequin.js';
+import { applyAthleteHighlights, applyMannequinColors, mannequinGuide, mannequinMaterials } from './instructionMannequin.js';
 
 const FLOOR_MOTIONS = /plank|bridge|dead_bug|bird_dog|push_?up|clamshell|prone_y|heel_slide|cat_cow|floor_press|bench_press/;
 const PLANTED_FLOOR_MOTIONS = new Set(['full_pushup', 'push_up', 'plank', 'bridge', 'glute_bridge']);
@@ -58,8 +58,8 @@ function SceneCamera({ motion, view, mirror, heightScale, controls }) {
   return null;
 }
 
-function Athlete({ motion, progress, mirror, measurement, profile, compact, appearance }) {
-  const actor = useRef();
+function Athlete({ motion, progress, mirror, measurement, profile, compact, appearance, onReady }) {
+  const actor = useRef(), readyMotion = useRef();
   const { invalidate } = useThree();
   const model = useMemo(() => {
     const base = personalizedVertices(measurement, profile);
@@ -73,8 +73,10 @@ function Athlete({ motion, progress, mirror, measurement, profile, compact, appe
     rest.handGripScale = calibrateGripScale(wear.positions, weights, rest);
     rest.wallSupport = calibrateWallSupport(wear.positions, weights, rest);
     const geometry = exerciseAvatarGeometry(wear, scale);
+    const surface = appearance === 'mannequin' ? mannequinMaterials() : exerciseMaterials();
     if (appearance === 'mannequin') applyMannequinColors(geometry, scale, motion);
-    return { base: wear.positions, weights, rest, scale, palmRoll: calibratePalmRoll(wear.positions, weights, rest), geometry, appearance: appearance === 'mannequin' ? mannequinMaterials() : exerciseMaterials(), shoes };
+    else applyAthleteHighlights(geometry, scale, motion, surface.materials);
+    return { base: wear.positions, weights, rest, scale, palmRoll: calibratePalmRoll(wear.positions, weights, rest), geometry, appearance: surface, shoes };
   }, [measurement, profile, appearance, motion]);
   const joints = useMemo(() => {
     const posed = poseJoints(motion, progress, model.rest);
@@ -107,6 +109,7 @@ function Athlete({ motion, progress, mirror, measurement, profile, compact, appe
   return <group scale={[mirror ? -1 : 1, 1, 1]}>
     <group ref={actor}>
       <mesh name="exercise-athlete" geometry={model.geometry} material={model.appearance.materials} castShadow={!compact} receiveShadow onAfterRender={(renderer) => {
+        if(readyMotion.current !== motion){readyMotion.current = motion;requestAnimationFrame(() => onReady?.());}
         renderer.domElement.dataset.exerciseRendered = motion;
         renderer.domElement.dataset.exerciseAppearance = appearance;
         renderer.domElement.dataset.exerciseProgress = String(progress);
@@ -193,11 +196,11 @@ class SceneBoundary extends React.Component {
   render() { return this.state.failed ? this.props.fallback : this.props.children; }
 }
 
-export default function ExerciseMotion3D({ motion, progress, mirror, measurement, profile, compact = false, defaultView, fallbackContent }) {
+export default function ExerciseMotion3D({ motion, progress, mirror, measurement, profile, compact = false, defaultView, fallbackContent, onReady }) {
   const controls = useRef();
   const initialView = defaultView || (FLOOR_MOTIONS.test(motion) ? 'side' : '45');
   const [view, setView] = useState(initialView);
-  const [appearance, setAppearance] = useState('mannequin');
+  const [appearance, setAppearance] = useState('athlete');
   const anatomy = mannequinGuide(motion);
   useEffect(() => setView(initialView), [motion, initialView]);
   // The instructor has a consistent demonstration build. Personal body
@@ -215,12 +218,12 @@ export default function ExerciseMotion3D({ motion, progress, mirror, measurement
     <div className="motion-3d-canvas" style={{ position: 'relative', height: compact ? undefined : 340, flex: compact ? '1 1 0' : undefined, minHeight: compact ? 0 : undefined, touchAction: 'none' }}>
       <SceneBoundary motion={motion} fallback={fallback}><Canvas shadows={!compact} dpr={[1, compact ? 1.5 : 2]} frameloop="demand" gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }} camera={{ position: [3, 1.5, 3], fov: 36 }} fallback={fallback} aria-label={appearance === 'mannequin' ? '운동 부위를 강조한 3D 운동 시범' : '운동복을 입은 3D 운동 시범'}>
         <SceneCamera motion={motion} view={view} mirror={mirror} heightScale={heightScale} controls={controls}/><Studio compact={compact} heightScale={heightScale} motion={motion}/>
-        <Athlete {...{ motion, progress, mirror, compact, appearance }} measurement={m} profile={p}/>
+        <Athlete {...{ motion, progress, mirror, compact, appearance, onReady }} measurement={m} profile={p}/>
         <OrbitControls ref={controls} enabled={view === 'free'} enablePan={false} minDistance={1.2 * heightScale} maxDistance={6 * heightScale} maxPolarAngle={Math.PI / 2 - .02}/>
       </Canvas></SceneBoundary>
-      {compact && appearance === 'mannequin' && anatomy.primary.length > 0 && <span className="motion-anatomy-badge" title={`주요 부위: ${anatomy.primaryLabel}. 운동 안내이며 실제 근육 사용량 측정이 아닙니다.`}>빨강 · 주요 운동 부위</span>}
+      {compact && anatomy.primary.length > 0 && <span className="motion-anatomy-badge" title={`주요 부위: ${anatomy.primaryLabel}. 운동 안내이며 실제 근육 사용량 측정이 아닙니다.`}>빨강 · 주요 운동 부위</span>}
     </div>
-    {!compact && appearance === 'mannequin' && <div className="motion-anatomy-legend" aria-label="운동 부위 색상 안내">
+    {!compact && <div className="motion-anatomy-legend" aria-label="운동 부위 색상 안내">
       {anatomy.primary.length > 0 && <span><i className="primary"/>주요 부위 · {anatomy.primaryLabel}</span>}
       {!compact && anatomy.secondary.length > 0 && <span><i className="secondary"/>보조 부위 · {anatomy.secondaryLabel}</span>}
       <small>{anatomy.primary.length ? '색상은 운동 부위 안내이며 실제 근육 사용량 측정이 아닙니다.' : '이 동작은 특정 근육 색상 없이 전신 움직임을 안내합니다.'}</small>

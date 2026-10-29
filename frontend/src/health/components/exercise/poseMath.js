@@ -5,7 +5,10 @@ export const smoothStep = (start,end,value) => {
   const t = THREE.MathUtils.clamp((value-start)/(end-start),0,1);
   return t*t*t*(t*(t*6-15)+10);
 };
-export const repetition = t => smoothStep(.08,.43,t)*(1-smoothStep(.57,.94,t));
+// Continuous controlled repetitions: ease into and out of each half without
+// the old 14%-cycle frozen turnaround. Timed isometric holds are managed by
+// the workout player, not by inserting a stop into every moving repetition.
+export const repetition = t => smoothStep(0,.5,t)*(1-smoothStep(.5,1,t));
 export const scaleFor = rest => rest[0][1]/.94;
 export const segmentLength = (rest,a,b) => vector(rest[a]).distanceTo(vector(rest[b]));
 export function orientation(up,front=[0,0,1]) {

@@ -58,3 +58,29 @@ export function mannequinMaterials() {
   const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .78, metalness: 0, side: THREE.DoubleSide });
   return { materials: [material], dispose: () => material.dispose() };
 }
+
+// Keep clothing, skin and hair materials while tinting the demonstrated regions.
+// The weights stay attached to the same vertices as the skinned body.
+export function applyAthleteHighlights(geometry, stature, motion, materials) {
+  const {primary, secondary} = mannequinGuide(motion);
+  const positions = geometry.attributes.position.array;
+  const weights = new Float32Array(positions.length / 3);
+  for (let i = 0; i < weights.length; i++) {
+    const point = [positions[i*3]/stature, positions[i*3+1]/stature, positions[i*3+2]/stature];
+    weights[i] = Math.max(0, ...primary.map(r => regionWeight(r,...point))) * .78;
+    weights[i] = Math.max(weights[i], Math.max(0, ...secondary.map(r => regionWeight(r,...point))) * .28);
+  }
+  geometry.setAttribute('exerciseHighlight', new THREE.BufferAttribute(weights, 1));
+  const red = new THREE.Color(MANNEQUIN_COLORS.primary);
+  for (const material of materials.slice(0,3)) {
+    material.onBeforeCompile = shader => {
+      shader.uniforms.exerciseRed = {value:red};
+      shader.vertexShader = 'attribute float exerciseHighlight; varying float vExerciseHighlight;\n' + shader.vertexShader;
+      shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvExerciseHighlight = exerciseHighlight;');
+      shader.fragmentShader = 'uniform vec3 exerciseRed; varying float vExerciseHighlight;\n' + shader.fragmentShader;
+      shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb = mix(diffuseColor.rgb, exerciseRed, vExerciseHighlight);');
+    };
+    material.customProgramCacheKey = () => 'athlete-muscle-guide-v1';
+    material.needsUpdate = true;
+  }
+}

@@ -1,0 +1,11 @@
+# Natural exercise presentation
+
+The default exercise instructor now uses the existing skin, hair and sportswear materials instead of a uniform grey mannequin. A vertex-weighted red guide overlays the primary and secondary exercise regions without replacing garment textures, skin colors, material groups or hair. The grey comparison view remains selectable. Body-composition comparisons are unchanged.
+
+The shared repeated-motion curve now accelerates and decelerates continuously in each half of the cycle. It removes the previous 14–16% frozen midpoint plateau and initial/end dwell from equipment, floor and catalog standing repetitions. Endpoints, peak pose, total duration and repetition counts remain unchanged. Explicit timed holds still belong to the workout timer. This is authored animation, not motion capture.
+
+The player waits for the first actual 3D render before revealing the card and enabling offscreen pausing. This avoids a false pause while the lazy-loaded scene changes the card layout. The offscreen pause observer also allows 350 ms for temporary layout shifts during 3D loading. A demonstration scrolled out of view still pauses; tab visibility and reduced-motion changes still pause immediately. Timers are cleared on unmount.
+
+Validation includes the full frontend suite, actual WebGL appearance switching and mobile in-card autoplay, and support-pose rendering. Surface highlights keep their weights attached to deformed vertices. Regression tests check the cycle's monotonic halves, smooth seam/turnaround and preservation of skin/material data and an uncolored face.
+
+Completed checks (2026-10-29): all 91 test files / 561 tests passed with one worker and a 60-second default timeout for the exhaustive hand audit on this host. Earlier parallel runs exceeded the 30-second time budget without a geometry assertion failure. After the final first-render readiness fix, the affected playback/library/tempo/regression tests passed again (21 tests), and the personal production build passed. The mobile inline demo passed three consecutive browser runs. The athlete/grey comparison and floor-support browser tests also passed. No claim of motion capture or physical-phone testing is made. The previously published APK does not yet contain this change.
