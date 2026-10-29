@@ -1,0 +1,27 @@
+import React,{useEffect,useRef,useState} from 'react';
+import {Link} from 'react-router-dom';
+import ExerciseMotion3D from '../components/exercise/ExerciseMotion3D.jsx';
+import {DEFAULT_CHARACTER,readCharacter,saveCharacter} from '../components/character/character.js';
+import {registerDraftNavigation} from '../../shared/lib/draftNavigation.js';
+import '../components/exercise/exercise-experience.css';
+import './character.css';
+const TABS=['스타일','얼굴·헤어','체형','운동복'];
+const COLORS=['#241d2b','#73513a','#e1c6a1','#f2edf5','#6989d6','#b883c7','#ce7896','#53a6a0'];
+export default function CharacterPage(){
+ const [draft,setDraft]=useState(readCharacter),[saved,setSaved]=useState(readCharacter),[tab,setTab]=useState(0),[motion,setMotion]=useState('squat'),[playing,setPlaying]=useState(false),[progress,setProgress]=useState(0),[message,setMessage]=useState('');
+ const guard=useRef({}),dirty=JSON.stringify(draft)!==JSON.stringify(saved);
+ useEffect(()=>registerDraftNavigation(guard.current,dirty,()=>Promise.resolve(),'캐릭터 변경을 저장하지 않았습니다. 나갈까요?','/health/character'),[dirty]);
+ useEffect(()=>{if(!playing)return;let frame,last;const tick=t=>{if(last)setProgress(v=>(v+Math.min(t-last,80)/6500)%1);last=t;frame=requestAnimationFrame(tick);};frame=requestAnimationFrame(tick);return()=>cancelAnimationFrame(frame);},[playing]);
+ useEffect(()=>{const hide=()=>{if(document.hidden)setPlaying(false);};document.addEventListener('visibilitychange',hide);return()=>document.removeEventListener('visibilitychange',hide);},[]);
+ const change=(key,value)=>{setDraft(d=>({...d,[key]:value}));setMessage('');};
+ const choices=(key,options)=><div className="character-choices">{options.map(([value,label])=><button type="button" key={value} aria-pressed={draft[key]===value} onClick={()=>change(key,value)}>{label}</button>)}</div>;
+ const color=(key,label)=><label className="character-color">{label}<input aria-label={label} type="color" value={draft[key]} onChange={e=>change(key,e.target.value)}/></label>;
+ return <main className="character-studio"><header><Link to="/health/profile">← 프로필</Link><p className="character-eyebrow">MY EXERCISE CHARACTER</p><h1>나만의 운동 캐릭터</h1><p>내 취향으로 꾸미고, 함께 움직여 보세요.</p></header>
+ <div className="character-workspace"><section className="character-preview" aria-label="캐릭터 미리보기"><ExerciseMotion3D motion={motion} progress={progress} character={draft} highlight={false}/><div className="character-preview-controls"><button className="btn btn-primary" onClick={()=>setPlaying(v=>!v)}>{playing?'동작 멈추기':'동작 미리보기'}</button><select aria-label="미리볼 운동" value={motion} onChange={e=>{setMotion(e.target.value);setProgress(0);}}><option value="squat">스쿼트</option><option value="wall_push">벽 푸시업</option><option value="shoulder_roll">어깨 돌리기</option></select></div><p className="muted">자유 시점에서 드래그하면 뒤쪽까지 볼 수 있습니다.</p></section>
+ <section className="character-panel"><div className="character-tabs" role="group" aria-label="꾸미기 항목">{TABS.map((name,i)=><button key={name} aria-pressed={tab===i} onClick={()=>setTab(i)}>{name}</button>)}</div>
+ <div className="character-fields">{tab===0&&<><h2>표현 스타일</h2>{choices('style',[['realistic','입체 운동복'],['toon','애니 · 툰']])}<p className="muted">애니 · 툰은 현재 인체에 만화풍 명암을 적용합니다. 버튜버 전용 모델·표정 추적은 아직 지원하지 않습니다.</p><h2>기본 체형</h2>{choices('body',[['male','남성형'],['female','여성형']])}</>}
+ {tab===1&&<><h2>얼굴 윤곽</h2>{choices('face',[['balanced','기본'],['soft','부드러운'],['angular','갸름한']])}{color('skin','피부색')}<h2>헤어 컬러</h2><div className="character-swatches">{COLORS.map(c=><button key={c} aria-label={`머리색 ${c}`} aria-pressed={draft.hair===c} style={{background:c}} onClick={()=>change('hair',c)}/>)}</div>{color('hair','직접 고른 머리색')}<p className="muted">현재 헤어는 짧은 스타일입니다.</p></>}
+ {tab===2&&<><h2>체형 다듬기</h2><p className="muted">운동 시범용 외형입니다. 실제 체성분과 칼로리에 영향을 주지 않습니다. 현재는 관절 주변 변형을 줄인 제한 범위로 조절합니다.</p>{[['shoulders','어깨 너비'],['chest','가슴 볼륨'],['waist','허리 너비'],['hips','골반 너비']].map(([key,label])=><label className="character-range" key={key}>{label}<output>{Math.round(draft[key]*100)}</output><input aria-label={label} type="range" min="-1" max="1" step=".05" value={draft[key]} onChange={e=>change(key,Number(e.target.value))}/><small>작게 <span>크게</span></small></label>)}</>}
+ {tab===3&&<><h2>운동복 컬러</h2>{color('top','상의 색상')}{color('bottom','하의 색상')}<p className="muted">운동할 때는 이 색상 위에 주요 운동 부위가 빨간색으로 표시됩니다.</p></>}</div>
+ <footer className="character-save"><button className="btn btn-primary" onClick={()=>{try{saveCharacter(draft);setSaved({...draft});setMessage('저장했습니다. 운동 화면에 적용됩니다.');}catch{setMessage('저장 공간에 접근할 수 없습니다. 설정을 다시 확인해 주세요.');}}}>저장하고 운동에 적용</button><button className="btn btn-secondary" onClick={()=>{setDraft({...DEFAULT_CHARACTER});setMessage('기본값을 미리 봅니다. 저장하면 적용됩니다.');}}>기본값 미리보기</button><p role="status">{message|| (dirty?'아직 저장하지 않은 변경이 있습니다.':'이 기기에 저장되는 캐릭터 설정입니다.')}</p></footer></section></div></main>;
+}

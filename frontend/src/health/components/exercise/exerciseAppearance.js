@@ -19,12 +19,12 @@ export function exerciseGarmentAt(x, y, z, original = 'skin') {
   return 'top';
 }
 
-export function exerciseAvatarGeometry(wear, stature = 1) {
+export function exerciseAvatarGeometry(wear, stature = 1, character) {
   const geometry = avatarGeometry(wear, stature);
   const uv = new Float32Array(wear.positions.length / 3 * 2);
   const colors = geometry.attributes.color.array;
-  const skin = new THREE.Color('#c4967b'), lip = new THREE.Color('#a36660'), brow = new THREE.Color('#594138');
-  const cheek = new THREE.Color('#c78f79'), hairColor = new THREE.Color('#342820');
+  const skin = new THREE.Color(character?.skin || '#c4967b'), lip = new THREE.Color('#a36660'), brow = new THREE.Color('#594138');
+  const cheek = new THREE.Color('#c78f79'), hairColor = new THREE.Color(character?.hair || '#342820');
   for (let i = 0; i < wear.labels.length; i++) {
     const x = wear.positions[i * 3] / stature, y = wear.positions[i * 3 + 1] / stature, z = wear.positions[i * 3 + 2] / stature;
     uv[i * 2] = Math.atan2(x, z - .035) / (2 * Math.PI) + .5;
@@ -88,7 +88,7 @@ function localTexture(size, pixel, color = false) {
   return texture;
 }
 
-export function exerciseMaterials() {
+export function exerciseMaterials(character) {
   const fabric = localTexture(64, (x, y) => [
     128 + Math.round(9 * Math.sin(x * Math.PI / 2) + 2 * (noise(x, y) - .5)),
     128 + Math.round(9 * Math.sin(y * Math.PI / 2) + 2 * (noise(y, x) - .5)), 254,
@@ -123,6 +123,14 @@ export function exerciseMaterials() {
     new THREE.MeshStandardMaterial({ ...common, color: '#f7faff', roughness: .84 }),
     new THREE.MeshStandardMaterial({ ...common, vertexColors: true, roughness: .9, bumpMap: hair, bumpScale: .0009, envMapIntensity: .55 }),
   ];
+  if(character){
+    for(const [index,key] of [[1,'top'],[2,'bottom']]){materials[index].map=null;materials[index].color.set(character[key]);}
+    if(character.style==='toon'){
+      for(let i=0;i<materials.length;i++){
+        const old=materials[i];materials[i]=new THREE.MeshToonMaterial({color:old.color,vertexColors:old.vertexColors,side:THREE.DoubleSide});old.dispose();
+      }
+    }
+  }
   let disposed = false;
   return { materials, dispose: () => {
     if (disposed) return;

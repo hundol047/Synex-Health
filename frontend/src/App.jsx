@@ -14,6 +14,7 @@ const RoutinePage = lazy(() => import('./health/pages/RoutinePage.jsx'));
 const WorkoutPage = lazy(() => import('./health/pages/WorkoutPage.jsx'));
 const ProgressPage = lazy(() => import('./health/pages/ProgressPage.jsx'));
 const AgentChatPage = lazy(() => import('./health/pages/AgentChatPage.jsx'));
+const CharacterPage = lazy(() => import('./health/pages/CharacterPage.jsx'));
 const ProfilePage = lazy(() => import('./health/pages/ProfilePage.jsx'));
 const CounselorDashboardPage = lazy(() => import('./health/pages/CounselorDashboardPage.jsx'));
 
@@ -51,6 +52,7 @@ export default function App(){
           <Route path="/health/workout" element={<WorkoutPage />} />
           <Route path="/health/progress" element={<ProgressPage />} />
           <Route path="/health/agent" element={LOCAL_ONLY?<ServerFeature/>:<AgentChatPage />} />
+          <Route path="/health/character" element={<CharacterPage />} />
           <Route path="/health/profile" element={<ProfilePage />} />
           <Route path="/health-center" element={LOCAL_ONLY?<ServerFeature/>:<CounselorDashboardPage />} />
           <Route path="*" element={<Navigate to="/health" replace />} />

@@ -130,6 +130,8 @@ export default function ProfilePage() {
 
   return (
     <>
+<Link className="btn btn-secondary" to="/health/character">내 운동 캐릭터 꾸미기</Link>
+
       <section className="card"><h2>나의 건강 메뉴</h2><div className="membership-actions"><Link className="btn btn-ghost" to="/health/goals">목표</Link>{!LOCAL_ONLY&&<Link className="btn btn-ghost" to="/health/subscription">멤버십</Link>}<Link className="btn btn-ghost" to="/health/library">운동 라이브러리</Link><Link className="btn btn-ghost" to="/health/pose">운동 카메라 코치</Link><Link className="btn btn-ghost" to="/health/connections">학교·기기·알림 연결</Link><Link className="btn btn-ghost" to="/health/privacy">개인정보 관리</Link></div><div className="membership-actions"><Link className="btn btn-ghost" to="/health/workout">운동 기록</Link><Link className="btn btn-ghost" to="/health/progress">변화 추적</Link><Link className="btn btn-ghost" to="/health/comparison">측정 비교</Link>{!LOCAL_ONLY&&<Link className="btn btn-ghost" to="/health/agent">AI 코치</Link>}{!LOCAL_ONLY&&<Link className="btn btn-ghost" to="/health/report">월별 리포트</Link>}</div></section>
       <SchoolSelector profile={profile.data} onSaved={profile.reload}/>
       <MeasurementEntry />

@@ -1,3 +1,4 @@
+import {useCharacter,characterSurface} from '../character/character.js';
 import React, { useMemo, useEffect, useRef, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, ContactShadows } from '@react-three/drei';
@@ -58,11 +59,11 @@ function SceneCamera({ motion, view, mirror, heightScale, controls }) {
   return null;
 }
 
-function Athlete({ motion, progress, mirror, measurement, profile, compact, appearance, onReady }) {
+function Athlete({ motion, progress, mirror, measurement, profile, compact, appearance, onReady, character, highlight }) {
   const actor = useRef(), readyMotion = useRef();
   const { invalidate } = useThree();
   const model = useMemo(() => {
-    const base = personalizedVertices(measurement, profile);
+    const base = characterSurface(personalizedVertices(measurement, profile),character,morphParameters(measurement, profile).heightScale);
     const scale = morphParameters(measurement, profile).heightScale;
     const neutral = personalizedVertices({ height: 178, weight: 70, body_fat_percentage: 20, skeletal_muscle_mass: 32 }, { gender: profile?.gender });
     const weights = bindSurface(neutral), wear = sportswear(base, scale, profile?.gender);
@@ -72,12 +73,12 @@ function Athlete({ motion, progress, mirror, measurement, profile, compact, appe
     rest.heelContactHeights=heelContactHeights(shoes,rest);
     rest.handGripScale = calibrateGripScale(wear.positions, weights, rest);
     rest.wallSupport = calibrateWallSupport(wear.positions, weights, rest);
-    const geometry = exerciseAvatarGeometry(wear, scale);
-    const surface = appearance === 'mannequin' ? mannequinMaterials() : exerciseMaterials();
+    const geometry = exerciseAvatarGeometry(wear, scale, character);
+    const surface = appearance === 'mannequin' ? mannequinMaterials() : exerciseMaterials(character);
     if (appearance === 'mannequin') applyMannequinColors(geometry, scale, motion);
-    else applyAthleteHighlights(geometry, scale, motion, surface.materials);
+    else if(highlight) applyAthleteHighlights(geometry, scale, motion, surface.materials);
     return { base: wear.positions, weights, rest, scale, palmRoll: calibratePalmRoll(wear.positions, weights, rest), geometry, appearance: surface, shoes };
-  }, [measurement, profile, appearance, motion]);
+  }, [measurement, profile, appearance, motion, JSON.stringify(character),highlight]);
   const joints = useMemo(() => {
     const posed = poseJoints(motion, progress, model.rest);
     if (posed.handRoll && !posed.boneRotations?.[12]) posed.handRoll = model.palmRoll;
@@ -112,6 +113,8 @@ function Athlete({ motion, progress, mirror, measurement, profile, compact, appe
         if(readyMotion.current !== motion){readyMotion.current = motion;requestAnimationFrame(() => onReady?.());}
         renderer.domElement.dataset.exerciseRendered = motion;
         renderer.domElement.dataset.exerciseAppearance = appearance;
+        renderer.domElement.dataset.characterStyle = character.style;
+        renderer.domElement.dataset.characterBody = character.body;
         renderer.domElement.dataset.exerciseProgress = String(progress);
         renderer.domElement.dataset.exerciseVertices = String(model.geometry.attributes.position.count);
       }}/>
@@ -196,8 +199,10 @@ class SceneBoundary extends React.Component {
   render() { return this.state.failed ? this.props.fallback : this.props.children; }
 }
 
-export default function ExerciseMotion3D({ motion, progress, mirror, measurement, profile, compact = false, defaultView, fallbackContent, onReady }) {
+export default function ExerciseMotion3D({ motion, progress, mirror, measurement, profile, compact = false, defaultView, fallbackContent, onReady, character: overrideCharacter, highlight=true }) {
   const controls = useRef();
+  const savedCharacter = useCharacter();
+  const character = overrideCharacter || savedCharacter;
   const initialView = defaultView || (FLOOR_MOTIONS.test(motion) ? 'side' : '45');
   const [view, setView] = useState(initialView);
   const [appearance, setAppearance] = useState('athlete');
@@ -206,7 +211,7 @@ export default function ExerciseMotion3D({ motion, progress, mirror, measurement
   // The instructor has a consistent demonstration build. Personal body
   // composition remains on the separate mannequin; it must not move a
   // machine's calibrated seat or make a supported palm float off the mat.
-  const m = measurement, p = profile;
+  const m = measurement, p = useMemo(() => ({...profile,gender:character.body}), [profile,character.body]);
   const heightScale = morphParameters(m, p).heightScale;
   const fallback = fallbackContent||<MotionFigure exercise={{ motion_id: motion, exercise_name: '운동' }} progress={progress} mirror={mirror}/>;
   return <>
@@ -218,12 +223,12 @@ export default function ExerciseMotion3D({ motion, progress, mirror, measurement
     <div className="motion-3d-canvas" style={{ position: 'relative', height: compact ? undefined : 340, flex: compact ? '1 1 0' : undefined, minHeight: compact ? 0 : undefined, touchAction: 'none' }}>
       <SceneBoundary motion={motion} fallback={fallback}><Canvas shadows={!compact} dpr={[1, compact ? 1.5 : 2]} frameloop="demand" gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }} camera={{ position: [3, 1.5, 3], fov: 36 }} fallback={fallback} aria-label={appearance === 'mannequin' ? '운동 부위를 강조한 3D 운동 시범' : '운동복을 입은 3D 운동 시범'}>
         <SceneCamera motion={motion} view={view} mirror={mirror} heightScale={heightScale} controls={controls}/><Studio compact={compact} heightScale={heightScale} motion={motion}/>
-        <Athlete {...{ motion, progress, mirror, compact, appearance, onReady }} measurement={m} profile={p}/>
+        <Athlete {...{ motion, progress, mirror, compact, appearance, onReady, character, highlight }} measurement={m} profile={p}/>
         <OrbitControls ref={controls} enabled={view === 'free'} enablePan={false} minDistance={1.2 * heightScale} maxDistance={6 * heightScale} maxPolarAngle={Math.PI / 2 - .02}/>
       </Canvas></SceneBoundary>
-      {compact && anatomy.primary.length > 0 && <span className="motion-anatomy-badge" title={`주요 부위: ${anatomy.primaryLabel}. 운동 안내이며 실제 근육 사용량 측정이 아닙니다.`}>빨강 · 주요 운동 부위</span>}
+      {compact && highlight && anatomy.primary.length > 0 && <span className="motion-anatomy-badge" title={`주요 부위: ${anatomy.primaryLabel}. 운동 안내이며 실제 근육 사용량 측정이 아닙니다.`}>빨강 · 주요 운동 부위</span>}
     </div>
-    {!compact && <div className="motion-anatomy-legend" aria-label="운동 부위 색상 안내">
+    {!compact && highlight && <div className="motion-anatomy-legend" aria-label="운동 부위 색상 안내">
       {anatomy.primary.length > 0 && <span><i className="primary"/>주요 부위 · {anatomy.primaryLabel}</span>}
       {!compact && anatomy.secondary.length > 0 && <span><i className="secondary"/>보조 부위 · {anatomy.secondaryLabel}</span>}
       <small>{anatomy.primary.length ? '색상은 운동 부위 안내이며 실제 근육 사용량 측정이 아닙니다.' : '이 동작은 특정 근육 색상 없이 전신 움직임을 안내합니다.'}</small>
