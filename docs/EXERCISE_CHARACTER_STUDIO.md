@@ -16,3 +16,12 @@ New head details are original procedural geometry: a scalp shell fitted to the s
 Wardrobe selection includes tee/tank/long sleeves and leggings/shorts/joggers. Rest-space fragment masks produce smooth sleeve and hem boundaries rather than triangle-shaped material edges. Joggers expand the existing garment surface locally; skin is not rendered as a second intersecting shell. This is fitted clothing, not a cloth simulation or a catalog of separate high-poly garments. Shader composition preserves red exercise-region guides on top of clothing.
 
 Validation: 20 focused tests passed; the browser flow exercised outfit variants, face close-up in realistic and toon modes, persistence and exercise-library reuse without shader errors. Both face images and wardrobe screenshots were inspected. Initial floating locks and jagged hems were corrected. Commercial-game photorealism, long flowing hair and facial motion capture are not claimed; final APK publication remains separate.
+
+
+## Close-up realism review
+
+The eye surface now has deterministic radial iris fibers, a darker limbal ring, separate upper/lower eyelid edges and restrained corneal reflection. Natural eyebrows are darker than dyed scalp hair. Scalp locks use finer, denser geometry; the scalp itself avoids anisotropic shading without UVs, which had produced a black patch. Skin microrelief was reduced from a 2 mm amplitude to 0.15 mm, with regional facial roughness, a subtle lip crease and less excessive fill/rim illumination.
+
+Front-view review exposed a substantive placement error: added eyes sat above the original model's eyelid openings. Their centers and brows were lowered into alignment, then reviewed on both base profiles. A landmark range regression guards against restoring the old position. Browser checks capture frontal and three-quarter portraits for both body types and all short hairstyle variants. The automated checks validate finite geometry, rendering and persistence, not perceptual likeness.
+
+No numerical realism score is reported. There is no identified real subject, calibrated reference photography, 3D scan, comparison metric or rater study, so a claim of 99.99% similarity would be unsupported. Current limitations visible in close-up include stylized short hair, generic facial anatomy, simplified skin pigmentation and absent expressive facial animation. The result is still a rendered illustrative character rather than a verified photoreal digital human.

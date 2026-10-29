@@ -8,7 +8,8 @@ import catalog from '../src/shared/lib/localCatalog.json';
 it('generates finite original head details that follow every exercise head rotation',()=>{
  for(const body of ['male','female'])for(const hairStyle of ['short','parted','bun']){
  const c={...DEFAULT_CHARACTER,body,hairStyle},base=personalizedVertices({}, {gender:body}),details=buildHeadDetails(base,1,REST,c);
- try{expect(details.cap.index.count).toBeGreaterThan(100);for(const g of [details.cap,...details.curves,...details.brows])expect(g.attributes.position.array.every(Number.isFinite)).toBe(true);
+ try{for(const eye of details.eyes){expect(eye.y+REST[1][1]).toBeGreaterThan(1.658);expect(eye.y+REST[1][1]).toBeLessThan(1.670);}
+ expect(details.cap.index.count).toBeGreaterThan(100);for(const g of [details.cap,...details.curves,...details.brows])expect(g.attributes.position.array.every(Number.isFinite)).toBe(true);
  for(const e of catalog)for(const t of [0,.25,.5,.75,1])expect(rigRotation(poseJoints(e.motion_id,t),1).toArray().every(Number.isFinite)).toBe(true);
  }finally{details.dispose();}
  }

@@ -45,10 +45,10 @@ export function exerciseAvatarGeometry(wear, stature = 1, character) {
     const color = skin.clone();
     color.offsetHSL(0, 0, .007 * Math.sin(y * 13) + .003 * Math.sin(x * 37));
     if (y > 1.54 && z > .105) {
-      color.lerp(cheek, .16 * gaussian(Math.abs(x), y, .049, 1.635, .027, .024));
-      color.lerp(lip, .58 * gaussian(x, y, 0, 1.609, .027, .006));
+      color.lerp(cheek, .10 * gaussian(Math.abs(x), y, .049, 1.635, .027, .024));
+      color.lerp(lip, .45 * gaussian(x, y, 0, 1.609, .027, .006));
       color.lerp(brow, .72 * gaussian(Math.abs(x), y, .034, 1.694, .020, .0035));
-      color.lerp(brow, .24 * gaussian(Math.abs(x), y, .034, 1.677, .013, .003));
+      color.lerp(brow, .12 * gaussian(Math.abs(x), y, .034, 1.677, .013, .003));
     }
     const hairline = z > .095 ? 1.728 - .013 * Math.cos(x * 35) : 1.638;
     if (y > 1.54) color.lerp(hairColor, THREE.MathUtils.smoothstep(y, hairline, hairline + .018));
@@ -128,7 +128,7 @@ export function exerciseMaterials(character) {
   hair.repeat.set(4, 3);
   const common = { metalness: 0, side: THREE.DoubleSide };
   const materials = [
-    new THREE.MeshPhysicalMaterial({ ...common, vertexColors: true, roughness: .78, roughnessMap: pores, bumpMap: pores, bumpScale: .002, clearcoat: 0, envMapIntensity: .7 }),
+    new THREE.MeshPhysicalMaterial({ ...common, vertexColors: true, roughness: .78, roughnessMap: pores, bumpMap: pores, bumpScale: .00015, clearcoat: 0, envMapIntensity: .55 }),
     new THREE.MeshStandardMaterial({ ...common, roughness: .9, map: tailored, normalMap: fabric, normalScale: new THREE.Vector2(.085, .085) }),
     new THREE.MeshStandardMaterial({ ...common, roughness: .94, map: tailored, normalMap: fabric, normalScale: new THREE.Vector2(.065, .065) }),
     new THREE.MeshStandardMaterial({ ...common, color: '#f7faff', roughness: .84 }),
@@ -145,10 +145,11 @@ export function exerciseMaterials(character) {
   if(character)for(const material of materials.slice(0,3)){
     material.vertexColors=true;material.color.set('#ffffff');material.map=null;
     material.onBeforeCompile=shader=>{
+      shader.uniforms.characterLip={value:new THREE.Color(character.skin).lerp(new THREE.Color('#a56665'),.38)};
       shader.uniforms.characterTop={value:new THREE.Color(character.top)};shader.uniforms.characterBottom={value:new THREE.Color(character.bottom)};
       shader.vertexShader='attribute vec3 characterRest; varying vec3 vCharacterRest;\n'+shader.vertexShader;
       shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvCharacterRest=characterRest;');
-      shader.fragmentShader='uniform vec3 characterTop; uniform vec3 characterBottom; varying vec3 vCharacterRest;\n'+shader.fragmentShader;
+      shader.fragmentShader='uniform vec3 characterLip; uniform vec3 characterTop; uniform vec3 characterBottom; varying vec3 vCharacterRest;\n'+shader.fragmentShader;
       shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
         float ax=abs(vCharacterRest.x),y=vCharacterRest.y,z=vCharacterRest.z;
         float sleeve=((ax-.185)*.14-(y-1.42)*.17)/(.14*.14+.17*.17);
@@ -159,9 +160,18 @@ export function exerciseMaterials(character) {
         float pants=smoothstep(${character.pants==='shorts'?'.698':'.13'},${character.pants==='shorts'?'.702':'.14'},y)*(1.-smoothstep(.959,.967,y))*(1.-smoothstep(.30,.32,ax));
         diffuseColor.rgb=mix(diffuseColor.rgb,characterBottom,pants);
         diffuseColor.rgb=mix(diffuseColor.rgb,characterTop,shirt);
+        float lipShape=exp(-pow(vCharacterRest.x/.024,4.)-pow((y-1.609)/.0048,4.))*smoothstep(.09,.12,z);
+        diffuseColor.rgb=mix(diffuseColor.rgb,characterLip,lipShape*.55);
+        float lipCrease=exp(-pow(vCharacterRest.x/.021,4.)-pow((y-1.609)/.00065,2.))*smoothstep(.09,.12,z);
+        diffuseColor.rgb*=1.-lipCrease*.18;
+      `);
+      if(character.style!=='toon')shader.fragmentShader=shader.fragmentShader.replace('#include <roughnessmap_fragment>',`#include <roughnessmap_fragment>
+        float facialSkin=smoothstep(1.54,1.57,vCharacterRest.y)*(1.-smoothstep(1.72,1.74,vCharacterRest.y))*smoothstep(.08,.11,vCharacterRest.z);
+        float tZone=exp(-pow(vCharacterRest.x/.022,2.))*.07;
+        roughnessFactor=mix(roughnessFactor,.68-tZone,facialSkin);
       `);
     };
-    material.customProgramCacheKey=()=>`outfit-${character.outfit}-${character.pants}`;
+    material.customProgramCacheKey=()=>`skin-detail-v2-outfit-${character.outfit}-${character.pants}`;
   }
   let disposed = false;
   return { materials, dispose: () => {
