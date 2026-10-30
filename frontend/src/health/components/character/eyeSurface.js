@@ -15,3 +15,20 @@ export function eyeLidGeometry(scale=1,upper=true){
  const points=Array.from({length:25},(_,i)=>{const t=i/24,x=(t*2-1)*.0102*scale;return new THREE.Vector3(x,(upper?.0034:-.0026)*Math.sin(Math.PI*t)*scale,.0018*Math.sin(Math.PI*t)*scale);});
  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),24,(upper?.0008:.00055)*scale,6,false);
 }
+
+// A human-sized circular iris is occluded by the lids, not squeezed into a
+// tiny circle or stretched oval. UVs retain the original circular fibers.
+export function visibleIrisGeometry(scale=1,radius=.0044){
+ const positions=[0,0,0],uv=[.5,.5],indices=[],segments=64;
+ for(let i=0;i<=segments;i++){
+  const a=i/segments*Math.PI*2,x=Math.cos(a)*radius;
+  const edge=Math.sin(Math.PI*(x/.0204+.5));
+  const y=THREE.MathUtils.clamp(Math.sin(a)*radius,-.0025*edge,.0031*edge);
+  positions.push(x*scale,y*scale,0);uv.push(.5+x/(radius*2),.5+y/(radius*2));
+  if(i<segments)indices.push(0,i+1,i+2);
+ }
+ const geometry=new THREE.BufferGeometry();
+ geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+ geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+ geometry.setIndex(indices);geometry.computeVertexNormals();return geometry;
+}

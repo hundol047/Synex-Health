@@ -1,6 +1,6 @@
 import {useSyncExternalStore} from 'react';
 export const CHARACTER_KEY='synex-exercise-character-v1';
-export const DEFAULT_CHARACTER=Object.freeze({style:'realistic',body:'male',face:'balanced',hairStyle:'parted',outfit:'tee',pants:'leggings',eyes:'#4b6b72',hair:'#342820',skin:'#c4967b',top:'#2563eb',bottom:'#253b4d',eyeSize:0,hairVolume:0,chest:0,hips:0,shoulders:0,waist:0});
+export const DEFAULT_CHARACTER=Object.freeze({style:'realistic',body:'male',face:'balanced',hairStyle:'parted',outfit:'tee',pants:'joggers',eyes:'#543a29',hair:'#30251f',skin:'#c4967b',top:'#799bbd',bottom:'#293747',eyeSize:0,hairVolume:0,chest:0,hips:0,shoulders:0,waist:0});
 export function normalizeCharacter(value={}){
  const v=value&&typeof value==='object'?value:{};const result={...DEFAULT_CHARACTER};
  for(const [key,options] of Object.entries({style:['realistic','toon'],body:['male','female'],face:['balanced','soft','angular'],hairStyle:['short','parted','bun','ponytail'],outfit:['tee','tank','long'],pants:['leggings','shorts','joggers']}))if(options.includes(v[key]))result[key]=v[key];

@@ -69,3 +69,53 @@ A paired local construction benchmark (seven warm samples after the initial iter
 Browser validation passed for three consecutive guide openings, actual ready-state autoplay, pause/scrub/reopen and saved ponytail motion. The readiness assertion waits for completion of the whole first frame (20-second software-WebGL budget), rather than only the body mesh's early onAfterRender marker. A unit regression holds the renderer-ready callback back and confirms automatic phase remains zero until released. Focused cache/playback checks: 12 passed. Personal web build passed. This does not replace physical-device startup, GPU or thermal evaluation.
 
 The WebGL/error fallback also acknowledges readiness and explains that the simpler guide is shown. This prevents the new loading gate from freezing fallback animation on devices without 3D support. A dedicated regression verifies readiness fires once while fallback frames continue updating.
+
+## Fitted hair and garment refinement (2026-10-30)
+
+Actual app captures, rather than generated character concept art, exposed hair
+material covering portions of the ears and a jagged fringe. Character-enabled
+body geometry now keeps the ears and forehead skin-colored. A separately fitted
+scalp cap ends above the ears and supports continuous swept, tapered locks.
+Surface samples intersect the neutral head triangles using a temporary MeshBVH;
+this avoids nearest-vertex snapping and repeated full-triangle searches. The
+existing bounded head-template cache and independent viewer clones are retained.
+The BVH package was already a transitive dependency and is now pinned directly
+at 0.8.3 (MIT); no external likeness, scan, or texture is downloaded at runtime.
+
+The realistic iris now has an 8.8 mm diameter, clipped to the lid aperture with
+circular UVs instead of a tiny exposed circle. Eyebrows use denser tapered hairs.
+Garments have bounded torso ease, rest-space fabric folds, a collar/hem/sleeve
+stitch treatment, and a darker waistband. Folds are authored procedural relief,
+not a cloth simulation. Lighting has a neutral warm key and cool fill. New
+characters default to brown eyes, a muted blue top and dark joggers; saved color,
+clothing and body preferences are not overwritten.
+
+No body-joint trajectories or health measurements changed. The new torso ease
+is zero outside its bounded torso region. A regression checks the actual fitted
+body and maximum-volume side-part hair against wall push-up, wall sit and wall
+hinge support planes on both body profiles throughout the motion. Hair stays
+within 50,000 detail vertices and the cap within 3,000. The eyelid/iris UV shape,
+light and dark complexion ear colors, cache ownership, hair motion, floor/wall
+support and cosmetic size controls are covered by focused tests.
+
+This remains a procedural exercise character. It is not as photoreal as the
+user's generated reference image: facial identity, scanned skin detail, garment
+construction and facial expression remain limited. No similarity percentage or
+physical-phone performance improvement is asserted. The older construction
+benchmarks above describe the previous hair implementation, not this refinement.
+
+Validation of this refinement: 30 focused unit/surface checks passed, including
+all eight existing floor/wall checks and the added fitted-character wall check.
+Production web build passed. Three Chromium WebGL flows passed (3.6 minutes):
+ male/female portraits and hairstyle changes without shader errors; mobile
+ eye/hair/chest preference persistence and blink frames; and three consecutive
+ guide openings with ready-gated playback, pause and scrub. These checks were
+ run on the cloud browser, not a physical Android device. Actual captures were
+ inspected; no generated concept image is presented as app output.
+
+Additional browser validation passed for outfit changes (tee/long/tank and all
+pants types), toon/realistic switching and sharing saved appearance with an
+exercise. A final attachment correction places the bun against a sampled scalp
+point and aligns the ponytail band with its root. Seven affected geometry/cache
+checks were rerun successfully, and the ponytail playback/pause/persistence
+browser flow passed after that correction. The final personal web build passed.

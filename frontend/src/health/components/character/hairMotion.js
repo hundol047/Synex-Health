@@ -13,7 +13,7 @@ export function attachHairFlex(geometry,strength){
  geometry.setAttribute('hairFlex',new THREE.BufferAttribute(values,1));return geometry;
 }
 export function swayingHairMaterial(character,scale){
- const material=character.style==='toon'?new THREE.MeshToonMaterial({color:character.hair,vertexColors:true}):new THREE.MeshStandardMaterial({color:character.hair,vertexColors:true,roughness:.64,metalness:0,envMapIntensity:.3});
+ const material=character.style==='toon'?new THREE.MeshToonMaterial({color:character.hair,vertexColors:true}):new THREE.MeshStandardMaterial({color:character.hair,vertexColors:true,roughness:.42,metalness:0,envMapIntensity:.7});
  const wave={value:new THREE.Vector2()},size={value:scale};
  material.onBeforeCompile=shader=>{
   shader.uniforms.hairWave=wave;shader.uniforms.hairScale=size;

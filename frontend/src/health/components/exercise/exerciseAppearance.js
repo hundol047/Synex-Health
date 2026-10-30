@@ -52,7 +52,7 @@ export function exerciseAvatarGeometry(wear, stature = 1, character) {
       color.lerp(brow, .12 * gaussian(Math.abs(x), y, .034, 1.668, .016, .008));
     }
     const hairline = z > .095 ? 1.728 - .013 * Math.cos(x * 35) : 1.638;
-    if (y > 1.54) color.lerp(hairColor, THREE.MathUtils.smoothstep(y, hairline, hairline + .018));
+    if (!character && y > 1.54) color.lerp(hairColor, THREE.MathUtils.smoothstep(y, hairline, hairline + .018));
     color.toArray(colors, i * 3);
   }
   geometry.setAttribute('characterRest',new THREE.BufferAttribute(Float32Array.from(wear.positions,v=>v/stature),3));
@@ -67,7 +67,7 @@ export function exerciseAvatarGeometry(wear, stature = 1, character) {
       x /= 3 * stature; y /= 3 * stature; z /= 3 * stature;
       const garment = exerciseGarmentAt(x, y, z, original, character);
       const hairline = z > .095 ? 1.728 - .013 * Math.cos(x * 35) : 1.638;
-      const material = garment === 'skin' && y > hairline + .012 ? 4 : garmentIndex[garment];
+      const material = !character && garment === 'skin' && y > hairline + .012 ? 4 : garmentIndex[garment];
       groups[material].push(...face);
     }
   }
@@ -151,6 +151,23 @@ export function exerciseMaterials(character) {
       shader.vertexShader='attribute vec3 characterRest; varying vec3 vCharacterRest;\n'+shader.vertexShader;
       shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvCharacterRest=characterRest;');
       shader.fragmentShader='uniform vec3 characterLip; uniform vec3 characterTop; uniform vec3 characterBottom; varying vec3 vCharacterRest;\n'+shader.fragmentShader;
+      shader.fragmentShader=shader.fragmentShader.replace('#include <common>',`#include <common>
+        // Fine garment relief stays in rest coordinates while the body moves.
+        float clothRelief(vec3 p) {
+          float side=abs(p.x),y=p.y;
+          float waist=exp(-pow((y-1.025)/.075,2.));
+          float flank=exp(-pow((side-.14)/.075,2.))*exp(-pow((y-1.20)/.22,2.));
+          float knee=exp(-pow((y-.51)/.065,2.));
+          float ankle=exp(-pow((y-.20)/.045,2.));
+          float fold=sin(y*115.+side*48.+sin(side*32.)*.6);
+          return .00065*fold*(waist+flank*.5)+${character.pants==='joggers'?'.0008':'.00018'}*sin(y*155.+side*31.)*(knee+ankle*.7);
+        }
+        vec3 clothNormal(vec3 n,vec3 pos,float height) {
+          vec3 dx=dFdx(pos),dy=dFdy(pos),r1=cross(dy,n),r2=cross(n,dx);
+          float determinant=dot(dx,r1);
+          return normalize(abs(determinant)*n-sign(determinant)*(dFdx(height)*r1+dFdy(height)*r2));
+        }
+      `);
       shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
         float ax=abs(vCharacterRest.x),y=vCharacterRest.y,z=vCharacterRest.z;
         float sleeve=((ax-.185)*.14-(y-1.42)*.17)/(.14*.14+.17*.17);
@@ -161,6 +178,14 @@ export function exerciseMaterials(character) {
         float pants=smoothstep(${character.pants==='shorts'?'.698':'.13'},${character.pants==='shorts'?'.702':'.14'},y)*(1.-smoothstep(.959,.967,y))*(1.-smoothstep(.30,.32,ax));
         diffuseColor.rgb=mix(diffuseColor.rgb,characterBottom,pants);
         diffuseColor.rgb=mix(diffuseColor.rgb,characterTop,shirt);
+        float seam=exp(-pow((y-neck+.005)/.0022,2.))*shirt;
+        seam+=exp(-pow((y-.977)/.0025,2.))*shirt;
+        seam+=exp(-pow((sleeve-.585)/.009,2.))*shirt*smoothstep(.18,.20,ax);
+        float panels=exp(-pow((ax-.152)/.002,2.))*shirt*smoothstep(.04,.08,z);
+        float waistband=exp(-pow((y-.935)/.015,4.))*pants;
+        float weave=sin(vCharacterRest.x*2100.)*sin(y*2500.);
+        diffuseColor.rgb*=1.-seam*.13-panels*.07-waistband*.08+(shirt+pants)*weave*.009;
+        diffuseColor.rgb*=1.+clamp(clothRelief(vCharacterRest)*60.,-.06,.06)*(shirt+pants);
         float skinFace=smoothstep(1.55,1.58,y)*(1.-smoothstep(1.71,1.74,y))*smoothstep(.085,.12,z);
         float cheekWarm=exp(-pow((ax-.045)/.032,2.)-pow((y-1.635)/.028,2.))*skinFace;
         float skinGrain=fract(sin(dot(floor(vCharacterRest.xy*4200.),vec2(12.9898,78.233)))*43758.5453)-.5;
@@ -170,13 +195,15 @@ export function exerciseMaterials(character) {
         float lipCrease=exp(-pow(vCharacterRest.x/.021,4.)-pow((y-1.609)/.00065,2.))*smoothstep(.09,.12,z);
         diffuseColor.rgb*=1.-lipCrease*.18;
       `);
-      if(character.style!=='toon')shader.fragmentShader=shader.fragmentShader.replace('#include <roughnessmap_fragment>',`#include <roughnessmap_fragment>
+      if(character.style!=='toon')shader.fragmentShader=shader.fragmentShader.replace('#include <normal_fragment_maps>',`#include <normal_fragment_maps>
+        normal=clothNormal(normal,-vViewPosition,clothRelief(vCharacterRest)*max(shirt,pants));
+      `).replace('#include <roughnessmap_fragment>',`#include <roughnessmap_fragment>
         float facialSkin=smoothstep(1.54,1.57,vCharacterRest.y)*(1.-smoothstep(1.72,1.74,vCharacterRest.y))*smoothstep(.08,.11,vCharacterRest.z);
         float tZone=exp(-pow(vCharacterRest.x/.022,2.))*.07;
         roughnessFactor=mix(roughnessFactor,.68-tZone,facialSkin);
       `);
     };
-    material.customProgramCacheKey=()=>`skin-detail-v4-outfit-${character.outfit}-${character.pants}`;
+    material.customProgramCacheKey=()=>`skin-tailoring-v5-outfit-${character.outfit}-${character.pants}`;
   }
   let disposed = false;
   return { materials, dispose: () => {
@@ -194,6 +221,13 @@ export function fitExerciseClothing(wear,scale,character){
  const positions=wear.positions.slice();
  for(let i=0;i<positions.length;i+=3){
   const x=positions[i]/scale,y=positions[i+1]/scale,z=positions[i+2]/scale;
+  if(y>.985&&y<1.475&&Math.abs(x)<.21){
+   const side=Math.abs(x),weight=Math.sin((y-.985)/.49*Math.PI)**2*(1-THREE.MathUtils.smoothstep(side,.16,.21));
+   const direction=Math.sign(z-.035),front=THREE.MathUtils.smoothstep(Math.abs(z-.035),.02,.07);
+   const folds=.0018*Math.sin(y*100+side*33)*Math.exp(-(((y-1.07)/.12)**2));
+   positions[i+2]+=(.006+folds)*weight*front*direction*scale;
+   positions[i]+=Math.sign(x)*.002*weight*scale;
+  }
   if(character.pants==='joggers'&&y>.17&&y<.94&&Math.abs(x)<.3){
    const center=Math.sign(x)*(.10+Math.max(0,.9-y)*.11),t=Math.sin((y-.17)/.77*Math.PI);
    positions[i]+=(x-center)*.22*t;positions[i+2]+=(z-.04)*.16*t;
