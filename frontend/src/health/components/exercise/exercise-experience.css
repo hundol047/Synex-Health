@@ -230,3 +230,4 @@
 .exercise-inline-demo .motion-3d-canvas { height:clamp(150px,38dvh,360px)!important; }
 
 .exercise-library-stage .motion-studio-heading { display:none; }
+.motion-loading{padding:12px 14px;border-radius:12px;background:#eef5ff;color:#31577c;font-size:13px;line-height:1.6;margin:8px 0}

@@ -1,20 +1,18 @@
 import HeadDetail from '../character/HeadDetail.jsx';
-import {useCharacter,characterSurface} from '../character/character.js';
+import {useCharacter} from '../character/character.js';
 import React, { useMemo, useEffect, useRef, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, ContactShadows } from '@react-three/drei';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import Footwear, { footwearAnchors } from '../body3d/Footwear.jsx';
-import { exerciseAvatarGeometry, exerciseMaterials, fitExerciseClothing } from './exerciseAppearance.js';
+import Footwear from '../body3d/Footwear.jsx';
+import { exerciseAvatarGeometry, exerciseMaterials } from './exerciseAppearance.js';
 import ExerciseEquipment from './ExerciseEquipment.jsx';
 import { exerciseCameraPreset } from './exerciseCamera.js';
-import { calibrateGripScale, gripSurface } from './exerciseGrip.js';
+import {prepareAthlete,getGripSurface,exerciseShoeFloor} from './athleteModel.js';
 import { exerciseHandShape } from './handPoses.js';
-import { calibrateWallSupport } from './wallSupportCalibration.js';
-import { personalizedVertices, sportswear } from '../body3d/avatar.js';
-import { morphPositions, morphParameters } from '../body3d/morph.js';
-import { bindSurface, calibratePalmRoll, deformSurface, poseJoints, REST } from './rig.js';
+import { morphParameters } from '../body3d/morph.js';
+import { deformSurface, poseJoints } from './rig.js';
 import { MOTIONS } from './motions.js';
 import {FLOOR_STRETCHES} from './stretchRig.js';
 import MotionFigure from './MotionFigure.jsx';
@@ -26,25 +24,7 @@ const ORIGINAL_MOTIONS = new Set(['squat', 'lunge', 'side_lunge', 'full_pushup',
 
 export { exerciseCameraPreset } from './exerciseCamera.js';
 
-// Support height of the rounded upper and sole, including a raised heel.
-// The old center-minus-height estimate incorrectly sank pitched shoes into the mat.
-export function exerciseShoeFloor(shoe) {
-  const rotation = shoe.rotation || new THREE.Quaternion();
-  const x = new THREE.Vector3(1, 0, 0).applyQuaternion(rotation).y;
-  const y = new THREE.Vector3(0, 1, 0).applyQuaternion(rotation).y;
-  const z = new THREE.Vector3(0, 0, 1).applyQuaternion(rotation).y;
-  const capsule = (width, depth, halfLength) => Math.abs(z) * halfLength + Math.hypot(width * x, depth * y, halfLength * z);
-  return Math.min(shoe.center[1] - capsule(shoe.width / 2, .037, shoe.length / 4), shoe.center[1] - .025 * y - capsule(shoe.width * .52, .012, shoe.length * .255));
-}
-
-export function heelContactHeights(shoes,rest){
-  const rotation=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),-Math.PI/2);
-  return shoes.map((shoe,side)=>{
-    const ankle=side?14:11;
-    const center=new THREE.Vector3(...shoe.center).sub(new THREE.Vector3(...rest[ankle])).applyQuaternion(rotation).toArray();
-    return .003-exerciseShoeFloor({...shoe,center,rotation});
-  });
-}
+export {exerciseShoeFloor,heelContactHeights} from './athleteModel.js';
 
 function SceneCamera({ motion, view, mirror, heightScale, controls, faceFocus }) {
   const { camera, size, invalidate } = useThree();
@@ -65,21 +45,13 @@ function Athlete({ motion, progress, mirror, measurement, profile, compact, appe
   const actor = useRef(), readyMotion = useRef();
   const { invalidate } = useThree();
   const model = useMemo(() => {
-    const base = characterSurface(personalizedVertices(measurement, profile),character,morphParameters(measurement, profile).heightScale);
-    const scale = morphParameters(measurement, profile).heightScale;
-    const neutral = personalizedVertices({ height: 178, weight: 70, body_fat_percentage: 20, skeletal_muscle_mass: 32 }, { gender: profile?.gender });
-    const weights = bindSurface(neutral), wear = fitExerciseClothing(sportswear(base, scale, profile?.gender),scale,character);
-    const flat = morphPositions(Float32Array.from(REST.flat()), measurement, profile);
-    const rest = REST.map((_, i) => Array.from(flat.slice(i * 3, i * 3 + 3)));
-    const shoes=footwearAnchors(base);
-    rest.heelContactHeights=heelContactHeights(shoes,rest);
-    rest.handGripScale = calibrateGripScale(wear.positions, weights, rest);
-    rest.wallSupport = calibrateWallSupport(wear.positions, weights, rest);
+    const prepared=prepareAthlete(measurement,profile,character);
+    const {wear,scale}=prepared;
     const geometry = exerciseAvatarGeometry(wear, scale, character);
     const surface = appearance === 'mannequin' ? mannequinMaterials() : exerciseMaterials(character);
     if (appearance === 'mannequin') applyMannequinColors(geometry, scale, motion);
     else if(highlight) applyAthleteHighlights(geometry, scale, motion, surface.materials);
-    return { headBase: base, base: wear.positions, weights, rest, scale, palmRoll: calibratePalmRoll(wear.positions, weights, rest), geometry, appearance: surface, shoes };
+    return { ...prepared, geometry, appearance: surface };
   }, [measurement, profile, appearance, motion, JSON.stringify(character),highlight]);
   const joints = useMemo(() => {
     const posed = poseJoints(motion, progress, model.rest);
@@ -87,7 +59,7 @@ function Athlete({ motion, progress, mirror, measurement, profile, compact, appe
     return posed;
   }, [motion, progress, model]);
   const grip = useMemo(() => exerciseHandShape(motion, joints), [motion, joints.equipment?.grip]);
-  const skin = useMemo(() => gripSurface(model.base, model.weights, model.rest, grip), [model, grip]);
+  const skin = useMemo(() => getGripSurface(model,grip), [model, grip]);
   const shoes = useMemo(() => model.shoes.map((shoe, i) => {
     const [ankle, toe] = i === 0 ? [11, 15] : [14, 16];
     const origin = new THREE.Vector3(...model.rest[ankle]), destination = new THREE.Vector3(...joints[ankle]);
@@ -100,8 +72,10 @@ function Athlete({ motion, progress, mirror, measurement, profile, compact, appe
     deformSurface(skin, model.weights, joints, geometry.attributes.position.array, model.rest, false);
     geometry.attributes.position.needsUpdate = true;
     geometry.computeVertexNormals();
-    geometry.computeBoundingSphere();
     geometry.computeBoundingBox();
+    // One bounds scan; the box sphere conservatively contains the whole pose.
+    geometry.boundingSphere ||= new THREE.Sphere();
+    geometry.boundingBox.getBoundingSphere(geometry.boundingSphere);
     // Floor poses keep the planted shoes at a fixed height. A moving head or
     // hand vertex must never lift the entire athlete off the mat.
     const shoeFloor = Math.min(...shoes.map(exerciseShoeFloor));

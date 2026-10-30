@@ -18,8 +18,14 @@ export function buildHeadDetails(base,scale,rest,character){
  const isHair=i=>{const x=base[i*3]/scale,y=base[i*3+1]/scale,z=base[i*3+2]/scale;return y>(z>.095?1.726-.013*Math.cos(x*35):1.638);};
  for(let i=0;i<mesh.indices.length;i+=3){const f=mesh.indices.slice(i,i+3);if(f.every(isHair))indices.push(...f);}
  for(let i=0;i<scalp.length;i+=3){if(isHair(i/3)){scalp[i]*=1.02+.025*(volume+1);scalp[i+1]+=lift*scale;scalp[i+2]=.025*scale+(scalp[i+2]-.025*scale)*(1.02+.025*(volume+1));}scalp[i]-=anchor.x;scalp[i+1]-=anchor.y;scalp[i+2]-=anchor.z;}
- const cap=new THREE.BufferGeometry();cap.setAttribute('position',new THREE.BufferAttribute(scalp,3));cap.setIndex(indices);cap.computeVertexNormals();
- const surface=(x,y)=>{let best=Infinity,z=.12;for(let i=0;i<base.length;i+=3){if(base[i+2]<.06*scale)continue;const d=(base[i]/scale-x)**2+(base[i+1]/scale-y)**2;if(d<best){best=d;z=base[i+2]/scale;}}let front=-Infinity;for(let i=0;i<base.length;i+=3)if(Math.abs(base[i]/scale-x)<.012&&Math.abs(base[i+1]/scale-y)<.010)front=Math.max(front,base[i+2]/scale);return Number.isFinite(front)?Math.max(front,z):z;};
+ // Upload only referenced scalp vertices, rather than a second full body.
+ const remap=new Map(),capPositions=[],capIndices=[];
+ for(const index of indices){if(!remap.has(index)){remap.set(index,remap.size);capPositions.push(scalp[index*3],scalp[index*3+1],scalp[index*3+2]);}capIndices.push(remap.get(index));}
+ const cap=new THREE.BufferGeometry();cap.setAttribute('position',new THREE.Float32BufferAttribute(capPositions,3));cap.setIndex(capIndices);cap.computeVertexNormals();
+ // Queries are all on the face; exclude unrelated limbs before nearest lookup.
+ const facePoints=[];for(let i=0;i<base.length;i+=3)if(base[i+1]>1.54*scale&&base[i+2]>.06*scale)facePoints.push([base[i]/scale,base[i+1]/scale,base[i+2]/scale]);
+ const surfaceCache=new Map();
+ const surface=(x,y)=>{const key=x+':'+y;if(surfaceCache.has(key))return surfaceCache.get(key);let best=Infinity,z=.12,front=-Infinity;for(const [px,py,pz] of facePoints){const dx=px-x,dy=py-y,d=dx*dx+dy*dy;if(d<best){best=d;z=pz;}if(Math.abs(dx)<.012&&Math.abs(dy)<.010)front=Math.max(front,pz);}const result=Number.isFinite(front)?Math.max(front,z):z;surfaceCache.set(key,result);return result;};
  const eyeY=1.663,eyes=[-1,1].map(side=>{const x=side*.034;return point(x,eyeY,surface(x,eyeY)+.0015);});
  const curves=[];
  const scalpPoints=[];for(let i=0;i<base.length/3;i++)if(isHair(i))scalpPoints.push(new THREE.Vector3(scalp[i*3],scalp[i*3+1],scalp[i*3+2]));
@@ -53,8 +59,21 @@ export function buildHeadDetails(base,scale,rest,character){
  const locks=mergeGeometries(curves);curves.forEach(g=>g.dispose());
  return {cap,curves:[locks],brows,eyes,bun:point(0,1.736+lift,-.078-.004*volume),bunScale:radial,dispose(){[cap,locks,...brows].forEach(g=>g.dispose());}};
 }
+// Keep immutable CPU templates per prepared body. Every mounted scene owns
+// clones, so disposing one viewer cannot invalidate another viewer's buffers.
+const headTemplates=new WeakMap();
+export function acquireHeadDetails(base,scale,rest,character){
+ let templates=headTemplates.get(base);if(!templates){templates=new Map();headTemplates.set(base,templates);}
+ const key=JSON.stringify([scale,rest[1],character.hairStyle,character.hairVolume]);
+ if(!templates.has(key)){
+  templates.set(key,buildHeadDetails(base,scale,rest,character));
+  if(templates.size>2){const first=templates.keys().next().value;templates.get(first).dispose();templates.delete(first);}
+ }
+ const source=templates.get(key),cap=source.cap.clone(),curves=source.curves.map(g=>g.clone()),brows=source.brows.map(g=>g.clone());
+ return {...source,cap,curves,brows,eyes:source.eyes.map(v=>v.clone()),bun:source.bun.clone(),dispose(){[cap,...curves,...brows].forEach(g=>g.dispose());}};
+}
 export default function HeadDetail({base,scale,rest,joints,character,progress=0}){
- const detail=useMemo(()=>buildHeadDetails(base,scale,rest,character),[base,scale,rest,character.hairStyle,character.hairVolume]);
+ const detail=useMemo(()=>acquireHeadDetails(base,scale,rest,character),[base,scale,rest,character.hairStyle,character.hairVolume]);
  useEffect(()=>()=>detail.dispose(),[detail]);
  const toon=character.style==='toon',hairMaterial=toon?'meshToonMaterial':'meshStandardMaterial';
  const blink=blinkAmount(progress);

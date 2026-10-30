@@ -15,9 +15,10 @@ export default function ExerciseMotion({ exercise, measurement, profile, autoPla
   const playback=externalPlayback!==undefined?externalPlayback:tempo.playback;
   const motion = MOTIONS[exercise.motion_id], guide = getMotionGuide(exercise.motion_id);
   const [dimension, setDimension] = useState('3d');
-  const [sceneReady,setSceneReady] = useState(false);
-  const markSceneReady = useCallback(() => setSceneReady(true), []);
-  useEffect(() => setSceneReady(false), [exercise.motion_id,dimension]);
+  const [readyScene,setReadyScene] = useState(null);
+  const sceneReady=readyScene===exercise.motion_id && dimension==='3d';
+  const markSceneReady=useCallback(()=>setReadyScene(exercise.motion_id),[exercise.motion_id]);
+  useEffect(()=>{if(dimension==='2d')setReadyScene(null);},[dimension]);
   const [loop, setLoop] = useState(true);
   const [playing, setPlaying] = useState(autoPlay && !paused && !playback);
   const [speed, setSpeed] = useState(1);
@@ -41,7 +42,7 @@ export default function ExerciseMotion({ exercise, measurement, profile, autoPla
     return () => { clearTimeout(hiddenTimer); observer?.disconnect(); media?.removeEventListener?.('change', pause); };
   }, [exercise.motion_id,sceneReady,dimension]);
   useEffect(() => {
-    if (playback || !playing || !motion) return;
+    if (playback || !playing || !motion || (dimension==='3d'&&!sceneReady)) return;
     if (document.hidden) { setPlaying(false); return; }
     let frame, last, renderedAt = 0;
     const duration = guide?.durationMs || 7000;
@@ -60,7 +61,7 @@ export default function ExerciseMotion({ exercise, measurement, profile, autoPla
     const hide = () => { if (document.hidden) setPlaying(false); };
     document.addEventListener('visibilitychange', hide);
     return () => { cancelAnimationFrame(frame); document.removeEventListener('visibilitychange', hide); };
-  }, [playing, speed, motion, loop, guide?.durationMs, !!playback]);
+  }, [playing, speed, motion, loop, guide?.durationMs, !!playback, dimension, sceneReady]);
   if(standaloneSession&&externalPlayback===undefined&&tempo.state.status==='complete')return <div className="exercise-motion-results"><TempoControls session={tempo} exercises={tempoExercises} disabled={paused}/><WorkoutResults exercises={tempoExercises} measurement={measurement} skipped={tempo.state.skipped} workMs={tempo.state.workMs}/></div>;
   if (!motion) return <p className="muted">이전 버전 운동입니다. 루틴을 다시 생성하면 동작 안내를 볼 수 있습니다.</p>;
   const setPhase = value => { setPlaying(false); phase.current = value; setProgress(value); };
@@ -72,6 +73,7 @@ export default function ExerciseMotion({ exercise, measurement, profile, autoPla
   return <div className="motion-layout exercise-motion-experience">
     <div className="motion-viewer" ref={viewer}>
       <div className="motion-studio-heading"><div><span className="motion-studio-kicker">동작 가이드</span><strong>{dimension === '3d' ? '3D 동작 시범' : '간단 동작 안내'}</strong></div><span className="motion-studio-status"><i className={(playback?playback.running:playing) ? 'is-playing' : ''}/>{(playback?playback.running:playing) ? '재생 중' : '정지 화면'}</span></div>
+      {dimension==='3d'&&!sceneReady&&<p className="motion-loading" role="status">운동 시범을 준비하고 있습니다. 준비되면 처음 자세부터 시작합니다.</p>}
       {dimension === '3d' ? <ExerciseMotion3D onReady={markSceneReady} motion={exercise.motion_id} progress={progress} mirror={mirror} measurement={measurement} profile={profile} defaultView={guide?.defaultView}/> : <MotionFigure exercise={exercise} progress={progress} mirror={mirror}/>}
       {!playback&&<div className="motion-playback-controls">
         <button className="btn btn-primary" type="button" disabled={paused} onClick={playPause}>{playing ? <Pause size={17} fill="currentColor"/> : <Play size={17} fill="currentColor"/>}{playing ? '일시정지' : '동작 재생'}</button>

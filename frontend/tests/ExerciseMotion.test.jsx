@@ -6,7 +6,8 @@ import ExerciseMotion from '../src/health/components/exercise/ExerciseMotion.jsx
 import { MOTIONS,samplePose } from '../src/health/components/exercise/motions.js';
 import { resolveBodyProfile } from '../src/health/components/body3d/bodyProfiles.js';
 
-vi.mock('../src/health/components/exercise/ExerciseMotion3D.jsx',()=>({default:({progress})=> <div data-testid="motion-render" data-progress={progress}>3D 시범</div>}));
+const readiness=vi.hoisted(()=>({hold:false,ready:null}));
+vi.mock('../src/health/components/exercise/ExerciseMotion3D.jsx',()=>({default:({progress,onReady})=> {React.useEffect(()=>{readiness.ready=onReady;if(!readiness.hold)onReady?.();},[onReady]);return <div data-testid="motion-render" data-progress={progress}>3D 시범</div>;}}));
 
 describe('motion guidance',()=>{
   it('autoplays a newly opened guide and permits immediate pause',()=>{
@@ -107,4 +108,16 @@ describe('human body profiles',()=>{
     expect(female.hip).toBeGreaterThan(male.hip);
     expect(resolveBodyProfile(undefined).label).toContain('중립');
   });
+});
+
+it('keeps automatic preview at its first pose until the 3D renderer signals readiness',()=>{
+ readiness.hold=true;let nextFrame;
+ const raf=vi.spyOn(window,'requestAnimationFrame').mockImplementation(cb=>{nextFrame=cb;return 1;});
+ const cancel=vi.spyOn(window,'cancelAnimationFrame').mockImplementation(()=>{});
+ const {unmount}=render(<ExerciseMotion autoPlay exercise={{motion_id:'squat',exercise_name:'스쿼트',instructions:[],cautions:[]}}/>);
+ try{
+  expect(screen.getByTestId('motion-render').dataset.progress).toBe('0');expect(nextFrame).toBeUndefined();expect(screen.getByText(/운동 시범을 준비하고 있습니다/)).toBeTruthy();
+  act(()=>readiness.ready());expect(screen.queryByText(/운동 시범을 준비하고 있습니다/)).toBeNull();
+  act(()=>nextFrame(0));act(()=>nextFrame(40));expect(Number(screen.getByTestId('motion-render').dataset.progress)).toBeGreaterThan(0);
+ }finally{unmount();raf.mockRestore();cancel.mockRestore();readiness.hold=false;readiness.ready=null;}
 });
