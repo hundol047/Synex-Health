@@ -13,7 +13,7 @@ test('instructor follows the timer, pauses with it, and resets cleanly for anoth
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('/health/pose?motion=squat');
  const panel=page.getByRole('region',{name:'자동 운동 템포'});
- await expect(page.locator('.coach-example canvas')).toHaveAttribute('data-exercise-rendered','squat');
+ await expect(page.locator('.coach-example canvas')).toHaveAttribute('data-exercise-rendered','squat',{timeout:20000});
  await page.getByRole('checkbox',{name:'운동 음성 · 이름·초·횟수 읽기'}).check();
  await panel.getByRole('button',{name:'자동 따라하기 시작'}).click();
  await expect(panel).toHaveAttribute('data-stage','prepare');

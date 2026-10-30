@@ -3,8 +3,13 @@ import { createHash } from 'node:crypto';
 import { writeFile } from 'node:fs/promises';
 import catalog from '../src/shared/lib/localCatalog.json' with { type: 'json' };
 
-test('all 74 exercises render an actual mobile 3D surface and complete their motion cycle offline', async ({ page }, info) => {
-  test.setTimeout(600000);
+// Keep every exercise and all three frames, but distribute independent batches
+// across CI shards instead of putting 222 software-WebGL captures in one timer.
+test.describe.configure({mode:'parallel'});
+for(let offset=0;offset<catalog.length;offset+=10){
+ const exercises=catalog.slice(offset,offset+10);
+ test(`exercise surfaces ${offset+1}-${offset+exercises.length} of 74 render and complete their motion cycle offline`, async ({ page }, info) => {
+  test.setTimeout(180000);
   const errors = [], apiRequests = [], remoteRequests = [], report = [];
   page.on('pageerror', error => errors.push(error.message));
   page.on('request', request => {
@@ -16,7 +21,7 @@ test('all 74 exercises render an actual mobile 3D surface and complete their mot
   await page.setViewportSize({ width: 393, height: 852 });
   await page.goto('/health/library');
   await expect(page.getByRole('heading', { name: '운동 라이브러리 · 74개' })).toBeVisible();
-  for (const exercise of catalog) {
+  for (const exercise of exercises) {
     await page.getByLabel('운동·근육 검색').fill(exercise.name);
     await page.getByRole('button', { name: `${exercise.name} 동작 보기`, exact: true }).click();
     const stage = page.getByRole('region', { name: '선택한 운동 시범' });
@@ -45,9 +50,11 @@ test('all 74 exercises render an actual mobile 3D surface and complete their mot
     await stage.getByRole('button', { name: '선택한 운동 시범 닫기' }).click();
     await expect(page.locator('canvas')).toHaveCount(0);
   }
-  expect(report).toHaveLength(74);
+  expect(report).toHaveLength(exercises.length);
   expect(errors).toEqual([]);
   expect(apiRequests).toEqual([]);
   expect(remoteRequests).toEqual([]);
-  await writeFile(info.outputPath('all-74-render-verification.json'), JSON.stringify({ exercises: report, errors, apiRequests, remoteRequests }, null, 2));
+  await writeFile(info.outputPath(`exercise-render-verification-${offset+1}-${offset+exercises.length}.json`), JSON.stringify({ exercises: report, errors, apiRequests, remoteRequests }, null, 2));
 });
+
+}
