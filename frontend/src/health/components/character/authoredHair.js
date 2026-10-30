@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import layered from './assets/bob01.json';
 import bob from './assets/bob02.json';
 import pixie from './assets/short03.json';
-const ASSETS={layered,bob,pixie};
+import sleek from './assets/long01.json';
+const ASSETS={layered,bob,pixie,sleek};
 export const hasAuthoredHair=style=>Boolean(ASSETS[style]);
 // Fit local licensed hair cards to the selected cosmetic head, in meters.
 export function buildAuthoredHair(base,scale,anchor,character){
@@ -20,6 +21,17 @@ export function buildAuthoredHair(base,scale,anchor,character){
   // A local fringe lift folded long triangles into a hard, angular ledge.
   if(character.hairStyle==='pixie')p[1]=1.79*scale+(p[1]-1.79*scale)*.70;
   fitted.push(p);
+ }
+ if(character.hairStyle==='sleek'){
+  // Preserve the crown and hairline; shorten only free ends below the ears.
+  // Compressing the whole wig raised the hairline and exposed the scalp.
+  const root=1.66*scale,length=.125*scale;
+  for(const p of fitted)if(p[1]<root){
+   const distance=root-p[1],t=THREE.MathUtils.smoothstep(distance,.04*scale,.19*scale);
+   p[1]=root-length*Math.tanh(distance/length);
+   // Turn the free ends inward instead of leaving a wide triangular shelf.
+   p[0]*=1-.24*t;
+  }
  }
  data.vertices.forEach((source,i)=>{
   const p=fitted[source];positions.set(p.map((n,k)=>n-anchor.getComponent(k)),i*3);

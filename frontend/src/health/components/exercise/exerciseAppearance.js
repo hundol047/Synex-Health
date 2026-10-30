@@ -148,14 +148,15 @@ export function exerciseMaterials(character,faceAtlas=null) {
   if(character)for(const material of materials.slice(0,3)){
     material.vertexColors=true;material.color.set('#ffffff');material.map=null;
     material.onBeforeCompile=shader=>{
-      shader.uniforms.characterLip={value:skinDetailColors(character.skin).lip};
-      shader.uniforms.characterLipStrength={value:faceAtlas&&character.style!=='toon'?(character.face==='refined'?.28:.06):.55};
+      shader.uniforms.characterLip={value:character.face==='refined'?new THREE.Color(character.skin).multiply(new THREE.Color().setRGB(.82,.40,.44)):skinDetailColors(character.skin).lip};
+      shader.uniforms.characterLipStrength={value:faceAtlas&&character.style!=='toon'?(character.face==='refined'?.52:.06):.55};
       shader.uniforms.characterFaceAtlas={value:faceAtlas};
       shader.uniforms.characterFaceReference={value:new THREE.Color(faceAtlasData.reference[character.body]||faceAtlasData.reference.male)};
+      shader.uniforms.characterSmile={value:character.face==='refined'?.0014:0};
       shader.uniforms.characterTop={value:new THREE.Color(character.top)};shader.uniforms.characterBottom={value:new THREE.Color(character.bottom)};
       shader.vertexShader='attribute vec3 characterRest; attribute vec3 characterFaceUv; varying vec3 vCharacterRest; varying vec3 vCharacterFaceUv;\n'+shader.vertexShader;
       shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvCharacterRest=characterRest;vCharacterFaceUv=characterFaceUv;');
-      shader.fragmentShader='uniform float characterLipStrength; uniform vec3 characterLip; uniform vec3 characterTop; uniform vec3 characterBottom; uniform sampler2D characterFaceAtlas; uniform vec3 characterFaceReference; varying vec3 vCharacterRest; varying vec3 vCharacterFaceUv;\n'+shader.fragmentShader;
+      shader.fragmentShader='uniform float characterSmile; uniform float characterLipStrength; uniform vec3 characterLip; uniform vec3 characterTop; uniform vec3 characterBottom; uniform sampler2D characterFaceAtlas; uniform vec3 characterFaceReference; varying vec3 vCharacterRest; varying vec3 vCharacterFaceUv;\n'+shader.fragmentShader;
       shader.fragmentShader=shader.fragmentShader.replace('#include <common>',`#include <common>
         // Fine garment relief stays in rest coordinates while the body moves.
         float clothRelief(vec3 p) {
@@ -199,10 +200,11 @@ export function exerciseMaterials(character,faceAtlas=null) {
         float skinFace=smoothstep(1.55,1.58,y)*(1.-smoothstep(1.71,1.74,y))*smoothstep(.085,.12,z);
         float cheekWarm=exp(-pow((ax-.045)/.032,2.)-pow((y-1.635)/.028,2.))*skinFace;
         float skinGrain=fract(sin(dot(floor(vCharacterRest.xy*4200.),vec2(12.9898,78.233)))*43758.5453)-.5;
-        diffuseColor.rgb*=vec3(1.+cheekWarm*.018,1.-cheekWarm*.006,1.-cheekWarm*.013)*(1.+skinGrain*.009*skinFace);
-        float lipShape=exp(-pow(vCharacterRest.x/.024,4.)-pow((y-1.609)/.0048,4.))*smoothstep(.09,.12,z);
+        diffuseColor.rgb*=vec3(1.+cheekWarm*.032,1.-cheekWarm*.012,1.-cheekWarm*.018)*(1.+skinGrain*.009*skinFace);
+        float lipLine=1.609+characterSmile*exp(-pow((ax-.024)/.013,2.));
+        float lipShape=exp(-pow(vCharacterRest.x/.024,4.)-pow((y-lipLine)/.0048,4.))*smoothstep(.09,.12,z);
         diffuseColor.rgb=mix(diffuseColor.rgb,characterLip,lipShape*characterLipStrength);
-        float lipCrease=exp(-pow(vCharacterRest.x/.021,4.)-pow((y-1.609)/.00065,2.))*smoothstep(.09,.12,z);
+        float lipCrease=exp(-pow(vCharacterRest.x/.021,4.)-pow((y-lipLine)/.00065,2.))*smoothstep(.09,.12,z);
         diffuseColor.rgb*=1.-lipCrease*.18;
       `);
       if(character.style!=='toon')shader.fragmentShader=shader.fragmentShader.replace('#include <normal_fragment_maps>',`#include <normal_fragment_maps>

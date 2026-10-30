@@ -1,12 +1,14 @@
+import * as THREE from 'three';
+import mesh from '../src/health/components/body3d/assets/human-mesh.json';
 import {it,expect} from 'vitest';
 import {buildHeadDetails} from '../src/health/components/character/HeadDetail.jsx';
 import {personalizedVertices,sportswear} from '../src/health/components/body3d/avatar.js';
 import {REST,rigRotation,poseJoints} from '../src/health/components/exercise/rig.js';
 import {exerciseGarmentAt,fitExerciseClothing} from '../src/health/components/exercise/exerciseAppearance.js';
-import {DEFAULT_CHARACTER,normalizeCharacter} from '../src/health/components/character/character.js';
+import {DEFAULT_CHARACTER,normalizeCharacter,characterSurface} from '../src/health/components/character/character.js';
 import catalog from '../src/shared/lib/localCatalog.json';
-it.each(['male','female'].flatMap(body=>['short','parted','wavy','layered','bob','pixie','bun','ponytail'].map(style=>[body,style])))('generates finite fitted head details for %s/%s',(body,hairStyle)=>{
- const c={...DEFAULT_CHARACTER,body,hairStyle},base=personalizedVertices({}, {gender:body}),details=buildHeadDetails(base,1,REST,c);
+it.each(['male','female'].flatMap(body=>['short','parted','wavy','layered','bob','pixie','sleek','bun','ponytail'].map(style=>[body,style])))('generates finite fitted head details for %s/%s',(body,hairStyle)=>{
+ const c={...DEFAULT_CHARACTER,body,hairStyle,face:'refined'},base=characterSurface(personalizedVertices({}, {gender:body}),c),details=buildHeadDetails(base,1,REST,c);
  try{for(const eye of details.eyes){expect(eye.y+REST[1][1]).toBeGreaterThan(1.658);expect(eye.y+REST[1][1]).toBeLessThan(1.670);}
  if(hairStyle==='pixie')for(const g of details.curves){const p=g.attributes.position;
   for(let i=0;i<p.count;i++){const x=p.getX(i)+REST[1][0],y=p.getY(i)+REST[1][1],z=p.getZ(i)+REST[1][2];
@@ -26,4 +28,21 @@ it('selects actual sleeves and shorts and gives joggers a different silhouette',
  const wear=sportswear(personalizedVertices({}, {gender:'male'}),1,'male'),original=wear.positions.slice(),fitted=fitExerciseClothing(wear,1,{...c,pants:'joggers'});
  expect(wear.positions).toEqual(original);expect(fitted.positions).not.toEqual(original);for(let i=1;i<original.length;i+=3)expect(fitted.positions[i]).toBe(original[i]);
  expect(normalizeCharacter({hairStyle:'bad',outfit:'bad',eyes:'bad'})).toEqual(DEFAULT_CHARACTER);
+});
+
+it.each(['male','female'])('keeps %s iris centers visible from the front and near-side oblique view',body=>{
+ const c={...DEFAULT_CHARACTER,body,face:'refined',eyeSize:.55},base=characterSurface(personalizedVertices({}, {gender:body}),c),details=buildHeadDetails(base,1,REST,c);
+ const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(base,3));geometry.setIndex(mesh.indices);
+ const material=new THREE.MeshBasicMaterial({side:THREE.DoubleSide}),surface=new THREE.Mesh(geometry,material);
+ try{
+  for(const eye of details.eyes){
+   const center=eye.clone().add(new THREE.Vector3(...REST[1])).add(new THREE.Vector3(0,0,.00272));
+   for(const angle of [0,Math.sign(center.x)*Math.PI/6]){
+    const direction=new THREE.Vector3(Math.sin(angle),0,Math.cos(angle));
+    const ray=new THREE.Raycaster(center.clone().addScaledVector(direction,.5),direction.negate());
+    const hit=ray.intersectObject(surface)[0];
+    if(hit)expect(hit.distance).toBeGreaterThan(.5);
+   }
+  }
+ }finally{details.dispose();geometry.dispose();material.dispose();}
 });

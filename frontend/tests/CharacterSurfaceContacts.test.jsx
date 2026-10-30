@@ -7,8 +7,8 @@ import {poseJoints,rigRotation,deformSurface} from '../src/health/components/exe
 import {exerciseHandShape} from '../src/health/components/exercise/handPoses.js';
 
 it('keeps the newly tailored body and fitted hair on the safe side of support walls',()=>{
- for(const body of ['male','female'])for(const hairStyle of ['parted','wavy','layered','bob','pixie']){
-  const c={...DEFAULT_CHARACTER,body,hairStyle,hairVolume:1};
+ for(const body of ['male','female'])for(const hairStyle of ['parted','wavy','layered','bob','pixie','sleek']){
+  const c={...DEFAULT_CHARACTER,body,face:body==='female'?'refined':'balanced',hairStyle,hairVolume:1};
   const model=prepareAthlete(undefined,{gender:body},c),head=buildHeadDetails(model.headBase,model.scale,model.rest,c);
   try{
    for(const motion of ['wall_push','wall_sit','wall_hinge'])for(const progress of [0,.25,.5,.75,1]){

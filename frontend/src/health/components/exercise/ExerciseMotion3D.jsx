@@ -1,4 +1,5 @@
 import HeadDetail from '../character/HeadDetail.jsx';
+import {faceBlinkSurface} from '../character/faceExpression.js';
 import {useCharacter} from '../character/character.js';
 import React, { useMemo, useEffect, useRef, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
@@ -10,6 +11,7 @@ import femaleFaceAtlas from '../character/assets/female-face.webp';
 import layeredHairAtlas from '../character/assets/bob01.webp';
 import bobHairAtlas from '../character/assets/bob02.webp';
 import pixieHairAtlas from '../character/assets/short03.webp';
+import sleekHairAtlas from '../character/assets/long01.webp';
 import Footwear from '../body3d/Footwear.jsx';
 import { exerciseAvatarGeometry, exerciseMaterials } from './exerciseAppearance.js';
 import ExerciseEquipment from './ExerciseEquipment.jsx';
@@ -49,11 +51,15 @@ function SceneCamera({ motion, view, mirror, heightScale, controls, faceFocus })
 function Athlete({ motion, progress, mirror, measurement, profile, compact, appearance, onReady, character, highlight }) {
   const actor = useRef(), readyMotion = useRef();
   // Bundled and cached by the loader; no remote request or per-frame texture allocation.
-  const faceAtlases=useTexture([maleFaceAtlas,femaleFaceAtlas,layeredHairAtlas,bobHairAtlas,pixieHairAtlas]);
+  const faceAtlases=useTexture([maleFaceAtlas,femaleFaceAtlas,layeredHairAtlas,bobHairAtlas,pixieHairAtlas,sleekHairAtlas]);
+  // useTexture uploads every bundled atlas eagerly. Configure all of them
+  // before upload, not just the active body/hair; a later colorSpace assignment
+  // alone leaves the already-uploaded texture in its old GPU color format.
+  for(const atlas of faceAtlases)if(atlas.colorSpace!==THREE.SRGBColorSpace||atlas.anisotropy!==4){
+    atlas.colorSpace=THREE.SRGBColorSpace;atlas.anisotropy=4;atlas.needsUpdate=true;
+  }
   const faceAtlas=faceAtlases[character.body==='female'?1:0];
-  faceAtlas.colorSpace=THREE.SRGBColorSpace;faceAtlas.anisotropy=4;
-  const hairAtlas=character.hairStyle==='layered'?faceAtlases[2]:character.hairStyle==='bob'?faceAtlases[3]:character.hairStyle==='pixie'?faceAtlases[4]:null;
-  if(hairAtlas){hairAtlas.colorSpace=THREE.SRGBColorSpace;hairAtlas.anisotropy=4;}
+  const hairAtlas=character.hairStyle==='layered'?faceAtlases[2]:character.hairStyle==='bob'?faceAtlases[3]:character.hairStyle==='pixie'?faceAtlases[4]:character.hairStyle==='sleek'?faceAtlases[5]:null;
   const { invalidate } = useThree();
   const model = useMemo(() => {
     const prepared=prepareAthlete(measurement,profile,character);
@@ -80,7 +86,8 @@ function Athlete({ motion, progress, mirror, measurement, profile, compact, appe
   }), [model, joints]);
   useEffect(() => {
     const geometry = model.geometry;
-    deformSurface(skin, model.weights, joints, geometry.attributes.position.array, model.rest, false);
+    const expression=appearance==='athlete'&&character.style==='realistic'?faceBlinkSurface(skin,model.scale,progress,character):skin;
+    deformSurface(expression, model.weights, joints, geometry.attributes.position.array, model.rest, false);
     geometry.attributes.position.needsUpdate = true;
     geometry.computeVertexNormals();
     geometry.computeBoundingBox();
@@ -92,7 +99,7 @@ function Athlete({ motion, progress, mirror, measurement, profile, compact, appe
     const shoeFloor = Math.min(...shoes.map(exerciseShoeFloor));
     if (actor.current) actor.current.position.y = ORIGINAL_MOTIONS.has(motion)||motion.startsWith('recovery_') ? .003 - (PLANTED_FLOOR_MOTIONS.has(motion) ? shoeFloor : Math.min(geometry.boundingBox.min.y, shoeFloor)) : 0;
     invalidate();
-  }, [model, skin, joints, shoes, motion, invalidate]);
+  }, [model, skin, joints, shoes, motion, invalidate,appearance,character.style,progress]);
   useEffect(() => () => { model.geometry.dispose(); model.appearance.dispose(); }, [model]);
   return <group scale={[mirror ? -1 : 1, 1, 1]}>
     <group ref={actor}>
@@ -152,15 +159,15 @@ function TrainingMat({ heightScale }) {
   </mesh>;
 }
 
-function Studio({ compact, heightScale, motion }) {
+function Studio({ compact, heightScale, motion, portrait=false }) {
   const floor = FLOOR_MOTIONS.test(motion) || FLOOR_STRETCHES.has(motion) || MOTIONS[motion]?.prop === 'mat';
   return <>
-    <StudioEnvironment/>
+    <StudioEnvironment portrait={portrait}/>
     <color attach="background" args={['#f7faff']}/>
     <fog attach="fog" args={['#f7faff', 5, 11]}/>
-    <hemisphereLight args={['#fffaf6', '#c4cedb', .45]}/>
-    <directionalLight position={[-3, 5, 4]} color="#fff8f1" intensity={1.7} castShadow={!compact} shadow-mapSize={[1024, 1024]} shadow-camera-left={-2} shadow-camera-right={2} shadow-camera-top={2.6} shadow-camera-bottom={-1.3} shadow-bias={-.0003} shadow-normalBias={.012} shadow-radius={4}/>
-    <directionalLight position={[3, 2, 2]} color="#e4efff" intensity={.65}/>
+    <hemisphereLight args={['#fffaf6', '#c4cedb', portrait?.30:.45]}/>
+    <directionalLight position={portrait?[-2,3,4]:[-3,5,4]} color="#fff8f1" intensity={portrait?1.30:1.7} castShadow={!compact} shadow-mapSize={[1024, 1024]} shadow-camera-left={-2} shadow-camera-right={2} shadow-camera-top={2.6} shadow-camera-bottom={-1.3} shadow-bias={-.0003} shadow-normalBias={.012} shadow-radius={4}/>
+    <directionalLight position={[3, 2, 2]} color="#e4efff" intensity={portrait?.25:.65}/>
     <directionalLight position={[1, 3, -3]} color="#edf3ff" intensity={.85}/>
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -.021, 0]}><planeGeometry args={[30, 30]}/><meshStandardMaterial color="#eff4fb" roughness={.95}/></mesh>
     {floor && <TrainingMat heightScale={heightScale}/>}
@@ -168,16 +175,16 @@ function Studio({ compact, heightScale, motion }) {
   </>;
 }
 
-function StudioEnvironment() {
+function StudioEnvironment({portrait=false}) {
   const { gl, scene, invalidate } = useThree();
   useEffect(() => {
     const generator = new THREE.PMREMGenerator(gl), room = new RoomEnvironment();
     const target = generator.fromScene(room, .04);
     scene.environment = target.texture;
-    scene.environmentIntensity = .42;
+    scene.environmentIntensity = portrait?.30:.42;
     generator.dispose(); room.dispose(); invalidate();
     return () => { if (scene.environment === target.texture) scene.environment = null; target.dispose(); };
-  }, [gl, scene, invalidate]);
+  }, [gl, scene, invalidate,portrait]);
   return null;
 }
 
@@ -218,7 +225,7 @@ export default function ExerciseMotion3D({ motion, progress, mirror, measurement
     <div className="motion-controls motion-view-controls">{compact ? <select aria-label="운동 시범 방향" value={view} onChange={event => setView(event.target.value)}><option value="front">정면</option><option value="45">45°</option><option value="side">측면</option></select> : [['front', '정면'], ['45', '45°'], ['side', '측면'], ['back', '후면'], ['free', '자유']].map(([id, label]) => <button key={id} type="button" className="btn btn-ghost" aria-label={`${label} 운동 시범 보기`} aria-pressed={view === id} onClick={() => setView(id)}>{label}</button>)}</div>
     <div className="motion-3d-canvas" style={{ position: 'relative', height: compact ? undefined : 340, flex: compact ? '1 1 0' : undefined, minHeight: compact ? 0 : undefined, touchAction: 'none' }}>
       <SceneBoundary motion={motion} fallback={fallback}><React.Suspense fallback={<p className="motion-loading" role="status">캐릭터를 준비하고 있습니다.</p>}><Canvas shadows={!compact} dpr={[1, compact ? 1.5 : 2]} frameloop="demand" gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }} camera={{ position: [3, 1.5, 3], fov: 36 }} fallback={fallback} aria-label={appearance === 'mannequin' ? '운동 부위를 강조한 3D 운동 시범' : '운동복을 입은 3D 운동 시범'}>
-        <SceneCamera motion={motion} view={view} mirror={mirror} heightScale={heightScale} controls={controls} faceFocus={faceFocus}/><Studio compact={compact} heightScale={heightScale} motion={motion}/>
+        <SceneCamera motion={motion} view={view} mirror={mirror} heightScale={heightScale} controls={controls} faceFocus={faceFocus}/><Studio compact={compact} heightScale={heightScale} motion={motion} portrait={faceFocus}/>
         <Athlete {...{ motion, progress, mirror, compact, appearance, onReady, character, highlight }} measurement={m} profile={p}/>
         <OrbitControls ref={controls} enabled={view === 'free'} enablePan={false} minDistance={(faceFocus ? .38 : 1.2) * heightScale} maxDistance={(faceFocus ? .95 : 6) * heightScale} maxPolarAngle={Math.PI / 2 - .02}/>
       </Canvas></React.Suspense></SceneBoundary>

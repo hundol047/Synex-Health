@@ -32,8 +32,8 @@ it('clips a full-width iris to the eyelid opening while retaining circular UVs',
  const g=visibleIrisGeometry();
  try{
   g.computeBoundingBox();expect(g.boundingBox.max.x-g.boundingBox.min.x).toBeCloseTo(.0088);
-  expect(g.boundingBox.max.y).toBeLessThanOrEqual(.003101);
-  expect(g.boundingBox.min.y).toBeGreaterThanOrEqual(-.002501);
+  expect(g.boundingBox.max.y).toBeLessThanOrEqual(.003401);
+  expect(g.boundingBox.min.y).toBeGreaterThanOrEqual(-.002601);
   const p=g.attributes.position,uv=g.attributes.uv;
   for(let i=0;i<p.count;i++){
    expect(uv.getX(i)).toBeCloseTo(.5+p.getX(i)/.0088);

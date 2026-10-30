@@ -243,3 +243,56 @@ the original connected mesh before UV-seam duplication, so texture islands do
 not introduce hard lighting seams. All 18 head/style checks and the personal
 build passed after that correction. The reference's facial/expressive quality
 is still not met; the captures are implementation evidence, not a likeness score.
+
+
+## Adult portrait structure and eye visibility (2026-10-30)
+
+The refined female preset now applies a bundled CC0 head-only graphic target,
+with independently normalized source heights and preserved body/support topology.
+It selects a face-framing medium hairstyle; previous saved hairstyles remain
+valid. The new hair retains scalp roots and bends shortened ends inward rather
+than compressing the whole wig. Source hashes and conversion commands are in
+the asset README. This does not reproduce a named person's face.
+
+The eye now has a curved white surface and finely tessellated iris/pupil with
+circular UVs. Two actual oblique-view defects were found during screenshot
+review: a coarse iris fan intersected the convex white surface, and socket
+probes hit the back of the eye cavity instead of the outer eyelid. Dense curved
+surfaces and outer-lid probes fix those defects. Geometric ray checks cover iris
+visibility from the front and near-side oblique views for both body profiles.
+The pupil stays dark rather than reflecting the whole environment as white.
+Realistic blinking deforms the existing textured eyelid skin; the toon style
+retains its separate cover. Eyebrows follow the actual face surface, with lower,
+shorter tapered strands. Portrait-only lighting reduces washed-out detail.
+
+Validation: 39 focused checks across eight files passed; after the final eyebrow
+adjustment all 22 head/detail checks passed again. These include bounded head
+morphs, unchanged support/body vertices, eye visibility, blink locality, saved
+character normalization, finite catalog head rotations and wall clearance. The
+personal production build passed (existing bundle-size/directive warnings).
+
+The current generic face, low-density hair cards, expression range and garment
+construction still do not meet the user's commercial-game reference. Browser
+captures are implementation evidence, not professional asset-quality approval
+or physical-phone performance measurements. No new APK was published here.
+
+
+The mobile DPR-2 browser flow passed in isolation (2.7 minutes): preset, retained
+skin setting, save/reload, hair changes, blink and wall-push application, without
+shader/page errors or horizontal overflow. Its first run overlapped CPU-heavy
+unit workers and exceeded the 30-second initial-render wait; no assertion or
+timeout was relaxed for the successful isolated run.
+
+A subsequent screenshot comparison exposed an atlas initialization defect:
+`useTexture` eagerly uploaded inactive face/hair textures before their color
+space was configured. Changing only the selected texture's `colorSpace` later
+could retain its old GPU format. Every bundled atlas is now initialized as sRGB
+and marked for upload when that configuration changes. The browser regression
+compares actual forehead RGB means before and after saving/reloading the female
+preset, using identical view/pose/lighting and a five-channel-level tolerance.
+
+The final color-regression/mobile flow passed after that correction. The sampled
+forehead RGB means were identical before and after reload (maximum channel
+difference 0.0/255). Final captures include the restored front view, blink,
+alternative hair and wall push-up. The personal build passed again. These
+checks do not establish reference-quality likeness or physical-device readiness.

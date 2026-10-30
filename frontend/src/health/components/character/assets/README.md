@@ -38,7 +38,7 @@ measurement. The original diffuse textures are not measured normal maps.
 
 ## Authored short hairstyles
 
-`bob01` (layered bob) and `bob02` (classic bob), and `short03` (side-swept short hair) are MakeHuman's bundled hair
+`bob01` (layered bob) and `bob02` (classic bob), `short03` (side-swept short hair), and `long01` (face-framing medium hair) are MakeHuman's bundled hair
 meshes and textures from the same pinned asset mirror. The project's official
 licensing statement above explicitly releases **any MHCLO-based bundled asset**,
 meshes and textures under CC0. Old 2016 OBJ/MHCLO headers still mention AGPL;
@@ -47,7 +47,7 @@ No MakeHuman scripts, material/shader program logic, or third-party contributed
 asset is incorporated here. Authors in the original files: MakeHuman Team,
 Data Collection AB, Joel Palmius and Jonas Hauquier.
 
-Source directories: `base/hair/bob01/`, `base/hair/bob02/`, and `base/hair/short03/` at the pinned mirror.
+Source directories: `base/hair/bob01/`, `base/hair/bob02/`, `base/hair/short03/`, and `base/hair/long01/` at the pinned mirror.
 `python scripts/build-character-hair.py SOURCE_DIRECTORY BASE_OBJ` reproduces
 fitting data, triangulated UVs and 1024px hair textures (Pillow/scipy required).
 The script uses only OBJ, MHCLO fitting data and diffuse PNGs. Hair colors are
@@ -55,3 +55,18 @@ normalized to grayscale so the user's selected color still applies; original
 opacity masks retain individual strands. Omitted helper vertices are expressed
 against retained head vertices. Source OBJ hashes are embedded in each JSON.
 Textures remain shared loader resources and are not disposed with one viewer.
+
+## Adult portrait head
+
+`portrait-head.json` is a masked head-only delta from MakeHuman's bundled
+macrodetail graphic targets at revision
+`a8bc2d54ff0ac92e78ff71431b1023eda42bf482`. The official CC0 statement linked above
+covers these graphical assets. Source directory: `makehuman/data/targets/macrodetails/`.
+The JSON embeds the SHA-256 hashes of its four source targets. Reproduce with
+`python scripts/build-portrait-head.py TARGET_DIRECTORY BASE_OBJ`.
+
+The source profiles are normalized independently to the shipped 1.78 m reference
+before computing the difference. The mask preserves the body and joint anchors;
+eye and mouth alignment is attenuated separately. This is an adult generic
+cosmetic profile, not a scan or likeness of a named person. Source filenames
+record asset provenance, not a classification of the app's users.
