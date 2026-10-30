@@ -168,6 +168,11 @@ function StudioEnvironment() {
   return null;
 }
 
+export function ExerciseSceneFallback({children,onReady}){
+  useEffect(()=>{onReady?.();},[onReady]);
+  return <div className="motion-scene-fallback"><p role="status">3D를 표시할 수 없어 간단 동작 안내를 보여드립니다.</p>{children}</div>;
+}
+
 class SceneBoundary extends React.Component {
   state = { failed: false };
   static getDerivedStateFromError() { return { failed: true }; }
@@ -191,7 +196,7 @@ export default function ExerciseMotion3D({ motion, progress, mirror, measurement
   // machine's calibrated seat or make a supported palm float off the mat.
   const m = measurement, p = useMemo(() => ({...profile,gender:character.body}), [profile,character.body]);
   const heightScale = morphParameters(m, p).heightScale;
-  const fallback = fallbackContent||<MotionFigure exercise={{ motion_id: motion, exercise_name: '운동' }} progress={progress} mirror={mirror}/>;
+  const fallback = <ExerciseSceneFallback onReady={onReady}>{fallbackContent||<MotionFigure exercise={{ motion_id: motion, exercise_name: '운동' }} progress={progress} mirror={mirror}/>}</ExerciseSceneFallback>;
   return <>
     {!compact && <div className="motion-appearance-controls" role="group" aria-label="시범 인체 표현">
       <button type="button" aria-pressed={appearance === 'mannequin'} onClick={() => setAppearance('mannequin')}>부위 강조 인체</button>
