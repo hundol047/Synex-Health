@@ -1,11 +1,11 @@
 import {useSyncExternalStore} from 'react';
 export const CHARACTER_KEY='synex-exercise-character-v1';
-export const DEFAULT_CHARACTER=Object.freeze({style:'realistic',body:'male',face:'balanced',hairStyle:'parted',outfit:'tee',pants:'leggings',eyes:'#4b6b72',hair:'#342820',skin:'#c4967b',top:'#2563eb',bottom:'#253b4d',chest:0,hips:0,shoulders:0,waist:0});
+export const DEFAULT_CHARACTER=Object.freeze({style:'realistic',body:'male',face:'balanced',hairStyle:'parted',outfit:'tee',pants:'leggings',eyes:'#4b6b72',hair:'#342820',skin:'#c4967b',top:'#2563eb',bottom:'#253b4d',eyeSize:0,hairVolume:0,chest:0,hips:0,shoulders:0,waist:0});
 export function normalizeCharacter(value={}){
  const v=value&&typeof value==='object'?value:{};const result={...DEFAULT_CHARACTER};
  for(const [key,options] of Object.entries({style:['realistic','toon'],body:['male','female'],face:['balanced','soft','angular'],hairStyle:['short','parted','bun'],outfit:['tee','tank','long'],pants:['leggings','shorts','joggers']}))if(options.includes(v[key]))result[key]=v[key];
  for(const key of ['hair','skin','top','bottom','eyes'])if(/^#[0-9a-f]{6}$/i.test(v[key]||''))result[key]=v[key];
- for(const key of ['chest','hips','shoulders','waist'])if(Number.isFinite(v[key]))result[key]=Math.max(-1,Math.min(1,v[key]));
+ for(const key of ['chest','hips','shoulders','waist','eyeSize','hairVolume'])if(Number.isFinite(v[key]))result[key]=Math.max(-1,Math.min(1,v[key]));
  return result;
 }
 const subscribe=fn=>{window.addEventListener('synex-character',fn);window.addEventListener('storage',fn);return()=>{window.removeEventListener('synex-character',fn);window.removeEventListener('storage',fn);};};
@@ -14,6 +14,10 @@ export function readCharacter(raw=snapshot()){try{return normalizeCharacter(JSON
 export function useCharacter(){return readCharacter(useSyncExternalStore(subscribe,snapshot,()=>''));}
 export function saveCharacter(value){localStorage.setItem(CHARACTER_KEY,JSON.stringify(normalizeCharacter(value)));window.dispatchEvent(new Event('synex-character'));}
 // Cosmetic surface morphs do not alter measurements, bone lengths or support anchors.
+export function eyeProportions(value=0){
+ const amount=Number.isFinite(value)?Math.max(-1,Math.min(1,value)):0;
+ return [1+.15*amount,1+.25*amount,1];
+}
 export function characterSurface(base,options,scale=1){
  const c=normalizeCharacter(options),out=base.slice();
  const bell=(v,center,width)=>Math.exp(-(((v-center)/width)**2));
@@ -22,6 +26,15 @@ export function characterSurface(base,options,scale=1){
   const hip=bell(y,.93,.09)*torso,waist=bell(y,1.12,.09)*torso,chest=bell(y,1.34,.08)*torso;
   out[i]*=1+.08*c.hips*hip+.07*c.waist*waist+.05*c.shoulders*bell(y,1.43,.08);
   out[i+2]+=(.012*c.chest*chest*Math.max(0,Math.min(1,z/.08))+.006*c.hips*hip*Math.sign(z-.035))*scale;
+  // Reshape the original eye openings too, so scaled detail meshes do not
+  // leave the old socket visible behind them. No limb/joint heights change.
+  if(y>1.63&&y<1.696&&z>.08&&Math.abs(x)>.009){
+   const center=Math.sign(x)*.034,dx=x-center,dy=y-1.663;
+   const distance=Math.sqrt((dx/.027)**2+(dy/.026)**2);
+   const t=Math.max(0,Math.min(1,(distance-.45)/.55)),weight=1-t*t*(3-2*t);
+   const [sx,sy]=eyeProportions(c.eyeSize);
+   out[i]+=dx*(sx-1)*weight*scale;out[i+1]+=dy*(sy-1)*weight*scale;
+  }
   if(y>1.55&&y<1.76){const face=bell(y,1.63,.06);out[i]*=1+face*(c.face==='soft'?.055:c.face==='angular'?-.055:0);if(c.style==='toon')out[i]*=1+.045*face;}
  }
  return out;

@@ -8,7 +8,7 @@ test('custom character persists and is shared with exercise demonstrations',asyn
  await page.getByRole('button',{name:'여성형',exact:true}).click();await page.getByRole('button',{name:'애니 · 툰',exact:true}).click();
  await expect(page.locator('canvas')).toHaveAttribute('data-character-style','toon');
  await page.getByRole('button',{name:'얼굴·헤어',exact:true}).click();await page.getByLabel('직접 고른 머리색').fill('#b883c7');await page.getByRole('button',{name:'갸름한',exact:true}).click();
- await page.getByRole('button',{name:'체형',exact:true}).click();await page.getByLabel('가슴 볼륨',{exact:true}).fill('0.5');
+ await page.getByRole('button',{name:'체형',exact:true}).click();await page.getByLabel('가슴 크기',{exact:true}).fill('0.5');
  await page.getByRole('button',{name:'저장하고 운동에 적용',exact:true}).click();await expect(page.getByRole('status').filter({hasText:'저장했습니다'})).toContainText('저장했습니다');
  await page.getByRole('button',{name:'운동복',exact:true}).click();for(const name of ['반팔 티','긴팔 탑','민소매','레깅스','조거 팬츠']){await page.getByRole('button',{name,exact:true}).click();await page.locator('canvas').screenshot({path:info.outputPath('outfit-'+name+'.png')});}await page.getByRole('button',{name:'운동 반바지',exact:true}).click();await page.getByRole('button',{name:'저장하고 운동에 적용',exact:true}).click();
  await page.reload();await expect(page.locator('canvas')).toHaveAttribute('data-character-style','toon',{timeout:30000});await expect(page.locator('canvas')).toHaveAttribute('data-character-body','female');

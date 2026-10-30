@@ -41,3 +41,11 @@ The initial Style panel and Face/Hair panel now expose ten named cosmetic skin s
 Lip, cheek and eyelid colors are derived from the chosen skin in linear light. Dark complexions no longer blend towards a fixed pale lip/lid color. Small skin variation is proportional to the base color. The old painted brow shading was removed because it duplicated the generated hair eyebrows; restrained socket shading is aligned to the corrected eye position.
 
 Validation: 11 focused tests passed. A mobile-sized Chromium WebGL flow passed for preset selection, reload persistence, light/female and dark/male portraits, custom color saving and horizontal overflow, with no page/shader errors. Both portraits were visually inspected. This remains a procedural illustrative character, not a scanned photoreal human. No APK was published in this pass.
+
+## Hair volume and eye size controls
+
+Face/Hair offers the three existing hairstyles (short, side part, bun), a new hair-volume slider, and a new eye-size slider. Body labels the existing chest morph explicitly as chest size. Size controls offer an individual reset. Both base bodies use the same controls; these are cosmetic and do not modify body-composition records.
+
+New eyeSize/hairVolume preferences default to zero for existing saved characters and are clamped to [-1, 1]. Eye width ranges from 85% to 115% and height from 75% to 125%. The eye group, iris, lids and blink cover share the transform. A smooth local morph changes the underlying socket opening; unlike the earlier body-only morphs, this adjusts some facial vertex heights but leaves limbs, bone lengths and support points unchanged. Hair volume changes the scalp shell, projected strands and bun size within a limited range. Chest sizing retains the existing bounded fitted-clothing morph; unrestricted proportions and cloth physics are not implemented.
+
+Validation for these controls: nine focused tests passed, covering saved-setting migration, bounded eye morphs on both bodies, limb/support preservation, all hairstyle volume geometries and existing head/garment checks. Mobile-sized Chromium passed the new-controls flow including persistence and large-eye blink without page/shader errors. Small-eye, large-eye and closed-eyelid screenshots were inspected. This is a browser validation, not a physical-device APK test; APK distribution remains separate.
