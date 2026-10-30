@@ -1,0 +1,36 @@
+{
+  "source_commit": "6c1154e00e45a54d8bf1ca16d56f63888edf1e36",
+  "workflow": "https://github.com/hundol047/Synex-Health/actions/runs/41026368224",
+  "workflow_conclusion": "success",
+  "unit_tests_passed": 580,
+  "browser_tests_passed": 55,
+  "exercise_render_count": 74,
+  "exercise_frame_count": 222,
+  "physical_device": false,
+  "notes": [
+    "Initial CI batch 61-70 stopped at dynamic-module loading; unchanged-source rerun passed all 23 tests in that shard.",
+    "Local batch 61-70 passed with all assertions retained and a longer software-rendering diagnostic budget."
+  ],
+  "jobs": [
+    {
+      "name": "Personal browser checks (1/3)",
+      "conclusion": "success"
+    },
+    {
+      "name": "personal-apk",
+      "conclusion": "success"
+    },
+    {
+      "name": "Personal browser checks (2/3)",
+      "conclusion": "success"
+    },
+    {
+      "name": "Personal browser checks (3/3)",
+      "conclusion": "success"
+    },
+    {
+      "name": "Personal APK download checks",
+      "conclusion": "skipped"
+    }
+  ]
+}
