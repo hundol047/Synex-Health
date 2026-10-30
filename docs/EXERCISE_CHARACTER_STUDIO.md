@@ -234,3 +234,12 @@ front fringe above the eyebrow line; a per-profile regression now checks that
 front hair vertices do not cover the eye region. All 19 affected head/support
 checks and the final personal build passed. Screenshot helpers center the canvas
 before capture so the fixed navigation does not obscure a portrait.
+
+A local fringe lift produced an angular fold in the low-density hair cards on
+close-up review. It was replaced with uniform vertical shortening about the
+crown, preserving the authored curves and avoiding a flattened cut line. Eye
+clearance and support assertions still pass (19 checks). Hair normals now use
+the original connected mesh before UV-seam duplication, so texture islands do
+not introduce hard lighting seams. All 18 head/style checks and the personal
+build passed after that correction. The reference's facial/expressive quality
+is still not met; the captures are implementation evidence, not a likeness score.
