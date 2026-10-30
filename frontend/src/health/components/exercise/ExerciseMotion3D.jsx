@@ -120,7 +120,7 @@ function Athlete({ motion, progress, mirror, measurement, profile, compact, appe
         renderer.domElement.dataset.exerciseProgress = String(progress);
         renderer.domElement.dataset.exerciseVertices = String(model.geometry.attributes.position.count);
       }}/>
-      {appearance === 'athlete' && <HeadDetail base={model.headBase} scale={model.scale} rest={model.rest} joints={joints} character={character}/>}
+      {appearance === 'athlete' && <HeadDetail base={model.headBase} scale={model.scale} rest={model.rest} joints={joints} character={character} progress={progress}/>}
       <Footwear anchors={shoes}/>
     </group>
     <ExerciseEquipment motion={motion} joints={joints} rest={model.rest} progress={progress} heightScale={model.scale}/>

@@ -1,6 +1,7 @@
 import React,{useMemo,useEffect} from 'react';
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import {blinkAmount,taperedStrand,lidCoverGeometry} from './livingFace.js';
 import {irisTexture,eyeLidGeometry} from './eyeSurface.js';
 import mesh from '../body3d/assets/human-mesh.json';
 import {rigRotation} from '../exercise/rig.js';
@@ -22,34 +23,46 @@ export function buildHeadDetails(base,scale,rest,character){
  for(let i=0;i<96;i++){
   const a=i/96*Math.PI*2,side=Math.sin(a),front=Math.cos(a),part=character.hairStyle==='parted';
   const points=[point(side*.018,1.797,.025+front*.015),point(side*.055+(part?.008:0),1.785,.025+front*.065),point(side*.078,1.747,.025+front*.090),point(side*.077,front>0?1.728:1.66,.025+front*.088)];
-  const curve=new THREE.CatmullRomCurve3(points.map(project));curves.push(new THREE.TubeGeometry(curve,12,(part?.00085:.00065)*scale,5,false));
+  const curve=new THREE.CatmullRomCurve3(points.map(project));curves.push(taperedStrand(curve,(part?.00085:.00065)*scale,18));
  }
  if(character.hairStyle==='parted')for(let i=0;i<48;i++){
-  const x=-.055+i*.002;curves.push(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([project(point(x,1.776,.08)),project(point(x+.014,1.75,.112)),point(x+.025,1.709+Math.abs(x)*.18,surface(x+.025,1.709+Math.abs(x)*.18)+.004)]),18,.00045*scale,5,false));
+  const x=-.055+i*.002;curves.push(taperedStrand(new THREE.CatmullRomCurve3([project(point(x,1.776,.08)),project(point(x+.014,1.75,.112)),point(x+.025,1.709+Math.abs(x)*.18,surface(x+.025,1.709+Math.abs(x)*.18)+.004)]),.00045*scale,18));
  }
- const brows=[-1,1].map(side=>new THREE.TubeGeometry(new THREE.CatmullRomCurve3([point(side*.018,1.687,surface(side*.018,1.687)+.002),point(side*.033,1.691,surface(side*.033,1.691)+.002),point(side*.052,1.684,surface(side*.052,1.684)+.002)]),12,.0012*scale,5,false));
+ const brows=[-1,1].map(side=>{
+  const hairs=[];
+  for(let i=0;i<36;i++){
+   const t=i/35,x=side*(.017+.036*t),y=1.684+.006*Math.sin(Math.PI*(t*.87+.08));
+   const tipX=x+side*(.001+.0014*t),tipY=y+.0014+.0011*(1-t);
+   hairs.push(taperedStrand(new THREE.CatmullRomCurve3([point(x,y,surface(x,y)+.0015),point((x+tipX)/2,tipY,surface(x,y)+.0019),point(tipX,tipY,surface(tipX,tipY)+.0015)]),.00023*scale,6));
+  }
+  const merged=mergeGeometries(hairs);hairs.forEach(g=>g.dispose());return merged;
+ });
  const locks=mergeGeometries(curves);curves.forEach(g=>g.dispose());
  return {cap,curves:[locks],brows,eyes,bun:point(0,1.736,-.078),dispose(){[cap,locks,...brows].forEach(g=>g.dispose());}};
 }
-export default function HeadDetail({base,scale,rest,joints,character}){
+export default function HeadDetail({base,scale,rest,joints,character,progress=0}){
  const detail=useMemo(()=>buildHeadDetails(base,scale,rest,character),[base,scale,rest,character.hairStyle]);
  useEffect(()=>()=>detail.dispose(),[detail]);
- const toon=character.style==='toon',hairMaterial=toon?'meshToonMaterial':'meshPhysicalMaterial';
+ const toon=character.style==='toon',hairMaterial=toon?'meshToonMaterial':'meshStandardMaterial';
+ const blink=blinkAmount(progress);
+ const cover=useMemo(()=>lidCoverGeometry(scale),[scale]);
+ useEffect(()=>()=>cover.dispose(),[cover]);
  const iris=useMemo(()=>irisTexture(character.eyes),[character.eyes]);
  const lids=useMemo(()=>[eyeLidGeometry(scale,true),eyeLidGeometry(scale,false)],[scale]);
  useEffect(()=>()=>{iris.dispose();},[iris]);
  useEffect(()=>()=>lids.forEach(g=>g.dispose()),[lids]);
- const hairProps={color:character.hair,...(!toon?{roughness:.68,metalness:0,anisotropy:.12,envMapIntensity:.25}:{})};
+ const hairProps={color:character.hair,...(!toon?{roughness:.64,metalness:0,envMapIntensity:.3}:{})};
  return <group position={joints[1]} quaternion={rigRotation(joints,1,rest)}>
   <mesh geometry={detail.cap}>{toon?<meshToonMaterial color={character.hair}/>:<meshStandardMaterial color={character.hair} roughness={.72} envMapIntensity={.3}/>}</mesh>
-  {detail.curves.map((g,i)=><mesh key={i} geometry={g}>{React.createElement(hairMaterial,{...hairProps,color:new THREE.Color(character.hair).multiplyScalar(i%3===0?1.16:1)})}</mesh>)}
+  {detail.curves.map((g,i)=><mesh key={i} geometry={g}>{React.createElement(hairMaterial,{...hairProps,vertexColors:true})}</mesh>)}
   {character.hairStyle==='bun'&&<mesh position={detail.bun} scale={[.029*scale,.026*scale,.023*scale]}><sphereGeometry args={[1,24,16]}/>{React.createElement(hairMaterial,hairProps)}</mesh>}
-  {detail.brows.map((g,i)=><mesh key={i} geometry={g}><meshStandardMaterial color={new THREE.Color(character.hair).lerp(new THREE.Color('#382a25'),.65)} roughness={.9}/></mesh>)}
+  {detail.brows.map((g,i)=><mesh key={i} geometry={g}><meshStandardMaterial color={new THREE.Color(character.hair).lerp(new THREE.Color('#382a25'),.65)} vertexColors roughness={.9}/></mesh>)}
   {detail.eyes.map((position,i)=><group key={i} position={position} rotation={[0,i===0?-.10:.10,0]}>
    <mesh scale={[.010*scale,(toon?.0045:.003)*scale,.0017*scale]}><sphereGeometry args={[1,32,20]}/><meshPhysicalMaterial color="#c8bfb3" roughness={.27} clearcoat={.35} clearcoatRoughness={.12}/></mesh>
-   <mesh position={[0,0,.00175*scale]}><circleGeometry args={[(toon?.0036:.0028)*scale,48]}/><meshPhysicalMaterial map={iris} roughness={.30} clearcoat={.55} clearcoatRoughness={.08}/></mesh>
-   <mesh position={[0,0,.0018*scale]}><circleGeometry args={[.0011*scale,32]}/><meshPhysicalMaterial color="#101218" roughness={.16} clearcoat={.6}/></mesh>
-   {lids.map((g,k)=><mesh key={k} geometry={g}><meshStandardMaterial color={new THREE.Color(character.skin).lerp(new THREE.Color(k?'#b4766d':'#684e40'),k?.14:.24)} roughness={.68}/></mesh>)}
+   <mesh position={[Math.sin(progress*Math.PI*2)*.00025*scale,0,.00175*scale]}><circleGeometry args={[(toon?.0036:.0028)*scale,48]}/><meshPhysicalMaterial map={iris} roughness={.30} clearcoat={.55} clearcoatRoughness={.08}/></mesh>
+   <mesh position={[Math.sin(progress*Math.PI*2)*.00025*scale,0,.0018*scale]}><circleGeometry args={[.0011*scale,32]}/><meshPhysicalMaterial color="#101218" roughness={.16} clearcoat={.6}/></mesh>
+   {blink>0&&<mesh geometry={cover} scale={[1,blink,1]} position={[0,(1-blink)*.0038*scale,0]}><meshStandardMaterial color={character.skin} roughness={.68} side={THREE.DoubleSide}/></mesh>}
+   {lids.map((g,k)=><mesh key={k} geometry={g} position={[0,(k? .0026:-.0034)*blink*scale,0]}><meshStandardMaterial color={new THREE.Color(character.skin).lerp(new THREE.Color(k?'#b4766d':'#684e40'),k?.14:.24)} roughness={.68}/></mesh>)}
   </group>)}
  </group>;
 }

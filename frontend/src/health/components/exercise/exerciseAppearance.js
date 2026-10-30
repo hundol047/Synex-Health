@@ -160,6 +160,10 @@ export function exerciseMaterials(character) {
         float pants=smoothstep(${character.pants==='shorts'?'.698':'.13'},${character.pants==='shorts'?'.702':'.14'},y)*(1.-smoothstep(.959,.967,y))*(1.-smoothstep(.30,.32,ax));
         diffuseColor.rgb=mix(diffuseColor.rgb,characterBottom,pants);
         diffuseColor.rgb=mix(diffuseColor.rgb,characterTop,shirt);
+        float skinFace=smoothstep(1.55,1.58,y)*(1.-smoothstep(1.71,1.74,y))*smoothstep(.085,.12,z);
+        float cheekWarm=exp(-pow((ax-.045)/.032,2.)-pow((y-1.635)/.028,2.))*skinFace;
+        float skinGrain=fract(sin(dot(floor(vCharacterRest.xy*4200.),vec2(12.9898,78.233)))*43758.5453)-.5;
+        diffuseColor.rgb*=vec3(1.+cheekWarm*.018,1.-cheekWarm*.006,1.-cheekWarm*.013)*(1.+skinGrain*.009*skinFace);
         float lipShape=exp(-pow(vCharacterRest.x/.024,4.)-pow((y-1.609)/.0048,4.))*smoothstep(.09,.12,z);
         diffuseColor.rgb=mix(diffuseColor.rgb,characterLip,lipShape*.55);
         float lipCrease=exp(-pow(vCharacterRest.x/.021,4.)-pow((y-1.609)/.00065,2.))*smoothstep(.09,.12,z);
@@ -171,7 +175,7 @@ export function exerciseMaterials(character) {
         roughnessFactor=mix(roughnessFactor,.68-tZone,facialSkin);
       `);
     };
-    material.customProgramCacheKey=()=>`skin-detail-v2-outfit-${character.outfit}-${character.pants}`;
+    material.customProgramCacheKey=()=>`skin-detail-v3-outfit-${character.outfit}-${character.pants}`;
   }
   let disposed = false;
   return { materials, dispose: () => {
