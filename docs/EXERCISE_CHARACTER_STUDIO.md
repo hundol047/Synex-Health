@@ -33,3 +33,11 @@ Hair tubes now narrow toward their tips and have a mild root-to-tip shade variat
 A short blink and very small iris movement are driven exclusively by the existing demonstration phase. There is no independent animation timer: pausing demonstration playback freezes the expression. A skin-colored upper-lid surface covers the iris during closure. The character preview now offers a pose scrubber, including frames that can be reviewed with fully closed eyelids. Blink continuity, geometry finiteness and hair-tip taper are covered by regression tests. The fixed desktop preview is constrained to viewport height so expanded controls remain reachable.
 
 Validation of this pass: 13 focused tests passed; the final browser sequence passed for male/female frontal portraits, closed eyes, and three hair variants with no shader/page errors. The six software-WebGL captures took 2.1 minutes; the test budget was raised to four minutes after the previous two-minute aggregate limit expired. Interaction and error assertions remain intact. This is not a physical-phone performance measurement. Before/after portraits and the closed-eye frame were inspected manually. Perceptual realism remains unquantified; no 99.99% claim is made.
+
+## Skin palette and complexion-aware detail
+
+The initial Style panel and Face/Hair panel now expose ten named cosmetic skin swatches, a visible selected mark and the existing arbitrary color picker. Selection previews immediately; Save applies the preference to exercise scenes. The presets do not classify ethnicity or medical skin type.
+
+Lip, cheek and eyelid colors are derived from the chosen skin in linear light. Dark complexions no longer blend towards a fixed pale lip/lid color. Small skin variation is proportional to the base color. The old painted brow shading was removed because it duplicated the generated hair eyebrows; restrained socket shading is aligned to the corrected eye position.
+
+Validation: 11 focused tests passed. A mobile-sized Chromium WebGL flow passed for preset selection, reload persistence, light/female and dark/male portraits, custom color saving and horizontal overflow, with no page/shader errors. Both portraits were visually inspected. This remains a procedural illustrative character, not a scanned photoreal human. No APK was published in this pass.

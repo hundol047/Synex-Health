@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { skinDetailColors } from '../character/skinTone.js';
 import { avatarGeometry } from '../body3d/appearance.js';
 
 const clamp = THREE.MathUtils.clamp;
@@ -33,8 +34,8 @@ export function exerciseAvatarGeometry(wear, stature = 1, character) {
   const geometry = avatarGeometry(wear, stature);
   const uv = new Float32Array(wear.positions.length / 3 * 2);
   const colors = geometry.attributes.color.array;
-  const skin = new THREE.Color(character?.skin || '#c4967b'), lip = new THREE.Color('#a36660'), brow = new THREE.Color('#594138');
-  const cheek = new THREE.Color('#c78f79'), hairColor = new THREE.Color(character?.hair || '#342820');
+  const {skin,lip,cheek,upperLid:brow} = skinDetailColors(character?.skin || '#c4967b');
+  const hairColor = new THREE.Color(character?.hair || '#342820');
   for (let i = 0; i < wear.labels.length; i++) {
     const x = wear.positions[i * 3] / stature, y = wear.positions[i * 3 + 1] / stature, z = wear.positions[i * 3 + 2] / stature;
     uv[i * 2] = Math.atan2(x, z - .035) / (2 * Math.PI) + .5;
@@ -43,12 +44,12 @@ export function exerciseAvatarGeometry(wear, stature = 1, character) {
     // Skin and hair use vertex colors; opaque garments own their base colors.
     // This prevents isolated skin-colored patches at the neck and sleeves.
     const color = skin.clone();
-    color.offsetHSL(0, 0, .007 * Math.sin(y * 13) + .003 * Math.sin(x * 37));
+    color.multiplyScalar(1 + .012 * Math.sin(y * 13) + .006 * Math.sin(x * 37));
     if (y > 1.54 && z > .105) {
       color.lerp(cheek, .10 * gaussian(Math.abs(x), y, .049, 1.635, .027, .024));
       color.lerp(lip, .45 * gaussian(x, y, 0, 1.609, .027, .006));
-      color.lerp(brow, .72 * gaussian(Math.abs(x), y, .034, 1.694, .020, .0035));
-      color.lerp(brow, .12 * gaussian(Math.abs(x), y, .034, 1.677, .013, .003));
+      // Socket shading sits behind the actual eye, not a second painted brow.
+      color.lerp(brow, .12 * gaussian(Math.abs(x), y, .034, 1.668, .016, .008));
     }
     const hairline = z > .095 ? 1.728 - .013 * Math.cos(x * 35) : 1.638;
     if (y > 1.54) color.lerp(hairColor, THREE.MathUtils.smoothstep(y, hairline, hairline + .018));
@@ -145,7 +146,7 @@ export function exerciseMaterials(character) {
   if(character)for(const material of materials.slice(0,3)){
     material.vertexColors=true;material.color.set('#ffffff');material.map=null;
     material.onBeforeCompile=shader=>{
-      shader.uniforms.characterLip={value:new THREE.Color(character.skin).lerp(new THREE.Color('#a56665'),.38)};
+      shader.uniforms.characterLip={value:skinDetailColors(character.skin).lip};
       shader.uniforms.characterTop={value:new THREE.Color(character.top)};shader.uniforms.characterBottom={value:new THREE.Color(character.bottom)};
       shader.vertexShader='attribute vec3 characterRest; varying vec3 vCharacterRest;\n'+shader.vertexShader;
       shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvCharacterRest=characterRest;');
@@ -175,7 +176,7 @@ export function exerciseMaterials(character) {
         roughnessFactor=mix(roughnessFactor,.68-tZone,facialSkin);
       `);
     };
-    material.customProgramCacheKey=()=>`skin-detail-v3-outfit-${character.outfit}-${character.pants}`;
+    material.customProgramCacheKey=()=>`skin-detail-v4-outfit-${character.outfit}-${character.pants}`;
   }
   let disposed = false;
   return { materials, dispose: () => {

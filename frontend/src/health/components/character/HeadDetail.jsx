@@ -2,6 +2,7 @@ import React,{useMemo,useEffect} from 'react';
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import {blinkAmount,taperedStrand,lidCoverGeometry} from './livingFace.js';
+import {skinDetailColors} from './skinTone.js';
 import {irisTexture,eyeLidGeometry} from './eyeSurface.js';
 import mesh from '../body3d/assets/human-mesh.json';
 import {rigRotation} from '../exercise/rig.js';
@@ -45,6 +46,7 @@ export default function HeadDetail({base,scale,rest,joints,character,progress=0}
  useEffect(()=>()=>detail.dispose(),[detail]);
  const toon=character.style==='toon',hairMaterial=toon?'meshToonMaterial':'meshStandardMaterial';
  const blink=blinkAmount(progress);
+ const skinColors=useMemo(()=>skinDetailColors(character.skin),[character.skin]);
  const cover=useMemo(()=>lidCoverGeometry(scale),[scale]);
  useEffect(()=>()=>cover.dispose(),[cover]);
  const iris=useMemo(()=>irisTexture(character.eyes),[character.eyes]);
@@ -62,7 +64,7 @@ export default function HeadDetail({base,scale,rest,joints,character,progress=0}
    <mesh position={[Math.sin(progress*Math.PI*2)*.00025*scale,0,.00175*scale]}><circleGeometry args={[(toon?.0036:.0028)*scale,48]}/><meshPhysicalMaterial map={iris} roughness={.30} clearcoat={.55} clearcoatRoughness={.08}/></mesh>
    <mesh position={[Math.sin(progress*Math.PI*2)*.00025*scale,0,.0018*scale]}><circleGeometry args={[.0011*scale,32]}/><meshPhysicalMaterial color="#101218" roughness={.16} clearcoat={.6}/></mesh>
    {blink>0&&<mesh geometry={cover} scale={[1,blink,1]} position={[0,(1-blink)*.0038*scale,0]}><meshStandardMaterial color={character.skin} roughness={.68} side={THREE.DoubleSide}/></mesh>}
-   {lids.map((g,k)=><mesh key={k} geometry={g} position={[0,(k? .0026:-.0034)*blink*scale,0]}><meshStandardMaterial color={new THREE.Color(character.skin).lerp(new THREE.Color(k?'#b4766d':'#684e40'),k?.14:.24)} roughness={.68}/></mesh>)}
+   {lids.map((g,k)=><mesh key={k} geometry={g} position={[0,(k? .0026:-.0034)*blink*scale,0]}><meshStandardMaterial color={k?skinColors.lowerLid:skinColors.upperLid} roughness={.68}/></mesh>)}
   </group>)}
  </group>;
 }
