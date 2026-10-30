@@ -2,7 +2,7 @@
 
 Profile links to `/health/character`. The page edits a local cosmetic preference with a live exercise scene. Saving applies the same preferences to exercise demonstrations. Unsaved changes are guarded. Storage errors show a recoverable message; invalid saved data falls back to validated defaults. Measurements, calorie inputs and body-composition comparisons are not written by this editor.
 
-Implemented: male/female base surfaces, three face-outline presets, arbitrary hair/skin/top/bottom colors, bounded chest/hip/waist/shoulder surface adjustments, original textured materials and a Three.js toon material variant. The preview can play squat, wall push-up and shoulder-roll demonstrations. Main exercise scenes retain red muscle guidance. The editor hides that overlay to make clothing colors visible.
+Implemented: male/female base surfaces, four face-outline presets, arbitrary hair/skin/top/bottom colors, bounded chest/hip/waist/shoulder surface adjustments, original textured materials and a Three.js toon material variant. The preview can play squat, wall push-up and shoulder-roll demonstrations. Main exercise scenes retain red muscle guidance. The editor hides that overlay to make clothing colors visible.
 
 This is a customization implementation, not the requested high-fidelity VTuber asset set. It does not include long hair geometry, sculpted anime faces, facial expressions/tracking, VRM import, multiple garment meshes, or unrestricted body proportions. Body support and equipment fit across every customized extreme have not been certified. Surface morphs preserve all vertex heights and rig joint definitions and use a bounded range; this is not a full collision solution. No commercial reference artwork or celebrity likeness is included.
 
@@ -119,3 +119,118 @@ exercise. A final attachment correction places the bun against a sampled scalp
 point and aligns the ponytail band with its root. Seven affected geometry/cache
 checks were rerun successfully, and the ponytail playback/pause/persistence
 browser flow passed after that correction. The final personal web build passed.
+
+## Facial surface and visible eye color (2026-10-30)
+
+The earlier flat skin surface still looked like a mannequin in actual app
+captures. The character now uses bundled MakeHuman CC0 facial texture detail
+aligned to the existing hm08 UV topology. The deterministic generation script
+checks the exact shipped triangle indices before producing UVs; geometry,
+health measurements and joint trajectories are unchanged. The source files,
+fixed revisions, hashes and licensing are documented in
+`frontend/src/health/components/character/assets/README.md`.
+
+The cropped atlases are approximately 650 KiB together. A cheek-reference color
+normalizes their color detail to the user's selected skin tone; the original
+asset name does not classify or infer the user's ethnicity. Alpha encodes
+quantized, estimated microrelief and is never used as transparency. This is an
+approximation derived from diffuse imagery, not measured displacement or a
+clinical facial reconstruction. Loader-cached textures are shared across
+viewers and are deliberately excluded from per-viewer disposal.
+
+Eyes now have a larger clipped iris, lower corneal glare, a small key-light
+reflection that stays behind the closed lid, thin upper lashes and a slightly
+relaxed lid position. Seven named eye colors plus the custom picker persist in
+the existing character preference. Face zoom has a quick palette next to the
+preview so changing colors does not require leaving the face view. The portrait
+camera's zoom was previously clamped by the full-body OrbitControls minimum
+distance; face mode now has its own near/far limits.
+
+A new natural-wave hairstyle uses swept, thin ribbon sections, softened
+anisotropic highlights and narrower rear volume. New characters use that style;
+existing saved styles remain valid. Fine eyebrow strokes replace the regular
+hook-like rows. Phase-driven blink and hair motion still pause with the demo.
+
+An initial maximum-volume female wave-hair regression found about 10 mm of
+wall-sit overlap. Rear volume was reduced while retaining front/crown volume;
+the unchanged wall-clearance assertion then passed for both bodies and both
+side-part/wave styles. Focused geometry, texture ownership, color preference,
+UV, eye, cache and hair checks: 23 passed. Final personal web build passed.
+
+The character is still an illustrative real-time game-style human, not a scan
+of the user or a match to the generated reference photograph. Facial animation,
+clothing simulation and scanned full-body skin detail remain limited. No
+photorealism percentage, real-phone GPU/thermal result or new APK publication
+is implied by browser captures.
+
+Browser review confirmed 169 pixels changing from brown toward blue in the
+actual iris region at a 485×440 portrait viewport, not merely a saved color hex.
+It also exposed two issues: the skin-reload test asserted controls while the
+route was still loading, and the first library preview paused on a stale
+zero-size IntersectionObserver event after a texture-related Suspense hide.
+The reload test now awaits the existing renderer-ready signal. Playback rebinds
+its observer when the DOM ref returns and refreshes zero-size observations when
+layout has already returned, while retaining pause on genuine viewport exit.
+A regression distinguishes those cases. Sixteen affected playback/head/contact
+checks passed after the correction. Blink review also prompted flattened closed
+lid edges and a darker lid surface instead of two intersecting open-lid arcs.
+
+Final browser run: all four scenarios passed (eye-color pixels/persistence,
+head/style rendering, complexion persistence, and three consecutive guide opens
+with autoplay). Switching body variants initially revealed a second texture
+suspension which hid the entire route. Both small face atlases now load together,
+and a local Suspense boundary confines loading to the viewer. The eye scenario
+also asserts that the character settings heading remains visible after a switch.
+
+Visual inspection of the closed-eye capture found white corner slivers even
+though shader checks passed. The lid now covers the globe's elliptical outline
+in both styles, with a slightly raised compressed crease/lash line. A geometric
+regression checks coverage at the corners. Eighteen focused checks and the
+personal production build passed after that final correction. Browser checks
+use Chromium software WebGL, not a physical phone or APK validation.
+
+
+## Female reference-directed refinement
+
+The user specified a commercial-game female character image as the minimum
+visual target. That target has **not** been demonstrated by the present model.
+The implemented improvements are a female preview preset, a refined nose/jaw
+outline, restrained lip tint, clearer lash roots, and three authored textured
+short hairstyles. Existing skin and health data remain unchanged by the preset.
+Choosing a female body from the default wave hairstyle selects the new side-swept short
+style; explicitly selected other hairstyles remain available. The generic facial
+mesh, procedural eye/closed-lid surfaces, limited expressions and fitted garments
+still differ substantially from a professionally authored game character.
+
+The side-swept short style, layered and classic bobs use bundled CC0 MakeHuman graphical data; source
+revision, licensing explanation and reproducible conversion are in the assets
+README and `scripts/build-character-hair.py`. Fitting follows the selected head;
+helper vertices omitted from the body mesh are reconstructed against nearby
+retained head vertices. Original texture opacity preserves hair strands, while
+grayscale detail preserves cosmetic hair-color controls. Rear bulk is compressed
+only beyond the back of the scalp to preserve support-wall clearance. These
+hair cards replace the procedural locks only for the three selected styles.
+
+The initial fitting regression exposed rear overlap for both body profiles at
+maximum hair volume; the same positive-clearance assertions pass after the
+rear-volume correction. Wall push-ups, wall sits and wall hinges were sampled
+at five phases for both profiles and five styles, with no relaxed tolerances.
+Seven affected contact/texture/material checks and the personal build passed
+after the final correction. This is not certification of arbitrary collisions
+or parity with the user's visual reference; no new APK is implied.
+
+The female default preset was subsequently changed to the authored side-swept
+short style so the eyes remain visible; the two bob styles remain selectable.
+All 24 final geometry, proportion, hair-motion and support checks passed. The
+head-detail checks now report each body/style pair separately and check the
+shared catalog head rotations once. The previous single combined case exceeded
+30 seconds after adding styles; no geometric assertion or clearance tolerance
+was removed. The personal build also passed. The prior browser run passed all
+three eye/persistence, female styling/exercise and repeated-autoplay scenarios.
+
+The final side-swept preset passed its mobile DPR-2 browser flow (persistence,
+hair switching, blink and wall-push application). Visual review then raised the
+front fringe above the eyebrow line; a per-profile regression now checks that
+front hair vertices do not cover the eye region. All 19 affected head/support
+checks and the final personal build passed. Screenshot helpers center the canvas
+before capture so the fixed navigation does not obscure a portrait.

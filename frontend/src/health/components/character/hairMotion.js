@@ -12,8 +12,9 @@ export function attachHairFlex(geometry,strength){
  for(let i=0;i<count;i++)values[i]=Math.pow(Math.floor(i/6)/rings,2)*strength;
  geometry.setAttribute('hairFlex',new THREE.BufferAttribute(values,1));return geometry;
 }
-export function swayingHairMaterial(character,scale){
- const material=character.style==='toon'?new THREE.MeshToonMaterial({color:character.hair,vertexColors:true}):new THREE.MeshStandardMaterial({color:character.hair,vertexColors:true,roughness:.42,metalness:0,envMapIntensity:.7});
+export function swayingHairMaterial(character,scale,hairAtlas=null){
+ const material=character.style==='toon'?new THREE.MeshToonMaterial({color:character.hair,vertexColors:true}):new THREE.MeshPhysicalMaterial({color:character.hair,vertexColors:true,roughness:.60,anisotropy:.30,metalness:0,envMapIntensity:.35});
+ if(hairAtlas){material.map=hairAtlas;material.alphaTest=.35;material.alphaToCoverage=true;material.side=THREE.DoubleSide;material.depthWrite=true;}
  const wave={value:new THREE.Vector2()},size={value:scale};
  material.onBeforeCompile=shader=>{
   shader.uniforms.hairWave=wave;shader.uniforms.hairScale=size;
@@ -23,6 +24,6 @@ export function swayingHairMaterial(character,scale){
    transformed.z-=hairWave.y*hairFlex*hairScale;
   `);
  };
- material.customProgramCacheKey=()=>`synex-hair-sway-v1-${character.style}`;
+ material.customProgramCacheKey=()=>`synex-hair-fiber-v2-${character.style}`;
  return {material,setProgress(progress){wave.value.set(...hairWave(progress));},dispose(){material.dispose();}};
 }

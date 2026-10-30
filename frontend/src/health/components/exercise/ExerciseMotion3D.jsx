@@ -2,9 +2,14 @@ import HeadDetail from '../character/HeadDetail.jsx';
 import {useCharacter} from '../character/character.js';
 import React, { useMemo, useEffect, useRef, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
-import { OrbitControls, ContactShadows } from '@react-three/drei';
+import { OrbitControls, ContactShadows, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import maleFaceAtlas from '../character/assets/male-face.webp';
+import femaleFaceAtlas from '../character/assets/female-face.webp';
+import layeredHairAtlas from '../character/assets/bob01.webp';
+import bobHairAtlas from '../character/assets/bob02.webp';
+import pixieHairAtlas from '../character/assets/short03.webp';
 import Footwear from '../body3d/Footwear.jsx';
 import { exerciseAvatarGeometry, exerciseMaterials } from './exerciseAppearance.js';
 import ExerciseEquipment from './ExerciseEquipment.jsx';
@@ -31,7 +36,7 @@ function SceneCamera({ motion, view, mirror, heightScale, controls, faceFocus })
   useEffect(() => {
     if (view === 'free' && !faceFocus) return;
     const preset = exerciseCameraPreset(motion, view, heightScale, size.width / Math.max(1, size.height), mirror);
-    if(faceFocus){const angle=view==='side'?Math.PI/2:view==='back'?Math.PI:view==='front'?0:Math.PI/6;preset.target=[0,1.68*heightScale,.025*heightScale];preset.position=[Math.sin(angle)*.64*heightScale,1.70*heightScale,(.025+Math.cos(angle)*.64)*heightScale];}
+    if(faceFocus){const angle=view==='side'?Math.PI/2:view==='back'?Math.PI:view==='front'?0:Math.PI/6;preset.target=[0,1.67*heightScale,.055*heightScale];preset.position=[Math.sin(angle)*.56*heightScale,1.685*heightScale,(.055+Math.cos(angle)*.56)*heightScale];}
     camera.position.set(...preset.position);
     camera.lookAt(...preset.target);
     camera.updateProjectionMatrix();
@@ -43,16 +48,22 @@ function SceneCamera({ motion, view, mirror, heightScale, controls, faceFocus })
 
 function Athlete({ motion, progress, mirror, measurement, profile, compact, appearance, onReady, character, highlight }) {
   const actor = useRef(), readyMotion = useRef();
+  // Bundled and cached by the loader; no remote request or per-frame texture allocation.
+  const faceAtlases=useTexture([maleFaceAtlas,femaleFaceAtlas,layeredHairAtlas,bobHairAtlas,pixieHairAtlas]);
+  const faceAtlas=faceAtlases[character.body==='female'?1:0];
+  faceAtlas.colorSpace=THREE.SRGBColorSpace;faceAtlas.anisotropy=4;
+  const hairAtlas=character.hairStyle==='layered'?faceAtlases[2]:character.hairStyle==='bob'?faceAtlases[3]:character.hairStyle==='pixie'?faceAtlases[4]:null;
+  if(hairAtlas){hairAtlas.colorSpace=THREE.SRGBColorSpace;hairAtlas.anisotropy=4;}
   const { invalidate } = useThree();
   const model = useMemo(() => {
     const prepared=prepareAthlete(measurement,profile,character);
     const {wear,scale}=prepared;
     const geometry = exerciseAvatarGeometry(wear, scale, character);
-    const surface = appearance === 'mannequin' ? mannequinMaterials() : exerciseMaterials(character);
+    const surface = appearance === 'mannequin' ? mannequinMaterials() : exerciseMaterials(character,faceAtlas);
     if (appearance === 'mannequin') applyMannequinColors(geometry, scale, motion);
     else if(highlight) applyAthleteHighlights(geometry, scale, motion, surface.materials);
     return { ...prepared, geometry, appearance: surface };
-  }, [measurement, profile, appearance, motion, JSON.stringify(character),highlight]);
+  }, [measurement, profile, appearance, motion, JSON.stringify(character),highlight,faceAtlas]);
   const joints = useMemo(() => {
     const posed = poseJoints(motion, progress, model.rest);
     if (posed.handRoll && !posed.boneRotations?.[12]) posed.handRoll = model.palmRoll;
@@ -92,10 +103,12 @@ function Athlete({ motion, progress, mirror, measurement, profile, compact, appe
         renderer.domElement.dataset.characterStyle = character.style;
         renderer.domElement.dataset.characterBody = character.body;
         renderer.domElement.dataset.characterHair = character.hairStyle;
+        renderer.domElement.dataset.characterEyes = character.eyes;
+        renderer.domElement.dataset.characterSkinDetail = character.style==='realistic'?'atlas':'toon';
         renderer.domElement.dataset.exerciseProgress = String(progress);
         renderer.domElement.dataset.exerciseVertices = String(model.geometry.attributes.position.count);
       }}/>
-      {appearance === 'athlete' && <HeadDetail base={model.headBase} scale={model.scale} rest={model.rest} joints={joints} character={character} progress={progress}/>}
+      {appearance === 'athlete' && <HeadDetail hairAtlas={hairAtlas} base={model.headBase} scale={model.scale} rest={model.rest} joints={joints} character={character} progress={progress}/>}
       <Footwear anchors={shoes}/>
     </group>
     <ExerciseEquipment motion={motion} joints={joints} rest={model.rest} progress={progress} heightScale={model.scale}/>
@@ -204,11 +217,11 @@ export default function ExerciseMotion3D({ motion, progress, mirror, measurement
     </div>}
     <div className="motion-controls motion-view-controls">{compact ? <select aria-label="운동 시범 방향" value={view} onChange={event => setView(event.target.value)}><option value="front">정면</option><option value="45">45°</option><option value="side">측면</option></select> : [['front', '정면'], ['45', '45°'], ['side', '측면'], ['back', '후면'], ['free', '자유']].map(([id, label]) => <button key={id} type="button" className="btn btn-ghost" aria-label={`${label} 운동 시범 보기`} aria-pressed={view === id} onClick={() => setView(id)}>{label}</button>)}</div>
     <div className="motion-3d-canvas" style={{ position: 'relative', height: compact ? undefined : 340, flex: compact ? '1 1 0' : undefined, minHeight: compact ? 0 : undefined, touchAction: 'none' }}>
-      <SceneBoundary motion={motion} fallback={fallback}><Canvas shadows={!compact} dpr={[1, compact ? 1.5 : 2]} frameloop="demand" gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }} camera={{ position: [3, 1.5, 3], fov: 36 }} fallback={fallback} aria-label={appearance === 'mannequin' ? '운동 부위를 강조한 3D 운동 시범' : '운동복을 입은 3D 운동 시범'}>
+      <SceneBoundary motion={motion} fallback={fallback}><React.Suspense fallback={<p className="motion-loading" role="status">캐릭터를 준비하고 있습니다.</p>}><Canvas shadows={!compact} dpr={[1, compact ? 1.5 : 2]} frameloop="demand" gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }} camera={{ position: [3, 1.5, 3], fov: 36 }} fallback={fallback} aria-label={appearance === 'mannequin' ? '운동 부위를 강조한 3D 운동 시범' : '운동복을 입은 3D 운동 시범'}>
         <SceneCamera motion={motion} view={view} mirror={mirror} heightScale={heightScale} controls={controls} faceFocus={faceFocus}/><Studio compact={compact} heightScale={heightScale} motion={motion}/>
         <Athlete {...{ motion, progress, mirror, compact, appearance, onReady, character, highlight }} measurement={m} profile={p}/>
-        <OrbitControls ref={controls} enabled={view === 'free'} enablePan={false} minDistance={1.2 * heightScale} maxDistance={6 * heightScale} maxPolarAngle={Math.PI / 2 - .02}/>
-      </Canvas></SceneBoundary>
+        <OrbitControls ref={controls} enabled={view === 'free'} enablePan={false} minDistance={(faceFocus ? .38 : 1.2) * heightScale} maxDistance={(faceFocus ? .95 : 6) * heightScale} maxPolarAngle={Math.PI / 2 - .02}/>
+      </Canvas></React.Suspense></SceneBoundary>
       {compact && highlight && anatomy.primary.length > 0 && <span className="motion-anatomy-badge" title={`주요 부위: ${anatomy.primaryLabel}. 운동 안내이며 실제 근육 사용량 측정이 아닙니다.`}>빨강 · 주요 운동 부위</span>}
     </div>
     {!compact && highlight && <div className="motion-anatomy-legend" aria-label="운동 부위 색상 안내">

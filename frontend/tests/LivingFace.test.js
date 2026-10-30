@@ -10,3 +10,16 @@ it('tapers hair tips and builds finite lid coverage without excess geometry',()=
  const curve=new CatmullRomCurve3([new Vector3(),new Vector3(0,.02,0),new Vector3(.01,.04,0)]),strand=taperedStrand(curve,.001,18),lid=lidCoverGeometry();
  try{const p=strand.attributes.position;expect(p.count).toBe(19*6);expect(new Vector3().fromBufferAttribute(p,18*6).distanceTo(curve.getPointAt(1))).toBeLessThan(.0001);expect(p.array.every(Number.isFinite)).toBe(true);expect(lid.attributes.position.array.every(Number.isFinite)).toBe(true);expect(strand.attributes.color.count).toBe(p.count);}finally{strand.dispose();lid.dispose();}
 });
+
+it('closed lids cover the globe outline including the outer corners in both styles',()=>{
+ for(const toon of [false,true]){
+  const lid=lidCoverGeometry(1,toon),p=lid.attributes.position;
+  try{for(let i=0;i<=24;i++){
+   const x=p.getX(i);if(Math.abs(x)>=.01)continue;
+   const globeY=(toon?.0045:.003)*Math.sqrt(1-(x/.01)**2);
+   expect(p.getY(i+8*25)).toBeGreaterThan(globeY);
+   expect(p.getY(i)).toBeLessThan(-globeY);
+   expect(p.getZ(i)).toBeGreaterThan(.0017);
+  }}finally{lid.dispose();}
+ }
+});

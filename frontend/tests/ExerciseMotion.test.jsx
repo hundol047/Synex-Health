@@ -10,6 +10,27 @@ const readiness=vi.hoisted(()=>({hold:false,ready:null}));
 vi.mock('../src/health/components/exercise/ExerciseMotion3D.jsx',()=>({default:({progress,onReady})=> {React.useEffect(()=>{readiness.ready=onReady;if(!readiness.hold)onReady?.();},[onReady]);return <div data-testid="motion-render" data-progress={progress}>3D 시범</div>;}}));
 
 describe('motion guidance',()=>{
+  it('refreshes transient zero-size observations but pauses when the viewer really leaves',()=>{
+    vi.useFakeTimers();let callback,observer;
+    vi.stubGlobal('IntersectionObserver',class {
+      constructor(cb){callback=cb;observer=this;}
+      observe=vi.fn();unobserve=vi.fn();disconnect=vi.fn();
+    });
+    const {container,unmount}=render(<ExerciseMotion autoPlay exercise={{motion_id:'squat',instructions:[],cautions:[]}}/>);
+    const target=container.querySelector('.motion-viewer');
+    const visible={x:0,y:100,top:100,left:0,right:300,bottom:700,width:300,height:600};
+    vi.spyOn(target,'getBoundingClientRect').mockReturnValue(visible);
+    try{
+      act(()=>callback([{target,isIntersecting:true,boundingClientRect:visible}]));
+      act(()=>callback([{target,isIntersecting:false,boundingClientRect:{width:0,height:0}}]));
+      act(()=>vi.advanceTimersByTime(400));
+      expect(screen.getByRole('button',{name:'일시정지',exact:true})).toBeTruthy();
+      expect(observer.unobserve).toHaveBeenCalledWith(target);
+      act(()=>callback([{target,isIntersecting:false,boundingClientRect:{...visible,y:2000,top:2000,bottom:2600}}]));
+      act(()=>vi.advanceTimersByTime(400));
+      expect(screen.getByRole('button',{name:'동작 재생',exact:true})).toBeTruthy();
+    }finally{unmount();vi.unstubAllGlobals();vi.useRealTimers();}
+  });
   it('autoplays a newly opened guide and permits immediate pause',()=>{
     const exercise={motion_id:'squat',exercise_name:'스쿼트',instructions:[],cautions:[]};
     const {rerender}=render(<ExerciseMotion autoPlay exercise={exercise}/>);

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {hasAuthoredHair,buildAuthoredHair} from './authoredHair.js';
 import {MeshBVH} from 'three-mesh-bvh';
 import {mergeGeometries} from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import {taperedStrand} from './livingFace.js';
@@ -8,6 +9,7 @@ import {attachHairFlex} from './hairMotion.js';
 // nearest vertex. The cap stops above the ears; skin never becomes painted hair.
 // All distances below are in the neutral 1.78 m demonstration body's space.
 export function buildScalpHair(base,scale,anchor,character,bodyIndices){
+ if(hasAuthoredHair(character.hairStyle))return buildAuthoredHair(base,scale,anchor,character);
  const volume=THREE.MathUtils.clamp(character.hairVolume||0,-1,1);
  const source=new THREE.BufferGeometry();
  source.setAttribute('position',new THREE.BufferAttribute(base,3));
@@ -20,7 +22,7 @@ export function buildScalpHair(base,scale,anchor,character,bodyIndices){
  const tree=new MeshBVH(source,{maxLeafTris:12});
  const center=new THREE.Vector3(0,1.695*scale,.052*scale);
  const ray=new THREE.Ray(),direction=new THREE.Vector3();
- const part=character.hairStyle==='parted',short=character.hairStyle==='short';
+ const wavy=character.hairStyle==='wavy',part=character.hairStyle==='parted'||wavy,short=character.hairStyle==='short';
  const boundary=angle=>1.679+.040*Math.max(0,Math.cos(angle))-.021*Math.max(0,-Math.cos(angle))+(part?.006*Math.sin(angle*2):0);
  const limit=angle=>Math.acos(THREE.MathUtils.clamp((boundary(angle)-1.695)/.09,-1,1));
  const sample=(angle,polar,lift=0)=>{
@@ -32,11 +34,25 @@ export function buildScalpHair(base,scale,anchor,character,bodyIndices){
  const positions=[],indices=[],uSegments=64,vSegments=20;
  for(let row=0;row<=vSegments;row++)for(let col=0;col<=uSegments;col++){
   const a=col/uSegments*Math.PI*2,t=row/vSegments;
-  positions.push(...sample(a,Math.max(.001,t*limit(a)),.0015*Math.sin(t*Math.PI)).toArray());
+  const capLimit=limit(a)-(wavy?.18*Math.max(0,Math.cos(a)):0);
+  positions.push(...sample(a,Math.max(.001,t*capLimit),(wavy?.0015+.0125*(1+.35*volume)*Math.max(0,Math.cos(a)):.0015)*Math.sin(t*Math.PI)).toArray());
   if(row<vSegments&&col<uSegments){const i=row*(uSegments+1)+col;indices.push(i,i+uSegments+1,i+1,i+1,i+uSegments+1,i+uSegments+2);}
  }
  const cap=new THREE.BufferGeometry();cap.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));cap.setIndex(indices);cap.computeVertexNormals();
  const strands=[];
+ // Broad locks have a thin ribbon section rather than a round tube.
+ const lockGeometry=(curve,radius,segments)=>{
+  const g=taperedStrand(curve,radius,segments),position=g.attributes.position;
+  const localCenter=center.clone().sub(anchor),point=new THREE.Vector3();
+  for(let ring=0;ring<=segments;ring++){
+   const c=curve.getPointAt(ring/segments),normal=c.clone().sub(localCenter).normalize();
+   for(let side=0;side<=5;side++){
+    const i=ring*6+side;point.fromBufferAttribute(position,i).sub(c);
+    point.addScaledVector(normal,-.72*point.dot(normal)).add(c);position.setXYZ(i,point.x,point.y,point.z);
+   }
+  }
+  g.computeVertexNormals();return g;
+ };
  // Locks have a common growth direction and soft raised arcs. Fine adjacent
  // fibers break up their silhouette without hundreds of individual draw calls.
  for(let lock=0;lock<96;lock++)for(let fiber=0;fiber<3;fiber++){
@@ -45,27 +61,29 @@ export function buildScalpHair(base,scale,anchor,character,bodyIndices){
   for(let step=0;step<=7;step++){
    const t=step/7,start=.14+.13*(.5+.5*Math.sin(lock*2.39));
    const front=Math.cos(angle)>.05;
-   const a=part&&front?(.65*(1-t)+Math.atan2(Math.sin(angle),Math.cos(angle))*t):angle+.13*(1-t);
-   const tip=limit(a)+(part&&front?.12*(.5+.5*Math.sin(lock*2.39)):0);
+   const sweep=wavy?Math.sign(Math.sin(angle))*.12:.65;
+   const a=(part&&front?(sweep*(1-t)+Math.atan2(Math.sin(angle),Math.cos(angle))*t):angle+.13*(1-t))+(wavy?.10*Math.sin(t*Math.PI*3+lock*.23)*Math.sin(t*Math.PI):0);
+   const tip=limit(a)+(wavy&&front?-.08+.1*Math.abs(Math.sin(angle)):part&&front?.12*(.5+.5*Math.sin(lock*2.39)):0);
    const polar=start+(tip-start)*t;
-   const lift=(short?.003:part&&front?.028:.006)*(1+.35*volume)*Math.sin(Math.PI*t)+.0006*(fiber%2);
+   const lift=(short?.003:wavy?.005+.012*Math.max(0,Math.cos(angle)):part&&front?.028:.006)*(1+.35*volume)*Math.sin(Math.PI*t)+.0006*(fiber%2)+(wavy?.003*Math.max(0,Math.cos(angle))*Math.sin(t*Math.PI*4+lock*.23)*Math.sin(Math.PI*t):0);
    points.push(sample(a,polar,lift));
   }
-  strands.push(attachHairFlex(taperedStrand(new THREE.CatmullRomCurve3(points),(fiber===1?.0021:.00065)*scale,16),short?.0006:.0025));
+  strands.push(attachHairFlex(lockGeometry(new THREE.CatmullRomCurve3(points),(fiber===1?.0021:.00065)*scale,16),short?.0006:.0025));
  }
  if(part)for(let i=0;i<56;i++){
   const angle=-1.05+i/55*2.1,points=[];
   for(let step=0;step<=6;step++){
-   const t=step/6,a=.65*(1-t)+angle*t;
-   points.push(sample(a,.42+(limit(a)+.08+.035*Math.sin(i*2.4)-.42)*t,(.026+.004*Math.sin(i*1.7))*Math.sin(Math.PI*t)));
+   const t=step/6,a=(wavy?Math.sign(angle)*.10:.65)*(1-t)+angle*t+(wavy?.08*Math.sin(t*Math.PI*3+i*.19)*Math.sin(Math.PI*t):0);
+   const tip=limit(a)+(wavy?-.06+.1*Math.abs(Math.sin(angle)):.08+.035*Math.sin(i*2.4));
+   points.push(sample(a,.42+(tip-.42)*t,((wavy?.018:.026)+.004*Math.sin(i*1.7))*Math.sin(Math.PI*t)+(wavy?.003*Math.sin(t*Math.PI*4+i*.19)*Math.sin(Math.PI*t):0)));
   }
-  strands.push(attachHairFlex(taperedStrand(new THREE.CatmullRomCurve3(points),.00085*scale,18),.004));
+  strands.push(attachHairFlex(lockGeometry(new THREE.CatmullRomCurve3(points),.00085*scale,18),.004));
  }
  if(character.hairStyle==='ponytail')for(let i=0;i<96;i++){
   const a=i/96*Math.PI*2,r=.004+.013*(i%11)/10,dx=Math.sin(a)*r,dz=Math.cos(a)*r;
   const p=(x,y,z)=>new THREE.Vector3(x*scale,y*scale,z*scale).sub(anchor);
   const curve=new THREE.CatmullRomCurve3([p(dx*.5,1.73,-.052+dz*.5),p(dx,1.70,-.098+dz),p(dx*.9,1.645,-.123+dz),p(dx*.45,1.585,-.109+dz*.5)]);
-  strands.push(attachHairFlex(taperedStrand(curve,.0015*scale,24),.018));
+  strands.push(attachHairFlex(lockGeometry(curve,.0015*scale,24),.018));
  }
  const locks=mergeGeometries(strands);strands.forEach(g=>g.dispose());
  source.dispose();

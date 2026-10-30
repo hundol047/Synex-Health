@@ -1,9 +1,9 @@
 import {useSyncExternalStore} from 'react';
 export const CHARACTER_KEY='synex-exercise-character-v1';
-export const DEFAULT_CHARACTER=Object.freeze({style:'realistic',body:'male',face:'balanced',hairStyle:'parted',outfit:'tee',pants:'joggers',eyes:'#543a29',hair:'#30251f',skin:'#c4967b',top:'#799bbd',bottom:'#293747',eyeSize:0,hairVolume:0,chest:0,hips:0,shoulders:0,waist:0});
+export const DEFAULT_CHARACTER=Object.freeze({style:'realistic',body:'male',face:'balanced',hairStyle:'wavy',outfit:'tee',pants:'joggers',eyes:'#543a29',hair:'#30251f',skin:'#c4967b',top:'#799bbd',bottom:'#293747',eyeSize:0,hairVolume:0,chest:0,hips:0,shoulders:0,waist:0});
 export function normalizeCharacter(value={}){
  const v=value&&typeof value==='object'?value:{};const result={...DEFAULT_CHARACTER};
- for(const [key,options] of Object.entries({style:['realistic','toon'],body:['male','female'],face:['balanced','soft','angular'],hairStyle:['short','parted','bun','ponytail'],outfit:['tee','tank','long'],pants:['leggings','shorts','joggers']}))if(options.includes(v[key]))result[key]=v[key];
+ for(const [key,options] of Object.entries({style:['realistic','toon'],body:['male','female'],face:['balanced','soft','angular','refined'],hairStyle:['short','parted','wavy','layered','bob','pixie','bun','ponytail'],outfit:['tee','tank','long'],pants:['leggings','shorts','joggers']}))if(options.includes(v[key]))result[key]=v[key];
  for(const key of ['hair','skin','top','bottom','eyes'])if(/^#[0-9a-f]{6}$/i.test(v[key]||''))result[key]=v[key];
  for(const key of ['chest','hips','shoulders','waist','eyeSize','hairVolume'])if(Number.isFinite(v[key]))result[key]=Math.max(-1,Math.min(1,v[key]));
  return result;
@@ -34,6 +34,10 @@ export function characterSurface(base,options,scale=1){
    const t=Math.max(0,Math.min(1,(distance-.45)/.55)),weight=1-t*t*(3-2*t);
    const [sx,sy]=eyeProportions(c.eyeSize);
    out[i]+=dx*(sx-1)*weight*scale;out[i+1]+=dy*(sy-1)*weight*scale;
+  }
+  if(c.face==='refined'&&y>1.55&&z>.06){
+   const jaw=bell(y,1.584,.035),nose=bell(x,0,.021)*bell(y,1.638,.025);
+   out[i]*=1-.065*jaw-.11*nose;out[i+2]-=.0035*nose*scale;
   }
   if(y>1.55&&y<1.76){const face=bell(y,1.63,.06);out[i]*=1+face*(c.face==='soft'?.055:c.face==='angular'?-.055:0);if(c.style==='toon')out[i]*=1+.045*face;}
  }

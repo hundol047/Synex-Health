@@ -25,7 +25,11 @@ export default function ExerciseMotion({ exercise, measurement, profile, autoPla
   const [localProgress, setProgress] = useState(0);
   const progress=playback?.progress??localProgress;
   const [mirror, setMirror] = useState(false);
-  const phase = useRef(0), viewer = useRef(null);
+  const phase = useRef(0), viewer = useRef(null), visibilityObserver=useRef(null), visibilityTimer=useRef();
+  const attachViewer=useCallback(node=>{
+    clearTimeout(visibilityTimer.current);visibilityObserver.current?.disconnect();viewer.current=node;
+    if(node)visibilityObserver.current?.observe(node);
+  },[]);
   const currentPhase = motionPhase(exercise.motion_id, progress);
   useEffect(() => { setPlaying(autoPlay && !paused && !playback); setDimension('3d'); phase.current = 0; setProgress(0); }, [exercise.motion_id, autoPlay]);
   useEffect(() => { if(sceneReady || dimension==='2d') onReady?.(); }, [exercise.motion_id, onReady,sceneReady,dimension]);
@@ -35,11 +39,24 @@ export default function ExerciseMotion({ exercise, measurement, profile, autoPla
     if(!sceneReady && dimension==='3d') return;
     const media = window.matchMedia?.('(prefers-reduced-motion: reduce)');
     const pause = () => setPlaying(false);
-    let seen = false, hiddenTimer;
-    const observer = typeof IntersectionObserver === 'undefined' ? null : new IntersectionObserver(([entry]) => { clearTimeout(hiddenTimer); if (entry.isIntersecting) seen = true; else if (seen) hiddenTimer = setTimeout(pause, 350); }, { threshold: .05 });
+    let seen = false;
+    const observer = typeof IntersectionObserver === 'undefined' ? null : new IntersectionObserver(([entry]) => {
+      if(entry.target!==viewer.current)return;
+      clearTimeout(visibilityTimer.current);
+      if(entry.isIntersecting){seen=true;return;}
+      if(seen)visibilityTimer.current=setTimeout(()=>{
+        if(entry.target!==viewer.current)return;
+        const current=viewer.current.getBoundingClientRect();
+        // Suspense can deliver a zero-size observation while a texture loads.
+        // If layout has returned, request a fresh observation before pausing.
+        if(!entry.boundingClientRect.width&&current.width&&current.height){observer.unobserve(viewer.current);observer.observe(viewer.current);return;}
+        pause();
+      },350);
+    }, { threshold: .05 });
+    visibilityObserver.current=observer;
     if (viewer.current) observer?.observe(viewer.current);
     media?.addEventListener?.('change', pause);
-    return () => { clearTimeout(hiddenTimer); observer?.disconnect(); media?.removeEventListener?.('change', pause); };
+    return () => { clearTimeout(visibilityTimer.current); observer?.disconnect();if(visibilityObserver.current===observer)visibilityObserver.current=null; media?.removeEventListener?.('change', pause); };
   }, [exercise.motion_id,sceneReady,dimension]);
   useEffect(() => {
     if (playback || !playing || !motion || (dimension==='3d'&&!sceneReady)) return;
@@ -71,7 +88,7 @@ export default function ExerciseMotion({ exercise, measurement, profile, autoPla
     setPhase(cycle + step.start / (guide?.kind === 'alternating' ? 2 : 1));
   };
   return <div className="motion-layout exercise-motion-experience">
-    <div className="motion-viewer" ref={viewer}>
+    <div className="motion-viewer" ref={attachViewer}>
       <div className="motion-studio-heading"><div><span className="motion-studio-kicker">동작 가이드</span><strong>{dimension === '3d' ? '3D 동작 시범' : '간단 동작 안내'}</strong></div><span className="motion-studio-status"><i className={(playback?playback.running:playing) ? 'is-playing' : ''}/>{(playback?playback.running:playing) ? '재생 중' : '정지 화면'}</span></div>
       {dimension==='3d'&&!sceneReady&&<p className="motion-loading" role="status">운동 시범을 준비하고 있습니다. 준비되면 처음 자세부터 시작합니다.</p>}
       {dimension === '3d' ? <ExerciseMotion3D onReady={markSceneReady} motion={exercise.motion_id} progress={progress} mirror={mirror} measurement={measurement} profile={profile} defaultView={guide?.defaultView}/> : <MotionFigure exercise={exercise} progress={progress} mirror={mirror}/>}

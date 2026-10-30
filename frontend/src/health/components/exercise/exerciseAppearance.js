@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { skinDetailColors } from '../character/skinTone.js';
+import faceAtlasData from '../character/assets/face-uv.json';
 import { avatarGeometry } from '../body3d/appearance.js';
 
 const clamp = THREE.MathUtils.clamp;
@@ -55,6 +56,7 @@ export function exerciseAvatarGeometry(wear, stature = 1, character) {
     if (!character && y > 1.54) color.lerp(hairColor, THREE.MathUtils.smoothstep(y, hairline, hairline + .018));
     color.toArray(colors, i * 3);
   }
+  geometry.setAttribute('characterFaceUv',new THREE.Float32BufferAttribute(faceAtlasData.coordinates,3));
   geometry.setAttribute('characterRest',new THREE.BufferAttribute(Float32Array.from(wear.positions,v=>v/stature),3));
   geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
   const indices = [], groups = [[], [], [], [], []];
@@ -100,7 +102,7 @@ function localTexture(size, pixel, color = false) {
   return texture;
 }
 
-export function exerciseMaterials(character) {
+export function exerciseMaterials(character,faceAtlas=null) {
   const fabric = localTexture(64, (x, y) => [
     128 + Math.round(9 * Math.sin(x * Math.PI / 2) + 2 * (noise(x, y) - .5)),
     128 + Math.round(9 * Math.sin(y * Math.PI / 2) + 2 * (noise(y, x) - .5)), 254,
@@ -147,10 +149,13 @@ export function exerciseMaterials(character) {
     material.vertexColors=true;material.color.set('#ffffff');material.map=null;
     material.onBeforeCompile=shader=>{
       shader.uniforms.characterLip={value:skinDetailColors(character.skin).lip};
+      shader.uniforms.characterLipStrength={value:faceAtlas&&character.style!=='toon'?(character.face==='refined'?.28:.06):.55};
+      shader.uniforms.characterFaceAtlas={value:faceAtlas};
+      shader.uniforms.characterFaceReference={value:new THREE.Color(faceAtlasData.reference[character.body]||faceAtlasData.reference.male)};
       shader.uniforms.characterTop={value:new THREE.Color(character.top)};shader.uniforms.characterBottom={value:new THREE.Color(character.bottom)};
-      shader.vertexShader='attribute vec3 characterRest; varying vec3 vCharacterRest;\n'+shader.vertexShader;
-      shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvCharacterRest=characterRest;');
-      shader.fragmentShader='uniform vec3 characterLip; uniform vec3 characterTop; uniform vec3 characterBottom; varying vec3 vCharacterRest;\n'+shader.fragmentShader;
+      shader.vertexShader='attribute vec3 characterRest; attribute vec3 characterFaceUv; varying vec3 vCharacterRest; varying vec3 vCharacterFaceUv;\n'+shader.vertexShader;
+      shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvCharacterRest=characterRest;vCharacterFaceUv=characterFaceUv;');
+      shader.fragmentShader='uniform float characterLipStrength; uniform vec3 characterLip; uniform vec3 characterTop; uniform vec3 characterBottom; uniform sampler2D characterFaceAtlas; uniform vec3 characterFaceReference; varying vec3 vCharacterRest; varying vec3 vCharacterFaceUv;\n'+shader.fragmentShader;
       shader.fragmentShader=shader.fragmentShader.replace('#include <common>',`#include <common>
         // Fine garment relief stays in rest coordinates while the body moves.
         float clothRelief(vec3 p) {
@@ -170,6 +175,11 @@ export function exerciseMaterials(character) {
       `);
       shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
         float ax=abs(vCharacterRest.x),y=vCharacterRest.y,z=vCharacterRest.z;
+        ${faceAtlas&&character.style!=='toon'?`float faceBlend=smoothstep(1.54,1.565,y)*smoothstep(.96,.999,vCharacterFaceUv.z);
+        vec4 faceTexel=texture2D(characterFaceAtlas,vCharacterFaceUv.xy);
+        vec3 facialAlbedo=faceTexel.rgb;
+        vec3 faceDetail=clamp(facialAlbedo/max(characterFaceReference,vec3(.001)),vec3(.06),vec3(1.65));
+        diffuseColor.rgb*=mix(vec3(1.),faceDetail,faceBlend);`:''}
         float sleeve=((ax-.185)*.14-(y-1.42)*.17)/(.14*.14+.17*.17);
         float neck=min(1.543,1.511-.022*clamp((z-.02)/.07,0.,1.)+.048*min(1.,pow(ax/.1,2.)));
         float shirt=smoothstep(.959,.967,y)*(1.-smoothstep(neck-.002,neck+.002,y));
@@ -191,19 +201,19 @@ export function exerciseMaterials(character) {
         float skinGrain=fract(sin(dot(floor(vCharacterRest.xy*4200.),vec2(12.9898,78.233)))*43758.5453)-.5;
         diffuseColor.rgb*=vec3(1.+cheekWarm*.018,1.-cheekWarm*.006,1.-cheekWarm*.013)*(1.+skinGrain*.009*skinFace);
         float lipShape=exp(-pow(vCharacterRest.x/.024,4.)-pow((y-1.609)/.0048,4.))*smoothstep(.09,.12,z);
-        diffuseColor.rgb=mix(diffuseColor.rgb,characterLip,lipShape*.55);
+        diffuseColor.rgb=mix(diffuseColor.rgb,characterLip,lipShape*characterLipStrength);
         float lipCrease=exp(-pow(vCharacterRest.x/.021,4.)-pow((y-1.609)/.00065,2.))*smoothstep(.09,.12,z);
         diffuseColor.rgb*=1.-lipCrease*.18;
       `);
       if(character.style!=='toon')shader.fragmentShader=shader.fragmentShader.replace('#include <normal_fragment_maps>',`#include <normal_fragment_maps>
-        normal=clothNormal(normal,-vViewPosition,clothRelief(vCharacterRest)*max(shirt,pants));
+        normal=clothNormal(normal,-vViewPosition,clothRelief(vCharacterRest)*max(shirt,pants)${faceAtlas?'+(faceTexel.a-.5)*.00012*faceBlend':''});
       `).replace('#include <roughnessmap_fragment>',`#include <roughnessmap_fragment>
         float facialSkin=smoothstep(1.54,1.57,vCharacterRest.y)*(1.-smoothstep(1.72,1.74,vCharacterRest.y))*smoothstep(.08,.11,vCharacterRest.z);
         float tZone=exp(-pow(vCharacterRest.x/.022,2.))*.07;
-        roughnessFactor=mix(roughnessFactor,.68-tZone,facialSkin);
+        roughnessFactor=mix(roughnessFactor,.58-tZone,facialSkin);
       `);
     };
-    material.customProgramCacheKey=()=>`skin-tailoring-v5-outfit-${character.outfit}-${character.pants}`;
+    material.customProgramCacheKey=()=>`face-atlas-v6-${Boolean(faceAtlas)}-${character.outfit}-${character.pants}`;
   }
   let disposed = false;
   return { materials, dispose: () => {

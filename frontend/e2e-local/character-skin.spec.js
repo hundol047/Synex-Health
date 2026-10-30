@@ -8,14 +8,14 @@ test('skin palette previews, saves custom colors, and renders light and dark com
  await expect(page.locator('canvas')).toHaveAttribute('data-character-style','realistic',{timeout:30000});
  const dark=page.getByRole('button',{name:'피부 톤 딥 에스프레소',exact:true});
  await dark.click();await expect(dark).toHaveAttribute('aria-pressed','true');await expect(page.getByLabel('피부색',{exact:true})).toHaveValue('#38261f');
- await page.getByRole('button',{name:'저장하고 운동에 적용',exact:true}).click();await page.reload();
+ await page.getByRole('button',{name:'저장하고 운동에 적용',exact:true}).click();await page.reload();await expect(page.locator('canvas')).toHaveAttribute('data-character-style','realistic',{timeout:30000});
  await expect(page.getByRole('button',{name:'피부 톤 딥 에스프레소',exact:true})).toHaveAttribute('aria-pressed','true');
  await page.getByRole('button',{name:'얼굴 확대',exact:true}).click();
  await page.locator('canvas').scrollIntoViewIfNeeded();await page.screenshot({path:info.outputPath('dark-skin.png')});
  await page.getByRole('button',{name:'여성형',exact:true}).click();await page.getByRole('button',{name:'피부 톤 밝은 아이보리',exact:true}).click();
  await page.locator('canvas').scrollIntoViewIfNeeded();await page.screenshot({path:info.outputPath('light-skin.png')});
  await page.getByRole('button',{name:'얼굴·헤어',exact:true}).click();await expect(page.getByLabel('피부색',{exact:true})).toHaveValue('#f1d5c2');
- await page.getByLabel('피부색',{exact:true}).fill('#98765a');await page.getByRole('button',{name:'저장하고 운동에 적용',exact:true}).click();await page.reload();
+ await page.getByLabel('피부색',{exact:true}).fill('#98765a');await page.getByRole('button',{name:'저장하고 운동에 적용',exact:true}).click();await page.reload();await expect(page.locator('canvas')).toHaveAttribute('data-character-style','realistic',{timeout:30000});
  await expect(page.getByLabel('피부색',{exact:true})).toHaveValue('#98765a');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);expect(errors).toEqual([]);
 });
