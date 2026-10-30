@@ -2,6 +2,7 @@ import React,{useMemo,useEffect} from 'react';
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import {blinkAmount,taperedStrand,lidCoverGeometry} from './livingFace.js';
+import {attachHairFlex,swayingHairMaterial} from './hairMotion.js';
 import {eyeProportions} from './character.js';
 import {skinDetailColors} from './skinTone.js';
 import {irisTexture,eyeLidGeometry} from './eyeSurface.js';
@@ -27,10 +28,18 @@ export function buildHeadDetails(base,scale,rest,character){
  for(let i=0;i<96;i++){
   const a=i/96*Math.PI*2,side=Math.sin(a),front=Math.cos(a),part=character.hairStyle==='parted';
   const points=[point(side*.018,1.797,.025+front*.015),point(side*.055+(part?.008:0),1.785,.025+front*.065),point(side*.078,1.747,.025+front*.090),point(side*.077,front>0?1.728:1.66,.025+front*.088)];
-  const curve=new THREE.CatmullRomCurve3(points.map(project));curves.push(taperedStrand(curve,(part?.00085:.00065)*scale,18));
+  const curve=new THREE.CatmullRomCurve3(points.map(project));curves.push(attachHairFlex(taperedStrand(curve,(part?.00085:.00065)*scale,18),part?.0015:.0006));
  }
  if(character.hairStyle==='parted')for(let i=0;i<48;i++){
-  const x=-.055+i*.002;curves.push(taperedStrand(new THREE.CatmullRomCurve3([project(point(x,1.776,.08)),project(point(x+.014,1.75,.112)),point(x+.025,1.709+Math.abs(x)*.18,surface(x+.025,1.709+Math.abs(x)*.18)+.004)]),.00045*scale,18));
+  const x=-.055+i*.002;curves.push(attachHairFlex(taperedStrand(new THREE.CatmullRomCurve3([project(point(x,1.776,.08)),project(point(x+.014,1.75,.112)),point(x+.025,1.709+Math.abs(x)*.18,surface(x+.025,1.709+Math.abs(x)*.18)+.004)]),.00045*scale,18),.003));
+ }
+ // A short athletic ponytail stays behind the neck and above the shoulders.
+ // Each root is fixed; only free ends receive the larger secondary sway.
+ if(character.hairStyle==='ponytail')for(let i=0;i<72;i++){
+  const angle=i/72*Math.PI*2,r=.004+.011*(i%9)/8;
+  const dx=Math.sin(angle)*r,dz=Math.cos(angle)*r;
+  const curve=new THREE.CatmullRomCurve3([point(dx*.5,1.731,-.079+dz*.5),point(dx,1.702,-.112+dz),point(dx*.85,1.647,-.132+dz),point(dx*.45,1.588,-.117+dz*.4)]);
+  curves.push(attachHairFlex(taperedStrand(curve,.0017*scale,24),.018));
  }
  const brows=[-1,1].map(side=>{
   const hairs=[];
@@ -56,10 +65,14 @@ export default function HeadDetail({base,scale,rest,joints,character,progress=0}
  const lids=useMemo(()=>[eyeLidGeometry(scale,true),eyeLidGeometry(scale,false)],[scale]);
  useEffect(()=>()=>{iris.dispose();},[iris]);
  useEffect(()=>()=>lids.forEach(g=>g.dispose()),[lids]);
+ const locksMaterial=useMemo(()=>swayingHairMaterial(character,scale),[character.style,character.hair,scale]);
+ locksMaterial.setProgress(progress);
+ useEffect(()=>()=>locksMaterial.dispose(),[locksMaterial]);
  const hairProps={color:character.hair,...(!toon?{roughness:.64,metalness:0,envMapIntensity:.3}:{})};
  return <group position={joints[1]} quaternion={rigRotation(joints,1,rest)}>
   <mesh geometry={detail.cap}>{toon?<meshToonMaterial color={character.hair}/>:<meshStandardMaterial color={character.hair} roughness={.72} envMapIntensity={.3}/>}</mesh>
-  {detail.curves.map((g,i)=><mesh key={i} geometry={g}>{React.createElement(hairMaterial,{...hairProps,vertexColors:true})}</mesh>)}
+  {detail.curves.map((g,i)=><mesh key={i} geometry={g} material={locksMaterial.material}/>)}
+  {character.hairStyle==='ponytail'&&<mesh position={[0,1.731*scale-rest[1][1],-.079*scale-rest[1][2]]} rotation={[Math.PI/2,0,0]}><torusGeometry args={[.012*scale,.002*scale,8,24]}/><meshStandardMaterial color={character.top} roughness={.8}/></mesh>}
   {character.hairStyle==='bun'&&<mesh position={detail.bun} scale={[.029*scale*detail.bunScale,.026*scale*detail.bunScale,.023*scale*detail.bunScale]}><sphereGeometry args={[1,24,16]}/>{React.createElement(hairMaterial,hairProps)}</mesh>}
   {detail.brows.map((g,i)=><mesh key={i} geometry={g}><meshStandardMaterial color={new THREE.Color(character.hair).lerp(new THREE.Color('#382a25'),.65)} vertexColors roughness={.9}/></mesh>)}
   {detail.eyes.map((position,i)=><group key={i} position={position} scale={eyeProportions(character.eyeSize)} rotation={[0,i===0?-.10:.10,0]}>

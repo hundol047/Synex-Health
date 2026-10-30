@@ -1,5 +1,7 @@
 import {test,expect} from '@playwright/test';
 test('custom character persists and is shared with exercise demonstrations',async({page},info)=>{
+ // This flow captures multiple software-WebGL outfit and portrait views.
+ test.setTimeout(240000);
  const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error'&&/shader|WebGLProgram/.test(m.text()))errors.push(m.text());});
  await page.setViewportSize({width:393,height:852});
  await page.addInitScript(()=>{localStorage.setItem('synex-personal-onboarding-v1','done');localStorage.setItem('synex-personal-consent-v1','accepted');});

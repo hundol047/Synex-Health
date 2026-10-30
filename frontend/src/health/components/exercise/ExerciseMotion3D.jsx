@@ -117,6 +117,7 @@ function Athlete({ motion, progress, mirror, measurement, profile, compact, appe
         renderer.domElement.dataset.exerciseAppearance = appearance;
         renderer.domElement.dataset.characterStyle = character.style;
         renderer.domElement.dataset.characterBody = character.body;
+        renderer.domElement.dataset.characterHair = character.hairStyle;
         renderer.domElement.dataset.exerciseProgress = String(progress);
         renderer.domElement.dataset.exerciseVertices = String(model.geometry.attributes.position.count);
       }}/>
