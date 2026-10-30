@@ -1,0 +1,32 @@
+{
+  "source_commit": "ad0ca704236dbac7ca8d9a22166885b531fe1dc3",
+  "workflow": "https://github.com/hundol047/Synex-Health/actions/runs/41021901152",
+  "workflow_conclusion": "success",
+  "unit_tests_passed": 576,
+  "browser_tests_expected": 54,
+  "exercise_render_count": 74,
+  "exercise_frame_count": 222,
+  "jobs": [
+    {
+      "name": "personal-apk",
+      "conclusion": "success"
+    },
+    {
+      "name": "Personal browser checks (1/3)",
+      "conclusion": "success"
+    },
+    {
+      "name": "Personal browser checks (3/3)",
+      "conclusion": "success"
+    },
+    {
+      "name": "Personal browser checks (2/3)",
+      "conclusion": "success"
+    },
+    {
+      "name": "Personal APK download checks",
+      "conclusion": "skipped"
+    }
+  ],
+  "physical_device": false
+}
