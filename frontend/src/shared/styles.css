@@ -124,13 +124,18 @@ small{font-size:.8125rem}
 .plan-period-units button.active{background:var(--blue);color:var(--white);font-weight:700}
 .plan-period-length{display:inline-flex;align-items:center;gap:8px;font-size:.875rem}
 .plan-period-length .text-input{width:80px}
-.period-group{border:1px solid var(--line);border-radius:var(--radius);background:var(--white);margin-bottom:12px}
-.period-group-head{display:flex;align-items:center;gap:8px;width:100%;min-height:52px;padding:10px 16px;text-align:left;color:var(--ink)}
+.period-group{margin-bottom:12px}
+.period-group-head{display:flex;align-items:center;gap:8px;width:100%;min-height:48px;padding:10px 16px;text-align:left;color:var(--ink);background:var(--white);border:1px solid var(--line);border-radius:var(--radius-sm)}
+.period-group-head:hover{background:var(--blue-pale)}
 .period-group-head strong{flex:1}
 .period-group-chevron{transition:transform .15s;color:var(--muted)}
 .period-group-head[aria-expanded=true] .period-group-chevron{transform:rotate(180deg)}
-.period-group-body{padding:0 12px 12px}
-.period-group-body .period-group{margin-bottom:8px}
+.period-group--month>.period-group-head{min-height:52px;background:var(--blue-light);border-color:transparent;color:var(--blue-dark)}
+.period-group--month>.period-group-head:hover{background:#dbe7ff}
+.period-group--month>.period-group-head .period-group-chevron{color:var(--blue-dark)}
+.period-group--month>.period-group-head .badge{background:var(--white)}
+.period-group-body{padding-top:12px}
+.period-group-body>.period-group:last-child{margin-bottom:0}
 
 /* Guided movement and explainable workout planning */
 .exercise-card { padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: #fff; }

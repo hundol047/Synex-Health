@@ -34,10 +34,11 @@ function DayCard({ latest, day, exs, onReplaced }) {
   );
 }
 
-function PeriodGroup({ title, badge, defaultOpen, children }) {
+// Periods render as full-width header bars over unboxed content, so month > week > day does not nest card in card.
+function PeriodGroup({ level, title, badge, defaultOpen, children }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <section className="period-group">
+    <section className={`period-group period-group--${level}`}>
       <button type="button" className="period-group-head" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
         <strong>{title}</strong>{badge && <Badge>{badge}</Badge>}<ChevronDown size={18} className="period-group-chevron" />
       </button>
@@ -55,7 +56,7 @@ function RoutinePeriods({ routine, days, renderDay }) {
   const elapsed = Math.floor((Date.now() - Date.parse(routine.created_at)) / (7 * 86400000));
   const current = Number.isFinite(elapsed) ? Math.min(Math.max(elapsed, 0), totalWeeks - 1) + 1 : 1;
   const week = (w) => (
-    <PeriodGroup key={w} title={`${w}주차`} badge={w === current ? '이번 주' : null} defaultOpen={w === current}>
+    <PeriodGroup key={w} level="week" title={`${w}주차`} badge={w === current ? '이번 주' : null} defaultOpen={w === current}>
       {days.map(([day, exs]) => renderDay(day, exs))}
     </PeriodGroup>
   );
@@ -64,7 +65,7 @@ function RoutinePeriods({ routine, days, renderDay }) {
   return range(1, months).map((m) => {
     const weeks = range((m - 1) * 4 + 1, m * 4);
     return (
-      <PeriodGroup key={`m${m}`} title={`${m}개월차`} badge={weeks.includes(current) ? '진행 중' : null} defaultOpen={weeks.includes(current)}>
+      <PeriodGroup key={`m${m}`} level="month" title={`${m}개월차`} badge={weeks.includes(current) ? '진행 중' : null} defaultOpen={weeks.includes(current)}>
         {weeks.map(week)}
       </PeriodGroup>
     );
