@@ -114,6 +114,23 @@ small{font-size:.8125rem}
   font-size:.8rem;color:var(--muted);cursor:pointer}
 .chip-checkbox.checked{background:var(--blue-pale);color:var(--blue-dark);border-color:#b8cef9;font-weight:700}
 .chip-checkbox input{margin:0;accent-color:var(--blue)}
+.experience-detail-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.experience-level{font-size:.8rem;padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.experience-level.set{background:var(--blue);border-color:var(--blue);color:var(--white);font-weight:700}
+.plan-period{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px}
+.plan-period-units{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.plan-period-units button{min-height:44px;min-width:64px;padding:0 14px;font-size:.875rem;color:var(--muted)}
+.plan-period-units button+button{border-left:1px solid var(--line)}
+.plan-period-units button.active{background:var(--blue);color:var(--white);font-weight:700}
+.plan-period-length{display:inline-flex;align-items:center;gap:8px;font-size:.875rem}
+.plan-period-length .text-input{width:80px}
+.period-group{border:1px solid var(--line);border-radius:var(--radius);background:var(--white);margin-bottom:12px}
+.period-group-head{display:flex;align-items:center;gap:8px;width:100%;min-height:52px;padding:10px 16px;text-align:left;color:var(--ink)}
+.period-group-head strong{flex:1}
+.period-group-chevron{transition:transform .15s;color:var(--muted)}
+.period-group-head[aria-expanded=true] .period-group-chevron{transform:rotate(180deg)}
+.period-group-body{padding:0 12px 12px}
+.period-group-body .period-group{margin-bottom:8px}
 
 /* Guided movement and explainable workout planning */
 .exercise-card { padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: #fff; }

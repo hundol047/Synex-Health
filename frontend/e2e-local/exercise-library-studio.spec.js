@@ -30,7 +30,7 @@ test('catalogue keeps static previews and one large selected 3D stage on a small
  await expect(page.getByRole('button',{name:'운동 목록으로 돌아가기',exact:true})).toBeInViewport();
  await expect.poll(async()=>(await stage.locator('canvas').boundingBox()).height).toBeGreaterThanOrEqual(350);
  await expect.poll(async()=>(await stage.locator('.exercise-library-stage-heading').boundingBox()).height).toBeLessThan(100);
- for(const name of ['정면 운동 시범 보기','45° 운동 시범 보기','측면 운동 시범 보기','후면 운동 시범 보기','자유 운동 시범 보기']){
+ for(const name of ['왼쪽으로 회전','오른쪽으로 회전']){
   const control=stage.getByRole('button',{name,exact:true});
   await expect(control).toBeInViewport();
   expect(await control.evaluate(button=>{const rect=button.getBoundingClientRect(),top=document.elementFromPoint(rect.x+rect.width/2,rect.y+rect.height/2);return button===top||button.contains(top);})).toBe(true);
@@ -84,10 +84,9 @@ test('changing the selected exercise resets the stage and keeps directions and p
  await expect(stage.locator('canvas')).toBeVisible();
  await expect.poll(async()=>Number(await stage.locator('canvas').getAttribute('data-exercise-progress'))).toBeGreaterThan(0);
  await expect(stage.getByRole('button',{name:'일시정지',exact:true})).toBeVisible();
- for(const name of ['정면 운동 시범 보기','측면 운동 시범 보기','후면 운동 시범 보기']){
-  await stage.getByRole('button',{name,exact:true}).click();
-  await expect(stage.getByRole('button',{name,exact:true})).toHaveAttribute('aria-pressed','true');
- }
+ // Only rotation remains; fixed view-angle presets were removed from the exercise viewer.
+ await expect(stage.getByRole('button',{name:'정면 운동 시범 보기',exact:true})).toHaveCount(0);
+ for(const name of ['왼쪽으로 회전','오른쪽으로 회전'])await stage.getByRole('button',{name,exact:true}).click();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  expect(errors).toEqual([]);
 });
@@ -120,7 +119,7 @@ test('supported library movement opens the matching camera guide with an explici
  await expect(cameraEntry).toBeInViewport();
  expect(await cameraEntry.evaluate(link=>{const rect=link.getBoundingClientRect(),top=document.elementFromPoint(rect.x+rect.width/2,rect.y+rect.height/2);return link===top||link.contains(top);})).toBe(true);
  await expect.poll(async()=>(await stage.locator('.exercise-library-stage-heading').boundingBox()).height).toBeLessThan(100);
- await expect(stage.getByRole('button',{name:'측면 운동 시범 보기',exact:true})).toBeInViewport();
+ await expect(stage.getByRole('button',{name:'오른쪽으로 회전',exact:true})).toBeInViewport();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await page.screenshot({path:info.outputPath('exercise-studio-bodyweight-393.png')});
  await page.getByRole('link',{name:'이 동작 촬영·자세 교정',exact:true}).click();

@@ -12,7 +12,7 @@ test('reference-style instruction preserves playback when changing appearance an
   await stage.getByLabel('동작 구간',{exact:true}).fill('50');
   await expect(canvas).toHaveAttribute('data-exercise-progress','0.5');
   await canvas.screenshot({path:info.outputPath('mannequin-squat-front.png')});
-  await stage.getByRole('button',{name:'후면 운동 시범 보기',exact:true}).click();
+  for(let i=0;i<4;i++)await stage.getByRole('button',{name:'오른쪽으로 회전',exact:true}).click();
   await canvas.screenshot({path:info.outputPath('mannequin-squat-back.png')});
   await stage.getByRole('button',{name:'부위 강조 인체',exact:true}).click();
   await expect(canvas).toHaveAttribute('data-exercise-appearance','mannequin');

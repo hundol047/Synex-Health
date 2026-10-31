@@ -35,4 +35,15 @@ describe('balanced device routines',()=>{
   expect(tempoPrescription({motion_id:'walk',duration:'10분'}).sets).toBe(1);
   expect(buildTempoPlan([{motion_id:'walk',duration:'10분'}]).reduce((s,x)=>s+x.durationMs,0)).toBe(605000);
  });
+ it('orders focused regions first and gives them one more set',()=>{
+  const profile={...base,experience_level:'INTERMEDIATE',minutes_per_session:60,focus_regions:['hinge']};
+  const pattern=e=>catalog.find(c=>c.id===e.motion_id).pattern;
+  const day=balancedLocalDays(profile).exercises.filter(e=>e.day_number===1&&pattern(e)!=='cardio');
+  expect(pattern(day[0])).toBe('hinge');
+  const sets=Object.fromEntries(day.map(e=>[pattern(e),e.sets]));
+  expect(sets.hinge).toBe(4);expect(sets.squat).toBe(3);expect(sets.push).toBe(3);
+  expect(day[0].reason).toContain('집중 부위');
+  const held=balancedLocalDays(profile,{cautious:true}).exercises.filter(e=>e.day_number===1&&pattern(e)!=='cardio');
+  expect(Math.max(...held.map(e=>e.sets))).toBe(1);
+ });
 });

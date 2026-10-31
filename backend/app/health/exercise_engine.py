@@ -5,7 +5,7 @@ The LLM never selects movements or overrides screening, time budgets, or equipme
 from __future__ import annotations
 from datetime import date, timedelta
 import json
-from .schemas import ExerciseRoutine, RoutineExercise, Segment, SEGMENT_LABEL_KO, Goal, ExperienceLevel
+from .schemas import ExerciseRoutine, RoutineExercise, Segment, SEGMENT_LABEL_KO, Goal, ExperienceLevel, derive_experience_level
 from .comparison import left_right_balance
 from .exercise_catalog import CATALOG
 from .store import new_id, now
@@ -19,6 +19,13 @@ LIMITATION_WORDS = {
     'shoulder': ['어깨', 'shoulder'], 'wrist': ['손목', 'wrist'], 'hip': ['고관절', 'hip'],
     'ankle': ['발목', 'ankle'], 'elbow': ['팔꿈치', 'elbow'],
 }
+
+REGION_FOCUS_LABELS = {'squat': '하체 앞쪽(허벅지)', 'hinge': '엉덩이·허벅지 뒤', 'push': '가슴·어깨',
+                       'pull': '등', 'core': '복부·코어'}
+
+
+EXPERIENCE_LABEL_KO = {ExperienceLevel.BEGINNER: '초급', ExperienceLevel.INTERMEDIATE: '중급', ExperienceLevel.ADVANCED: '고급'}
+
 
 class PlanBlocked(ValueError):
     pass
@@ -103,6 +110,8 @@ def build_deterministic_routine(user_id, measurement, profile, based_on_measurem
     notices = ['성인 일반 건강관리용 제안입니다. 체성분은 근력·관절 상태를 직접 측정하지 않습니다.',
                '체중·근육량 비율과 변화 기준은 보수적인 제품 규칙이며 임상적으로 검증된 처방 기준이 아닙니다.']
     rationale = ['성별만으로 운동 종류나 중량을 결정하지 않습니다. 실제 측정값과 운동 가능 조건을 우선합니다.']
+    if profile.experience_detail and derive_experience_level(profile.experience_detail):
+        rationale.append(f'운동 경험 단계 {EXPERIENCE_LABEL_KO[profile.experience_level]}: 프로필의 운동 기간·주당 횟수 응답으로 정했습니다. 체력 측정 결과가 아닌 자기 보고입니다.')
     if age is not None and age>=65:rationale.append('연령을 고려해 낮은 시작량과 쉬운 동작을 우선했습니다.')
     if weight is not None and muscle is not None:
         rationale.append(f'체중 {weight:g}kg·골격근량 {muscle:g}kg를 함께 고려하여 시작 동작 난이도를 조정했습니다. 중량(kg)은 추정하지 않습니다.')
@@ -144,7 +153,9 @@ def build_deterministic_routine(user_id, measurement, profile, based_on_measurem
         sets = min(previous_sets)
     if logs and sum(w.completed for w in logs)/len(logs)<.5:
         sets=max(1,sets-1);progression='최근 기록의 완료율이 낮아 시작량을 줄였습니다. 미기록 운동은 완료율에 포함하지 않습니다.'
+    hold_volume = False
     if logs and any(w.difficulty == 'hard' or (w.rpe or 0)>=8 for w in logs):
+        hold_volume = True
         sets = max(1, min(sets, min(previous_sets or [sets]) - 1))
         conservative = True
         progression = '최근 어려움 피드백을 반영해 세트 수를 줄이거나 쉬운 동작으로 전환했습니다.'
@@ -159,27 +170,36 @@ def build_deterministic_routine(user_id, measurement, profile, based_on_measurem
             delta = muscle - old.skeletal_muscle_mass
             rationale.append(f'이전 대비 골격근량 {delta:+.2f}kg. 단일 체성분 변화만으로 근력 향상이나 운동 효과를 단정하지 않습니다.')
             if delta / old.skeletal_muscle_mass <= -0.02:
-                muscle_loss = True; conservative = True; sets = 1
+                muscle_loss = True; conservative = True; sets = 1; hold_volume = True
                 progression = '골격근량 감소가 관찰되어 증량을 보류하고 쉬운 동작·낮은 시작량으로 재구성했습니다. 같은 조건에서 재측정하세요.'
         if measurement.body_fat_percentage is not None and old.body_fat_percentage is not None:
             fat_rise = measurement.body_fat_percentage - old.body_fat_percentage >= 1
     fat_focus = profile.goal == Goal.FAT_MANAGEMENT and not underweight and not muscle_loss
     if fat_rise and fat_focus:
         rationale.append('감량 목표와 체지방률 상승을 함께 반영해 가능한 시간 안에서 걷기 비중을 늘렸습니다.')
-    rationale.append(f'주 {profile.days_per_week}회·회당 {profile.minutes_per_session}분, {profile.exercise_location} 환경과 실제 선택한 장비만 사용합니다.')
+    one_day = profile.plan_unit == 'day'
+    days_per_week = 1 if one_day else profile.days_per_week
+    period_text = '하루' if one_day else f'{profile.plan_length}주' if profile.plan_unit == 'week' else f'{profile.plan_length}개월'
+    rationale.append(('하루 1회' if one_day else f'{period_text} 동안 주 {days_per_week}회') + f'·회당 {profile.minutes_per_session}분, {profile.exercise_location} 환경과 실제 선택한 장비만 사용합니다.')
     rationale.append('체성분 차이는 근력 차이의 확정 근거가 아니므로 한쪽만 더 무겁게 훈련하지 않습니다.')
     # Alternate strength/recovery days: same muscle groups are not loaded hard every day.
-    schedule_days = {1:[0], 2:[0,3], 3:[0,2,4], 4:[0,2,4,6], 5:[0,1,2,4,6], 6:[0,1,2,3,4,6], 7:list(range(7))}[profile.days_per_week]
-    strength_indices = {1:[0], 2:[0,1], 3:[0,1,2], 4:[0,1,2], 5:[0,2,3], 6:[0,2,4], 7:[0,2,4]}[profile.days_per_week]
+    schedule_days = {1:[0], 2:[0,3], 3:[0,2,4], 4:[0,2,4,6], 5:[0,1,2,4,6], 6:[0,1,2,3,4,6], 7:list(range(7))}[days_per_week]
+    strength_indices = {1:[0], 2:[0,1], 3:[0,1,2], 4:[0,1,2], 5:[0,2,3], 6:[0,2,4], 7:[0,2,4]}[days_per_week]
     weekdays = ['월','화','수','목','금','토','일']
     patterns = ['squat','push','pull','hinge','core']
     if any('ARM' in s.value for s in weak): patterns = ['push','pull','squat','hinge','core']
     elif Segment.TRUNK in weak: patterns = ['core','hinge','squat','push','pull']
+    focus = set(profile.focus_regions)
+    focus_tier = lambda p: 0 if p in focus else 1
+    if focus:
+        rationale.append('집중 부위: ' + ', '.join(REGION_FOCUS_LABELS[p] for p in patterns if p in focus)
+                         + '. 먼저 배치하고 시간 안에서 1세트를 더합니다. 다른 부위도 시간이 허락하는 만큼 함께 구성합니다.'
+                         + (' 최근 부담·근육량 변화로 이번에는 세트를 더하지 않았습니다.' if hold_volume else ''))
     exercises = []; day_minutes = {}; schedule = []
     for day_idx, calendar_day in enumerate(schedule_days):
         day = day_idx + 1
         strength = day_idx in strength_indices
-        schedule.append(f'Day {day} · {weekdays[calendar_day]} · ' + ('전신 근력' if strength else '가벼운 활동·회복'))
+        schedule.append('오늘 · 전신 근력' if one_day else f'Day {day} · {weekdays[calendar_day]} · ' + ('전신 근력' if strength else '가벼운 활동·회복'))
         budget = min(profile.minutes_per_session, 60)
         warm_cool = 4
         remaining = budget - warm_cool
@@ -189,14 +209,16 @@ def build_deterministic_routine(user_id, measurement, profile, based_on_measurem
         if strength:
             # Rotate which patterns lead short sessions; don't omit the same muscle groups every day.
             rotation = (day_idx * 2) % len(patterns)
-            for pattern in patterns[rotation:] + patterns[:rotation]:
+            # Stable sort keeps the day rotation within each purpose tier.
+            for pattern in sorted(patterns[rotation:] + patterns[:rotation], key=focus_tier):
                 pool = [m for m in candidates if m['pattern'] == pattern]
                 if pool:
                     preference = ' '.join(profile.preferences).lower()
+                    easy = conservative
                     pool.sort(key=lambda m: (not (m['name'].lower() in preference or m['id'] in preference) if preference else False,
-                                             m['easy'] != conservative, not bool(m['equipment']), m['id']))
+                                             m['easy'] != easy, not bool(m['equipment']), m['id']))
                     # Rotate within equally suitable candidates across training days.
-                    rank=lambda m:(m['easy'] != conservative, not bool(m['equipment']))
+                    rank=lambda m:(m['easy'] != easy, not bool(m['equipment']))
                     preferred=[m for m in pool if preference and (m['name'].lower() in preference or m['id'] in preference)]
                     best=preferred or [m for m in pool if rank(m)==rank(pool[0])]
                     pool=[best[day_idx % len(best)]]
@@ -204,10 +226,15 @@ def build_deterministic_routine(user_id, measurement, profile, based_on_measurem
         day_sets = sets
         while day_sets > 1 and day_sets * .7 + (day_sets - 1) + .5 > remaining - cardio_budget:
             day_sets -= 1
-        per_exercise = day_sets * 0.7 + max(0, day_sets - 1) * 1 + 0.5
+        minutes_for = lambda n: n * 0.7 + max(0, n - 1) * 1 + 0.5
         for m in available_patterns:
+            focused_move = m['pattern'] in focus
+            ex_sets = min(2 if conservative else 3, day_sets + 1) if focused_move and not hold_volume else day_sets
+            if remaining - cardio_budget < minutes_for(ex_sets): ex_sets = min(ex_sets, day_sets)
+            per_exercise = minutes_for(ex_sets)
             if remaining - cardio_budget < per_exercise: continue
             reason = '전신 주요 움직임을 균형 있게 구성하고, 사용 가능한 장비와 제약사항을 반영했습니다.'
+            if focused_move: reason += f' {REGION_FOCUS_LABELS[m["pattern"]]}을(를) 집중 부위로 선택해 먼저 배치했습니다.'
             for segment in below:
                 if SEGMENT_LABEL_KO[segment] in m['regions'] or any(t in ' '.join(m['regions']) for t in (['하체','다리','둔근'] if 'LEG' in segment.value else ['상체','팔'] if 'ARM' in segment.value else ['코어','몸통'])):
                     row = reference_rows[segment.value]['lean']
@@ -215,7 +242,7 @@ def build_deterministic_routine(user_id, measurement, profile, based_on_measurem
                     break
             if conservative: reason += ' 체격·경험·측정자료에 맞춰 낮은 시작 부하를 선택했습니다.'
             exercises.append(RoutineExercise(exercise_id=f'd{day}-{m["id"]}', motion_id=m['id'],
-                day_number=day, exercise_name=m['name'], sets=day_sets, reps=m['reps'] if m['dose_type']=='hold' else '8–12회 (좌우 동일)', rest_seconds=60,
+                day_number=day, exercise_name=m['name'], sets=ex_sets, reps=m['reps'] if m['dose_type']=='hold' else '8–12회 (좌우 동일)', rest_seconds=60,
                 equipment=m['equipment'],training_type=m['training_type'],dose_type=m['dose_type'],hold_seconds=m.get('hold_seconds'),
                 instructions=m['instructions'], cautions=m['cautions'], target_regions=m['regions'],
                 intensity='2–3회 더 할 여유를 남기고 중단', estimated_minutes=round(per_exercise,1), reason=reason))
@@ -235,12 +262,19 @@ def build_deterministic_routine(user_id, measurement, profile, based_on_measurem
     if len(covered)<5: notices.append('제약 또는 장비 부족으로 일부 움직임이 제외되었습니다. 전체 근력훈련을 대체하는 완전한 계획은 아닙니다.')
     if profile.training_mode=='equipment': notices.append('선택한 장비를 우선 사용하며, 적합한 장비 운동이 없는 부위는 맨몸 동작으로 보완합니다.')
     if not equipment or profile.training_mode=='bodyweight': notices.append('맨몸 구성에서는 당기기 저항운동이 제한됩니다. 밴드 등 장비 확보 후 다시 생성할 수 있습니다.')
+    weeks = 0 if one_day else profile.plan_length * (4 if profile.plan_unit == 'month' else 1)
+    if weeks > 4:
+        notices.append(f'{period_text} 계획이라도 같은 구성을 계속 고정하지 않습니다. 4주마다 재측정하거나 수행 기록을 남긴 뒤 다시 생성하세요.')
+    if one_day:
+        notices.append('하루 루틴은 한 번 수행하는 구성입니다. 꾸준히 하려면 주 또는 개월 단위로 계획을 만드세요.')
     notices.append('매회 표시된 시간에 준비·정리운동 각 2분이 포함됩니다. 주간 권장 활동량을 충족하지 못할 수 있으므로 여건에 맞춰 점진적으로 활동을 늘리세요.')
     goal_label = {Goal.MUSCLE_GAIN:'근육 증가',Goal.FAT_MANAGEMENT:'체지방 관리',Goal.GENERAL_FITNESS:'전신 체력',Goal.BALANCE:'균형 있는 운동',Goal.GENERAL_HEALTH:'일반 건강관리'}[profile.goal]
     if underweight and profile.goal==Goal.FAT_MANAGEMENT: goal_label='체력 유지·건강 상담 우선'
+    focused = [REGION_FOCUS_LABELS[p] for p in patterns if p in focus]
+    if focused: goal_label += ' · ' + ', '.join(focused) + ' 집중'
     return ExerciseRoutine(id=new_id('ROUTINE'),user_id=user_id,created_at=now(),based_on_measurement_id=based_on_measurement_id or measurement.id,
-        goal=goal_label,summary=(change_note+' ' if change_note else '')+f'{goal_label}을 위한 개인별 시작 계획입니다. {progression}',
-        duration_weeks=4,days_per_week=profile.days_per_week,exercises=exercises,generated_by='deterministic',algorithm_version=VERSION,
+        goal=goal_label,summary=(change_note+' ' if change_note else '')+f'{goal_label}을 위한 {period_text} 개인별 계획입니다. {progression}',
+        duration_weeks=weeks,days_per_week=days_per_week,period_unit=profile.plan_unit,period_length=profile.plan_length,exercises=exercises,generated_by='deterministic',algorithm_version=VERSION,
         rationale=rationale,notices=notices,input_snapshot={'reference_group_id':(reference or {}).get('id'),'reference_metadata':(reference or {}).get('metadata'),'weight_kg':weight,'height_cm':height,'muscle_kg':muscle,
             'adherence':round(len(completed)/len(logs),3) if logs else None,'feedback_ids':feedback_key, 'body_fat_percent':measurement.body_fat_percentage,'bmi':round(bmi,1) if bmi else None,'profile':profile.model_dump(mode='json')},
         day_minutes=day_minutes,progression=progression,sources=SOURCES,schedule=schedule)

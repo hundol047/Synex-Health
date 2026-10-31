@@ -34,8 +34,7 @@ test('finished exercise automatically starts five recovery motions, calculates c
  await page.clock.runFor(100);await expect(recovery.locator('canvas')).toHaveAttribute('data-exercise-rendered',/^recovery_/);
  const first=await recovery.locator('canvas').getAttribute('data-exercise-rendered');expect(first).toMatch(/^recovery_/);
  await recovery.getByRole('button',{name:'이 스트레칭 건너뛰기'}).click();await expect(recovery.locator('canvas')).not.toHaveAttribute('data-exercise-rendered',first);
- await page.getByLabel('계산할 몸무게 (kg)').fill('70');await page.getByLabel('맨몸 스쿼트 실제 운동 분').fill('10');await page.getByRole('button',{name:'실제 시간 확인 · 칼로리 계산'}).click();
- await expect(page.locator('.calorie-total')).toContainText('47');
+ await expect(page.getByText(/칼로리/)).toHaveCount(0);
  await recovery.getByRole('button',{name:'전체 30가지 · 동작 바꾸기'}).click();await expect(recovery.locator('.stretch-choice')).toHaveCount(30);
  await page.screenshot({path:info.outputPath('automatic-recovery-and-calories.png'),fullPage:true});
  const motions=new Set();
@@ -55,5 +54,5 @@ test('finished exercise automatically starts five recovery motions, calculates c
 test('skipping every exercise never starts recovery or adds calories',async({page})=>{
  await page.goto('/health/pose?motion=hammer_curl');await page.getByRole('region',{name:'자동 운동 템포'}).getByRole('button',{name:'이 운동 건너뛰기'}).click();
  await expect(page.getByRole('heading',{name:'오늘의 운동 결과'})).toBeVisible();await expect(page.getByRole('region',{name:'운동 후 스트레칭'}).locator('canvas')).toHaveCount(0);
- await expect(page.getByLabel(/실제 운동 분/)).toHaveValue('0');await expect(page.locator('.calorie-total')).toHaveCount(0);
+ await expect(page.getByLabel(/실제 운동 분/)).toHaveCount(0);
 });

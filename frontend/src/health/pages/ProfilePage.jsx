@@ -1,7 +1,8 @@
 import {LOCAL_ONLY} from '../../shared/lib/localMode.js';
 import {saveProfileChanges} from '../lib/saveProfileChanges.js';
 import {registerDraftNavigation} from '../../shared/lib/draftNavigation.js';
-import {EQUIPMENT_LABELS} from '../lib/exerciseLabels.js';
+import {GOAL_OPTIONS,LOCATION_OPTIONS,EQUIPMENT_OPTIONS,toCsv,fromCsv} from '../lib/exerciseProfileOptions.js';
+import ExperienceDetail from '../components/ExperienceDetail.jsx';
 import { Link } from 'react-router-dom';
 import React, { useEffect, useState, useRef } from 'react';
 import MeasurementEntry from '../components/MeasurementEntry.jsx';
@@ -10,28 +11,6 @@ import { HealthAPI } from '../../shared/lib/api.js';
 import { Card, Skeleton, ErrorState, Disclaimer } from '../../shared/components/ui.jsx';
 import { useApiData } from '../lib/useApiData.js';
 
-const GOAL_OPTIONS = [
-  { value: 'MUSCLE_GAIN', label: '근력/근육량 향상' },
-  { value: 'FAT_MANAGEMENT', label: '체지방 관리' },
-  { value: 'GENERAL_FITNESS', label: '전반적인 체력 향상' },
-  { value: 'BALANCE', label: '좌우 균형 개선' },
-  { value: 'GENERAL_HEALTH', label: '일반 건강 관리' },
-];
-
-const EXPERIENCE_OPTIONS = [
-  { value: 'BEGINNER', label: '초급' },
-  { value: 'INTERMEDIATE', label: '중급' },
-  { value: 'ADVANCED', label: '고급' },
-];
-
-const LOCATION_OPTIONS = [
-  { value: 'gym', label: '헬스장' },
-  { value: 'home', label: '홈트레이닝' },
-  { value: 'outdoor', label: '실외' },
-];
-
-const EQUIPMENT_OPTIONS = Object.entries(EQUIPMENT_LABELS).filter(([value])=>value!=='none').map(([value,label])=>({value,label}));
-
 const SAFETY_FIELDS = [
   { key: 'safety_chest_pain', label: '최근 심한 흉통이 있었나요?' },
   { key: 'safety_fainting', label: '실신한 적이 있나요?' },
@@ -39,13 +18,6 @@ const SAFETY_FIELDS = [
   { key: 'safety_acute_injury', label: '급성 부상이 있나요?' },
   { key: 'safety_medical_restriction', label: '의료진이 운동 제한을 지시했나요?' },
 ];
-
-function toCsv(list) {
-  return (list || []).join(', ');
-}
-function fromCsv(text) {
-  return text.split(',').map((s) => s.trim()).filter(Boolean);
-}
 
 export default function ProfilePage() {
   const [dirty,setDirty]=useState(false),guard=useRef(Symbol());
@@ -100,6 +72,7 @@ export default function ProfilePage() {
       const health=current&&(heightNum!==current.height||gender!==current.gender||(LOCAL_ONLY&&(name!==profile.data?.name||(birthDate||null)!==current.birth_date)))?{height:heightNum,gender,...(LOCAL_ONLY?{name,birth_date:birthDate||null}: {})}:null;
       await saveProfileChanges(HealthAPI,health,{
         experience_level: form.experience_level,
+        experience_detail: form.experience_detail || null,
         goal: form.goal,
         days_per_week: Number(form.days_per_week) || 1,
         minutes_per_session: Number(form.minutes_per_session) || 10,
@@ -165,12 +138,6 @@ export default function ProfilePage() {
             </select>
           </div>
           <div>
-            <label className="field-label" htmlFor="experience-select">운동 경험</label>
-            <select id="experience-select" className="text-input" value={form.experience_level} onChange={(e) => setForm({ ...form, experience_level: e.target.value })}>
-              {EXPERIENCE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-          </div>
-          <div>
             <label className="field-label" htmlFor="days-input">주당 운동 일수</label>
             <input id="days-input" type="number" min={1} max={7} className="text-input" value={form.days_per_week}
               onChange={(e) => setForm({ ...form, days_per_week: e.target.value })} />
@@ -187,6 +154,12 @@ export default function ProfilePage() {
               {LOCATION_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </div>
+        </div>
+
+        <div style={{ marginTop: 14 }}>
+          {/* Select changes inside fire onChangeCapture on the wrapper, which marks the draft dirty. */}
+          <ExperienceDetail detail={form.experience_detail} savedLevel={form.experience_level}
+            onChange={(detail) => setForm({ ...form, experience_detail: detail })} />
         </div>
 
         <div style={{ marginTop: 14 }}>

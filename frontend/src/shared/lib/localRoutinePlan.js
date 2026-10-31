@@ -3,11 +3,13 @@ import {buildTempoPlan,recommendedRest} from '../../health/components/exercise/t
 
 export const LOCAL_ROUTINE_VERSION='device-balanced-v2';
 const patterns=['squat','push','pull','hinge','core'];
+export const REGION_FOCUS_LABELS={squat:'하체 앞쪽(허벅지)',hinge:'엉덩이·허벅지 뒤',push:'가슴·어깨',pull:'등',core:'복부·코어'};
 const preferred=['sit_stand','wall_push','scapular','bridge','dead_bug','walk'];
 const weekdays={1:[1],2:[1,4],3:[1,3,5],4:[1,2,4,6],5:[1,2,3,5,6],6:[1,2,3,4,5,6],7:[1,2,3,4,5,6,7]};
 const strengthSlots={1:[0],2:[0,1],3:[0,1,2],4:[0,2,3],5:[0,2,4],6:[0,2,4],7:[0,2,4]};
 const seconds=exercises=>Math.ceil(buildTempoPlan(exercises).reduce((sum,s)=>sum+s.durationMs,0)/1000);
 export function balancedLocalDays(profile,{gentle=false,cautious=false,fatGoal=false}={}){
+ const focus=new Set(profile.focus_regions||[]),ordered=[...patterns.filter(x=>focus.has(x)),...patterns.filter(x=>!focus.has(x))];
  const allowed=catalog.filter(x=>x.auto_recommend!==false&&x.difficulty!=='advanced'&&x.locations.includes(profile.exercise_location)&&x.equipment.every(k=>profile.available_equipment.includes(k))&&(profile.training_mode!=='bodyweight'||!x.equipment.length));
  const pick=(pattern,variation=0)=>{
   let candidates=allowed.filter(x=>x.pattern===pattern);
@@ -26,13 +28,19 @@ export function balancedLocalDays(profile,{gentle=false,cautious=false,fatGoal=f
   const warmup=budget<=600?60:120,limit=budget-warmup;
   let moves;
   if(strength){
-   moves=patterns.map(pattern=>pick(pattern,variation)).filter(Boolean).map(x=>exercise(x,day));
+   const picked=ordered.map(pattern=>[pattern,pick(pattern,variation)]).filter(([,x])=>x),focused=picked.map(([pattern])=>focus.has(pattern));
+   moves=picked.map(([pattern,x])=>{const move=exercise(x,day),label=REGION_FOCUS_LABELS[pattern];
+    if(focus.has(pattern))move.reason+=` ${label}을(를) 집중 부위로 선택해 먼저 배치했습니다.`;
+    return move;});
    if(moves.length<4)throw Error('현재 장소·장비로 균형 잡힌 루틴을 만들 수 없습니다. 운동 조건을 확인하세요.');
    // All movement patterns get a first set before any exercise gets extra volume.
    const maxSets=cautious?1:profile.experience_level==='BEGINNER'?2:profile.experience_level==='ADVANCED'?4:3;
    if(seconds(moves)>limit){moves=moves.map(x=>({...x,reps:'4',hold_seconds:15}));}
    if(seconds(moves)>limit)throw Error('선택한 시간 안에 기본 동작과 휴식을 담을 수 없습니다. 운동 시간을 늘려 주세요.');
-   for(let round=2;round<=maxSets;round++)for(let i=0;i<moves.length;i++){
+   // Focused patterns get one extra round unless recent strain holds volume.
+   const setCap=i=>focused[i]&&!cautious?maxSets+1:maxSets;
+   for(let round=2;round<=maxSets+1;round++)for(let i=0;i<moves.length;i++){
+    if(round>setCap(i))continue;
     const candidate=moves.map((x,j)=>j===i?{...x,sets:round}:x);
     if(seconds(candidate)<=limit)moves=candidate;
    }

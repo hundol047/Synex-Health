@@ -221,6 +221,28 @@ class ReferenceRange(BaseModel):
 
 
 # --- Exercise profile / routines ----------------------------------------------------------------
+# Product heuristic for choosing a starting difficulty, not a fitness test. Scores 0-3 per item.
+EXPERIENCE_SCORES = {
+    'training_history': {'none': 0, 'lt6m': 1, '6m_2y': 2, 'gt2y': 3},
+    'weekly_sessions': {'0': 0, '1_2': 1, '3_4': 2, '5plus': 3},
+}
+
+
+class ExperienceDetail(BaseModel):
+    training_history: Optional[Literal['none', 'lt6m', '6m_2y', 'gt2y']] = None
+    weekly_sessions: Optional[Literal['0', '1_2', '3_4', '5plus']] = None
+
+
+def derive_experience_level(detail):
+    if detail is None or any(getattr(detail, k) is None for k in EXPERIENCE_SCORES):
+        return None
+    total = sum(EXPERIENCE_SCORES[k][getattr(detail, k)] for k in EXPERIENCE_SCORES)
+    level = 0 if total <= 1 else 1 if total <= 4 else 2
+    # Frequent recent sessions without a training history still start conservatively.
+    level = min(level, {'none': 0, 'lt6m': 1}.get(detail.training_history, 2))
+    return [ExperienceLevel.BEGINNER, ExperienceLevel.INTERMEDIATE, ExperienceLevel.ADVANCED][level]
+
+
 class ExerciseProfile(BaseModel):
     user_id: str
     experience_level: ExperienceLevel = ExperienceLevel.BEGINNER
@@ -232,12 +254,33 @@ class ExerciseProfile(BaseModel):
     available_equipment: list[str] = Field(default_factory=list)
     limitations: list[str] = Field(default_factory=list)
     preferences: list[str] = Field(default_factory=list)
+    # Movement patterns the user wants to emphasise; the rest stay at the balanced default.
+    focus_regions: list[Literal['squat', 'hinge', 'push', 'pull', 'core']] = Field(default_factory=list)
+    # Plan period chosen at routine creation: one day, N weeks or N months.
+    plan_unit: Literal['day', 'week', 'month'] = 'week'
+    plan_length: int = Field(default=4, ge=1, le=12)
+    # Self-reported indicators; when all are answered they decide experience_level.
+    experience_detail: Optional[ExperienceDetail] = None
     # Safety screening (section 21) -- if any is true, routine generation is refused server-side.
     safety_chest_pain: bool = False
     safety_fainting: bool = False
     safety_breathlessness: bool = False
     safety_acute_injury: bool = False
     safety_medical_restriction: bool = False
+
+    @field_validator('focus_regions')
+    @classmethod
+    def _unique_focus(cls, v):
+        return list(dict.fromkeys(v))
+
+    @model_validator(mode='after')
+    def _level_from_detail(self):
+        if self.plan_unit == 'day':
+            self.plan_length = 1
+        derived = derive_experience_level(self.experience_detail)
+        if derived is not None:
+            self.experience_level = derived
+        return self
 
 
 class RoutineExercise(BaseModel):
@@ -270,6 +313,8 @@ class ExerciseRoutine(BaseModel):
     summary: str = ''
     duration_weeks: int = 6
     days_per_week: int = Field(default=3, ge=1, le=7)
+    period_unit: Literal['day', 'week', 'month'] = 'week'
+    period_length: int = 4
     exercises: list[RoutineExercise] = Field(default_factory=list)
     generated_by: str = 'deterministic'  # 'deterministic' | 'llm'
     algorithm_version: str = 'legacy'

@@ -1,7 +1,10 @@
 import ExerciseReplacement from '../components/exercise/ExerciseReplacement.jsx';
 import React, { useState } from 'react';
 import ExerciseCard from '../components/exercise/ExerciseCard.jsx';
+import RoutineConditions from '../components/RoutineConditions.jsx';
+import { periodLabel } from '../lib/exerciseProfileOptions.js';
 import { Link } from 'react-router-dom';
+import { ChevronDown } from 'lucide-react';
 import { HealthAPI } from '../../shared/lib/api.js';
 import { Card, Skeleton, ErrorState, EmptyState, Badge } from '../../shared/components/ui.jsx';
 import { useApiData } from '../lib/useApiData.js';
@@ -17,12 +20,66 @@ function groupByDay(exercises) {
   return [...map.entries()].sort((a, b) => a[0] - b[0]);
 }
 
+function DayCard({ latest, day, exs, onReplaced }) {
+  return (
+    <Card title={`${day}일차 · ${exs.length}개 운동`} action={latest.day_minutes?.[String(day)] != null ? <Badge>약 {latest.day_minutes[String(day)]}분</Badge> : null}>
+      {latest.day_timing?.[day]&&<div className="plan-stats" aria-label={`${day}일차 시간 구성`}><div className="plan-stat"><span>직접 준비운동</span><strong>{latest.day_timing[day].warmup_seconds}초</strong></div><div className="plan-stat"><span>실제 운동</span><strong>{Math.round(latest.day_timing[day].work_seconds/6)/10}분</strong></div><div className="plan-stat"><span>휴식·동작 전환</span><strong>{latest.day_timing[day].rest_seconds}초</strong></div></div>}
+      <p className="muted">{latest.schedule?.[day-1] || '작은 시범으로 동작을 확인하고 자세히 보기를 눌러 확대하세요.'}</p>
+      {latest.day_timing?.[day]&&<p className="muted">시작 전 가벼운 걷기·제자리걷기로 준비하세요. 예상 시간은 기본 시범 속도 기준이며, 운동 후 자동 추천 스트레칭은 별도입니다. 몸 상태에 따라 쉬는 시간을 늘리거나 중단할 수 있습니다.</p>}
+      {!latest.needs_review&&<Link className="btn btn-primary" to={`/health/workout?mode=tempo&day=${day}&routine=${encodeURIComponent(latest.id)}`}>{day}일차 루틴 시작</Link>}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {exs.map((ex,i)=><ExerciseCard key={`${latest.id}-${ex.exercise_id||i}`} exercise={ex}><ExerciseReplacement routine={latest} exercise={ex} onReplaced={onReplaced}/></ExerciseCard>)}
+      </div>
+    </Card>
+  );
+}
+
+function PeriodGroup({ title, badge, defaultOpen, children }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <section className="period-group">
+      <button type="button" className="period-group-head" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+        <strong>{title}</strong>{badge && <Badge>{badge}</Badge>}<ChevronDown size={18} className="period-group-chevron" />
+      </button>
+      {/* Closed groups render nothing, so long plans do not mount every exercise preview. */}
+      {open && <div className="period-group-body">{children}</div>}
+    </section>
+  );
+}
+
+// The routine is one weekly template; it repeats for every week of the chosen period.
+function RoutinePeriods({ routine, days, renderDay }) {
+  if (routine.period_unit === 'day') return days.map(([day, exs]) => renderDay(day, exs));
+  const months = routine.period_unit === 'month' ? routine.period_length : null;
+  const totalWeeks = months ? months * 4 : routine.period_length || routine.duration_weeks || 1;
+  const elapsed = Math.floor((Date.now() - Date.parse(routine.created_at)) / (7 * 86400000));
+  const current = Number.isFinite(elapsed) ? Math.min(Math.max(elapsed, 0), totalWeeks - 1) + 1 : 1;
+  const week = (w) => (
+    <PeriodGroup key={w} title={`${w}주차`} badge={w === current ? '이번 주' : null} defaultOpen={w === current}>
+      {days.map(([day, exs]) => renderDay(day, exs))}
+    </PeriodGroup>
+  );
+  const range = (from, to) => Array.from({ length: to - from + 1 }, (_, i) => from + i);
+  if (!months) return range(1, totalWeeks).map(week);
+  return range(1, months).map((m) => {
+    const weeks = range((m - 1) * 4 + 1, m * 4);
+    return (
+      <PeriodGroup key={`m${m}`} title={`${m}개월차`} badge={weeks.includes(current) ? '진행 중' : null} defaultOpen={weeks.includes(current)}>
+        {weeks.map(week)}
+      </PeriodGroup>
+    );
+  });
+}
+
 export default function RoutinePage() {
   const history = useApiData(() => HealthAPI.adaptiveHistory(), []);
   const routines = useApiData(() => HealthAPI.listRoutines(), []);
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState(null);
   const [safetyBlocked, setSafetyBlocked] = useState(false);
+  // Every generation first re-checks the profile's goal/environment and per-region purposes.
+  const [checking, setChecking] = useState(false);
+  const openCheck = () => { setGenError(null); setSafetyBlocked(false); setChecking(true); };
 
   async function generate() {
     setGenerating(true);
@@ -30,14 +87,17 @@ export default function RoutinePage() {
     setSafetyBlocked(false);
     try {
       await HealthAPI.generateRoutine();
+      setChecking(false);
       await routines.reload();
       await history.reload();
     } catch (error) {
       if (error.status === 409 || error.message === SAFETY_MESSAGE) {
         setSafetyBlocked(true);
         setGenError(error);
+        setChecking(false);
       } else {
         setGenError(error);
+        if (error.status === 422) setChecking(false);
       }
     } finally {
       setGenerating(false);
@@ -53,6 +113,7 @@ export default function RoutinePage() {
   return (
     <>
       <Link className="btn btn-secondary" to="/health/library">맨몸·헬스장 운동 찾아보기</Link>
+      {checking && <RoutineConditions onConfirm={generate} onCancel={() => setChecking(false)} busy={generating} />}
       {safetyBlocked && (
         <Card>
           <div className="error-state">
@@ -74,14 +135,14 @@ export default function RoutinePage() {
         </Card>
       )}
 
-      {genError && !safetyBlocked && genError.status !== 422 && <ErrorState message={genError.message} onRetry={generate} />}
+      {genError && !safetyBlocked && genError.status !== 422 && <ErrorState message={genError.message} onRetry={openCheck} />}
 
-      {!latest && !safetyBlocked && !genError && (
+      {!latest && !safetyBlocked && !genError && !checking && (
         <Card>
           <EmptyState
             title="아직 생성된 루틴이 없어요"
             description="최신 체성분·운동환경·수행 피드백에 맞춰 동작 안내가 있는 루틴을 만듭니다."
-            action={<button className="btn btn-primary" onClick={generate} disabled={generating}>{generating ? '생성 중...' : '내 운동 계획 만들기'}</button>}
+            action={<button className="btn btn-primary" onClick={openCheck}>내 운동 계획 만들기</button>}
           />
         </Card>
       )}
@@ -89,7 +150,7 @@ export default function RoutinePage() {
       {latest && !safetyBlocked && (
         <Card
           title={latest.goal || '맞춤 운동 루틴'}
-          action={<button className="btn btn-secondary" onClick={generate} disabled={generating}>{generating ? '생성 중...' : '루틴 재생성'}</button>}
+          action={<button className="btn btn-secondary" onClick={openCheck}>루틴 재생성</button>}
         >
           {latest.needs_review && <p role="alert" className="motion-cautions">{latest.review_reason}</p>}
           <p className="muted">{latest.summary}</p>
@@ -106,24 +167,15 @@ export default function RoutinePage() {
           </details>
           <p className="muted" style={{fontSize:'.76rem',marginTop:12}}>검토 가능한 규칙 기반 맞춤 추천 · 새 측정값을 등록하면 기존 루틴을 자동 재검토합니다.</p>
           <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-            <Badge>{latest.duration_weeks}주 프로그램</Badge>
-            <Badge tone="blue">주 {latest.days_per_week}회</Badge>
+            <Badge>{periodLabel(latest)}</Badge>
+            {latest.period_unit !== 'day' && <Badge tone="blue">주 {latest.days_per_week}회</Badge>}
           </div>
         </Card>
       )}
 
 
-      {!safetyBlocked && days.map(([day, exs]) => (
-        <Card key={day} title={`${day}일차 · ${exs.length}개 운동`} action={latest.day_minutes?.[String(day)] != null ? <Badge>약 {latest.day_minutes[String(day)]}분</Badge> : null}>
-          {latest.day_timing?.[day]&&<div className="plan-stats" aria-label={`${day}일차 시간 구성`}><div className="plan-stat"><span>직접 준비운동</span><strong>{latest.day_timing[day].warmup_seconds}초</strong></div><div className="plan-stat"><span>실제 운동</span><strong>{Math.round(latest.day_timing[day].work_seconds/6)/10}분</strong></div><div className="plan-stat"><span>휴식·동작 전환</span><strong>{latest.day_timing[day].rest_seconds}초</strong></div></div>}
-          <p className="muted">{latest.schedule?.[day-1] || '작은 시범으로 동작을 확인하고 자세히 보기를 눌러 확대하세요.'}</p>
-          {latest.day_timing?.[day]&&<p className="muted">시작 전 가벼운 걷기·제자리걷기로 준비하세요. 예상 시간은 기본 시범 속도 기준이며, 운동 후 자동 추천 스트레칭은 별도입니다. 몸 상태에 따라 쉬는 시간을 늘리거나 중단할 수 있습니다.</p>}
-          {!latest.needs_review&&<Link className="btn btn-primary" to={`/health/workout?mode=tempo&day=${day}&routine=${encodeURIComponent(latest.id)}`}>{day}일차 루틴 시작</Link>}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {exs.map((ex,i)=><ExerciseCard key={`${latest.id}-${ex.exercise_id||i}`} exercise={ex}><ExerciseReplacement routine={latest} exercise={ex} onReplaced={()=>Promise.all([routines.reload(),history.reload()])}/></ExerciseCard>)}
-          </div>
-        </Card>
-      ))}
+      {!safetyBlocked && latest && <RoutinePeriods routine={latest} days={days}
+        renderDay={(day, exs) => <DayCard key={day} latest={latest} day={day} exs={exs} onReplaced={() => Promise.all([routines.reload(), history.reload()])} />} />}
       <Card title="운동 계획 변경 이력">{history.error?<ErrorState message={history.error.message} onRetry={history.reload}/>:history.loading?<Skeleton/>:!(history.data||[]).length?<p className="muted">루틴을 생성하면 변경 이유가 여기에 기록됩니다.</p>:(history.data||[]).map(h=><details key={h.id}><summary>{h.date.slice(0,10)} · {h.new_routine.goal}</summary><p>{h.reason}</p><p>이전: {h.old_routine?.goal||'첫 계획'} → 현재: {h.new_routine.goal}</p><p>기록된 완료 비율: {h.workout_adherence==null?'자료 없음':`${Math.round(h.workout_adherence*100)}%`}</p></details>)}</Card>
     </>
   );

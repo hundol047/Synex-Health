@@ -79,7 +79,7 @@ export default function ExerciseMotion({ exercise, measurement, profile, autoPla
     document.addEventListener('visibilitychange', hide);
     return () => { cancelAnimationFrame(frame); document.removeEventListener('visibilitychange', hide); };
   }, [playing, speed, motion, loop, guide?.durationMs, !!playback, dimension, sceneReady]);
-  if(standaloneSession&&externalPlayback===undefined&&tempo.state.status==='complete')return <div className="exercise-motion-results"><TempoControls session={tempo} exercises={tempoExercises} disabled={paused}/><WorkoutResults exercises={tempoExercises} measurement={measurement} skipped={tempo.state.skipped} workMs={tempo.state.workMs}/></div>;
+  if(standaloneSession&&externalPlayback===undefined&&tempo.state.status==='complete')return <div className="exercise-motion-results"><TempoControls session={tempo} exercises={tempoExercises} disabled={paused}/><WorkoutResults exercises={tempoExercises} skipped={tempo.state.skipped}/></div>;
   if (!motion) return <p className="muted">이전 버전 운동입니다. 루틴을 다시 생성하면 동작 안내를 볼 수 있습니다.</p>;
   const setPhase = value => { setPlaying(false); phase.current = value; setProgress(value); };
   const playPause = () => { if (!playing && phase.current >= 1) { phase.current = 0; setProgress(0); } setPlaying(p => !p); };

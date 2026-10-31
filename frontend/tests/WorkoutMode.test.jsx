@@ -32,5 +32,5 @@ it('skips each exercise without saving completion or losing access to the final 
  expect(screen.getAllByRole('button',{name:'이 운동 건너뛰기'})).toHaveLength(1);
  await user.type(screen.getByLabelText('이번 세트 반복 횟수'),'5');await user.click(screen.getByRole('button',{name:'이 운동 건너뛰기'}));
  expect(await screen.findByText('운동 따라하기 · 2 / 2')).toBeTruthy();await user.click(screen.getByRole('button',{name:'이 운동 건너뛰기'}));
- expect(await screen.findByText('오늘의 운동 결과')).toBeTruthy();expect(HealthAPI.createWorkout).not.toHaveBeenCalled();expect(screen.getByLabelText('운동 1 실제 운동 분').value).toBe('0');expect(screen.getByLabelText('운동 2 실제 운동 분').value).toBe('0');expect(screen.queryByText('자동 진행 중')).toBeNull();
+ expect(await screen.findByText('오늘의 운동 결과')).toBeTruthy();expect(HealthAPI.createWorkout).not.toHaveBeenCalled();expect(screen.queryByText('자동 진행 중')).toBeNull();
 });

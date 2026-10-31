@@ -20,7 +20,9 @@ export default function StretchRecovery({exercises=[],pain=false,autoStart=true}
  useEffect(()=>{
   if(!running||!selected)return;
   let last=performance.now();
-  const tick=setInterval(()=>{const now=performance.now(),delta=(now-last)/1000;last=now;if(document.hidden||delta>1.5){setRunning(false);return;}setElapsed(old=>Math.min(duration,old+delta));},1000/30);
+  // Loading the next stretch's 3D model can stall a frame; skip that gap instead of pausing,
+  // so the sequence keeps advancing. Leaving the screen still pauses.
+  const tick=setInterval(()=>{const now=performance.now(),delta=(now-last)/1000;last=now;if(document.hidden){setRunning(false);return;}if(delta>1.5)return;setElapsed(old=>Math.min(duration,old+delta));},1000/30);
   const hide=()=>{if(document.hidden)setRunning(false);};document.addEventListener('visibilitychange',hide);
   return()=>{clearInterval(tick);document.removeEventListener('visibilitychange',hide);};
  },[running,selected,duration]);
@@ -37,7 +39,8 @@ export default function StretchRecovery({exercises=[],pain=false,autoStart=true}
  },[voice,running,selected,index,preparing,side,seconds]);
  useEffect(()=>()=>stopWorkoutSpeech('recovery'),[]);
  const shown=all?STRETCHES.filter(s=>region==='전체'||s.regions.includes(region)):recommended;
- function choose(s){setQueue([s]);setIndex(0);setElapsed(0);setPreparing(true);setRunning(!pain);}
+ // Picking from the full list continues through the rest of that list automatically.
+ function choose(s){const list=shown.slice(shown.indexOf(s));setQueue(list);setIndex(0);setElapsed(0);setPreparing(true);setRunning(!pain);}
  function skip(){setIndex(i=>i+1);setElapsed(0);setPreparing(true);if(index+1>=queue.length)setRunning(false);}
  function restart(){setQueue(recommended);setIndex(0);setElapsed(0);setPreparing(true);setRunning(!pain);}
  return <section className="stretch-recovery" aria-label="운동 후 스트레칭">
@@ -52,7 +55,7 @@ export default function StretchRecovery({exercises=[],pain=false,autoStart=true}
    <ExerciseMotion3D key={selected.id} motion={selected.motion_id} progress={progress} mirror={!!side} defaultView={FLOOR_STRETCHES.has(selected.motion_id)||selected.id==='triceps'?'45':'front'} fallbackContent={<StretchDiagram motion={selected.motion_id} progress={progress} mirror={!!side}/>}/>
    <div className="stretch-clock" role="timer" aria-label="스트레칭 남은 시간"><strong>{Math.ceil(Math.max(0,duration-elapsed))}초</strong><span>{!preparing&&selected.bilateral?(side?'반대쪽 · ':'첫 번째 쪽 · '):''}{phase}</span></div>
    <p>{selected.cue}</p><p className="stretch-caution">{selected.caution}</p>
-   <p className="muted">다음: {queue[index+1]?.name||'마무리'} · 동작 사이 5초 준비. 화면을 벗어나면 멈추며, 이 시간은 운동 칼로리에 자동 추가되지 않습니다.</p>
+   <p className="muted">다음: {queue[index+1]?.name||'마무리'} · 동작 사이 5초 준비. 한 동작이 끝나면 다음 동작으로 자동으로 넘어가며, 화면을 벗어나면 멈춥니다.</p>
   </article>}
   <div className="recovery-tabs"><button type="button" className="btn btn-secondary" aria-pressed={!all} onClick={()=>setAll(false)}>추천 순서 보기</button><button type="button" className="btn btn-secondary" aria-pressed={all} onClick={()=>setAll(true)}>전체 30가지 · 동작 바꾸기</button></div>
   {all&&<label>늘릴 부위<select value={region} onChange={e=>setRegion(e.target.value)}>{['전체',...new Set(STRETCHES.flatMap(s=>s.regions))].map(r=><option key={r}>{r}</option>)}</select></label>}

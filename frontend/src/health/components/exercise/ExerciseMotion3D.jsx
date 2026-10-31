@@ -5,6 +5,7 @@ import React, { useMemo, useEffect, useRef, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, ContactShadows, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
+import { RotateCcw, RotateCw } from 'lucide-react';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import maleFaceAtlas from '../character/assets/male-face.webp';
 import femaleFaceAtlas from '../character/assets/female-face.webp';
@@ -33,6 +34,15 @@ const ORIGINAL_MOTIONS = new Set(['squat', 'lunge', 'side_lunge', 'full_pushup',
 export { exerciseCameraPreset } from './exerciseCamera.js';
 
 export {exerciseShoeFloor,heelContactHeights} from './athleteModel.js';
+
+// Orbit the camera around the current target by 45° steps; drag rotation stays available.
+function rotateView(controls, direction) {
+  const orbit = controls.current;
+  if (!orbit) return;
+  const offset = orbit.object.position.clone().sub(orbit.target).applyAxisAngle(new THREE.Vector3(0, 1, 0), direction * Math.PI / 4);
+  orbit.object.position.copy(orbit.target).add(offset);
+  orbit.update();
+}
 
 function SceneCamera({ motion, view, mirror, heightScale, controls, faceFocus }) {
   const { camera, size, invalidate } = useThree();
@@ -207,7 +217,7 @@ class SceneBoundary extends React.Component {
   render() { return this.state.failed ? this.props.fallback : this.props.children; }
 }
 
-export default function ExerciseMotion3D({ motion, progress, mirror, measurement, profile, compact = false, defaultView, fallbackContent, onReady, character: overrideCharacter, highlight=true, faceFocus=false }) {
+export default function ExerciseMotion3D({ motion, progress, mirror, measurement, profile, compact = false, defaultView, fallbackContent, onReady, character: overrideCharacter, highlight=true, faceFocus=false, angleControls=false }) {
   const controls = useRef();
   const savedCharacter = useCharacter();
   const character = overrideCharacter || savedCharacter;
@@ -227,12 +237,16 @@ export default function ExerciseMotion3D({ motion, progress, mirror, measurement
       <button type="button" aria-pressed={appearance === 'mannequin'} onClick={() => setAppearance('mannequin')}>부위 강조 인체</button>
       <button type="button" aria-pressed={appearance === 'athlete'} onClick={() => setAppearance('athlete')}>운동복 인체</button>
     </div>}
-    <div className="motion-controls motion-view-controls">{compact ? <select aria-label="운동 시범 방향" value={view} onChange={event => setView(event.target.value)}><option value="front">정면</option><option value="45">45°</option><option value="side">측면</option></select> : [['front', '정면'], ['45', '45°'], ['side', '측면'], ['back', '후면'], ['free', '자유']].map(([id, label]) => <button key={id} type="button" className="btn btn-ghost" aria-label={`${label} 운동 시범 보기`} aria-pressed={view === id} onClick={() => setView(id)}>{label}</button>)}</div>
+    {angleControls ? <div className="motion-controls motion-view-controls">{compact ? <select aria-label="운동 시범 방향" value={view} onChange={event => setView(event.target.value)}><option value="front">정면</option><option value="45">45°</option><option value="side">측면</option></select> : [['front', '정면'], ['45', '45°'], ['side', '측면'], ['back', '후면'], ['free', '자유']].map(([id, label]) => <button key={id} type="button" className="btn btn-ghost" aria-label={`${label} 운동 시범 보기`} aria-pressed={view === id} onClick={() => setView(id)}>{label}</button>)}</div>
+    : <div className="motion-controls motion-view-controls" role="group" aria-label="시범 회전">
+      <button type="button" className="btn btn-ghost" aria-label="왼쪽으로 회전" onClick={() => rotateView(controls, -1)}><RotateCcw size={16}/> 회전</button>
+      <button type="button" className="btn btn-ghost" aria-label="오른쪽으로 회전" onClick={() => rotateView(controls, 1)}>회전 <RotateCw size={16}/></button>
+    </div>}
     <div className="motion-3d-canvas" style={{ position: 'relative', height: compact ? undefined : 340, flex: compact ? '1 1 0' : undefined, minHeight: compact ? 0 : undefined, touchAction: 'none' }}>
       <SceneBoundary motion={motion} fallback={fallback}><React.Suspense fallback={<p className="motion-loading" role="status">캐릭터를 준비하고 있습니다.</p>}><Canvas shadows={!compact} dpr={[1, compact ? 1.5 : 2]} frameloop="demand" gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }} camera={{ position: [3, 1.5, 3], fov: 36 }} fallback={fallback} aria-label={appearance === 'mannequin' ? '운동 부위를 강조한 3D 운동 시범' : '운동복을 입은 3D 운동 시범'}>
         <SceneCamera motion={motion} view={view} mirror={mirror} heightScale={heightScale} controls={controls} faceFocus={faceFocus}/><Studio compact={compact} heightScale={heightScale} motion={motion} portrait={faceFocus}/>
         <Athlete {...{ motion, progress, mirror, compact, appearance, onReady, character, highlight }} measurement={m} profile={p}/>
-        <OrbitControls ref={controls} enabled={view === 'free'} enablePan={false} minDistance={(faceFocus ? .38 : 1.2) * heightScale} maxDistance={(faceFocus ? .95 : 6) * heightScale} maxPolarAngle={Math.PI / 2 - .02}/>
+        <OrbitControls ref={controls} enabled={view === 'free' || !angleControls} enablePan={false} minDistance={(faceFocus ? .38 : 1.2) * heightScale} maxDistance={(faceFocus ? .95 : 6) * heightScale} maxPolarAngle={Math.PI / 2 - .02}/>
       </Canvas></React.Suspense></SceneBoundary>
       {compact && highlight && anatomy.primary.length > 0 && <span className="motion-anatomy-badge" title={`주요 부위: ${anatomy.primaryLabel}. 운동 안내이며 실제 근육 사용량 측정이 아닙니다.`}>빨강 · 주요 운동 부위</span>}
     </div>
@@ -241,6 +255,6 @@ export default function ExerciseMotion3D({ motion, progress, mirror, measurement
       {!compact && anatomy.secondary.length > 0 && <span><i className="secondary"/>보조 부위 · {anatomy.secondaryLabel}</span>}
       <small>{anatomy.primary.length ? '색상은 운동 부위 안내이며 실제 근육 사용량 측정이 아닙니다.' : '이 동작은 특정 근육 색상 없이 전신 움직임을 안내합니다.'}</small>
     </div>}
-    {!compact && <p className="muted">{measurement ? '나의 체형' : '표준 시범 체형'} · 자유 방향에서 드래그로 돌려 보세요.</p>}
+    {!compact && <p className="muted">{measurement ? '나의 체형' : '표준 시범 체형'} · {angleControls ? '자유 방향에서 드래그로 돌려 보세요.' : '드래그하거나 회전 버튼으로 돌려 보세요.'}</p>}
   </>;
 }

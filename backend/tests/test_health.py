@@ -292,6 +292,66 @@ def test_weight_and_muscle_change_plan():
     assert [(e.motion_id,e.sets) for e in normal.exercises] != [(e.motion_id,e.sets) for e in lower_support.exercises]
 
 
+def test_focus_regions_lead_and_get_one_more_set():
+    from app.health.schemas import BodyCompositionMeasurement,ExerciseProfile
+    from app.health.exercise_engine import build_deterministic_routine, CATALOG
+    m=BodyCompositionMeasurement(id='a',user_id='u',measurement_date='2026-01-01',height=175,weight=70,skeletal_muscle_mass=32)
+    base=dict(user_id='u',experience_level='INTERMEDIATE',minutes_per_session=60,days_per_week=3)
+    plain=build_deterministic_routine('u',m,ExerciseProfile(**base))
+    focused=build_deterministic_routine('u',m,ExerciseProfile(**base,focus_regions=['hinge']))
+    pattern={c['id']:c['pattern'] for c in CATALOG}
+    plain_sets={(e.day_number,pattern[e.motion_id]):e.sets for e in plain.exercises if pattern[e.motion_id]!='cardio'}
+    for day in {e.day_number for e in focused.exercises}:
+        strength=[e for e in focused.exercises if e.day_number==day and pattern[e.motion_id]!='cardio']
+        if not strength: continue
+        assert pattern[strength[0].motion_id]=='hinge'
+        for e in strength:
+            expected=plain_sets[(day,pattern[e.motion_id])]
+            assert e.sets==(min(3,expected+1) if pattern[e.motion_id]=='hinge' else expected)
+    assert '엉덩이·허벅지 뒤 집중' in focused.goal
+
+
+def test_focus_regions_unlimited():
+    from app.health.schemas import ExerciseProfile
+    assert ExerciseProfile(user_id='u',focus_regions=['squat','push','core','pull','hinge']).focus_regions==['squat','push','core','pull','hinge']
+
+
+def test_experience_level_derived_from_detail():
+    from app.health.schemas import ExerciseProfile
+    level=lambda h,w: ExerciseProfile(user_id='u',experience_detail={'training_history':h,'weekly_sessions':w}).experience_level
+    assert level('gt2y','3_4')=='ADVANCED'
+    assert level('6m_2y','3_4')=='INTERMEDIATE'
+    assert level('lt6m','0')=='BEGINNER'
+    # Frequent sessions without a training history stay capped.
+    assert level('none','5plus')=='BEGINNER'
+    assert level('lt6m','5plus')=='INTERMEDIATE'
+    # Incomplete answers keep the manually chosen level.
+    assert ExerciseProfile(user_id='u',experience_level='ADVANCED',experience_detail={'weekly_sessions':'0'}).experience_level=='ADVANCED'
+
+
+def test_plan_period_units():
+    from app.health.schemas import BodyCompositionMeasurement,ExerciseProfile
+    from app.health.exercise_engine import build_deterministic_routine
+    m=BodyCompositionMeasurement(id='a',user_id='u',measurement_date='2026-01-01',height=175,weight=70,skeletal_muscle_mass=32)
+    day=build_deterministic_routine('u',m,ExerciseProfile(user_id='u',days_per_week=4,plan_unit='day',plan_length=9))
+    assert (day.period_unit,day.period_length,day.days_per_week,day.duration_weeks)==('day',1,1,0)
+    assert {e.day_number for e in day.exercises}=={1}
+    month=build_deterministic_routine('u',m,ExerciseProfile(user_id='u',days_per_week=3,plan_unit='month',plan_length=3))
+    assert (month.period_unit,month.period_length,month.duration_weeks)==('month',3,12)
+    assert any('4주마다' in n for n in month.notices)
+    week=build_deterministic_routine('u',m,ExerciseProfile(user_id='u',plan_unit='week',plan_length=2))
+    assert week.duration_weeks==2 and '2주' in week.summary
+
+
+def test_older_routine_snapshot_without_new_fields_is_not_stale(client):
+    client.put('/api/exercise-profile',json={'days_per_week':3})
+    client.post('/api/exercise-routines/generate')
+    assert client.get('/api/exercise-routines').json()[0]['needs_review'] is False
+    client.put('/api/exercise-profile',json={'focus_regions':['core']})
+    assert client.get('/api/exercise-routines').json()[0]['needs_review'] is True
+    assert client.put('/api/exercise-profile',json={'plan_length':13}).status_code==422
+
+
 def test_unknown_condition_blocks(client):
     client.put('/api/exercise-profile',json={'limitations':['심장질환']})
     assert client.post('/api/exercise-routines/generate').status_code==409

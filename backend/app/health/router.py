@@ -307,8 +307,14 @@ def update_exercise_profile(patch: dict, user: User = Depends(require('routine:w
     try:
         updated = ExerciseProfile(**merged)
     except ValidationError:
-        raise HTTPException(422, '운동 일수는 1–7일, 시간은 10–180분으로 입력하고 운동환경을 확인하세요.')
+        raise HTTPException(422, '운동 일수는 1–7일, 시간은 10–180분으로 입력하고 운동환경·루틴 기간(1–12)·운동 경험 항목을 확인하세요.')
     return store.upsert_profile(updated)
+
+
+def _profile_conditions(snapshot):
+    # Routines saved before these fields existed had no focus and no detailed experience answers.
+    return {**snapshot, 'focus_regions': snapshot.get('focus_regions') or [], 'experience_detail': snapshot.get('experience_detail'),
+            'plan_unit': snapshot.get('plan_unit', 'week'), 'plan_length': snapshot.get('plan_length', 4)}
 
 
 @router.get('/exercise-routines')
@@ -321,7 +327,7 @@ def list_exercise_routines(user: User = Depends(require('routine:read'))):
         reason = None
         if measurement and routine.based_on_measurement_id != measurement.id:
             reason = '새 측정값이 등록되었습니다. 운동 계획을 다시 생성하세요.'
-        elif profile and routine.input_snapshot.get('profile') and routine.input_snapshot['profile'] != profile.model_dump(mode='json'):
+        elif profile and routine.input_snapshot.get('profile') and _profile_conditions(routine.input_snapshot['profile']) != _profile_conditions(profile.model_dump(mode='json')):
             reason = '운동 프로필이 변경되었습니다. 변경된 조건으로 계획을 다시 생성하세요.'
         elif measurement and routine.input_snapshot.get('reference_group_id') != _average_for(_require_user_record(user.id), measurement)['selected_group_id']:
             reason = '비교군 기준이 변경되었습니다. 같은 기준으로 운동 이유를 보려면 계획을 다시 생성하세요.'

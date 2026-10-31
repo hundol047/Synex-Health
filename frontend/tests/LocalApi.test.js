@@ -66,3 +66,17 @@ it('requires regenerating legacy routines without losing health or workout recor
  expect(next).toMatchObject({algorithm_version:'device-balanced-v2',needs_review:false});
  expect((await localApi('/api/body-composition/latest')).weight).toBe(60);
 });
+it('builds one-day and multi-month plans and derives experience from the profile answers',async()=>{
+ await localApi('/api/body-composition',measurement);
+ const saved=await localApi('/api/exercise-profile',{experience_detail:{training_history:'gt2y',weekly_sessions:'5plus'},plan_unit:'day',plan_length:6,days_per_week:4},{method:'PUT'});
+ expect(saved.experience_level).toBe('ADVANCED');expect(saved.plan_length).toBe(1);
+ const day=await localApi('/api/exercise-routines/generate',{});
+ expect([day.period_unit,day.days_per_week,day.duration_weeks]).toEqual(['day',1,0]);
+ expect(new Set(day.exercises.map(e=>e.day_number))).toEqual(new Set([1]));
+ await localApi('/api/exercise-profile',{plan_unit:'month',plan_length:3},{method:'PUT'});
+ const months=await localApi('/api/exercise-routines/generate',{});
+ expect([months.period_unit,months.period_length,months.duration_weeks]).toEqual(['month',3,12]);
+ expect(months.notices.some(n=>n.includes('4주마다'))).toBe(true);
+ await expect(localApi('/api/exercise-profile',{plan_length:13},{method:'PUT'})).rejects.toThrow('루틴 기간');
+ await expect(localApi('/api/exercise-profile',{experience_detail:{pushups:'lt5'}},{method:'PUT'})).rejects.toThrow('운동 경험');
+});
