@@ -523,3 +523,40 @@ shader errors were reported. Actual male/female portraits and squat previews
 were inspected. This is browser/geometry evidence, not a physical-phone latency
 measurement or a claim of photorealistic likeness. No APK is published by this
 source-code update.
+
+## Studio reference presets on the latest pushed branch (2026-10-31)
+
+This update starts from `feat/routine-conditions-period` at `bb58fb9`, the most
+recent GitHub push when work began. It preserves the routine condition/period
+UI, corrected joint motions, regenerated exercise thumbnails and tiered render
+pipeline. Main's `4cffc75` character improvements were merged before this work.
+
+The character editor now offers **여성 · 포니테일** and **남성 · 내추럴 쇼트**
+under **스튜디오 캐릭터**. Each applies a coherent adult face, brown irises,
+dark hair, a blue athletic top and navy leggings/joggers. Applying a preset is a
+preview; the existing save button applies it to exercise demonstrations.
+Existing saved preferences are not reset, and health measurements are untouched.
+Face shape, eye size, skin/hair/eye colors, proportions and clothes remain editable.
+
+The new `studio` head profile is constructed before fitting facial details, with
+an eye-aligned blend and a smooth neck transition. It preserves body topology
+and the exercise rig. Eyelid/blink geometry, brows and lashes fit this head.
+The ponytail uses licensed textured hair cards, one subdivision and a fitted
+scalp underlay. Crown roots stay anchored; the free ends follow exercise phase.
+Its rear volume includes clearance for the animated displacement during wall
+exercises. The obsolete procedural hair-tie ring is suppressed for this asset.
+
+The photographic reference is a design concept. This implementation is a
+real-time generic 3D character; it is not a scan, a celebrity likeness, or proof
+of photographic equivalence. Browser screenshots are actual app renders.
+
+Validation for this update: 65 focused unit/geometry checks passed across 14
+files, including open/closed eyelids at all three eye sizes, local head changes,
+settings persistence, existing hairstyle/shape compatibility, animated hair and
+clothing clearance against walls, and the newest elbow/ankle/seam/render-tier
+checks. Two Chromium/SwiftShader flows passed for female and male presets:
+apply, render, save, reload, blink and side-view wall push-up, with no page or
+shader errors or horizontal mobile overflow. The personal production web build
+passed. An initial animated ponytail check found about 0.6 mm of wall overlap;
+rear fitting was corrected before the passing run. These are software-rendered
+browser checks, not a physical-phone performance or perceptual-realism rating.

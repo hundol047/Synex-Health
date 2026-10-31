@@ -152,7 +152,7 @@ export function exerciseMaterials(character,faceAtlas=null) {
       shader.uniforms.characterLipStrength={value:faceAtlas&&character.style!=='toon'?(character.face==='refined'?.32:.06):.55};
       shader.uniforms.characterFaceAtlas={value:faceAtlas};
       shader.uniforms.characterFaceReference={value:new THREE.Color(faceAtlasData.reference[character.body]||faceAtlasData.reference.male)};
-      shader.uniforms.characterFaceContrast={value:character.body==='female'&&character.face==='refined'?.82:1};
+      shader.uniforms.characterFaceContrast={value:character.body==='female'&&['refined','studio'].includes(character.face)?.82:1};
       shader.uniforms.characterBrow={value:new THREE.Color(character.hair)};
       shader.uniforms.characterSmile={value:character.face==='refined'?(character.body==='female'?.0010:.0014):0};
       shader.uniforms.characterTop={value:new THREE.Color(character.top)};shader.uniforms.characterBottom={value:new THREE.Color(character.bottom)};
@@ -192,7 +192,7 @@ export function exerciseMaterials(character,faceAtlas=null) {
         float forehead=smoothstep(1.685,1.710,y)*(1.-smoothstep(1.74,1.76,y));
         float evenSkin=max(cheeks,forehead)*smoothstep(.09,.13,z)*.72;
         faceDetail=mix(faceDetail,fineRatio*pow(broadRatio,vec3(.48)),evenSkin);
-        ${character.body==='female'&&character.face==='refined'?`// Suppress baked socket shadows without erasing lip/cheek texture detail.
+        ${character.body==='female'&&['refined','studio'].includes(character.face)?`// Suppress baked socket shadows without erasing lip/cheek texture detail.
         float socket=exp(-pow((ax-.032)/.024,2.)-pow((y-1.663)/.019,2.))*smoothstep(.10,.13,z);
         float localContrast=characterFaceContrast*mix(1.,.48,socket);`:'float localContrast=characterFaceContrast;'}
         diffuseColor.rgb*=mix(vec3(1.),faceDetail,faceBlend*localContrast);`:''}

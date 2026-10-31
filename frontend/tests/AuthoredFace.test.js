@@ -13,8 +13,8 @@ function skinTree(base){
  return {geometry,tree:new MeshBVH(geometry)};
 }
 
-it.each(['male','female'].flatMap(body=>[-1,0,1].map(eyeSize=>[body,eyeSize])))('fits %s eyes at size %s inside the actual eyelid openings',(body,eyeSize)=>{
- const character={...DEFAULT_CHARACTER,body,face:'refined',eyeSize};
+it.each(['male','female'].flatMap(body=>['refined','studio'].flatMap(face=>[-1,0,1].map(eyeSize=>[body,face,eyeSize]))))('fits %s %s eyes at size %s inside the actual eyelid openings',(body,face,eyeSize)=>{
+ const character={...DEFAULT_CHARACTER,body,face,eyeSize};
  const base=characterSurface(personalizedVertices({}, {gender:body}),character),original=base.slice();
  const parts=buildAuthoredFace(base,new THREE.Vector3()),open=skinTree(base);
  const closed=skinTree(faceBlinkSurface(base,1,.777,character)),ray=new THREE.Ray();

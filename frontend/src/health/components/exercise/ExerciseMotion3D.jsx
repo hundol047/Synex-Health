@@ -14,6 +14,7 @@ import bobHairAtlas from '../character/assets/bob02.webp';
 import pixieHairAtlas from '../character/assets/short03.webp';
 import sleekHairAtlas from '../character/assets/medium-layered.webp';
 import sleekHairNormal from '../character/assets/medium-layered-normal.webp';
+import ponytailHairAtlas from '../character/assets/ponytail01.webp';
 import naturalShortHairAtlas from '../character/assets/short02.webp';
 import Footwear from '../body3d/Footwear.jsx';
 import { exerciseAvatarGeometry, exerciseMaterials } from './exerciseAppearance.js';
@@ -67,17 +68,17 @@ function SceneCamera({ motion, view, mirror, heightScale, controls, faceFocus })
 function Athlete({ motion, progress, mirror, measurement, profile, compact, appearance, onReady, character, highlight }) {
   const actor = useRef(), readyMotion = useRef();
   // Bundled and cached by the loader; no remote request or per-frame texture allocation.
-  const faceAtlases=useTexture([maleFaceAtlas,femaleFaceAtlas,layeredHairAtlas,bobHairAtlas,pixieHairAtlas,sleekHairAtlas,sleekHairNormal,naturalShortHairAtlas]);
+  const faceAtlases=useTexture([maleFaceAtlas,femaleFaceAtlas,layeredHairAtlas,bobHairAtlas,pixieHairAtlas,sleekHairAtlas,sleekHairNormal,naturalShortHairAtlas,ponytailHairAtlas]);
   // useTexture uploads every bundled atlas eagerly. Configure all of them
   // before upload, not just the active body/hair; a later colorSpace assignment
   // alone leaves the already-uploaded texture in its old GPU color format.
-  for(const atlas of [...faceAtlases.slice(0,6),faceAtlases[7]])if(atlas.colorSpace!==THREE.SRGBColorSpace||atlas.anisotropy!==4){
+  for(const atlas of [...faceAtlases.slice(0,6),faceAtlases[7],faceAtlases[8]])if(atlas.colorSpace!==THREE.SRGBColorSpace||atlas.anisotropy!==4){
     atlas.colorSpace=THREE.SRGBColorSpace;atlas.anisotropy=4;atlas.needsUpdate=true;
   }
   const normalAtlas=faceAtlases[6];
   if(normalAtlas.colorSpace!==THREE.NoColorSpace||normalAtlas.anisotropy!==4){normalAtlas.colorSpace=THREE.NoColorSpace;normalAtlas.anisotropy=4;normalAtlas.needsUpdate=true;}
   const faceAtlas=faceAtlases[character.body==='female'?1:0];
-  const hairAtlas=character.hairStyle==='layered'?faceAtlases[2]:character.hairStyle==='bob'?faceAtlases[3]:character.hairStyle==='pixie'?faceAtlases[4]:character.hairStyle==='sleek'?faceAtlases[5]:character.hairStyle==='wavy'?faceAtlases[7]:null;
+  const hairAtlas=character.hairStyle==='layered'?faceAtlases[2]:character.hairStyle==='bob'?faceAtlases[3]:character.hairStyle==='pixie'?faceAtlases[4]:character.hairStyle==='sleek'?faceAtlases[5]:character.hairStyle==='wavy'?faceAtlases[7]:character.hairStyle==='ponytail'?faceAtlases[8]:null;
   const { invalidate } = useThree();
   const model = useMemo(() => {
     const prepared=prepareAthlete(measurement,profile,character);

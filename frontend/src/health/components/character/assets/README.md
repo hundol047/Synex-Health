@@ -181,3 +181,36 @@ The short style also feathers its physical open boundary with vertex alpha.
 UV-seam duplicates share the same physical boundary classification, preventing
 an unintended transparent parting. Other authored hairstyles keep their own
 source opacity masks.
+
+## Studio adult heads and athletic ponytail (2026-10-31)
+
+`studio-heads.json` combines the pinned CC0 Asian/Caucasian adult macro profiles
+(90%/10%) with a restrained smile and lower-lip adjustment. The female profile
+also includes small oval-head and nose-flare adjustments. Each coherent source
+head is aligned to the original eye helpers before a smooth neck transition is
+applied; it does not stack localized pinches on the refined face. All source
+weights, checksums, eye centers and alignment scales are embedded in the JSON.
+These are generic adult characters, not identities or celebrity replicas.
+
+Macro/sculpt graphic targets: `makehuman/data/targets/{macrodetails,head,mouth,nose}`
+at official MakeHuman revision `a8bc2d54ff0ac92e78ff71431b1023eda42bf482`.
+Smile graphic targets: CC0 `makehumancommunity/extra-targets`, revision
+`7eaba3453134385bb5ea9811ef0b33b85b4b556d`,
+`assets/faceunits01/targets/faceunits/`. Reproduction
+requires the downloaded `expression/mouthSmileLeft.target` and
+`expression/mouthSmileRight.target` files, whose hashes are recorded in JSON.
+Run `python scripts/build-studio-heads.py TARGET_DIRECTORY BASE_OBJ` (numpy).
+The target directory contains the macro filenames plus `sculpt/` and
+`expression/` subdirectories named in `sourceWeights`.
+
+`ponytail01.json/.webp` comes from the bundled graphic asset
+`base/hair/ponytail01/{ponytail01.obj,ponytail01.mhclo,ponytail01_diffuse.png}`
+at mirror `dmaugis/makehuman-py3-assets`, revision
+`2f4033a364a7e97479e17ed630ccb999395730c6`. The later official CC0 graphics
+license linked above applies to this bundled MHCLO asset. Source-file SHA-256
+hashes are recorded in JSON. Reproduce with
+`python scripts/build-character-hair.py SOURCE_DIRECTORY BASE_OBJ ponytail01`.
+The source texture is neutralized for selectable hair color. Runtime fitting
+shortens the free ends, leaves the crown anchored and bounds phase-driven sway.
+No source application code is included. The existing selected `ponytail` value
+now displays the fitted textured asset rather than procedural tubular strands.

@@ -1,10 +1,11 @@
 import {useSyncExternalStore} from 'react';
 import portraitHead from './assets/portrait-head.json';
+import studioHeads from './assets/studio-heads.json';
 export const CHARACTER_KEY='synex-exercise-character-v1';
 export const DEFAULT_CHARACTER=Object.freeze({style:'realistic',body:'male',face:'balanced',hairStyle:'wavy',outfit:'tee',pants:'joggers',eyes:'#543a29',hair:'#30251f',skin:'#c4967b',top:'#799bbd',bottom:'#293747',eyeSize:0,hairVolume:0,chest:0,hips:0,shoulders:0,waist:0});
 export function normalizeCharacter(value={}){
  const v=value&&typeof value==='object'?value:{};const result={...DEFAULT_CHARACTER};
- for(const [key,options] of Object.entries({style:['realistic','toon'],body:['male','female'],face:['balanced','soft','angular','refined'],hairStyle:['short','parted','wavy','layered','bob','pixie','sleek','bun','ponytail'],outfit:['tee','tank','long'],pants:['leggings','shorts','joggers']}))if(options.includes(v[key]))result[key]=v[key];
+ for(const [key,options] of Object.entries({style:['realistic','toon'],body:['male','female'],face:['balanced','soft','angular','refined','studio'],hairStyle:['short','parted','wavy','layered','bob','pixie','sleek','bun','ponytail'],outfit:['tee','tank','long'],pants:['leggings','shorts','joggers']}))if(options.includes(v[key]))result[key]=v[key];
  for(const key of ['hair','skin','top','bottom','eyes'])if(/^#[0-9a-f]{6}$/i.test(v[key]||''))result[key]=v[key];
  for(const key of ['chest','hips','shoulders','waist','eyeSize','hairVolume'])if(Number.isFinite(v[key]))result[key]=Math.max(-1,Math.min(1,v[key]));
  return result;
@@ -14,17 +15,23 @@ const snapshot=()=>{try{return localStorage.getItem(CHARACTER_KEY)||'';}catch{re
 export function readCharacter(raw=snapshot()){try{return normalizeCharacter(JSON.parse(raw));}catch{return {...DEFAULT_CHARACTER};}}
 export function useCharacter(){return readCharacter(useSyncExternalStore(subscribe,snapshot,()=>''));}
 export function saveCharacter(value){localStorage.setItem(CHARACTER_KEY,JSON.stringify(normalizeCharacter(value)));window.dispatchEvent(new Event('synex-character'));}
+export const STUDIO_PRESETS=Object.freeze({
+ female:Object.freeze(normalizeCharacter({...DEFAULT_CHARACTER,body:'female',face:'studio',hairStyle:'ponytail',hair:'#272522',eyes:'#4a3024',skin:'#e8bfa3',top:'#647f9e',bottom:'#253144',pants:'leggings',waist:-.2})),
+ male:Object.freeze(normalizeCharacter({...DEFAULT_CHARACTER,body:'male',face:'studio',hairStyle:'wavy',hair:'#272522',eyes:'#4a3024',skin:'#d7ad89',top:'#91b4d1',bottom:'#253144',shoulders:.2})),
+});
+const headProfile=character=>character?.face==='studio'?studioHeads[character.body]:character?.body==='female'&&character?.face==='refined'?portraitHead:null;
 // Cosmetic surface morphs do not alter measurements, bone lengths or support anchors.
-export const eyeCenterX=character=>character?.body==='female'&&character?.face==='refined'?(portraitHead.eyeCenter?.[0]||.032):.034;
-export const eyeCenterY=character=>character?.body==='female'&&character?.face==='refined'?(portraitHead.eyeCenter?.[1]||1.663):1.663;
+export const eyeCenterX=character=>headProfile(character)?.eyeCenter?.[0]||.034;
+export const eyeCenterY=character=>headProfile(character)?.eyeCenter?.[1]||1.663;
 export function eyeProportions(value=0,character){
  const amount=Number.isFinite(value)?Math.max(-1,Math.min(1,value)):0;
  return [1+.15*amount,1+.25*amount,1];
 }
 export function characterSurface(base,options,scale=1){
  const c=normalizeCharacter(options),out=base.slice();
- if(c.body==='female'&&c.face==='refined'){
-  for(const [index,x,y,z] of portraitHead.deltas){out[index*3]+=x*scale;out[index*3+1]+=y*scale;out[index*3+2]+=z*scale;}
+ const head=headProfile(c);
+ if(head){
+  for(const [index,x,y,z] of head.deltas){out[index*3]+=x*scale;out[index*3+1]+=y*scale;out[index*3+2]+=z*scale;}
  }
  const source=out.slice();
  const bell=(v,center,width)=>Math.exp(-(((v-center)/width)**2));

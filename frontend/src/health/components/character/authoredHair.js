@@ -6,7 +6,8 @@ import bob from './assets/bob02.json';
 import pixie from './assets/short03.json';
 import sleek from './assets/medium-layered.json';
 import wavy from './assets/short02.json';
-const ASSETS={layered,bob,pixie,sleek,wavy};
+import ponytail from './assets/ponytail01.json';
+const ASSETS={layered,bob,pixie,sleek,wavy,ponytail};
 export const hasAuthoredHair=style=>Boolean(ASSETS[style]);
 // Fit local licensed hair cards to the selected cosmetic head, in meters.
 export function buildAuthoredHair(base,scale,anchor,character,bodyIndices=[]){
@@ -19,13 +20,13 @@ export function buildAuthoredHair(base,scale,anchor,character,bodyIndices=[]){
    p[axis]+=offset[axis]*ratios[axis]*(1+volume*.13);
   }
   // Keep rear volume inside the support-wall clearance of the instructor head.
-  const rear=-.05*scale;if(p[2]<rear)p[2]=rear+(p[2]-rear)*.32;
+  const rear=-.05*scale;if(p[2]<rear)p[2]=rear+(p[2]-rear)*(character.hairStyle==='ponytail'?.24:.32);
   // Uniform vertical shortening preserves the authored card curvature and UVs.
   // A local fringe lift folded long triangles into a hard, angular ledge.
   if(character.hairStyle==='pixie')p[1]=1.79*scale+(p[1]-1.79*scale)*.70;
   fitted.push(p);
  }
- if(character.hairStyle==='sleek'){
+ if(['sleek','ponytail'].includes(character.hairStyle)){
   // Preserve the crown and hairline; shorten only free ends below the ears.
   // Compressing the whole wig raised the hairline and exposed the scalp.
   const root=1.58*scale,length=.10*scale;
@@ -56,7 +57,7 @@ export function buildAuthoredHair(base,scale,anchor,character,bodyIndices=[]){
   const p=points[source];positions.set(p.map((n,k)=>n-anchor.getComponent(k)),i*3);
   if(feather)colors[i*4+3]=boundary.has(source)?0:1;
   // Only the loose ends move; crown roots remain attached to the scalp.
-  flex[i]=Math.pow(THREE.MathUtils.clamp((1.735-p[1]/scale)/.16,0,1),2)*.002;
+  flex[i]=Math.pow(THREE.MathUtils.clamp((1.735-p[1]/scale)/.16,0,1),2)*(character.hairStyle==='ponytail'?.006:.002);
  });
  const locks=new THREE.BufferGeometry();locks.setAttribute('position',new THREE.BufferAttribute(positions,3));locks.setAttribute('uv',new THREE.Float32BufferAttribute(refined.uv,2));locks.setAttribute('color',new THREE.BufferAttribute(colors,components));locks.setAttribute('hairFlex',new THREE.BufferAttribute(flex,1));locks.setIndex(refined.indices);
  // UV islands duplicate vertices. Compute normals on the original topology so
