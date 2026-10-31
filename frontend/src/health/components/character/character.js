@@ -15,11 +15,11 @@ export function readCharacter(raw=snapshot()){try{return normalizeCharacter(JSON
 export function useCharacter(){return readCharacter(useSyncExternalStore(subscribe,snapshot,()=>''));}
 export function saveCharacter(value){localStorage.setItem(CHARACTER_KEY,JSON.stringify(normalizeCharacter(value)));window.dispatchEvent(new Event('synex-character'));}
 // Cosmetic surface morphs do not alter measurements, bone lengths or support anchors.
-export const eyeCenterX=character=>character?.body==='female'&&character?.face==='refined'?.032:.034;
+export const eyeCenterX=character=>character?.body==='female'&&character?.face==='refined'?(portraitHead.eyeCenter?.[0]||.032):.034;
+export const eyeCenterY=character=>character?.body==='female'&&character?.face==='refined'?(portraitHead.eyeCenter?.[1]||1.663):1.663;
 export function eyeProportions(value=0,character){
  const amount=Number.isFinite(value)?Math.max(-1,Math.min(1,value)):0;
- const portrait=character?.body==='female'&&character?.face==='refined';
- return [(1+.15*amount)*(portrait?1.10:1),(1+.25*amount)*(portrait?1.20:1),1];
+ return [1+.15*amount,1+.25*amount,1];
 }
 export function characterSurface(base,options,scale=1){
  const c=normalizeCharacter(options),out=base.slice();
@@ -36,26 +36,19 @@ export function characterSurface(base,options,scale=1){
   // Reshape the original eye openings too, so scaled detail meshes do not
   // leave the old socket visible behind them. No limb/joint heights change.
   if(y>1.63&&y<1.696&&z>.08&&Math.abs(x)>.009){
-   const center=Math.sign(x)*.034,dx=x-center,dy=y-1.663;
+   const center=Math.sign(x)*eyeCenterX(c),dx=x-center,dy=y-eyeCenterY(c);
    const distance=Math.sqrt((dx/.027)**2+(dy/.026)**2);
    const t=Math.max(0,Math.min(1,(distance-.45)/.55)),weight=1-t*t*(3-2*t);
    const [sx,sy]=eyeProportions(c.eyeSize,c);
-   out[i]+=(dx*(sx-1)+(Math.sign(x)*eyeCenterX(c)-center))*weight*scale;out[i+1]+=dy*(sy-1)*weight*scale;
+   out[i]+=dx*(sx-1)*weight*scale;out[i+1]+=dy*(sy-1)*weight*scale;
   }
-  if(c.face==='refined'&&y>1.55&&z>.06){
+  if(c.face==='refined'&&c.body!=='female'&&y>1.55&&z>.06){
    const jaw=bell(y,1.584,.035),nose=bell(x,0,.021)*bell(y,1.638,.025);
-   // The female portrait already has authored nose sculpts. Do not apply
-   // the generic nose pinch again on top of those feature targets.
-   out[i]*=1-(c.body==='female'?.13:.09)*jaw-(c.body==='female'?0:.10*nose);
-   if(c.body!=='female')out[i+2]-=.0015*nose*scale;
+   // Female refined heads use one authored profile, not additional local pinches.
+   out[i]*=1-.09*jaw-.10*nose;
+   out[i+2]-=.0015*nose*scale;
    const front=Math.min(1,Math.max(0,(z-.10)/.04));
-   out[i+1]+=(c.body==='female'?0:.0014)*bell(Math.abs(x),.024,.013)*bell(y,1.607,.009)*front*scale;
-   if(c.body==='female'){
-    // Fill the hollow tear trough and relax the protruding lower lip. These
-    // local surface changes leave eyelid centers and the jaw joint intact.
-    const cheek=bell(Math.abs(x),.044,.023)*bell(y,1.637,.015);
-    out[i+2]+=(.0012*bell(Math.abs(x),.034,.018)*bell(y,1.650,.009)+.0004*cheek-.0016*bell(x,0,.025)*bell(y,1.600,.005))*front*scale;
-   }
+   out[i+1]+=.0014*bell(Math.abs(x),.024,.013)*bell(y,1.607,.009)*front*scale;
   }
   if(y>1.55&&y<1.76){const face=bell(y,1.63,.06);out[i]*=1+face*(c.face==='soft'?.055:c.face==='angular'?-.055:0);if(c.style==='toon')out[i]*=1+.045*face;}
  }

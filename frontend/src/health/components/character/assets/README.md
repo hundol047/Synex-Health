@@ -66,22 +66,17 @@ Textures remain shared loader resources and are not disposed with one viewer.
 macrodetail graphic targets at revision
 `a8bc2d54ff0ac92e78ff71431b1023eda42bf482`. The official CC0 statement linked above
 covers these graphical assets. Source directory: `makehuman/data/targets/macrodetails/`.
-The JSON embeds the SHA-256 hashes of its four source targets. Reproduce with
-`python scripts/build-portrait-head.py TARGET_DIRECTORY BASE_OBJ`.
+The JSON embeds source-file SHA-256 hashes, profile weights, eye center and uniform
+alignment scale. Reproduce the **current** head with
+`python scripts/build-coherent-portrait.py TARGET_DIRECTORY BASE_OBJ`.
 
-The source profiles are normalized independently to the shipped 1.78 m reference
-before computing the difference. The mask preserves the body and joint anchors;
-eye and mouth alignment is attenuated separately. This is an adult generic
-cosmetic profile, not a scan or likeness of a named person. Source filenames
-record asset provenance, not a classification of the app's users.
-
-
-The portrait conversion also blends seventeen authored feature targets from the
-same pinned official `makehuman/data/targets/{nose,mouth,chin,head,cheek,eyes}/`
-directories. Exact weights and source SHA-256 hashes are embedded as
-`sculptWeights` and `sculptHashes`; put these files in `TARGET_DIRECTORY/sculpt/`
-when reproducing the conversion. They refine the nose tip/nostrils, lip volume,
-jaw and eye-bag surfaces rather than scaling the whole face uniformly.
+Both profiles are normalized to the shipped 1.78 m reference. The new head is
+uniformly aligned at the original eye joints and blended only through the neck;
+the body/support vertices stay unchanged. It uses one normalized macro profile
+instead of accumulating local nose, jaw, lip and expression sculpts. The old
+`build-portrait-head.py` converter remains for historical reproduction only.
+The source profile labels record provenance, not the user's ethnicity. This is
+an adult generic cosmetic head, not a scan or likeness of a named person.
 
 Hair is subdivided once after fitting and length adjustment. The original
 connected topology drives the subdivision and normals, while separate UV islands
@@ -117,23 +112,45 @@ The prior bundled `long01` files are retained as historical source assets but
 are no longer loaded by the medium style. None of these assets is a celebrity
 scan or an asset extracted from the referenced commercial game.
 
-## Restrained closed-mouth expression
-
-The refined female portrait also blends the `mouthSmileLeft` and
-`mouthSmileRight` graphical targets at 0.08 each from MakeHuman Community's
-CC0 `extra-targets` collection, revision
-`7eaba3453134385bb5ea9811ef0b33b85b4b556d`:
-https://github.com/makehumancommunity/extra-targets/tree/7eaba3453134385bb5ea9811ef0b33b85b4b556d/assets/faceunits01/targets/faceunits
-License: https://github.com/makehumancommunity/extra-targets/blob/7eaba3453134385bb5ea9811ef0b33b85b4b556d/LICENSE
-
-Their revision, weights and source-file hashes are in `portrait-head.json`.
-For reproduction, place both target files under `TARGET_DIRECTORY/expression/`.
-Only graphical vertex deltas are used. The previous female corner-only Gaussian
-lift is removed to avoid stacking two smiles. This is a restrained cosmetic
-expression, not facial tracking or a person's scanned likeness.
-
 The saved `sleek` identifier is retained when replacing the previous Short Daisy
 style. Its front cards are no longer expanded sideways: the authored fringe
 remains over the forehead. This fixes the bare-front appearance that a scalp
 underlay alone could not address. The former converter remains for historical
 reproduction, while the current asset uses `build-character-fringe-hair.py`.
+
+
+## Fitted eyes, eyebrows and eyelashes
+
+The realistic renderer uses authored opaque eyeballs and separate corneal
+surfaces instead of planar almond patches. Original UVs retain photographic
+iris fibers and sclera detail; a local shader recolors the iris only. Eye motion
+rotates the globes around their fitted centers. Skin and lashes share the lid
+motion, while the skin supplies actual eye occlusion. Toon eyes retain their
+separate stylized construction.
+
+- `eye-globes.json/.webp`: `high-poly.obj`, `high-poly.mhclo`, `brown_eye.png`
+  from the pinned official revision above, `makehuman/data/eyes/`. Headers
+  explicitly identify the assets as CC0.
+- `natural-brows.json/.webp`: `eyebrow010.obj/.mhclo/.png` in
+  `base/eyebrows/eyebrow010/` at mirror revision
+  `2f4033a364a7e97479e17ed630ccb999395730c6`.
+- `natural-lashes.json/.webp`: `eyelashes01.obj/.mhclo/.png` in
+  `base/eyelashes/eyelashes01/` at that same mirror revision. As with bundled
+  hair, the official later license explicitly covers MHCLO-based graphics as
+  CC0, superseding old asset headers. Only graphic data is used.
+- Source mirror: https://github.com/dmaugis/makehuman-py3-assets
+  PNGs are Git LFS assets: obtain their binary content, not pointer files.
+  Each generated JSON records every input asset's SHA-256 checksum.
+- Reproduce with `python scripts/build-authored-face.py BASE_OBJ EYES_DIRECTORY
+  PARTS_DIRECTORY` (numpy, scipy and Pillow). The first directory contains eye
+  source files; the second contains the named brow/lash files. Bindings express
+  missing helper vertices against retained body topology. Source alpha masks
+  are preserved; brow/lash RGB is neutralized for user-selected hair color.
+- Runtime brows/lashes are subdivided, projected just outside the selected face,
+  and alpha blended to prevent the broken black fragments caused by opaque
+  alpha testing. Every mounted viewer owns and disposes its geometry and eye
+  material, but shared texture-loader resources remain alive.
+
+These are general-purpose authored models, not photoreal scanned heads. Their
+rendered appearance still requires visual review; geometry tests do not certify
+perceptual realism, and no likeness percentage is claimed.

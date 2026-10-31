@@ -425,3 +425,47 @@ phase wait during the first blink; the unchanged test passed on rerun. No
 timeout or assertion was relaxed. This intermittent software-rendering wait is
 recorded rather than treated as proof of phone performance. Final front, oblique,
 blink and exercise captures were reviewed. No new APK is published by this change.
+
+## Coherent head and fitted authored facial parts (2026-10-31)
+
+The repeated local female nose/jaw/lip sculpts were accumulating an uncanny,
+inconsistent shape. The refined female head now comes from one normalized macro
+profile, uniformly aligned at the original eye joints with a neck-only blend.
+The earlier seventeen feature sculpts, two expression targets and female
+Gaussian pinches no longer contribute to the current face. Eye size remains
+user adjustable; the preset starts at zero instead of enlarging the eyes twice.
+
+Realistic male and female characters now use bundled CC0 authored eyeballs,
+separate corneas, photographic iris/sclera detail, and fitted brow/lash cards.
+These replace the planar almond-eye and procedural brow/lash construction in
+realistic mode. Iris recoloring preserves photographic fibers and the pupil;
+the globe rotates around its fitted center. The original skin supplies the eye
+opening, and both skin and lashes close around that same fitted center.
+Authored brows/lashes are subdivided and projected outside the face. A first
+opaque-alpha render produced fragmented dark marks; the final materials use
+transparent blending and do not write depth. The medium fringe is also lifted
+out of the central hanging spike introduced by the new head fit.
+
+The graphics are generated locally from pinned licensed sources. See
+`frontend/src/health/components/character/assets/README.md`,
+`build-coherent-portrait.py` and `build-authored-face.py` for exact reproduction
+and license evidence. No celebrity/game assets or redistributively restricted
+scanned models are bundled. Runtime attribution appears in character settings.
+
+New geometry regressions check eye-size extremes for both bodies: open pupil
+sightlines, actual closed-lid skin occlusion, finite geometry, bounded triangle
+count, uniform stature scaling, independent viewer disposal and iris tint
+ownership. Existing head/body/support/hair checks remain. These tests establish
+rendering integrity; they do not establish photorealism. Actual WebGL captures
+still show a generic authored character, short of the supplied commercial
+reference. No numerical likeness or physical-phone claim is made.
+
+Validation: 57 focused unit tests passed across 11 files. Both existing actual
+Chromium WebGL workflows passed (4.8 minutes total): iris pixel recoloring and
+persistence, female preset/save/reload, front/oblique/blink portraits, hair
+switching and wall-push scene, with no page/shader errors. After the final
+lower-lash tip-opacity refinement, all 8 authored-face tests and the personal
+web build passed again; fresh male/female/closed-eye captures were reviewed.
+The lower lash fan now fades toward its ends, with lighter male lash density.
+This pass does not produce or publish a new APK and is not a physical-device
+validation. The screenshots are actual app rendering, not generated mockups.

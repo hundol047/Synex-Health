@@ -9,6 +9,7 @@ import {skinDetailColors} from './skinTone.js';
 import {irisTexture,eyeLidGeometry,visibleIrisGeometry,eyelashGeometry,upperLashLineGeometry,scleraGeometry,eyeSurfaceZ} from './eyeSurface.js';
 import mesh from '../body3d/assets/human-mesh.json';
 import {buildScalpHair} from './scalpHair.js';
+import AuthoredFace from './AuthoredFace.jsx';
 import {rigRotation} from '../exercise/rig.js';
 // Facial details and licensed hair are fitted to the selected generic head.
 export function buildHeadDetails(base,scale,rest,character){
@@ -32,7 +33,7 @@ export function buildHeadDetails(base,scale,rest,character){
   const rim=(surface(x,eyeY+.010)+surface(x,eyeY-.010))/2;
   return point(x,eyeY,rim-.0014);
  });
- const brows=[-1,1].map(side=>{
+ const brows=character.style==='toon'?[-1,1].map(side=>{
   const hairs=[];
   for(let i=0;i<240;i++){
    const t=i/239,x=side*(eyeCenterX(character)-.018+.038*t),y=1.680+.003*Math.sin(Math.PI*(t*.87+.08))+Math.sin(i*2.399)*.00055;
@@ -40,7 +41,7 @@ export function buildHeadDetails(base,scale,rest,character){
    hairs.push(taperedStrand(new THREE.CatmullRomCurve3([point(x,y,surface(x,y)+.00035),point((x+tipX)/2,(y+tipY)/2+.0001,surface((x+tipX)/2,(y+tipY)/2)+.00055),point(tipX,tipY,surface(tipX,tipY)+.00035)]),.00010*scale*(1-.6*t),6));
   }
   const merged=mergeGeometries(hairs);hairs.forEach(g=>g.dispose());return merged;
- });
+ }):[];
  faceGeometry.dispose();
  return {cap,curves:[locks],brows,eyes,bun:tie.clone().add(new THREE.Vector3(0,.004*scale,-.014*scale)),bunScale:radial,dispose(){[cap,locks,...brows].forEach(g=>g.dispose());}};
 }
@@ -49,7 +50,7 @@ export function buildHeadDetails(base,scale,rest,character){
 const headTemplates=new WeakMap();
 export function acquireHeadDetails(base,scale,rest,character){
  let templates=headTemplates.get(base);if(!templates){templates=new Map();headTemplates.set(base,templates);}
- const key=JSON.stringify([scale,rest[1],character.hairStyle,character.hairVolume]);
+ const key=JSON.stringify([scale,rest[1],character.style,character.hairStyle,character.hairVolume]);
  if(!templates.has(key)){
   templates.set(key,buildHeadDetails(base,scale,rest,character));
   if(templates.size>2){const first=templates.keys().next().value;templates.get(first).dispose();templates.delete(first);}
@@ -58,7 +59,7 @@ export function acquireHeadDetails(base,scale,rest,character){
  return {...source,cap,curves,brows,eyes:source.eyes.map(v=>v.clone()),bun:source.bun.clone(),dispose(){[cap,...curves,...brows].forEach(g=>g.dispose());}};
 }
 export default function HeadDetail({base,scale,rest,joints,character,progress=0,hairAtlas=null,hairNormal=null}){
- const detail=useMemo(()=>acquireHeadDetails(base,scale,rest,character),[base,scale,rest,character.hairStyle,character.hairVolume]);
+ const detail=useMemo(()=>acquireHeadDetails(base,scale,rest,character),[base,scale,rest,character.style,character.hairStyle,character.hairVolume]);
  useEffect(()=>()=>detail.dispose(),[detail]);
  const toon=character.style==='toon',hairMaterial=toon?'meshToonMaterial':'meshStandardMaterial';
  const blink=blinkAmount(progress);
@@ -91,8 +92,9 @@ export default function HeadDetail({base,scale,rest,joints,character,progress=0,
   {detail.curves.map((g,i)=><mesh key={i} geometry={g} material={locksMaterial.material}/>)}
   {character.hairStyle==='ponytail'&&<mesh position={[0,1.731*scale-rest[1][1],-.052*scale-rest[1][2]]} rotation={[Math.PI/2,0,0]}><torusGeometry args={[.012*scale,.002*scale,8,24]}/><meshStandardMaterial color={character.top} roughness={.8}/></mesh>}
   {character.hairStyle==='bun'&&<mesh position={detail.bun} scale={[.029*scale*detail.bunScale,.026*scale*detail.bunScale,.023*scale*detail.bunScale]}><sphereGeometry args={[1,24,16]}/>{React.createElement(hairMaterial,hairProps)}</mesh>}
-  {detail.brows.map((g,i)=><mesh key={i} geometry={g} position={[0,Math.sin(progress*Math.PI*2)*.00015*scale,0]}><meshStandardMaterial color={new THREE.Color(character.hair).lerp(new THREE.Color(character.skin),.12)} vertexColors roughness={.9}/></mesh>)}
-  {detail.eyes.map((position,i)=><group key={i} position={position} scale={eyeProportions(character.eyeSize,character)} rotation={[0,i===0?-.10:.10,0]}>
+  {!toon&&<AuthoredFace {...{base,scale,rest,character,progress}}/>}
+  {toon&&detail.brows.map((g,i)=><mesh key={i} geometry={g} position={[0,Math.sin(progress*Math.PI*2)*.00015*scale,0]}><meshStandardMaterial color={new THREE.Color(character.hair).lerp(new THREE.Color(character.skin),.12)} vertexColors roughness={.9}/></mesh>)}
+  {toon&&detail.eyes.map((position,i)=><group key={i} position={position} scale={eyeProportions(character.eyeSize,character)} rotation={[0,i===0?-.10:.10,0]}>
    <group visible={blink<.995}>
     <mesh geometry={sclera}><meshPhysicalMaterial vertexColors roughness={.32} clearcoat={.18} clearcoatRoughness={.1}/></mesh>
     <mesh geometry={irisShape}><meshPhysicalMaterial map={iris} roughness={.35} clearcoat={.4} clearcoatRoughness={.08} specularIntensity={.15} envMapIntensity={.18}/></mesh>

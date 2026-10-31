@@ -50,7 +50,7 @@ export function exerciseAvatarGeometry(wear, stature = 1, character) {
       color.lerp(cheek, .10 * gaussian(Math.abs(x), y, .049, 1.635, .027, .024));
       if(!character||character.style==='toon')color.lerp(lip, .45 * gaussian(x, y, 0, 1.609, .027, .006));
       // Socket shading sits behind the actual eye, not a second painted brow.
-      color.lerp(brow, .12 * gaussian(Math.abs(x), y, .034, 1.668, .016, .008));
+      if(!character||character.style==='toon')color.lerp(brow, .12 * gaussian(Math.abs(x), y, .034, 1.668, .016, .008));
     }
     const hairline = z > .095 ? 1.728 - .013 * Math.cos(x * 35) : 1.638;
     if (!character && y > 1.54) color.lerp(hairColor, THREE.MathUtils.smoothstep(y, hairline, hairline + .018));
@@ -206,10 +206,10 @@ export function exerciseMaterials(character,faceAtlas=null) {
         float cheekWarm=exp(-pow((ax-.045)/.032,2.)-pow((y-1.635)/.028,2.))*skinFace;
         float skinGrain=fract(sin(dot(floor(vCharacterRest.xy*4200.),vec2(12.9898,78.233)))*43758.5453)-.5;
         diffuseColor.rgb*=vec3(1.+cheekWarm*.032,1.-cheekWarm*.012,1.-cheekWarm*.018)*(1.+skinGrain*.009*skinFace);
-        float browT=clamp((ax-.014)/.038,0.,1.);
+        ${character.style==='toon'?`float browT=clamp((ax-.014)/.038,0.,1.);
         float browY=1.680+.003*sin(3.14159265*(browT*.87+.08));
         float browBand=exp(-pow((y-browY-.0006)/.00135,2.))*smoothstep(.012,.018,ax)*(1.-smoothstep(.046,.055,ax))*smoothstep(.12,.135,z);
-        diffuseColor.rgb=mix(diffuseColor.rgb,characterBrow,browBand*.25);
+        diffuseColor.rgb=mix(diffuseColor.rgb,characterBrow,browBand*.25);`:''}
         ${!faceAtlas||character.style==='toon'?`float lipLine=1.609+characterSmile*exp(-pow((ax-.024)/.013,2.));
         float lipShape=exp(-pow(vCharacterRest.x/.024,4.)-pow((y-lipLine)/.0048,4.))*smoothstep(.09,.12,z);
         diffuseColor.rgb=mix(diffuseColor.rgb,characterLip,lipShape*characterLipStrength);
@@ -224,7 +224,7 @@ export function exerciseMaterials(character,faceAtlas=null) {
         roughnessFactor=mix(roughnessFactor,.68-tZone,facialSkin);
       `);
     };
-    material.customProgramCacheKey=()=>`face-atlas-v8-${Boolean(faceAtlas)}-${character.body}-${character.face}-${character.outfit}-${character.pants}`;
+    material.customProgramCacheKey=()=>`face-atlas-v9-${Boolean(faceAtlas)}-${character.body}-${character.face}-${character.outfit}-${character.pants}`;
   }
   let disposed = false;
   return { materials, dispose: () => {

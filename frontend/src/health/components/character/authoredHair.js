@@ -40,6 +40,9 @@ export function buildAuthoredHair(base,scale,anchor,character,bodyIndices=[]){
   // This retains a continuous fringe while lifting its ends above both eyes.
   const front=THREE.MathUtils.smoothstep(p[2]/scale,.10,.14)*(1-THREE.MathUtils.smoothstep(Math.abs(p[0]/scale),.052,.076))*THREE.MathUtils.smoothstep(p[1]/scale,1.60,1.65);
   p[1]+=Math.max(0,1.78*scale-p[1])*.28*front;
+  const fringe=THREE.MathUtils.smoothstep(p[2]/scale,.11,.14)*(1-THREE.MathUtils.smoothstep(Math.abs(p[0]/scale),.044,.060))*THREE.MathUtils.smoothstep(p[1]/scale,1.63,1.66);
+  const edge=(1.697-.002*p[0]/(.05*scale))*scale;
+  p[1]+=Math.max(0,edge-p[1])*fringe;
  }
  const refined=subdivideHair(data,fitted),points=refined.points;
  const positions=new Float32Array(refined.vertices.length*3),colors=new Float32Array(positions.length).fill(1),flex=new Float32Array(refined.vertices.length);

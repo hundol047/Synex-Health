@@ -9,7 +9,7 @@ test('authored female preset persists, switches hair, and follows the exercise s
  await expect(canvas).toHaveAttribute('data-character-style','realistic',{timeout:30000});
  const skin=await page.getByLabel('피부색',{exact:true}).inputValue();
  await page.getByRole('button',{name:'여성 캐릭터 프리셋',exact:true}).click();
- await expect(canvas).toHaveAttribute('data-character-hair','sleek');await expect(canvas).toHaveAttribute('data-character-body','female');
+ await expect(canvas).toHaveAttribute('data-character-hair','sleek');await expect(canvas).toHaveAttribute('data-character-body','female');await expect(canvas).toHaveAttribute('data-character-face','authored');
  await expect(page.getByLabel('피부색',{exact:true})).toHaveValue(skin);
  await page.getByRole('button',{name:'정면 운동 시범 보기',exact:true}).click();
  await canvas.evaluate(el=>el.scrollIntoView({block:'center',behavior:'instant'}));
@@ -32,7 +32,7 @@ test('authored female preset persists, switches hair, and follows the exercise s
  await page.getByRole('button',{name:'45° 운동 시범 보기',exact:true}).click();await capture('female-oblique.png');
  await page.getByRole('button',{name:'정면 운동 시범 보기',exact:true}).click();
  await page.getByRole('button',{name:'저장하고 운동에 적용',exact:true}).click();await page.reload();
- await expect(canvas).toHaveAttribute('data-character-hair','sleek',{timeout:30000});await expect(canvas).toHaveAttribute('data-character-body','female');
+ await expect(canvas).toHaveAttribute('data-character-hair','sleek',{timeout:30000});await expect(canvas).toHaveAttribute('data-character-body','female');await expect(canvas).toHaveAttribute('data-character-face','authored');
  await page.getByRole('button',{name:'얼굴 확대',exact:true}).click();await page.getByRole('button',{name:'정면 운동 시범 보기',exact:true}).click();
  const restoredPortrait=await capture('female-restored-front.png');
  // Check exposed cheek pixels as well as the saved color. The new fringe
