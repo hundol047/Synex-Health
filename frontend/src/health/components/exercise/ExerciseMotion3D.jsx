@@ -168,9 +168,9 @@ function Studio({ compact, heightScale, motion, portrait=false }) {
     <StudioEnvironment portrait={portrait}/>
     <color attach="background" args={['#f7faff']}/>
     <fog attach="fog" args={['#f7faff', 5, 11]}/>
-    <hemisphereLight args={['#fffaf6', '#c4cedb', portrait?.30:.45]}/>
-    <directionalLight position={portrait?[-2,3,4]:[-3,5,4]} color="#fff8f1" intensity={portrait?1.30:1.7} castShadow={!compact} shadow-mapSize={[1024, 1024]} shadow-camera-left={-2} shadow-camera-right={2} shadow-camera-top={2.6} shadow-camera-bottom={-1.3} shadow-bias={-.0003} shadow-normalBias={.012} shadow-radius={4}/>
-    <directionalLight position={[3, 2, 2]} color="#e4efff" intensity={portrait?.25:.65}/>
+    <hemisphereLight args={['#fffaf6', '#c4cedb', portrait?.42:.45]}/>
+    <directionalLight position={portrait?[-2,3,4]:[-3,5,4]} color="#fff8f1" intensity={portrait?1.20:1.7} castShadow={!compact} shadow-mapSize={[1024, 1024]} shadow-camera-left={-2} shadow-camera-right={2} shadow-camera-top={2.6} shadow-camera-bottom={-1.3} shadow-bias={-.0003} shadow-normalBias={.012} shadow-radius={4}/>
+    <directionalLight position={[3, 2, 2]} color="#e4efff" intensity={portrait?.50:.65}/>
     <directionalLight position={[1, 3, -3]} color="#edf3ff" intensity={.85}/>
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -.021, 0]}><planeGeometry args={[30, 30]}/><meshStandardMaterial color="#eff4fb" roughness={.95}/></mesh>
     {floor && <TrainingMat heightScale={heightScale}/>}
@@ -184,7 +184,7 @@ function StudioEnvironment({portrait=false}) {
     const generator = new THREE.PMREMGenerator(gl), room = new RoomEnvironment();
     const target = generator.fromScene(room, .04);
     scene.environment = target.texture;
-    scene.environmentIntensity = portrait?.30:.42;
+    scene.environmentIntensity = portrait?.40:.42;
     generator.dispose(); room.dispose(); invalidate();
     return () => { if (scene.environment === target.texture) scene.environment = null; target.dispose(); };
   }, [gl, scene, invalidate,portrait]);

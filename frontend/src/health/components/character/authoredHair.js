@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {subdivideHair} from './hairSubdivision.js';
+import {buildHairRoots} from './hairRoots.js';
 import layered from './assets/bob01.json';
 import bob from './assets/bob02.json';
 import pixie from './assets/short03.json';
@@ -54,15 +55,6 @@ export function buildAuthoredHair(base,scale,anchor,character,bodyIndices=[]){
  const normals=new Float32Array(positions.length),sourceNormals=surface.attributes.normal.array;
  refined.vertices.forEach((source,i)=>normals.set(sourceNormals.subarray(source*3,source*3+3),i*3));
  locks.setAttribute('normal',new THREE.BufferAttribute(normals,3));locks.computeTangents();surface.dispose();
- // A close-fitting scalp underlay fills transparent gaps between hair cards.
- const cap=new THREE.BufferGeometry(),capPoints=[],capIndices=[],used=new Map();
- const above=v=>{const y=base[v*3+1]/scale,z=base[v*3+2]/scale;return y>(z>.075?(character.hairStyle==='sleek'?1.77:1.738):1.70);};
- for(let i=0;i<bodyIndices.length;i+=3){const tri=bodyIndices.slice(i,i+3);if(!tri.every(above))continue;
-  for(const v of tri){if(!used.has(v)){
-   used.set(v,used.size);const p=new THREE.Vector3().fromArray(base,v*3),n=p.clone().sub(new THREE.Vector3(0,1.69*scale,.045*scale)).normalize();
-   p.addScaledVector(n,.0006*scale).sub(anchor);capPoints.push(...p.toArray());
-  }capIndices.push(used.get(v));}
- }
- cap.setAttribute('position',new THREE.Float32BufferAttribute(capPoints,3));cap.setIndex(capIndices);cap.computeVertexNormals();
+ const cap=buildHairRoots(base,scale,anchor,bodyIndices,character.hairStyle);
  return {cap,locks,tie:new THREE.Vector3(0,1.70*scale,-.05*scale).sub(anchor)};
 }

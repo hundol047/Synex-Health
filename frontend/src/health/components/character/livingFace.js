@@ -36,3 +36,13 @@ export function closedLidCreaseGeometry(scale=1){
  const points=Array.from({length:25},(_,i)=>{const t=i/24,edge=Math.sin(Math.PI*t);return new THREE.Vector3((t*2-1)*.0102*scale,(-.0004-.0004*edge)*scale,(.0027+.0005*edge)*scale);});
  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),24,.00020*scale,6,false);
 }
+
+// Small fixation changes, with brief eased saccades, follow the demonstration
+// phase. Pausing/reduced motion remains deterministic; no independent timer.
+export function eyeGaze(progress){
+ const p=Number.isFinite(progress)?Math.max(0,Math.min(1,progress)):0;
+ const keys=[[0,0,0],[.16,0,0],[.18,.00065,.0001],[.40,.00065,.0001],[.42,-.0004,.00015],[.70,-.0004,.00015],[.73,0,0],[1,0,0]];
+ let i=1;while(i<keys.length-1&&p>keys[i][0])i++;
+ const a=keys[i-1],b=keys[i],t=(p-a[0])/(b[0]-a[0]),ease=t*t*(3-2*t);
+ return [1,2].map(k=>Math.round((a[k]+(b[k]-a[k])*ease)*20000)/20000);
+}

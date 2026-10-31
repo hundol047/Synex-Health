@@ -116,3 +116,18 @@ The original source labels do not specify a license version; preserve that label
 The prior bundled `long01` files are retained as historical source assets but
 are no longer loaded by the medium style. None of these assets is a celebrity
 scan or an asset extracted from the referenced commercial game.
+
+## Restrained closed-mouth expression
+
+The refined female portrait also blends the `mouthSmileLeft` and
+`mouthSmileRight` graphical targets at 0.2 each from MakeHuman Community's
+CC0 `extra-targets` collection, revision
+`7eaba3453134385bb5ea9811ef0b33b85b4b556d`:
+https://github.com/makehumancommunity/extra-targets/tree/7eaba3453134385bb5ea9811ef0b33b85b4b556d/assets/faceunits01/targets/faceunits
+License: https://github.com/makehumancommunity/extra-targets/blob/7eaba3453134385bb5ea9811ef0b33b85b4b556d/LICENSE
+
+Their revision, weights and source-file hashes are in `portrait-head.json`.
+For reproduction, place both target files under `TARGET_DIRECTORY/expression/`.
+Only graphical vertex deltas are used. The previous female corner-only Gaussian
+lift is removed to avoid stacking two smiles. This is a restrained cosmetic
+expression, not facial tracking or a person's scanned likeness.

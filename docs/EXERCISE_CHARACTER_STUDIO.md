@@ -339,3 +339,41 @@ forehead RGB means were identical before and after reload (maximum difference
 0.0/255). No page/shader errors or horizontal overflow were reported. Visual
 captures were reviewed; the remaining generic facial styling is not presented
 as parity with the reference.
+
+## Scalp parting and facial comfort correction (2026-10-31)
+
+The medium hairstyle's central triangular opening exposed skin because the old
+cap selected whole head triangles. A fitted root surface now samples the outer
+scalp, follows a curved hairline, and feathers its edge. A one-micrometer ray
+origin offset avoids the duplicated sagittal seam; otherwise even an outermost
+intersection could put the center of the cap inside the head. Fine root fibers
+bridge the authored locks. An intermediate broad cap hid the hole but painted
+the forehead; that version was rejected during screenshot review. Regression
+checks require both opaque root coverage and a preserved visible forehead.
+
+The female refined head now uses two CC0 closed-mouth expression targets at low
+weight, with source revision and hashes recorded in the asset. The prior
+corner-only lift is removed for that head. Small local adjustments reduce the
+hollow under-eye area and protruding lower lip; portrait fill lighting and lip
+tint are softer. This is a cosmetic expression, not face tracking.
+
+Both irises share a small deterministic gaze offset tied to the existing motion
+phase. Pausing that phase freezes the gaze. Iris and pupil geometry remain
+clipped to the lids through a blink. Lid edges and lashes follow the curved
+eye surface instead of a flat plane; the sclera has subtle warmer, darker edges
+to reduce the pasted-on white outline. No new texture requests were added.
+
+Thirty-nine focused checks across eight files and the personal production build
+passed. These include scalp/forehead ray intersections for both body presets,
+head-only sculpt bounds, skin/texture ownership, hair contacts, bounded gaze,
+and iris clipping through a blink. The visual result remains a generic 3D
+character, below the supplied commercial reference's realism. These checks do
+not establish photorealism, celebrity likeness, or physical-phone performance.
+
+The final two DPR-2 browser flows passed in isolation (5.2 minutes total):
+visible iris color changes and persistence, female preset restoration, pixel
+checks for scalp coverage and uncovered forehead, unchanged skin color after
+reload, front/oblique/blink views, alternate hair and wall-push application.
+They reported no page/shader errors; the mobile flow reported no horizontal
+overflow. The final captures were visually reviewed. This source update does
+not include a new APK distribution.

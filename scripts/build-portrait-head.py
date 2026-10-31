@@ -38,6 +38,16 @@ for name,amount in sculpt_weights.items():
    index=int(a[0]);sculpts.setdefault(index,[0,0,0])
    for k in range(3):sculpts[index][k]+=float(a[k+1])*amount
 
+expression_weights={'mouthSmileLeft':.2,'mouthSmileRight':.2}
+expression={};expression_hashes={}
+for name,amount in expression_weights.items():
+ path=source/'expression'/(name+'.target');expression_hashes[name]=hashlib.sha256(path.read_bytes()).hexdigest()
+ for line in path.read_text().splitlines():
+  a=line.split()
+  if a and not a[0].startswith('#'):
+   index=int(a[0]);assert index<len(verts);expression.setdefault(index,[0,0,0])
+   for k in range(3):expression[index][k]+=float(a[k+1])*amount
+
 deltas=[]
 for j,i in enumerate(used):
  x,y,z=[n*mesh['scale'] for n in mesh['profiles']['female'][j*3:j*3+3]]
@@ -49,8 +59,8 @@ for j,i in enumerate(used):
  d=[v*(1-eye*.90) for v in d]
  mouth=math.exp(-(x/.045)**4-((y-1.609)/.018)**4)
  d[1]*=.25*(1-mouth*.85)
- d=[v+sculpts.get(i,[0,0,0])[k]*scale*weight for k,v in enumerate(d)]
+ d=[v+(sculpts.get(i,[0,0,0])[k]+expression.get(i,[0,0,0])[k])*scale*weight for k,v in enumerate(d)]
  if max(abs(v) for v in d)>.000005:deltas.append([j,*[round(v,6) for v in d]])
 out=root/'frontend/src/health/components/character/assets/portrait-head.json'
-out.write_text(json.dumps({'sourceRevision':mesh['revision'],'deltas':deltas,'sculptWeights':sculpt_weights,'sculptHashes':sculpt_hashes,'sourceHashes':{n:hashlib.sha256((source/n).read_bytes()).hexdigest() for n in names}},separators=(',',':'))+'\n')
+out.write_text(json.dumps({'sourceRevision':mesh['revision'],'deltas':deltas,'expressionRevision':'7eaba3453134385bb5ea9811ef0b33b85b4b556d','expressionWeights':expression_weights,'expressionHashes':expression_hashes,'sculptWeights':sculpt_weights,'sculptHashes':sculpt_hashes,'sourceHashes':{n:hashlib.sha256((source/n).read_bytes()).hexdigest() for n in names}},separators=(',',':'))+'\n')
 print({'vertices':len(deltas),'maxDelta':max(abs(v) for row in deltas for v in row[1:])})

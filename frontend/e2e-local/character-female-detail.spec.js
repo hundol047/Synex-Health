@@ -14,6 +14,21 @@ test('authored female preset persists, switches hair, and follows the exercise s
  await page.getByRole('button',{name:'정면 운동 시범 보기',exact:true}).click();
  await canvas.evaluate(el=>el.scrollIntoView({block:'center',behavior:'instant'}));
  await page.screenshot({path:info.outputPath('female-app.png')});const firstPortrait=await capture('female-front.png');
+ // The previous render exposed a triangular skin hole at the central roots.
+ // Sample that region, not the legitimate forehead or the blue background.
+ const rootCoverage=await page.evaluate(async data=>{
+  const image=new Image();image.src='data:image/png;base64,'+data;await image.decode();const c=document.createElement('canvas');c.width=image.width;c.height=image.height;const ctx=c.getContext('2d');ctx.drawImage(image,0,0);const p=ctx.getImageData(0,0,c.width,c.height).data;let count=0;
+  for(let y=Math.floor(c.height*.17);y<c.height*.235;y++)for(let x=Math.floor(c.width*.50);x<c.width*.56;x++){
+   const i=(y*c.width+x)*4,[r,g,b]=p.slice(i,i+3);if(r>110&&g>60&&r>g+12&&g>b+8)count++;
+  }
+  let skin=0,total=0;
+  for(let y=Math.floor(c.height*.275);y<c.height*.30;y++)for(let x=Math.floor(c.width*.48);x<c.width*.54;x++){
+   const i=(y*c.width+x)*4,[r,g,b]=p.slice(i,i+3);if(r>110&&g>60&&r>g+12&&g>b+8)skin++;total++;
+  }
+  return {exposedRootPixels:count,foreheadFraction:skin/total};
+ },firstPortrait.toString('base64'));
+ await info.attach('central-root-exposure',{body:JSON.stringify(rootCoverage),contentType:'application/json'});
+ expect(rootCoverage.exposedRootPixels).toBeLessThan(8);expect(rootCoverage.foreheadFraction).toBeGreaterThan(.9);
  await page.getByRole('button',{name:'45° 운동 시범 보기',exact:true}).click();await capture('female-oblique.png');
  await page.getByRole('button',{name:'정면 운동 시범 보기',exact:true}).click();
  await page.getByRole('button',{name:'저장하고 운동에 적용',exact:true}).click();await page.reload();

@@ -2,7 +2,7 @@ import React,{useMemo,useEffect} from 'react';
 import * as THREE from 'three';
 import {MeshBVH} from 'three-mesh-bvh';
 import {mergeGeometries} from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import {blinkAmount,taperedStrand,lidCoverGeometry,closedLidCreaseGeometry} from './livingFace.js';
+import {blinkAmount,eyeGaze,taperedStrand,lidCoverGeometry,closedLidCreaseGeometry} from './livingFace.js';
 import {swayingHairMaterial} from './hairMotion.js';
 import {eyeProportions,eyeCenterX} from './character.js';
 import {skinDetailColors} from './skinTone.js';
@@ -35,9 +35,9 @@ export function buildHeadDetails(base,scale,rest,character){
  const brows=[-1,1].map(side=>{
   const hairs=[];
   for(let i=0;i<240;i++){
-   const t=i/239,x=side*(eyeCenterX(character)-.018+.038*t),y=1.680+.003*Math.sin(Math.PI*(t*.87+.08))+Math.sin(i*2.399)*.0009;
-   const tipX=x+side*(.001+.0014*t),tipY=y+.0018+.0007*(1-t);
-   hairs.push(taperedStrand(new THREE.CatmullRomCurve3([point(x,y,surface(x,y)+.00035),point((x+tipX)/2,(y+tipY)/2+.0001,surface((x+tipX)/2,(y+tipY)/2)+.00055),point(tipX,tipY,surface(tipX,tipY)+.00035)]),.000085*scale*(1-.65*t),6));
+   const t=i/239,x=side*(eyeCenterX(character)-.018+.038*t),y=1.680+.003*Math.sin(Math.PI*(t*.87+.08))+Math.sin(i*2.399)*.00055;
+   const tipX=x+side*(.0025+.001*t),tipY=y+.0015-.0007*t;
+   hairs.push(taperedStrand(new THREE.CatmullRomCurve3([point(x,y,surface(x,y)+.00035),point((x+tipX)/2,(y+tipY)/2+.0001,surface((x+tipX)/2,(y+tipY)/2)+.00055),point(tipX,tipY,surface(tipX,tipY)+.00035)]),.00010*scale*(1-.6*t),6));
   }
   const merged=mergeGeometries(hairs);hairs.forEach(g=>g.dispose());return merged;
  });
@@ -63,15 +63,16 @@ export default function HeadDetail({base,scale,rest,joints,character,progress=0,
  const toon=character.style==='toon',hairMaterial=toon?'meshToonMaterial':'meshStandardMaterial';
  const blink=blinkAmount(progress);
  const closure=blink;
+ const [gazeX,gazeY]=eyeGaze(progress);
  const skinColors=useMemo(()=>skinDetailColors(character.skin),[character.skin]);
  const crease=useMemo(()=>closedLidCreaseGeometry(scale),[scale]);
  useEffect(()=>()=>crease.dispose(),[crease]);
  const cover=useMemo(()=>lidCoverGeometry(scale,toon),[scale,toon]);
  useEffect(()=>()=>cover.dispose(),[cover]);
  const iris=useMemo(()=>irisTexture(character.eyes),[character.eyes]);
- const irisShape=useMemo(()=>visibleIrisGeometry(scale,toon?.0055:.0057,closure),[scale,toon,closure]);
+ const irisShape=useMemo(()=>visibleIrisGeometry(scale,toon?.0055:.0057,closure,.00012,[gazeX,gazeY]),[scale,toon,closure,gazeX,gazeY]);
  const sclera=useMemo(()=>scleraGeometry(scale,closure),[scale,closure]);
- const pupil=useMemo(()=>visibleIrisGeometry(scale,.0020,closure,.00018),[scale,closure]);
+ const pupil=useMemo(()=>visibleIrisGeometry(scale,.0020,closure,.00018,[gazeX,gazeY]),[scale,closure,gazeX,gazeY]);
  useEffect(()=>()=>{sclera.dispose();pupil.dispose();},[sclera,pupil]);
  useEffect(()=>()=>irisShape.dispose(),[irisShape]);
  const lashLine=useMemo(()=>upperLashLineGeometry(scale),[scale]);
@@ -86,15 +87,15 @@ export default function HeadDetail({base,scale,rest,joints,character,progress=0,
  useEffect(()=>()=>locksMaterial.dispose(),[locksMaterial]);
  const hairProps={color:character.hair,...(!toon?{roughness:.48,metalness:0,envMapIntensity:.65}:{})};
  return <group position={joints[1]} quaternion={rigRotation(joints,1,rest)}>
-  <mesh geometry={detail.cap}>{toon?<meshToonMaterial color={character.hair}/>:<meshStandardMaterial color={character.hair} roughness={.95} envMapIntensity={.05}/>}</mesh>
+  <mesh geometry={detail.cap}>{toon?<meshToonMaterial color={new THREE.Color(character.hair).multiplyScalar(detail.cap.attributes.color?.3:1)} vertexColors={Boolean(detail.cap.attributes.color)} alphaTest={.05} alphaToCoverage/>:<meshStandardMaterial color={new THREE.Color(character.hair).multiplyScalar(detail.cap.attributes.color?.3:1)} vertexColors={Boolean(detail.cap.attributes.color)} alphaTest={.05} alphaToCoverage roughness={.85} envMapIntensity={.1}/>}</mesh>
   {detail.curves.map((g,i)=><mesh key={i} geometry={g} material={locksMaterial.material}/>)}
   {character.hairStyle==='ponytail'&&<mesh position={[0,1.731*scale-rest[1][1],-.052*scale-rest[1][2]]} rotation={[Math.PI/2,0,0]}><torusGeometry args={[.012*scale,.002*scale,8,24]}/><meshStandardMaterial color={character.top} roughness={.8}/></mesh>}
   {character.hairStyle==='bun'&&<mesh position={detail.bun} scale={[.029*scale*detail.bunScale,.026*scale*detail.bunScale,.023*scale*detail.bunScale]}><sphereGeometry args={[1,24,16]}/>{React.createElement(hairMaterial,hairProps)}</mesh>}
-  {detail.brows.map((g,i)=><mesh key={i} geometry={g}><meshStandardMaterial color={new THREE.Color(character.hair).multiplyScalar(.8)} vertexColors roughness={.9}/></mesh>)}
+  {detail.brows.map((g,i)=><mesh key={i} geometry={g} position={[0,Math.sin(progress*Math.PI*2)*.00015*scale,0]}><meshStandardMaterial color={new THREE.Color(character.hair).multiplyScalar(.8)} vertexColors roughness={.9}/></mesh>)}
   {detail.eyes.map((position,i)=><group key={i} position={position} scale={eyeProportions(character.eyeSize)} rotation={[0,i===0?-.10:.10,0]}>
    <group visible={blink<.995}>
-    <mesh geometry={sclera}><meshPhysicalMaterial color="#ddd6ce" roughness={.32} clearcoat={.18} clearcoatRoughness={.1}/></mesh>
-    <mesh geometry={irisShape}><meshPhysicalMaterial map={iris} roughness={.44} clearcoat={.18} clearcoatRoughness={.08} specularIntensity={.15} envMapIntensity={.18}/></mesh>
+    <mesh geometry={sclera}><meshPhysicalMaterial vertexColors roughness={.32} clearcoat={.18} clearcoatRoughness={.1}/></mesh>
+    <mesh geometry={irisShape}><meshPhysicalMaterial map={iris} roughness={.35} clearcoat={.4} clearcoatRoughness={.08} specularIntensity={.15} envMapIntensity={.18}/></mesh>
     <mesh geometry={pupil}><meshBasicMaterial color="#101218"/></mesh>
     {blink<.25&&<mesh position={[-.0014*scale,.0011*scale,(eyeSurfaceZ(-.0014,.0011)+.00024)*scale]}><circleGeometry args={[.0003*scale,12]}/><meshBasicMaterial color="#fffaf1" toneMapped={false}/></mesh>}
    </group>

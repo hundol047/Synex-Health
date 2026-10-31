@@ -47,7 +47,14 @@ export function characterSurface(base,options,scale=1){
    // the generic nose pinch again on top of those feature targets.
    out[i]*=1-.09*jaw-(c.body==='female'?0:.10*nose);
    if(c.body!=='female')out[i+2]-=.0015*nose*scale;
-   out[i+1]+=.0014*bell(Math.abs(x),.024,.013)*bell(y,1.607,.009)*Math.min(1,Math.max(0,(z-.10)/.04))*scale;
+   const front=Math.min(1,Math.max(0,(z-.10)/.04));
+   out[i+1]+=(c.body==='female'?0:.0014)*bell(Math.abs(x),.024,.013)*bell(y,1.607,.009)*front*scale;
+   if(c.body==='female'){
+    // Fill the hollow tear trough and relax the protruding lower lip. These
+    // local surface changes leave eyelid centers and the jaw joint intact.
+    const cheek=bell(Math.abs(x),.044,.023)*bell(y,1.637,.015);
+    out[i+2]+=(.0012*bell(Math.abs(x),.034,.018)*bell(y,1.650,.009)+.0008*cheek-.0011*bell(x,0,.025)*bell(y,1.600,.005))*front*scale;
+   }
   }
   if(y>1.55&&y<1.76){const face=bell(y,1.63,.06);out[i]*=1+face*(c.face==='soft'?.055:c.face==='angular'?-.055:0);if(c.style==='toon')out[i]*=1+.045*face;}
  }

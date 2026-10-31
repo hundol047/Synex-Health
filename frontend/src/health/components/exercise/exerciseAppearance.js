@@ -148,13 +148,13 @@ export function exerciseMaterials(character,faceAtlas=null) {
   if(character)for(const material of materials.slice(0,3)){
     material.vertexColors=true;material.color.set('#ffffff');material.map=null;
     material.onBeforeCompile=shader=>{
-      shader.uniforms.characterLip={value:character.face==='refined'?new THREE.Color(character.skin).multiply(new THREE.Color().setRGB(.82,.40,.44)):skinDetailColors(character.skin).lip};
-      shader.uniforms.characterLipStrength={value:faceAtlas&&character.style!=='toon'?(character.face==='refined'?.52:.06):.55};
+      shader.uniforms.characterLip={value:character.face==='refined'?new THREE.Color(character.skin).multiply(new THREE.Color().setRGB(.90,.55,.57)):skinDetailColors(character.skin).lip};
+      shader.uniforms.characterLipStrength={value:faceAtlas&&character.style!=='toon'?(character.face==='refined'?.32:.06):.55};
       shader.uniforms.characterFaceAtlas={value:faceAtlas};
       shader.uniforms.characterFaceReference={value:new THREE.Color(faceAtlasData.reference[character.body]||faceAtlasData.reference.male)};
       shader.uniforms.characterFaceContrast={value:character.body==='female'&&character.face==='refined'?.62:1};
       shader.uniforms.characterBrow={value:new THREE.Color(character.hair)};
-      shader.uniforms.characterSmile={value:character.face==='refined'?.0014:0};
+      shader.uniforms.characterSmile={value:character.face==='refined'?(character.body==='female'?.0024:.0014):0};
       shader.uniforms.characterTop={value:new THREE.Color(character.top)};shader.uniforms.characterBottom={value:new THREE.Color(character.bottom)};
       shader.vertexShader='attribute vec3 characterRest; attribute vec3 characterFaceUv; varying vec3 vCharacterRest; varying vec3 vCharacterFaceUv;\n'+shader.vertexShader;
       shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvCharacterRest=characterRest;vCharacterFaceUv=characterFaceUv;');
@@ -205,8 +205,8 @@ export function exerciseMaterials(character,faceAtlas=null) {
         diffuseColor.rgb*=vec3(1.+cheekWarm*.032,1.-cheekWarm*.012,1.-cheekWarm*.018)*(1.+skinGrain*.009*skinFace);
         float browT=clamp((ax-.014)/.038,0.,1.);
         float browY=1.680+.003*sin(3.14159265*(browT*.87+.08));
-        float browBand=exp(-pow((y-browY-.0006)/.0010,2.))*smoothstep(.012,.018,ax)*(1.-smoothstep(.046,.055,ax))*smoothstep(.12,.135,z);
-        diffuseColor.rgb=mix(diffuseColor.rgb,characterBrow,browBand*.35);
+        float browBand=exp(-pow((y-browY-.0006)/.00135,2.))*smoothstep(.012,.018,ax)*(1.-smoothstep(.046,.055,ax))*smoothstep(.12,.135,z);
+        diffuseColor.rgb=mix(diffuseColor.rgb,characterBrow,browBand*.25);
         float lipLine=1.609+characterSmile*exp(-pow((ax-.024)/.013,2.));
         float lipShape=exp(-pow(vCharacterRest.x/.024,4.)-pow((y-lipLine)/.0048,4.))*smoothstep(.09,.12,z);
         diffuseColor.rgb=mix(diffuseColor.rgb,characterLip,lipShape*characterLipStrength);
