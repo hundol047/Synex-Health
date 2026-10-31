@@ -1,11 +1,12 @@
 import * as THREE from 'three';
-import {subdivideHair} from './hairSubdivision.js';
+import {subdivideHair,hairBoundaryVertices} from './hairSubdivision.js';
 import {buildHairRoots} from './hairRoots.js';
 import layered from './assets/bob01.json';
 import bob from './assets/bob02.json';
 import pixie from './assets/short03.json';
 import sleek from './assets/medium-layered.json';
-const ASSETS={layered,bob,pixie,sleek};
+import wavy from './assets/short02.json';
+const ASSETS={layered,bob,pixie,sleek,wavy};
 export const hasAuthoredHair=style=>Boolean(ASSETS[style]);
 // Fit local licensed hair cards to the selected cosmetic head, in meters.
 export function buildAuthoredHair(base,scale,anchor,character,bodyIndices=[]){
@@ -27,7 +28,7 @@ export function buildAuthoredHair(base,scale,anchor,character,bodyIndices=[]){
  if(character.hairStyle==='sleek'){
   // Preserve the crown and hairline; shorten only free ends below the ears.
   // Compressing the whole wig raised the hairline and exposed the scalp.
-  const root=1.58*scale,length=.07*scale;
+  const root=1.58*scale,length=.10*scale;
   for(const p of fitted)if(p[1]<root){
    const distance=root-p[1];
    p[1]=root-length*Math.tanh(distance/length);
@@ -41,17 +42,23 @@ export function buildAuthoredHair(base,scale,anchor,character,bodyIndices=[]){
   const front=THREE.MathUtils.smoothstep(p[2]/scale,.10,.14)*(1-THREE.MathUtils.smoothstep(Math.abs(p[0]/scale),.052,.076))*THREE.MathUtils.smoothstep(p[1]/scale,1.60,1.65);
   p[1]+=Math.max(0,1.78*scale-p[1])*.28*front;
   const fringe=THREE.MathUtils.smoothstep(p[2]/scale,.11,.14)*(1-THREE.MathUtils.smoothstep(Math.abs(p[0]/scale),.044,.060))*THREE.MathUtils.smoothstep(p[1]/scale,1.63,1.66);
-  const edge=(1.697-.002*p[0]/(.05*scale))*scale;
-  p[1]+=Math.max(0,edge-p[1])*fringe;
+  const edge=(1.696-.002*p[0]/(.05*scale))*scale;
+  // Retain a little of each card's original tip length. Clamping all tips to
+  // exactly one height creates a hard, ruler-straight fringe.
+  const below=Math.max(0,edge-p[1]);
+  p[1]+=(below-.003*scale*Math.tanh(below/(.003*scale)))*fringe;
  }
  const refined=subdivideHair(data,fitted),points=refined.points;
- const positions=new Float32Array(refined.vertices.length*3),colors=new Float32Array(positions.length).fill(1),flex=new Float32Array(refined.vertices.length);
+ const feather=character.hairStyle==='wavy',components=feather?4:3;
+ const boundary=feather?hairBoundaryVertices(refined):null;
+ const positions=new Float32Array(refined.vertices.length*3),colors=new Float32Array(refined.vertices.length*components).fill(1),flex=new Float32Array(refined.vertices.length);
  refined.vertices.forEach((source,i)=>{
   const p=points[source];positions.set(p.map((n,k)=>n-anchor.getComponent(k)),i*3);
+  if(feather)colors[i*4+3]=boundary.has(source)?0:1;
   // Only the loose ends move; crown roots remain attached to the scalp.
   flex[i]=Math.pow(THREE.MathUtils.clamp((1.735-p[1]/scale)/.16,0,1),2)*.002;
  });
- const locks=new THREE.BufferGeometry();locks.setAttribute('position',new THREE.BufferAttribute(positions,3));locks.setAttribute('uv',new THREE.Float32BufferAttribute(refined.uv,2));locks.setAttribute('color',new THREE.BufferAttribute(colors,3));locks.setAttribute('hairFlex',new THREE.BufferAttribute(flex,1));locks.setIndex(refined.indices);
+ const locks=new THREE.BufferGeometry();locks.setAttribute('position',new THREE.BufferAttribute(positions,3));locks.setAttribute('uv',new THREE.Float32BufferAttribute(refined.uv,2));locks.setAttribute('color',new THREE.BufferAttribute(colors,components));locks.setAttribute('hairFlex',new THREE.BufferAttribute(flex,1));locks.setIndex(refined.indices);
  // UV islands duplicate vertices. Compute normals on the original topology so
  // a texture seam does not become an unintended hard highlight on the hair.
  const surface=new THREE.BufferGeometry();surface.setAttribute('position',new THREE.Float32BufferAttribute(points.flat(),3));surface.setIndex(refined.indices.map(i=>refined.vertices[i]));surface.computeVertexNormals();

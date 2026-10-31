@@ -182,6 +182,16 @@ export function exerciseMaterials(character,faceAtlas=null) {
         vec4 faceTexel=texture2D(characterFaceAtlas,vCharacterFaceUv.xy);
         vec3 facialAlbedo=faceTexel.rgb;
         vec3 faceDetail=clamp(facialAlbedo/max(characterFaceReference,vec3(.001)),vec3(.06),vec3(1.65));
+        // The diffuse source contains baked broad lighting. Reduce only that
+        // low-frequency contrast on cheeks/forehead, retaining pores and the
+        // original lip/nostril/eye pigments. This is not a skin blur or a new map.
+        vec3 broadAlbedo=texture2D(characterFaceAtlas,vCharacterFaceUv.xy,4.).rgb;
+        vec3 broadRatio=clamp(broadAlbedo/max(characterFaceReference,vec3(.001)),vec3(.18),vec3(2.));
+        vec3 fineRatio=clamp(facialAlbedo/max(broadAlbedo,vec3(.001)),vec3(.45),vec3(1.65));
+        float cheeks=smoothstep(.018,.033,ax)*(1.-smoothstep(.064,.079,ax))*exp(-pow((y-1.639)/.023,2.));
+        float forehead=smoothstep(1.685,1.710,y)*(1.-smoothstep(1.74,1.76,y));
+        float evenSkin=max(cheeks,forehead)*smoothstep(.09,.13,z)*.72;
+        faceDetail=mix(faceDetail,fineRatio*pow(broadRatio,vec3(.48)),evenSkin);
         ${character.body==='female'&&character.face==='refined'?`// Suppress baked socket shadows without erasing lip/cheek texture detail.
         float socket=exp(-pow((ax-.032)/.024,2.)-pow((y-1.663)/.019,2.))*smoothstep(.10,.13,z);
         float localContrast=characterFaceContrast*mix(1.,.48,socket);`:'float localContrast=characterFaceContrast;'}
@@ -224,7 +234,7 @@ export function exerciseMaterials(character,faceAtlas=null) {
         roughnessFactor=mix(roughnessFactor,.68-tZone,facialSkin);
       `);
     };
-    material.customProgramCacheKey=()=>`face-atlas-v9-${Boolean(faceAtlas)}-${character.body}-${character.face}-${character.outfit}-${character.pants}`;
+    material.customProgramCacheKey=()=>`face-atlas-v10-${Boolean(faceAtlas)}-${character.body}-${character.face}-${character.outfit}-${character.pants}`;
   }
   let disposed = false;
   return { materials, dispose: () => {

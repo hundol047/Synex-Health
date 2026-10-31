@@ -469,3 +469,57 @@ web build passed again; fresh male/female/closed-eye captures were reviewed.
 The lower lash fan now fades toward its ends, with lighter male lash density.
 This pass does not produce or publish a new APK and is not a physical-device
 validation. The screenshots are actual app rendering, not generated mockups.
+
+## Natural workout hair and skin contrast (2026-10-31)
+
+Fetched `origin/main` before editing and verified it matched local `2438102`.
+This pass builds on the coherent head and authored facial parts from that
+version; it does not revert the character or exercise implementation.
+
+The default `wavy` style now uses the CC0 MakeHuman `short02` mesh and strand
+texture. This replaces parallel procedural ribbons that appeared comb-like in
+close portraits. The saved identifier is preserved and the displayed label is
+**내추럴 쇼트**. The model fits both body types and hair-volume settings; its
+smaller root underlay stays below the existing default-character vertex budget.
+The texture is local, color-neutral and initialized as sRGB before first use.
+Source/license and reproduction details are in the character asset README.
+
+The female medium hair retains its authored silhouette with less compression of
+its free ends. Its front tips keep a small variation in length instead of all
+being clamped to one straight line. Lower alpha rejection preserves finer strand
+edges, with depth writing and MSAA coverage retained for layered hair cards.
+
+On cheeks and forehead only, a mip-biased sample separates broad baked texture
+lighting from fine detail. Broad contrast is reduced while the sharp original
+sample retains pores; the eye, lip and nostril pigmentation is not blurred.
+This adds one texture sample to the existing face shader, without another
+texture, light, post-processing pass or animation clock. Selected skin tone,
+existing iris details, body measurements and movement timing remain intact.
+
+The natural short hair's open boundary now fades through vertex alpha. Boundary
+edges are counted on physical topology rather than duplicated UV indices, so
+texture seams remain opaque instead of becoming holes across the crown. A
+synthetic seam regression checks this distinction. The viewport scroll margin
+also keeps character controls clear of the fixed mobile navigation during focus
+and scroll-into-view. No saved preferences are reset.
+
+Portrait rendering also skips the offscreen floor contact-shadow depth/blur
+passes. The face camera cannot see the floor; full-body exercise lighting and
+floor shadows are retained. This removes unnecessary GPU work during face edits
+and eyelid updates. The initial software-WebGL workflow twice exceeded its
+five-second rendered-phase assertion. A diagnostic run confirmed the input,
+React value and rendered phase were all 0.777 and completed the full flow; the
+state was not lost. The production optimization removes the hidden passes,
+without changing movement timing or increasing the existing test timeouts.
+
+Final validation: 54 distinct focused unit tests across 10 files passed, including
+physical hairline/seam topology, default geometry budget, hair motion/material
+ownership, both bodies and wall-contact phases. The personal web build passed.
+After removing the unused portrait shadow passes, both original browser flows
+passed together (4.7 minutes) with the existing five-second rendered-phase
+assertions: iris pixel recoloring, save/reload color persistence, female
+front/oblique/blink views, hairstyle changes and the wall-push scene. No page or
+shader errors were reported. Actual male/female portraits and squat previews
+were inspected. This is browser/geometry evidence, not a physical-phone latency
+measurement or a claim of photorealistic likeness. No APK is published by this
+source-code update.

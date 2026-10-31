@@ -1,6 +1,22 @@
 // One Loop subdivision step on connected hair topology, preserving duplicated
 // UV seams. Immutable stencils are cached; fitted positions remain per-head.
 const cache=new WeakMap();
+const boundaryCache=new WeakMap();
+// Count physical edges, not duplicated UV vertices: an atlas seam is not a
+// hairline and must never become a transparent split through the crown.
+export function hairBoundaryVertices(data){
+ if(boundaryCache.has(data.indices))return boundaryCache.get(data.indices);
+ const edges=new Map();
+ for(let i=0;i<data.indices.length;i+=3){
+  const tri=data.indices.slice(i,i+3).map(v=>data.vertices[v]);
+  for(let k=0;k<3;k++){
+   const a=tri[k],b=tri[(k+1)%3],key=a<b?`${a}:${b}`:`${b}:${a}`;
+   const edge=edges.get(key);if(edge)edge.count++;else edges.set(key,{a,b,count:1});
+  }
+ }
+ const boundary=new Set();for(const edge of edges.values())if(edge.count===1){boundary.add(edge.a);boundary.add(edge.b);}
+ boundaryCache.set(data.indices,boundary);return boundary;
+}
 function topology(data,count){
  if(cache.has(data))return cache.get(data);
  const neighbors=Array.from({length:count},()=>new Set()),edges=new Map();
