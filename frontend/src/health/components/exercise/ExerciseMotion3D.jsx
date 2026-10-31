@@ -31,6 +31,7 @@ import {FLOOR_STRETCHES} from './stretchRig.js';
 import MotionFigure from './MotionFigure.jsx';
 import { applyAthleteHighlights, applyMannequinColors, mannequinGuide, mannequinMaterials } from './instructionMannequin.js';
 
+const DetailedAthlete=React.lazy(()=>import('../character/DetailedAthlete.jsx'));
 const FLOOR_MOTIONS = /plank|bridge|dead_bug|bird_dog|push_?up|clamshell|prone_y|heel_slide|cat_cow|floor_press|bench_press/;
 const PLANTED_FLOOR_MOTIONS = new Set(['full_pushup', 'push_up', 'plank', 'bridge', 'glute_bridge']);
 const ORIGINAL_MOTIONS = new Set(['squat', 'lunge', 'side_lunge', 'full_pushup', 'push_up', 'plank', 'bridge', 'glute_bridge', 'hinge', 'hip_hinge']);
@@ -126,6 +127,7 @@ function Athlete({ motion, progress, mirror, measurement, profile, compact, appe
         if(readyMotion.current !== motion){readyMotion.current = motion;requestAnimationFrame(() => onReady?.());}
         renderer.domElement.dataset.exerciseRendered = motion;
         renderer.domElement.dataset.exerciseAppearance = appearance;
+        renderer.domElement.dataset.characterModel = 'custom';
         renderer.domElement.dataset.characterStyle = character.style;
         renderer.domElement.dataset.characterBody = character.body;
         renderer.domElement.dataset.characterHair = character.hairStyle;
@@ -214,11 +216,11 @@ export function ExerciseSceneFallback({children,onReady}){
   return <div className="motion-scene-fallback"><p role="status">3D를 표시할 수 없어 간단 동작 안내를 보여드립니다.</p>{children}</div>;
 }
 
-class SceneBoundary extends React.Component {
+export class SceneBoundary extends React.Component {
   state = { failed: false };
   static getDerivedStateFromError() { return { failed: true }; }
   componentDidUpdate(previous) {
-    if (this.state.failed && previous.motion !== this.props.motion) this.setState({ failed: false });
+    if (this.state.failed && (previous.motion !== this.props.motion || previous.resetKey !== this.props.resetKey)) this.setState({ failed: false });
   }
   render() { return this.state.failed ? this.props.fallback : this.props.children; }
 }
@@ -251,9 +253,9 @@ export default function ExerciseMotion3D({ motion, progress, mirror, measurement
       <button type="button" className="btn btn-ghost" aria-label="오른쪽으로 회전" onClick={() => rotateView(controls, 1)}>회전 <RotateCw size={16}/></button>
     </div>}
     <div className="motion-3d-canvas" style={{ position: 'relative', height: compact ? undefined : 340, flex: compact ? '1 1 0' : undefined, minHeight: compact ? 0 : undefined, touchAction: 'none' }}>
-      <SceneBoundary motion={motion} fallback={fallback}><React.Suspense fallback={<p className="motion-loading" role="status">캐릭터를 준비하고 있습니다.</p>}><Canvas shadows={!compact} dpr={render.dpr} frameloop="demand" gl={{ antialias: true, alpha: true, powerPreference: render.powerPreference }} onCreated={({ gl }) => { if (forcedRenderQuality()) return; const ctx = gl.getContext(), info = ctx.getExtension('WEBGL_debug_renderer_info'); setQuality(tier => refineRenderQuality(tier, String(ctx.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : ctx.RENDERER) || ''))); }} camera={{ position: [3, 1.5, 3], fov: 36 }} fallback={fallback} aria-label={appearance === 'mannequin' ? '운동 부위를 강조한 3D 운동 시범' : '운동복을 입은 3D 운동 시범'}>
+      <SceneBoundary motion={motion} resetKey={`${character.model}:${character.body}`} fallback={fallback}><React.Suspense fallback={<p className="motion-loading" role="status">캐릭터를 준비하고 있습니다.</p>}><Canvas shadows={!compact} dpr={render.dpr} frameloop="demand" gl={{ antialias: true, alpha: true, powerPreference: render.powerPreference }} onCreated={({ gl }) => { if (forcedRenderQuality()) return; const ctx = gl.getContext(), info = ctx.getExtension('WEBGL_debug_renderer_info'); setQuality(tier => refineRenderQuality(tier, String(ctx.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : ctx.RENDERER) || ''))); }} camera={{ position: [3, 1.5, 3], fov: 36 }} fallback={fallback} aria-label={appearance === 'mannequin' ? '운동 부위를 강조한 3D 운동 시범' : '운동복을 입은 3D 운동 시범'}>
         <SceneCamera motion={motion} view={view} mirror={mirror} heightScale={heightScale} controls={controls} faceFocus={faceFocus}/><Studio compact={compact} heightScale={heightScale} motion={motion} portrait={faceFocus} shadowMap={render.shadowMap}/>{usesQualityPipeline(render) && <QualityPipeline settings={render} portrait={faceFocus}/>}
-        <Athlete {...{ motion, progress, mirror, compact, appearance, onReady, character, highlight }} measurement={m} profile={p}/>
+        {character.model==='detailed'&&appearance==='athlete'?<DetailedAthlete {...{motion,progress,mirror,compact,onReady,character,highlight}} measurement={m} profile={p}/>:<Athlete {...{ motion, progress, mirror, compact, appearance, onReady, character, highlight }} measurement={m} profile={p}/>}
         <OrbitControls ref={controls} enabled={view === 'free' || !angleControls} enablePan={false} minDistance={(faceFocus ? .38 : 1.2) * heightScale} maxDistance={(faceFocus ? .95 : 6) * heightScale} maxPolarAngle={Math.PI / 2 - .02}/>
       </Canvas></React.Suspense></SceneBoundary>
       {compact && highlight && anatomy.primary.length > 0 && <span className="motion-anatomy-badge" title={`주요 부위: ${anatomy.primaryLabel}. 운동 안내이며 실제 근육 사용량 측정이 아닙니다.`}>빨강 · 주요 운동 부위</span>}

@@ -1,0 +1,86 @@
+{
+  "repository": "microsoft/Microsoft-Rocketbox",
+  "revision": "0943055db6ec570bcef9f2c8b41c9e5467c808f9",
+  "files": [
+    {
+      "path": "Assets/Avatars/Professions/Sports_Female_02/Export/Sports_Female_02_facial.fbx",
+      "sha": "033b899e553f9e85f18f9144422a658f8894f56b",
+      "size": 2128096
+    },
+    {
+      "path": "Assets/Avatars/Professions/Sports_Female_02/Textures/f013_body_color.tga",
+      "sha": "73b94869174021c871b8efc199b1b78d23e43559",
+      "size": 12582956
+    },
+    {
+      "path": "Assets/Avatars/Professions/Sports_Female_02/Textures/f013_body_normal.tga",
+      "sha": "9922df7cdb1f7dd3dd3bdede4d62ed04c5eae47d",
+      "size": 12582956
+    },
+    {
+      "path": "Assets/Avatars/Professions/Sports_Female_02/Textures/f013_body_specular.tga",
+      "sha": "c8e8def5746f0ebfeb8e214a033e881d110ace01",
+      "size": 12582956
+    },
+    {
+      "path": "Assets/Avatars/Professions/Sports_Female_02/Textures/f013_head_color.tga",
+      "sha": "1985d9eb2cdc1df50020cf73848dce1716c6165e",
+      "size": 12582956
+    },
+    {
+      "path": "Assets/Avatars/Professions/Sports_Female_02/Textures/f013_head_normal.tga",
+      "sha": "92ea37320c8f0bff33fa1959f5820a190a5d72d9",
+      "size": 12582956
+    },
+    {
+      "path": "Assets/Avatars/Professions/Sports_Female_02/Textures/f013_head_specular.tga",
+      "sha": "321039079599dc27017dad4ea510e4d97a17ee45",
+      "size": 12582956
+    },
+    {
+      "path": "Assets/Avatars/Professions/Sports_Female_02/Textures/f013_opacity_color.tga",
+      "sha": "8897f1280689b5aab5ed6ea089880a3a7d17319c",
+      "size": 16777260
+    },
+    {
+      "path": "Assets/Avatars/Professions/Sports_Male_04/Export/Sports_Male_04_facial.fbx",
+      "sha": "ea67080a44e47cd8f25d5d7cd64f5f44f10f8a4f",
+      "size": 1842592
+    },
+    {
+      "path": "Assets/Avatars/Professions/Sports_Male_04/Textures/m026_body_color.tga",
+      "sha": "60558a42a11ede73bd6f612d5119640de2836c6e",
+      "size": 12582956
+    },
+    {
+      "path": "Assets/Avatars/Professions/Sports_Male_04/Textures/m026_body_normal.tga",
+      "sha": "f161a886d464ff1c57c08d3de756f315c1723016",
+      "size": 12582956
+    },
+    {
+      "path": "Assets/Avatars/Professions/Sports_Male_04/Textures/m026_body_specular.tga",
+      "sha": "572b1dab2ef810d7cb84c5799e7bfa384ed8292b",
+      "size": 12582956
+    },
+    {
+      "path": "Assets/Avatars/Professions/Sports_Male_04/Textures/m026_head_color.tga",
+      "sha": "17383635513bfbca88dcf6514a6ea9c8c101052a",
+      "size": 12582956
+    },
+    {
+      "path": "Assets/Avatars/Professions/Sports_Male_04/Textures/m026_head_normal.tga",
+      "sha": "6c36a8de648b9a87f1c12344a4582d2ad94e9b1f",
+      "size": 12582956
+    },
+    {
+      "path": "Assets/Avatars/Professions/Sports_Male_04/Textures/m026_head_specular.tga",
+      "sha": "aba449b5dae6ef5e2790941d83e7c2b34e868d12",
+      "size": 12582956
+    },
+    {
+      "path": "LICENSE.md",
+      "sha": "9bcfb3ece5301a55d3a41bbd00a029ab27d61d13",
+      "size": 1066
+    }
+  ]
+}
