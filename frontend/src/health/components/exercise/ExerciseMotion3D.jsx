@@ -18,6 +18,8 @@ import Footwear from '../body3d/Footwear.jsx';
 import { exerciseAvatarGeometry, exerciseMaterials } from './exerciseAppearance.js';
 import ExerciseEquipment from './ExerciseEquipment.jsx';
 import { exerciseCameraPreset } from './exerciseCamera.js';
+import QualityPipeline from './QualityPipeline.jsx';
+import { detectRenderQuality, forcedRenderQuality, refineRenderQuality, renderSettings, usesQualityPipeline } from './renderQuality.js';
 import {prepareAthlete,getGripSurface,exerciseShoeFloor} from './athleteModel.js';
 import { exerciseHandShape } from './handPoses.js';
 import { morphParameters } from '../body3d/morph.js';
@@ -174,17 +176,17 @@ function TrainingMat({ heightScale }) {
   </mesh>;
 }
 
-function Studio({ compact, heightScale, motion, portrait=false }) {
+function Studio({ compact, heightScale, motion, portrait=false, shadowMap=1024 }) {
   const floor = FLOOR_MOTIONS.test(motion) || FLOOR_STRETCHES.has(motion) || MOTIONS[motion]?.prop === 'mat';
   return <>
     <StudioEnvironment portrait={portrait}/>
     <color attach="background" args={['#f7faff']}/>
     <fog attach="fog" args={['#f7faff', 5, 11]}/>
     <hemisphereLight args={['#fffaf6', '#c4cedb', portrait?.42:.45]}/>
-    <directionalLight position={portrait?[-2,3,4]:[-3,5,4]} color="#fff8f1" intensity={portrait?1.20:1.7} castShadow={!compact} shadow-mapSize={[1024, 1024]} shadow-camera-left={-2} shadow-camera-right={2} shadow-camera-top={2.6} shadow-camera-bottom={-1.3} shadow-bias={-.0003} shadow-normalBias={.012} shadow-radius={4}/>
+    <directionalLight position={portrait?[-2,3,4]:[-3,5,4]} color="#fff8f1" intensity={portrait?1.20:1.7} castShadow={!compact} shadow-mapSize={[shadowMap, shadowMap]} shadow-camera-left={-2} shadow-camera-right={2} shadow-camera-top={2.6} shadow-camera-bottom={-1.3} shadow-bias={-.0003} shadow-normalBias={.012} shadow-radius={4}/>
     <directionalLight position={[3, 2, 2]} color="#e4efff" intensity={portrait?.50:.65}/>
     <directionalLight position={[1, 3, -3]} color="#edf3ff" intensity={.85}/>
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -.021, 0]}><planeGeometry args={[30, 30]}/><meshStandardMaterial color="#eff4fb" roughness={.95}/></mesh>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -.021, 0]} userData={{ noAO: true }}><planeGeometry args={[30, 30]}/><meshStandardMaterial color="#eff4fb" roughness={.95}/></mesh>
     {floor && <TrainingMat heightScale={heightScale}/>}
     {compact ? <SoftFloorShadow floor={floor} heightScale={heightScale}/> : <ContactShadows position={[0, floor ? .001 : -.019, 0]} opacity={.29} scale={4} blur={2.3} far={2} resolution={512}/>}
   </>;
@@ -224,6 +226,8 @@ export default function ExerciseMotion3D({ motion, progress, mirror, measurement
   const initialView = defaultView || (FLOOR_MOTIONS.test(motion) ? 'side' : '45');
   const [view, setView] = useState(initialView);
   const [appearance, setAppearance] = useState('athlete');
+  const [quality, setQuality] = useState(() => detectRenderQuality());
+  const render = useMemo(() => renderSettings(quality, { compact, devicePixelRatio: globalThis.devicePixelRatio || 1 }), [quality, compact]);
   const anatomy = mannequinGuide(motion);
   useEffect(() => setView(initialView), [motion, initialView,faceFocus]);
   // The instructor has a consistent demonstration build. Personal body
@@ -243,8 +247,8 @@ export default function ExerciseMotion3D({ motion, progress, mirror, measurement
       <button type="button" className="btn btn-ghost" aria-label="오른쪽으로 회전" onClick={() => rotateView(controls, 1)}>회전 <RotateCw size={16}/></button>
     </div>}
     <div className="motion-3d-canvas" style={{ position: 'relative', height: compact ? undefined : 340, flex: compact ? '1 1 0' : undefined, minHeight: compact ? 0 : undefined, touchAction: 'none' }}>
-      <SceneBoundary motion={motion} fallback={fallback}><React.Suspense fallback={<p className="motion-loading" role="status">캐릭터를 준비하고 있습니다.</p>}><Canvas shadows={!compact} dpr={[1, compact ? 1.5 : 2]} frameloop="demand" gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }} camera={{ position: [3, 1.5, 3], fov: 36 }} fallback={fallback} aria-label={appearance === 'mannequin' ? '운동 부위를 강조한 3D 운동 시범' : '운동복을 입은 3D 운동 시범'}>
-        <SceneCamera motion={motion} view={view} mirror={mirror} heightScale={heightScale} controls={controls} faceFocus={faceFocus}/><Studio compact={compact} heightScale={heightScale} motion={motion} portrait={faceFocus}/>
+      <SceneBoundary motion={motion} fallback={fallback}><React.Suspense fallback={<p className="motion-loading" role="status">캐릭터를 준비하고 있습니다.</p>}><Canvas shadows={!compact} dpr={render.dpr} frameloop="demand" gl={{ antialias: true, alpha: true, powerPreference: render.powerPreference }} onCreated={({ gl }) => { if (forcedRenderQuality()) return; const ctx = gl.getContext(), info = ctx.getExtension('WEBGL_debug_renderer_info'); setQuality(tier => refineRenderQuality(tier, String(ctx.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : ctx.RENDERER) || ''))); }} camera={{ position: [3, 1.5, 3], fov: 36 }} fallback={fallback} aria-label={appearance === 'mannequin' ? '운동 부위를 강조한 3D 운동 시범' : '운동복을 입은 3D 운동 시범'}>
+        <SceneCamera motion={motion} view={view} mirror={mirror} heightScale={heightScale} controls={controls} faceFocus={faceFocus}/><Studio compact={compact} heightScale={heightScale} motion={motion} portrait={faceFocus} shadowMap={render.shadowMap}/>{usesQualityPipeline(render) && <QualityPipeline settings={render} portrait={faceFocus}/>}
         <Athlete {...{ motion, progress, mirror, compact, appearance, onReady, character, highlight }} measurement={m} profile={p}/>
         <OrbitControls ref={controls} enabled={view === 'free' || !angleControls} enablePan={false} minDistance={(faceFocus ? .38 : 1.2) * heightScale} maxDistance={(faceFocus ? .95 : 6) * heightScale} maxPolarAngle={Math.PI / 2 - .02}/>
       </Canvas></React.Suspense></SceneBoundary>
