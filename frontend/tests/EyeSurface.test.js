@@ -2,6 +2,17 @@ import {it,expect} from 'vitest';
 import {irisTexture,eyeLidGeometry} from '../src/health/components/character/eyeSurface.js';
 import {exerciseMaterials} from '../src/health/components/exercise/exerciseAppearance.js';
 import {DEFAULT_CHARACTER} from '../src/health/components/character/character.js';
+it('uses distinct shader programs for portrait socket shading and keeps atlas lip detail unpainted',()=>{
+ const portrait=exerciseMaterials({...DEFAULT_CHARACTER,body:'female',face:'refined'},{});
+ const balanced=exerciseMaterials({...DEFAULT_CHARACTER,body:'female',face:'balanced'},{});
+ try{
+  expect(portrait.materials[0].customProgramCacheKey()).not.toBe(balanced.materials[0].customProgramCacheKey());
+  const shader={uniforms:{},vertexShader:'#include <begin_vertex>',fragmentShader:'#include <color_fragment>'};
+  portrait.materials[0].onBeforeCompile(shader);
+  expect(shader.fragmentShader).toContain('float socket=');
+  expect(shader.fragmentShader).not.toContain('float lipCrease=');
+ }finally{portrait.dispose();balanced.dispose();}
+});
 it('builds deterministic iris fibers with a darker outer rim and bounded texture memory',()=>{
  const a=irisTexture('#4b6b72'),b=irisTexture('#4b6b72');try{
  expect(a.image.data).toEqual(b.image.data);expect(a.image.data.length).toBe(128*128*4);

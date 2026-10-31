@@ -27,19 +27,19 @@ export function buildAuthoredHair(base,scale,anchor,character,bodyIndices=[]){
  if(character.hairStyle==='sleek'){
   // Preserve the crown and hairline; shorten only free ends below the ears.
   // Compressing the whole wig raised the hairline and exposed the scalp.
-  const root=1.66*scale,length=.125*scale;
+  const root=1.58*scale,length=.07*scale;
   for(const p of fitted)if(p[1]<root){
-   const distance=root-p[1],t=THREE.MathUtils.smoothstep(distance,.04*scale,.19*scale);
+   const distance=root-p[1];
    p[1]=root-length*Math.tanh(distance/length);
-   // Turn the free ends inward instead of leaving a wide triangular shelf.
-   p[0]*=1-.24*t;
   }
  }
+ // Preserve the authored fringe. Pushing all front vertices sideways made a
+ // wide bare forehead and split the hairline even when a scalp cap was present.
  if(character.hairStyle==='sleek')for(const p of fitted){
-  // Open the front layers around the eyes while retaining the crown parting.
-  // A smooth radial expansion avoids a flat vertical cut through the fringe.
-  const frame=(1-THREE.MathUtils.smoothstep(p[1]/scale,1.685,1.735))*THREE.MathUtils.smoothstep(p[2]/scale,.05,.12);
-  p[0]=Math.sign(p[0])*Math.sqrt(p[0]*p[0]+frame*(.052*scale)**2);
+  // Shorten the front locks from the crown, not sideways away from the face.
+  // This retains a continuous fringe while lifting its ends above both eyes.
+  const front=THREE.MathUtils.smoothstep(p[2]/scale,.10,.14)*(1-THREE.MathUtils.smoothstep(Math.abs(p[0]/scale),.052,.076))*THREE.MathUtils.smoothstep(p[1]/scale,1.60,1.65);
+  p[1]+=Math.max(0,1.78*scale-p[1])*.28*front;
  }
  const refined=subdivideHair(data,fitted),points=refined.points;
  const positions=new Float32Array(refined.vertices.length*3),colors=new Float32Array(positions.length).fill(1),flex=new Float32Array(refined.vertices.length);

@@ -28,7 +28,7 @@ portrait_floor=min(portrait[i][1] for i in used);portrait_scale=1.78/(max(portra
 def smooth(a,b,v):
  t=max(0,min(1,(v-a)/(b-a)));return t*t*(3-2*t)
 # Separate authored feature sculpts avoid a single generic face-wide squash.
-sculpt_weights={'nose-width3-decr':.4,'nose-point-width-decr':.3,'nose-nostrils-width-decr':.25,'nose-flaring-decr':.2,'mouth-lowerlip-volume-decr':.4,'mouth-upperlip-volume-decr':.35,'mouth-scale-horiz-decr':.5,'mouth-laugh-lines-in':.35,'chin-width-decr':.45,'chin-prominent-decr':.18,'head-oval':.55,'l-cheek-bones-decr':.35,'r-cheek-bones-decr':.35,'l-eye-bag-decr':.8,'r-eye-bag-decr':.8,'l-eye-eyefold-up':.15,'r-eye-eyefold-up':.15}
+sculpt_weights={'nose-width3-decr':.6,'nose-point-width-decr':.35,'nose-nostrils-width-decr':.4,'nose-flaring-decr':.2,'mouth-lowerlip-volume-decr':.55,'mouth-upperlip-volume-decr':.5,'mouth-scale-horiz-decr':.5,'mouth-laugh-lines-in':.35,'chin-width-decr':.45,'chin-prominent-decr':.18,'head-oval':.55,'l-cheek-bones-decr':.35,'r-cheek-bones-decr':.35,'l-eye-bag-decr':.8,'r-eye-bag-decr':.8,'l-eye-eyefold-up':.15,'r-eye-eyefold-up':.15}
 sculpts={};sculpt_hashes={}
 for name,amount in sculpt_weights.items():
  path=source/'sculpt'/(name+'.target');sculpt_hashes[name]=hashlib.sha256(path.read_bytes()).hexdigest()
@@ -38,7 +38,7 @@ for name,amount in sculpt_weights.items():
    index=int(a[0]);sculpts.setdefault(index,[0,0,0])
    for k in range(3):sculpts[index][k]+=float(a[k+1])*amount
 
-expression_weights={'mouthSmileLeft':.2,'mouthSmileRight':.2}
+expression_weights={'mouthSmileLeft':.08,'mouthSmileRight':.08}
 expression={};expression_hashes={}
 for name,amount in expression_weights.items():
  path=source/'expression'/(name+'.target');expression_hashes[name]=hashlib.sha256(path.read_bytes()).hexdigest()

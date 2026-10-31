@@ -91,8 +91,8 @@ export default function HeadDetail({base,scale,rest,joints,character,progress=0,
   {detail.curves.map((g,i)=><mesh key={i} geometry={g} material={locksMaterial.material}/>)}
   {character.hairStyle==='ponytail'&&<mesh position={[0,1.731*scale-rest[1][1],-.052*scale-rest[1][2]]} rotation={[Math.PI/2,0,0]}><torusGeometry args={[.012*scale,.002*scale,8,24]}/><meshStandardMaterial color={character.top} roughness={.8}/></mesh>}
   {character.hairStyle==='bun'&&<mesh position={detail.bun} scale={[.029*scale*detail.bunScale,.026*scale*detail.bunScale,.023*scale*detail.bunScale]}><sphereGeometry args={[1,24,16]}/>{React.createElement(hairMaterial,hairProps)}</mesh>}
-  {detail.brows.map((g,i)=><mesh key={i} geometry={g} position={[0,Math.sin(progress*Math.PI*2)*.00015*scale,0]}><meshStandardMaterial color={new THREE.Color(character.hair).multiplyScalar(.8)} vertexColors roughness={.9}/></mesh>)}
-  {detail.eyes.map((position,i)=><group key={i} position={position} scale={eyeProportions(character.eyeSize)} rotation={[0,i===0?-.10:.10,0]}>
+  {detail.brows.map((g,i)=><mesh key={i} geometry={g} position={[0,Math.sin(progress*Math.PI*2)*.00015*scale,0]}><meshStandardMaterial color={new THREE.Color(character.hair).lerp(new THREE.Color(character.skin),.12)} vertexColors roughness={.9}/></mesh>)}
+  {detail.eyes.map((position,i)=><group key={i} position={position} scale={eyeProportions(character.eyeSize,character)} rotation={[0,i===0?-.10:.10,0]}>
    <group visible={blink<.995}>
     <mesh geometry={sclera}><meshPhysicalMaterial vertexColors roughness={.32} clearcoat={.18} clearcoatRoughness={.1}/></mesh>
     <mesh geometry={irisShape}><meshPhysicalMaterial map={iris} roughness={.35} clearcoat={.4} clearcoatRoughness={.08} specularIntensity={.15} envMapIntensity={.18}/></mesh>

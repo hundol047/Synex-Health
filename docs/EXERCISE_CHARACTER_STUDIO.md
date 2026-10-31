@@ -377,3 +377,51 @@ reload, front/oblique/blink views, alternate hair and wall-push application.
 They reported no page/shader errors; the mobile flow reported no horizontal
 overflow. The final captures were visually reviewed. This source update does
 not include a new APK distribution.
+
+## Replace the bare-front hairstyle and rebalance the portrait (2026-10-31)
+
+The previous cap repair did not address the user's intended fringe: the hair
+fitter still pushed front locks sideways, leaving a wide bare forehead. The
+medium selection now uses Elvaerwyn's CC-BY Katherine Hair, including its diffuse
+and linear normal textures. Source hashes, author/license, the conversion script
+and runtime attribution are updated. The saved `sleek` identifier and user
+settings remain compatible. All assets are bundled; runtime needs no download.
+
+The lateral opening is removed. The new fringe is shortened from the crown to
+keep both eyes visible while retaining hair across the front. Its normal-map
+strength is reduced to avoid exaggerated strand ridges. The female preset's
+black is neutral rather than violet; other saved colors remain unchanged.
+
+The refined female portrait has larger matching eye openings and detail meshes,
+a narrower lower face, revised nose/lip targets and a quieter expression. The
+original textured lip detail is no longer overpainted by a fixed-position color
+band and crease. Baked socket shadows are attenuated locally; skin reflection
+is softer. Distinct material cache keys cover the conditional portrait shader
+so switching presets cannot reuse the wrong shading program. Portrait framing
+uses a longer camera distance with a 24-degree field of view; leaving portrait
+mode restores the normal 36-degree view, including in free rotation.
+
+Fringe regressions test both body presets at minimum, default and maximum hair
+volume. Rays must hit actual front locks ahead of the forehead, and both iris
+sightlines must be clear. This replaces a lateral-distance assertion that
+encouraged pushing hair away from the face. The browser coverage check now
+requires hair across the upper forehead; skin-color persistence samples the
+exposed cheek. The separate scalp test still prevents painting the forehead.
+
+Forty-nine focused checks and the personal production build passed. This remains
+a generic fitted character rather than a reconstruction of the supplied person's
+face. Automated checks cover defects and behavior, not a photorealism score.
+
+Screenshot review also caught the former style's inward tip compression folding
+the new side locks beside the chin. That compression is removed, length fitting
+starts below the jaw, and the fringe lift excludes the neck-length ends. All 29
+affected hair/detail/contact checks passed again after this correction.
+
+The eye-color browser flow passed in 2.0 minutes. The final mobile portrait flow
+passed in 3.3 minutes, including coverage pixels, cheek-color persistence,
+blink, hair switching and wall-push application, without page/shader errors or
+horizontal overflow. Its preceding run hit the existing five-second rendered-
+phase wait during the first blink; the unchanged test passed on rerun. No
+timeout or assertion was relaxed. This intermittent software-rendering wait is
+recorded rather than treated as proof of phone performance. Final front, oblique,
+blink and exercise captures were reviewed. No new APK is published by this change.

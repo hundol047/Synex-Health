@@ -37,9 +37,11 @@ export {exerciseShoeFloor,heelContactHeights} from './athleteModel.js';
 function SceneCamera({ motion, view, mirror, heightScale, controls, faceFocus }) {
   const { camera, size, invalidate } = useThree();
   useEffect(() => {
-    if (view === 'free' && !faceFocus) return;
+    camera.fov=faceFocus?24:36;
+    if (view === 'free' && !faceFocus) { camera.updateProjectionMatrix();invalidate();return; }
     const preset = exerciseCameraPreset(motion, view, heightScale, size.width / Math.max(1, size.height), mirror);
-    if(faceFocus){const angle=view==='side'?Math.PI/2:view==='back'?Math.PI:view==='front'?0:Math.PI/6;preset.target=[0,1.67*heightScale,.055*heightScale];preset.position=[Math.sin(angle)*.56*heightScale,1.685*heightScale,(.055+Math.cos(angle)*.56)*heightScale];}
+    // A longer portrait lens avoids exaggerating the nose/lips at close range.
+    if(faceFocus){const angle=view==='side'?Math.PI/2:view==='back'?Math.PI:view==='front'?0:Math.PI/6;preset.target=[0,1.67*heightScale,.055*heightScale];preset.position=[Math.sin(angle)*.855*heightScale,1.693*heightScale,(.055+Math.cos(angle)*.855)*heightScale];}
     camera.position.set(...preset.position);
     camera.lookAt(...preset.target);
     camera.updateProjectionMatrix();

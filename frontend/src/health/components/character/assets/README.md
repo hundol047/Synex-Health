@@ -89,9 +89,9 @@ retain their coordinates. No new third-party asset or subdivision library is
 incorporated. A close scalp underlay covers gaps between alpha-masked hair cards.
 
 
-## Current medium layered hairstyle — CC-BY
+## Current layered hairstyle with a fringe — CC-BY
 
-The `sleek` selection now uses **Short Daisy Hair** (`elvs_short_daisy_hair`),
+The `sleek` selection now uses **Katherine Hair** (`elvs_katherine_hair`),
 by **Elvaerwyn**, released as **CC-BY** in both its OBJ/MHCLO headers and the
 publisher's catalog. This community-contributed asset is not claimed as CC0.
 The original source labels do not specify a license version; preserve that label.
@@ -106,12 +106,12 @@ The original source labels do not specify a license version; preserve that label
   are available under **캐릭터 에셋 출처** on the character settings page.
 - Modifications: head fitting, length/rear-clearance adjustment, one subdivision
   step, neutral hair-color conversion, local secondary motion, and normal-map
-  strength. The supplied normal PNG has a bad ancillary iCCP checksum; the
-  converter strips color metadata (normal vectors are linear data), verifies
+  strength. The supplied color and normal PNGs have bad ancillary iCCP checksums; the
+  converter strips invalid color metadata (normal vectors stay linear data), verifies
   critical PNG chunk checksums, and losslessly re-encodes unchanged normal pixels.
-- Reproduce with `python scripts/build-character-medium-hair.py SOURCE_DIRECTORY BASE_OBJ`.
-  The directory must contain `elvs_short_daisyh1.obj`,
-  `elvs_short_daisy_hair.mhclo`, `daisyhair1.png`, `daisyhair1_normals.png`.
+- Reproduce with `python scripts/build-character-fringe-hair.py SOURCE_DIRECTORY BASE_OBJ`.
+  The directory must contain `elvs_katherinehair1.obj`,
+  `elvs_katherine_hair.mhclo`, `erbehairtex1.png`, `normalserb.png`.
 
 The prior bundled `long01` files are retained as historical source assets but
 are no longer loaded by the medium style. None of these assets is a celebrity
@@ -120,7 +120,7 @@ scan or an asset extracted from the referenced commercial game.
 ## Restrained closed-mouth expression
 
 The refined female portrait also blends the `mouthSmileLeft` and
-`mouthSmileRight` graphical targets at 0.2 each from MakeHuman Community's
+`mouthSmileRight` graphical targets at 0.08 each from MakeHuman Community's
 CC0 `extra-targets` collection, revision
 `7eaba3453134385bb5ea9811ef0b33b85b4b556d`:
 https://github.com/makehumancommunity/extra-targets/tree/7eaba3453134385bb5ea9811ef0b33b85b4b556d/assets/faceunits01/targets/faceunits
@@ -131,3 +131,9 @@ For reproduction, place both target files under `TARGET_DIRECTORY/expression/`.
 Only graphical vertex deltas are used. The previous female corner-only Gaussian
 lift is removed to avoid stacking two smiles. This is a restrained cosmetic
 expression, not facial tracking or a person's scanned likeness.
+
+The saved `sleek` identifier is retained when replacing the previous Short Daisy
+style. Its front cards are no longer expanded sideways: the authored fringe
+remains over the forehead. This fixes the bare-front appearance that a scalp
+underlay alone could not address. The former converter remains for historical
+reproduction, while the current asset uses `build-character-fringe-hair.py`.
