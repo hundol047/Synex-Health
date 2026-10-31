@@ -51,8 +51,9 @@ function rawStretchPose(motion,t,rest){
   const sign=side?-1:1,[root,knee,ankle]=side?[12,13,14]:[9,10,11];
   const dy=j[root][1]-.085*h,dx=j[root][0]-sign*.14*h,thigh=segmentLength(rest,root,knee);
   j[knee]=[sign*.14*h,.085*h,j[root][2]+Math.sqrt(Math.max(0,thigh*thigh-dy*dy-dx*dx))];
-  const shin=segmentLength(rest,knee,ankle),rise=.015*h;
-  j[ankle]=[j[knee][0],.10*h,j[knee][2]-Math.sqrt(shin*shin-rise*rise)];
+  // The ankle rests at instep height (dorsum on the mat), below the knee.
+  const shin=segmentLength(rest,knee,ankle),ankleY=.058*h,rise=j[knee][1]-ankleY;
+  j[ankle]=[j[knee][0],ankleY,j[knee][2]-Math.sqrt(shin*shin-rise*rise)];
   arm(side,[sign*.20+(id==='child_side'?.12*amount:0),.047,.36],[sign*.15,1,0]);
  }}
  switch(id){
@@ -97,7 +98,9 @@ function rawStretchPose(motion,t,rest){
   if(side===0&&id.startsWith('wrist_'))direction=vector(direction).applyAxisAngle(new THREE.Vector3(1,0,0),(id==='wrist_flex'?-1:1)*Math.PI/3*amount).toArray();
   setHand(j,rest,side,direction);
   const footRotation=(seated||supine)?new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),-Math.PI/2):new THREE.Quaternion();
-  if(child)footRotation.setFromAxisAngle(new THREE.Vector3(0,1,0),Math.PI);
+  // Sitting back on the heels rests each foot on its instep, toes along the
+  // shin. A 180° yaw kept the sole down and twisted the ankle half a turn.
+  if(child){const [k,a]=side?[13,14]:[10,11],front=vector(j[a]).sub(vector(j[k])).normalize().add(new THREE.Vector3(0,-.45,0)).normalize();footRotation.copy(orientation(new THREE.Vector3(0,-1,0).addScaledVector(front,front.y).normalize().toArray(),front.toArray()));}
   if(id==='quad_stand'&&side===0)footRotation.setFromAxisAngle(new THREE.Vector3(1,0,0),-1.2*amount);
   if(id==='ankle_circles'&&side===0)footRotation.setFromAxisAngle(new THREE.Vector3(1,0,0),-Math.PI/2+Math.cos(t*Math.PI*4)*.18).premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1),Math.sin(t*Math.PI*4)*.18));
   setFoot(j,rest,side,footRotation);j.boneRotations[side?11:10]=footRotation.toArray();
@@ -137,8 +140,14 @@ export function stretchPoseJoints(motion,t,rest){
  const limbs=[[3,4,2],[4,5,3],[6,7,4],[7,8,5]];
  if(['quad_stand','knee_hug','double_knee','supine_hamstring'].includes(id))limbs.push([9,10,6],[10,11,7],[12,13,8],[13,14,9]);
  limbs.push([5,17,12],[8,18,13]);
+ // Distal segments blend in their parent's frame. Slerping a forearm in world
+ // space independently of its upper arm swept it behind the elbow mid-raise.
+ const parents={3:2,5:4,7:6,9:8,12:3,13:5};
+ const quaternion=(pose,bone)=>new THREE.Quaternion().fromArray(pose.boneRotations[bone]);
  for(const [a,b,bone] of limbs){
-  const rotation=new THREE.Quaternion().fromArray(start.boneRotations[bone]).slerp(new THREE.Quaternion().fromArray(end.boneRotations[bone]),amount);
+  const parent=parents[bone];
+  const rotation=parent===undefined?quaternion(start,bone).slerp(quaternion(end,bone),amount)
+   :quaternion(start,parent).invert().multiply(quaternion(start,bone)).slerp(quaternion(end,parent).invert().multiply(quaternion(end,bone)),amount).premultiply(quaternion(posed,parent));
   posed.boneRotations[bone]=rotation.toArray();posed[b]=vector(rest[b]).sub(vector(rest[a])).applyQuaternion(rotation).add(vector(posed[a])).toArray();
  }
  for(const [ankle,toe,bone] of [[11,15,10],[14,16,11]])posed[toe]=vector(rest[toe]).sub(vector(rest[ankle])).applyQuaternion(new THREE.Quaternion().fromArray(posed.boneRotations[bone])).add(vector(posed[ankle])).toArray();

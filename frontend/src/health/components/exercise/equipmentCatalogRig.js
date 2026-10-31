@@ -24,6 +24,7 @@ const average = (a, b) => a.map((value, i) => (value + b[i]) / 2);
 
 const solveLimb = solveTwoBone;
 
+const HINGED_ARM_IDS = new Set(['shoulder_press', 'dumbbell_bench_press', 'dumbbell_floor_press', 'barbell_bench_press', 'machine_chest_press', 'lat_pulldown']);
 export function equipmentCatalogPose(id, progress, rest) {
   if (!EQUIPMENT_CATALOG_IDS.has(id)) return null;
   const t = Number.isFinite(progress) ? THREE.MathUtils.clamp(progress, 0, 1) : 0;
@@ -95,7 +96,7 @@ export function equipmentCatalogPose(id, progress, rest) {
       const side = i === 0 ? 1 : -1, root = arm[i][0];
       if (id === 'goblet_squat') setArm(i, [side * .215 * h, joints[1][1] - .135 * h, joints[1][2] + .17 * h], [side * .5, -1, .1]);
       else if (id === 'barbell_squat') setArm(i, [side * .32 * h, joints[1][1] - .08 * h, joints[1][2] - .15 * h], [side, -1, -.3]);
-      else setArm(i, [side * (id === 'barbell_rdl' ? .25 : .22) * h, joints[root][1] - (length(root, root + 1) + length(root + 1, root + 2)) * .975, joints[root][2] + .035 * h], [0, 0, 1]);
+      else setArm(i, [side * (id === 'barbell_rdl' ? .25 : .22) * h, joints[root][1] - (length(root, root + 1) + length(root + 1, root + 2)) * .975, joints[root][2] + .035 * h], [side * .2, 0, -1]);
     }
     if (id === 'goblet_squat') data.grip = 'goblet';
   } else if (id === 'dumbbell_split_squat') {
@@ -130,7 +131,7 @@ export function equipmentCatalogPose(id, progress, rest) {
     relaxedArms();
     // Hands rest on the side supports; they do not dangle through the seat.
     if (['leg_extension', 'seated_leg_curl', 'machine_hip_abduction'].includes(id)) {
-      arm.forEach(([root], i) => setArm(i, [joints[root][0] + (i === 0 ? .025 : -.025) * h, joints[root][1] - (length(root, root + 1) + length(root + 1, root + 2)) * .975, .035 * h], [i === 0 ? 1 : -1, 0, .3], [0, 0, 1]));
+      arm.forEach(([root], i) => setArm(i, [joints[root][0] + (i === 0 ? .025 : -.025) * h, joints[root][1] - (length(root, root + 1) + length(root + 1, root + 2)) * .975, .035 * h], [i === 0 ? 1 : -1, 0, -.3], [0, 0, 1]));
     }
     if (id === 'leg_extension' || id === 'seated_leg_curl') {
       const theta = id === 'leg_extension' ? 1.38 * e : 1.18 - 1.50 * e;
@@ -264,6 +265,10 @@ export function equipmentCatalogPose(id, progress, rest) {
     }
   }
   if (!data.gripAxes) data.gripAxes = [[1, 0, 0], [1, 0, 0]];
+  // The back of the hand faces gripAxis x forearm. Bars, presses and RDLs use
+  // an overhand grip (palms forward or toward the feet); +x reversed the palm,
+  // turning each forearm ~180° at the elbow and bending the visible wrist.
+  if (id.startsWith('barbell_') || ['dumbbell_rdl', 'shoulder_press', 'dumbbell_bench_press', 'dumbbell_floor_press'].includes(id)) data.gripAxes = [[-1, 0, 0], [-1, 0, 0]];
   if (id === 'hammer_curl') data.gripAxes[1] = data.gripAxes[0].map(value => -value);
   if (['machine_chest_press', 'machine_row', 'cable_face_pull', 'goblet_squat', 'elliptical'].includes(id)) data.gripAxes = [[0, 1, 0], [0, -1, 0]];
   if (['leg_press', 'leg_extension', 'seated_leg_curl', 'machine_hip_abduction'].includes(id)) {
@@ -320,5 +325,7 @@ export function equipmentCatalogPose(id, progress, rest) {
   });
   if (id.startsWith('barbell_') || id === 'lat_pulldown') data.bar = data.handles.map(point => point.slice());
   joints.equipment = data;
+  // Pressing and pulling arms flex in an externally rotated humerus plane.
+  if (HINGED_ARM_IDS.has(id)) joints.hingeArms = true;
   return joints;
 }

@@ -12,7 +12,6 @@ const up = new THREE.Vector3(0, 1, 0);
 const armIndices = [[3, 4, 5], [6, 7, 8]];
 const legIndices = [[9, 10, 11], [12, 13, 14]];
 const pitch = radians => new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), radians);
-const backwardFoot = new THREE.Quaternion().setFromAxisAngle(up, Math.PI);
 const length = segmentLength;
 
 function floorFoot(joints, rest, side, rotation = new THREE.Quaternion()) {
@@ -20,6 +19,16 @@ function floorFoot(joints, rest, side, rotation = new THREE.Quaternion()) {
   // A toe direction alone cannot encode the roll of a side-lying shoe/foot.
   joints.boneRotations ||= {};
   joints.boneRotations[side === 0 ? 10 : 11] = rotation.toArray();
+}
+
+// A face-down or kneeling foot rests on its instep: toes continue along the
+// shin, sole up. Yawing a planted foot 180° instead kept the sole down and
+// twisted the ankle half a turn about the shin.
+function instepFoot(joints, rest, side, tilt = .45) {
+  const [knee, ankle] = side === 0 ? [10, 11] : [13, 14];
+  const front = vector(joints[ankle]).sub(vector(joints[knee])).normalize().add(new THREE.Vector3(0, -tilt, 0)).normalize();
+  const dorsum = new THREE.Vector3(0, -1, 0).addScaledVector(front, front.y).normalize();
+  floorFoot(joints, rest, side, orientation(dorsum.toArray(), front.toArray()));
 }
 
 function orientLimbs(joints, rest, frame, includeHands = false) {
@@ -102,7 +111,7 @@ function quadrupedFrame(rest, h) {
     joints[knee] = vector(joints[hip]).add(new THREE.Vector3(0, -length(rest, hip, knee), 0)).toArray();
     const shin = length(rest, knee, ankle), lift = .038 * h;
     joints[ankle] = vector(joints[knee]).add(new THREE.Vector3(0, lift, -Math.sqrt(shin * shin - lift * lift))).toArray();
-    floorFoot(joints, rest, side, backwardFoot);
+    instepFoot(joints, rest, side);
   }
   for (const [side, [shoulder]] of armIndices.entries()) {
     const sign = side === 0 ? 1 : -1;
@@ -136,7 +145,7 @@ function kneePushup(rest, t, h) {
     joints[knee] = [rest[hip][0], kneeY, kneeZ];
     const lower = length(rest, knee, ankle), lift = .205 * h;
     joints[ankle] = vector(joints[knee]).add(new THREE.Vector3(0, lift, -Math.sqrt(lower * lower - lift * lift))).toArray();
-    floorFoot(joints, rest, side, backwardFoot);
+    instepFoot(joints, rest, side);
   }
   for (const [side] of armIndices.entries()) {
     const sign = side === 0 ? 1 : -1;
@@ -160,7 +169,7 @@ function birdDog(rest, t, h) {
   const planted = vector(joints[ankle]);
   const extended = vector(joints[hip]).add(new THREE.Vector3(0, 0, -legReach));
   solveLimb(joints, rest, activeLeg, 'leg', planted.lerp(extended, amount).toArray(), [0, -1, 0]);
-  floorFoot(joints, rest, activeLeg, backwardFoot);
+  instepFoot(joints, rest, activeLeg);
   return joints;
 }
 
@@ -212,7 +221,9 @@ function singleBridge(rest, t, h) {
   joints[knee] = vector(joints[hip]).addScaledVector(axis, length(rest, hip, knee)).toArray();
   const shinAxis = axis.clone().applyAxisAngle(new THREE.Vector3(1, 0, 0), -.07);
   joints[ankle] = vector(joints[knee]).addScaledVector(shinAxis, length(rest, knee, ankle)).toArray();
-  floorFoot(joints, rest, 0, pitch(-.40));
+  // The raised foot stays square to its shin with a gentle point; a foot held
+  // level with the floor folded the ankle ~65° past neutral under the lifted leg.
+  floorFoot(joints, rest, 0, new THREE.Quaternion().setFromUnitVectors(vector(rest[11]).sub(vector(rest[10])).normalize(), shinAxis).multiply(pitch(.30)));
   return joints;
 }
 
@@ -230,9 +241,12 @@ function kneeSidePlank(rest, h) {
     const kneeHeight = (.082 + (side === 0 ? .075 : 0)) * h;
     const drop = THREE.MathUtils.clamp(joints[hip][1] - kneeHeight, -thigh * .97, thigh * .97);
     joints[knee] = vector(joints[hip]).add(new THREE.Vector3(0, -drop, -Math.sqrt(thigh * thigh - drop * drop))).toArray();
-    const shin = new THREE.Vector3(.945, .18, -.27).normalize();
+    // Knees flex backwards: the shins trail behind the body (-x is posterior
+    // here). Pointing them forward bent each knee the wrong way.
+    const shin = new THREE.Vector3(-.945, .18, -.27).normalize();
     joints[ankle] = vector(joints[knee]).addScaledVector(shin, length(rest, knee, ankle)).toArray();
-    floorFoot(joints, rest, side, rotation);
+    const restShin = vector(rest[ankle]).sub(vector(rest[knee])).normalize().applyQuaternion(rotation);
+    floorFoot(joints, rest, side, new THREE.Quaternion().setFromUnitVectors(restShin, shin).multiply(rotation).multiply(pitch(.35)));
   }
   // The bottom elbow is under the shoulder; the entire forearm is on the mat.
   joints[7] = vector(joints[6]).add(new THREE.Vector3(0, -length(rest, 6, 7), 0)).toArray();
@@ -258,10 +272,12 @@ function clamshell(rest, t, h) {
     solveLimb(joints, rest, side, 'leg', target, pole);
     floorFoot(joints, rest, side, orientation(axis.toArray(), [1, 0, 0]));
   }
-  // A folded lower arm and a small pad support the resting head/neck.
-  solveLimb(joints, rest, 1, 'arm', [.035 * h, .092 * h, joints[1][2] + .21 * h], [1, .25, -.1]);
-  setHand(joints, rest, 1, [0, .1, 1]);
-  solveLimb(joints, rest, 0, 'arm', [.07 * h, .23 * h, joints[1][2] - .18 * h], [1, 0, 0]);
+  // A small pad supports the head. The lower forearm rests on the mat in front
+  // of the face; folding it under the pad pushed the hand over the scalp.
+  solveLimb(joints, rest, 1, 'arm', [joints[6][0] + .24 * h, .045 * h, joints[6][2] + .13 * h], [1, 0, -1]);
+  setHand(joints, rest, 1, [.15, -.05, 1]);
+  // The top arm lies along the flank, its elbow pointing back and up.
+  solveLimb(joints, rest, 0, 'arm', [.07 * h, .23 * h, joints[1][2] - .18 * h], [-1, .6, 0]);
   setHand(joints, rest, 0, [0, -.3, -.95]);
   orientLimbs(joints, rest, orientation(axis.toArray(), [1, 0, 0]), true);
   joints.equipment = { kind: 'mat', neckSupport: { position: [0, .037 * h, joints[2][2] + .035 * h], size: [.26 * h, .075 * h, .22 * h] } };
@@ -277,7 +293,7 @@ function proneY(rest, t, h) {
     const direction = new THREE.Vector3(0, -.04, -Math.sqrt(1 - .04 ** 2));
     joints[knee] = vector(joints[hip]).addScaledVector(direction, length(rest, hip, knee)).toArray();
     joints[ankle] = vector(joints[knee]).addScaledVector(direction, length(rest, knee, ankle)).toArray();
-    floorFoot(joints, rest, side, backwardFoot);
+    instepFoot(joints, rest, side);
   }
   const lift = repetition(t);
   for (const [side, [shoulder, elbow, wrist]] of armIndices.entries()) {

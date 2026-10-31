@@ -88,12 +88,12 @@ export function calibratePalmRoll(base,weights,rest=REST){
 }
 // One rotation rule for the mesh and audits. A hand's pronation must continue
 // through its forearm, not abruptly twist at the wrist blend seam.
-export function rigRotation(joints,index,rest=REST){
+function segmentRotation(joints,index,rest){
  const [a,b]=BONES[index],authored=joints.boneRotations?.[index];
  if(!authored&&(index===3||index===5)){
   const side=index===3?0:1,hand=12+side;
   if(joints.boneRotations?.[hand]||joints.handRoll?.[side]){
-   const palm=rigRotation(joints,hand,rest);
+   const palm=segmentRotation(joints,hand,rest);
    const from=vec(rest[b]).sub(vec(rest[a])).normalize().applyQuaternion(palm);
    const to=vec(joints[b]).sub(vec(joints[a])).normalize();
    return new THREE.Quaternion().setFromUnitVectors(from,to).multiply(palm);
@@ -102,6 +102,27 @@ export function rigRotation(joints,index,rest=REST){
  const rotation=authored?new THREE.Quaternion().fromArray(authored).normalize():new THREE.Quaternion().setFromUnitVectors(vec(rest[b]).sub(vec(rest[a])).normalize(),vec(joints[b]).sub(vec(joints[a])).normalize());
  const roll=index===0?joints.bodyRoll:index===1?(joints.headRoll??joints.bodyRoll):index>=12?joints.handRoll?.[index-12]:0;
  if(roll)rotation.premultiply(new THREE.Quaternion().setFromAxisAngle(vec(joints[b]).sub(vec(joints[a])).normalize(),roll));
+ return rotation;
+}
+// Presses and pulldowns hold the upper arm out with a bent elbow: the humerus
+// is rotated so the elbow flexes in that plane. A shortest-arc upper arm kept
+// the hanging twist instead and folded the elbow skin sideways into dark
+// creases. Turn the upper arm about its own axis until the forearm lies in its
+// rest flexion plane; nearly straight arms keep the shortest arc.
+function hingeUpperArm(joints,index,rest,rotation){
+ const [a,b]=BONES[index],wrist=index===2?5:8,axis=vec(rest[b]).sub(vec(rest[a])).normalize();
+ const local=vec(joints[wrist]).sub(vec(joints[b])).normalize().applyQuaternion(rotation.clone().invert());
+ const plane=v=>v.addScaledVector(axis,-v.dot(axis));
+ const reference=plane(vec(rest[wrist]).sub(vec(rest[b])).normalize()),target=plane(local);
+ if(reference.lengthSq()<1e-8||target.lengthSq()<1e-8)return rotation;
+ reference.normalize();target.normalize();
+ const angle=Math.atan2(new THREE.Vector3().crossVectors(reference,target).dot(axis),reference.dot(target));
+ const bend=axis.angleTo(local);
+ return rotation.multiply(new THREE.Quaternion().setFromAxisAngle(axis,angle*THREE.MathUtils.smoothstep(bend,.25,.6)));
+}
+export function rigRotation(joints,index,rest=REST){
+ const rotation=segmentRotation(joints,index,rest);
+ if((index===2||index===4)&&joints.hingeArms&&!joints.boneRotations?.[index])return hingeUpperArm(joints,index,rest,rotation);
  return rotation;
 }
 // Normalized dual-quaternion blending preserves rigid volume around bent joints.

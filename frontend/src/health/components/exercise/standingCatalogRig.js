@@ -252,7 +252,10 @@ export function standingCatalogPose(id, progress, rest) {
   for (const [i, [root, elbow, wrist, finger]] of [[3, 4, 5, 17], [6, 7, 8, 18]].entries()) {
     const side = i === 0 ? 1 : -1, upper = length(root, elbow), lower = length(elbow, wrist);
     let target = vec(joints[root]).add(new THREE.Vector3(side * .025 * h, -(upper + lower) * .96, .035 * h).applyQuaternion(rotation)).toArray();
-    let toward = [side * .25, 0, 1], hand = null;
+    // solveLimb displaces the elbow toward this hint. An elbow can only fold
+    // its forearm forward, so the joint itself must point back (and slightly
+    // out); a forward hint hyperextended hanging and swinging arms.
+    let toward = [side * .25, 0, -1], hand = null, restingPalm = false;
     if (id === 'wall_push' || id === 'close_wall_push') {
       target = [side * (id === 'close_wall_push' ? .11 : .22) * h, 1.33 * h, .57 * h];
       toward = [side * (id === 'close_wall_push' ? .16 : .45), -1, -.2];
@@ -267,6 +270,7 @@ export function standingCatalogPose(id, progress, rest) {
       hand = [0, 1, 0];
     } else if (['calf', 'single_calf', 'split_squat', 'hip_abduction'].includes(id) && i === 0) {
       target = [.40 * h, 1.19 * h, .23 * h];
+      toward = [.45, -1, -.3];
       hand = [1, 0, 0];
     } else if (id === 'scapular') {
       const elbowDirection = normalized([side * .08, -1, -.28 * bend]).applyQuaternion(rotation);
@@ -292,8 +296,18 @@ export function standingCatalogPose(id, progress, rest) {
       target = [hip.x + side * .11 * h, joints[root][1] - .17 * h, joints[root][2] + .22 * h];
       toward = [side * .5, -1, -.2];
       hand = [-side * .7, 0, .7];
-    } else if (seated || id === 'wall_sit') {
-      target = [side * .20 * h, (.75 - (id === 'hamstring_stretch' ? .10 * bend : 0)) * h, (.23 + (id === 'hamstring_stretch' ? .13 * bend : 0)) * h];
+    } else if (seated) {
+      // Palms rest on the thighs. Hands held 23 cm above the legs drooped at
+      // the wrist; the stretch slides them toward the knee instead.
+      const [hipJoint, kneeJoint] = i === 0 ? [9, 10] : [12, 13];
+      const thigh = vec(joints[kneeJoint]).sub(vec(joints[hipJoint]));
+      const along = .30 + (id === 'hamstring_stretch' ? .35 * bend : 0);
+      target = vec(joints[hipJoint]).addScaledVector(thigh, along).add(new THREE.Vector3(0, .115 * h, 0)).toArray();
+      toward = [side * .3, 0, -1];
+      hand = thigh.normalize().add(new THREE.Vector3(0, -.12, 0)).toArray();
+      restingPalm = true;
+    } else if (id === 'wall_sit') {
+      target = [side * .20 * h, .75 * h, .23 * h];
       toward = [side * .3, -1, 0];
       hand = null; // Rested hands follow the forearm instead of bending down at the wrist.
     } else if (id === 'standing_knee_crunch') {
@@ -308,16 +322,17 @@ export function standingCatalogPose(id, progress, rest) {
           : (i === active ? -1 : 1) * lift;
       const brisk = id === 'brisk_walk';
       target = [joints[root][0] + side * .02 * h, joints[root][1] - (brisk ? .30 : .39) * h, joints[root][2] + (brisk ? .18 : .13) * h * swing + (brisk ? .12 : .03) * h];
-      toward = [0, -.2, 1];
+      toward = [side * .2, -.2, -1];
     }
     [joints[elbow], joints[wrist]] = solveLimb(joints[root], target, upper, lower, toward);
     const direction = hand ? normalized(hand) : vec(joints[wrist]).sub(vec(joints[elbow])).normalize();
     joints[finger] = vec(joints[wrist]).addScaledVector(direction, length(wrist, finger)).toArray();
-    if (id === 'wall_push' || id === 'close_wall_push' || id === 'calf_stretch') {
+    if (id === 'wall_push' || id === 'close_wall_push' || id === 'calf_stretch' || restingPalm) {
       // Map the anatomical hand frame directly onto the vertical support:
       // fingers up, palm forward. Keep the wrist behind the contact plane.
+      // A palm resting on a thigh lies along it with the back of the hand up.
       const {along,back}=handRestFrame(rest,i);
-      const palmRotation=orientation([0,1,0],[0,0,-1]).multiply(orientation(along.toArray(),back.toArray()).invert());
+      const palmRotation=(restingPalm?orientation(hand,[0,1,0]):orientation([0,1,0],[0,0,-1])).multiply(orientation(along.toArray(),back.toArray()).invert());
       joints.boneRotations[12 + i] = palmRotation.toArray();
       // Preserve the palm's roll through the lower arm. A shortest-direction
       // forearm rotation twisted the blended wrist skin through the wall even
