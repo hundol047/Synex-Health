@@ -1,5 +1,5 @@
 """Fit bundled CC0 MakeHuman hair meshes to the shipped head topology.
-Usage: python scripts/build-character-hair.py SOURCE_DIRECTORY BASE_OBJ
+Usage: python scripts/build-character-hair.py SOURCE_DIRECTORY BASE_OBJ [STYLE ...]
 Requires scipy and Pillow. Source directory contains bob01, bob02 and short03 .obj/.mhclo/*_diffuse.png files.
 Only graphical mesh/texture data is used; no MakeHuman application code.
 """
@@ -59,6 +59,7 @@ for name in (sys.argv[3:] or ['bob01','bob02','short03']):
             if p not in pairs:pairs[p]=len(pairs)
         for i in range(1,len(face)-1):indices.extend(pairs[p] for p in [face[0],face[i],face[i+1]])
     data={'sourceRevision':mesh['revision'],'bindings':bindings,'scales':scales,'vertices':[p[0] for p in pairs],'uv':[round(n,6) for p in pairs for n in uv[p[1]]],'indices':indices,'sourceSha256':hashlib.sha256(path.read_bytes()).hexdigest()}
+    data['sourceFiles']={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in [path,source/(name+'.mhclo'),source/(name+'_diffuse.png')]}
     (out/(name+'.json')).write_text(json.dumps(data,separators=(',',':'))+'\n')
     image=Image.open(source/(name+'_diffuse.png')).convert('RGBA');alpha=image.getchannel('A');gray=ImageOps.grayscale(image)
     values=np.array(gray)[np.array(alpha)>180];reference=max(1,float(np.percentile(values,75)))

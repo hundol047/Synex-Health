@@ -26,7 +26,9 @@ export function buildHairRoots(base,scale,anchor,indices,style){
   const p=hit?hit.point.clone():center.clone().addScaledVector(direction,.085*scale);
   return p.addScaledVector(direction,.0008*scale);
  };
- const positions=[],colors=[],faces=[],columns=96,rows=48;
+ // Short hair covers the root surface densely; a smaller underlay keeps the
+ // default workout character inexpensive without changing its silhouette.
+ const positions=[],colors=[],faces=[],columns=style==='wavy'?64:96,rows=style==='wavy'?32:48;
  // Solve the boundary against the actual fitted scalp. Cropping coarse body
  // triangles by vertex height creates a jagged hole or a straight forehead band.
  for(let col=0;col<=columns;col++){

@@ -154,3 +154,30 @@ separate stylized construction.
 These are general-purpose authored models, not photoreal scanned heads. Their
 rendered appearance still requires visual review; geometry tests do not certify
 perceptual realism, and no likeness percentage is claimed.
+
+## Natural short workout hair (2026-10-31)
+
+The saved `wavy` selection now uses the bundled MakeHuman `short02` authored
+mesh and its strand opacity texture, replacing the procedural parallel ribbons.
+The UI label is now **내추럴 쇼트**; stored character settings retain the same
+identifier. Both body profiles and user-selected hair colors are supported.
+
+Source: `base/hair/short02/{short02.obj,short02.mhclo,short02_diffuse.png}` at
+`dmaugis/makehuman-py3-assets`, revision
+`2f4033a364a7e97479e17ed630ccb999395730c6`. The official later CC0 statement
+linked above covers this bundled MHCLO graphic asset, including its mesh and
+texture; no application code is imported. Old AGPL headers have the same
+historical context as the other bundled hair assets described above.
+
+Reproduce with `python scripts/build-character-hair.py SOURCE_DIRECTORY BASE_OBJ
+short02`. The three original source-file hashes are embedded in `short02.json`.
+The PNG is an LFS file; verify the content against the repository's pointer hash.
+The source texture is converted to neutral strand luminance/alpha so saved hair
+color preferences still apply. Geometry fitting and a single subdivision follow
+the existing authored-hair pipeline. A smaller 64×32 root underlay suffices under
+this dense short style. The final WebP is about 207 KiB and loads locally.
+
+The short style also feathers its physical open boundary with vertex alpha.
+UV-seam duplicates share the same physical boundary classification, preventing
+an unintended transparent parting. Other authored hairstyles keep their own
+source opacity masks.
