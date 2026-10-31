@@ -24,7 +24,7 @@ sent to a generation service.
 
 Sources and reproducible conversion steps are in
 `frontend/src/health/components/character/assets/detailed/README.md`.
-The generated character geometry and textures total 5,789,334 bytes (5.52 MiB) on disk,
+The generated character geometry and textures total 7,752,236 bytes (7.39 MiB) on disk,
 including both bodies; this is not a measurement of on-device GPU memory.
 
 ## Research and limits
@@ -73,3 +73,85 @@ Browser checks used software-rendered Chromium at 393 × 852. They do not replac
 Android hardware testing, thermal/GPU-memory measurements, or an APK release.
 The new presets are still visibly rendered characters at portrait scale; further
 asset authoring is needed to meet a photographic visual target.
+
+## Reference-image quality review — follow-up
+
+**The requested photographic / premium-game-character quality gate is NOT met.**
+The user reaffirmed a free-only budget and asked for a fresh comparison with the
+uploaded reference images. Do not describe the following incremental corrections
+as completion of that visual target.
+
+The follow-up adds refined face/eye surfaces, a separate wet eye material, matte
+scalp shading, and an additional generated face-albedo layer. Opaque skin and
+transparent hair now render as separate material sets so the high-quality AO
+pass does not omit the entire female model. The original body/hair topology is
+retained to limit per-frame deformation work. A full-body subdivision trial was
+replaced with selective head refinement; shrinking lip/hair boundaries and a
+neck seam gap found in that trial were fixed before final validation.
+Coincident front/back hair cards keep separate surface normals; only the actual
+shared neck boundary is welded for smooth shading. A regression check covers
+unit normals on every exported vertex.
+
+Remaining visual differences from the uploaded references:
+
+- The source facial identity and proportions still differ substantially.
+- The hair is a small set of authored cards with painted scalp detail, not a
+  densely groomed premium hairstyle; close-ups expose that structure.
+- Skin shading lacks a calibrated multi-layer skin/scattering pipeline.
+- The detailed preset retains its original outfit and proportions.
+
+### Free-source and service investigation
+
+- Reviewed 19 additional MIT Rocketbox adult/party previews; changing to another
+  avatar from that library did not establish the requested quality improvement.
+- MB-Lab's actual `license.txt` licenses its model database and generated models
+  under AGPL3, not CC0. No MB-Lab asset was incorporated.
+- Tencent Hunyuan3D 2 / 2.1 community licenses exclude South Korea. No generation
+  request was made to those services for this Korean application.
+- The official TripoSR demo reported `RUNTIME_ERROR`; the official Microsoft
+  TRELLIS demo reported `CONFIG_ERROR` with an unsupported Torch version.
+- Stable Fast 3D accepted a newly generated, non-personal reconstruction reference,
+  but its generation endpoint failed both with optional remeshing and default
+  settings. Its public Gradio API returned an upstream exception without details.
+  No usable 3D model was returned. The image-generation reference is not an app
+  screenshot and is not shipped in the app.
+- [Alina Ip by Jungle Jim](https://sketchfab.com/3d-models/600d4d4aa71c4181b2567a3605ce8c57)
+  is a closer-looking free candidate, listed by its publisher under CC BY 4.0.
+  The official `/v3/models/600d4d4aa71c4181b2567a3605ce8c57/download` endpoint
+  returned HTTP 401, `Authentication credentials were not provided.` No source
+  model was downloaded; viewer assets were not extracted. Its original archive
+  and included license must be reviewed before adaptation.
+- MetaHuman's official licensing page permits use with other engines, with free
+  use under its stated revenue threshold. No Epic authoring account or compatible
+  production environment is connected here; no MetaHuman was created or imported.
+  The separately published DNA Calibration sample repository has its own older
+  license explicitly limiting sample-character use to Unreal Engine products;
+  those DNA files were not imported into this WebGL app.
+
+These are observed availability/quality limits of the attempted sources, not a
+claim that photorealistic 3D is categorically impossible with free tools.
+
+### Follow-up validation
+
+31 tests passed across seven focused suites, including both refined-head/body
+neck seams (gap below 20 micrometers), eye material isolation, all 74 exercise
+and 30 stretch entries at sampled phases, walls, fingers and scene recovery.
+The personal production build passed. Both final production browser flows passed
+in 4.9 minutes, covering the female and male presets, authored blinking,
+wall view, saved selection after reload, exercise playback and return to the
+customizable character. Neither flow reported page/shader errors or external
+HTTP requests.
+
+Final app captures were inspected again, including the female portrait/blink,
+male portrait and female squat. The neck seam and invalid hair normals were
+corrected, but the face proportions, hair structure and overall visual fidelity
+still fall short of the uploaded references. This remains an unmet acceptance
+criterion, not a completed photographic-quality upgrade. Captures were produced
+by the real app in software-rendered Chromium at a mobile viewport; no physical
+Android device or new APK was validated in this follow-up.
+
+A development run forcing the high-quality override through the entire female
+navigation flow reached the final model-switch step but exceeded the 240-second
+software-renderer test budget. The final test limits the forced high tier to the
+portrait/wall checks, then restores automatic GPU detection for navigation and
+exercise playback. The product's existing software-GPU fallback remains intact.

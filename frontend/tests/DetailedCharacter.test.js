@@ -27,6 +27,39 @@ for(const [body,data] of [['female',female],['male',male]]){
    for(const [i,x,y,z] of data.morphs[name]){expect(data.positions[i*3+1]).toBeGreaterThan(1.60);expect(Math.hypot(x,y,z)).toBeLessThan(.025);}
   }
  });
+ it(`${body}: isolates the wet eye surfaces from skin and hair shading`,()=>{
+  const eyes=data.groups.at(-1);expect(eyes.length).toBeGreaterThan(1000);
+  for(const i of new Set(eyes)){
+   const p=data.positions.slice(i*3,i*3+3);
+   expect(Math.min(...data.eyes.map(e=>Math.hypot(...p.map((v,k)=>v-e[k]))))).toBeLessThan(.025);
+   expect(data.weights[i]).toEqual([[1,1]]);
+  }
+ });
+ it(`${body}: preserves unit surface normals, including coincident front/back hair cards`,()=>{
+  const model=prepareDetailedModel(data),n=model.geometry.attributes.normal.array;
+  try{for(let i=0;i<n.length;i+=3)expect(Math.hypot(n[i],n[i+1],n[i+2])).toBeCloseTo(1,4);}
+  finally{model.geometry.dispose();}
+ });
+ it(`${body}: leaves no gap where the refined head meets the original body`,()=>{
+  const point=i=>data.positions.slice(i*3,i*3+3);
+  const boundary=group=>{
+   const edges=new Map(),points=new Map();
+   for(let i=0;i<group.length;i+=3)for(let k=0;k<3;k++){
+    const a=group[i+k],b=group[i+(k+1)%3],sa=data.sourceVertices[a],sb=data.sourceVertices[b];
+    points.set(sa,point(a));points.set(sb,point(b));const key=[sa,sb].sort((a,b)=>a-b).join(':');edges.set(key,(edges.get(key)||0)+1);
+   }
+   return [...edges].filter(([,count])=>count===1).map(([key])=>key.split(':').map(id=>points.get(Number(id))));
+  };
+  const bodyEdges=boundary(data.groups[0]).filter(e=>e.every(p=>p[1]>1.35));
+  const neckEdges=boundary(data.groups[1]).filter(e=>e.every(p=>p[1]<1.58));
+  expect(neckEdges.length).toBeGreaterThan(20);
+  const distance=(p,[a,b])=>{
+   const v=b.map((n,k)=>n-a[k]),q=p.map((n,k)=>n-a[k]);
+   const t=Math.max(0,Math.min(1,q.reduce((s,n,k)=>s+n*v[k],0)/v.reduce((s,n)=>s+n*n,0)));
+   return Math.hypot(...p.map((n,k)=>n-a[k]-v[k]*t));
+  };
+  for(const p of neckEdges.flat())expect(Math.min(...bodyEdges.map(e=>distance(p,e)))).toBeLessThan(.00002);
+ });
  it(`${body}: preserves finite surfaces for every exercise and recovery stretch`,()=>{
   const model=prepareDetailedModel(data),other=prepareDetailedModel(data);
   try{

@@ -34,12 +34,37 @@ poses for relaxed, clasped and closed hands. Facial deltas under 10 micrometers
 are dropped as numerical noise. Source vertex identities are retained so UV
 seams can share smooth normals without joining unrelated surfaces.
 
+Face and eye curves receive one subdivision pass. Eyelid/lip edges and material
+boundaries are creased; original neck-seam corners are pinned. The final mesh
+combines that refined head with the original body and alpha hair cards so the
+runtime stays below 15,000 vertices per character. Body/portrait normalization
+uses the same original height. Eye triangles have a separate wet-surface material.
+
 Color/opacity maps are 2048 px; normals and derived roughness maps are 1024 px.
 Color and normal data use different color spaces at runtime. The source gloss/
 specular artwork is converted to a bounded roughness approximation; these are
 not measured PBR material parameters. Local texture URLs are loaded only when
-the detailed renderer is selected. The geometry retains roughly 7,500–8,600
-triangles per character, separate from the existing configurable model.
+the detailed renderer is selected. The female mesh has 14,154 vertices / 25,170
+triangles, and the male mesh has 12,566 vertices / 22,860 triangles, separate
+from the existing configurable model.
+
+### Additional face albedo
+
+`female-portrait.webp` is an AI-assisted edit of the MIT female head atlas, made
+on 2026-10-31 with the image-generation tool. It changes facial skin/brow/lip
+artwork, not the skeleton or the user's physical measurements. The source PNG
+SHA-256 is `7f48180625275df1b2ebb3085c9d4f8de3390c1307729f09cbcbee338afd6f29`.
+The PNG was converted without resizing to RGB WebP, Pillow quality 94 / method 6.
+It is blended only in the central face; original eyelid, neck, eye, hair and
+mouth-interior islands retain their authored atlas. The original copyright and
+MIT notice remain included. The source portrait generation prompt requested a
+new adult Korean fitness character, neutral diffuse illumination, natural skin
+microdetail, preserved UV layout and empty eye sockets, without baked shadows.
+Generation is nondeterministic; the committed WebP is the production artifact.
+
+This is a texture used on a rotating 3D mesh, not an app screenshot or proof of
+photographic quality. A full-atlas replacement tried during development was
+rejected because its neck boundaries did not align.
 
 ## Product limits
 

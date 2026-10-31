@@ -5,7 +5,7 @@ for(const [body,label] of [['female','여성 디테일 모델'],['male','남성 
   const errors=[],remote=[];
   page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error'&&/shader|WebGLProgram/.test(m.text()))errors.push(m.text());});
   page.on('request',r=>{if(/^https?:/.test(r.url())&&!/^http:\/\/(localhost|127\.0\.0\.1):/.test(r.url()))remote.push(r.url());});
-  await page.addInitScript(()=>{localStorage.setItem('synex-personal-onboarding-v1','done');localStorage.setItem('synex-personal-consent-v1','accepted');});
+  await page.addInitScript(body=>{localStorage.setItem('synex-personal-onboarding-v1','done');localStorage.setItem('synex-personal-consent-v1','accepted');if(body==='female'&&!sessionStorage.getItem('synex-portrait-qa-complete'))localStorage.setItem('synex-render-quality','high');},body);
   await page.goto('/health/character');let canvas=page.locator('canvas');
   await expect(canvas).toHaveAttribute('data-character-model','custom',{timeout:60000});
   await page.getByRole('button',{name:label,exact:true}).click();
@@ -16,7 +16,10 @@ for(const [body,label] of [['female','여성 디테일 모델'],['male','남성 
   await page.getByLabel('미리보기 동작 구간').fill('777');await expect(canvas).toHaveAttribute('data-exercise-progress','0.777');await capture(`${body}-blink.png`);
   await page.getByRole('button',{name:'전신 보기',exact:true}).click();await page.getByLabel('미리볼 운동',{exact:true}).selectOption('wall_push');await page.getByLabel('미리보기 동작 구간').fill('500');
   await expect(canvas).toHaveAttribute('data-exercise-rendered','wall_push');await expect(canvas).toHaveAttribute('data-exercise-progress','0.5');await page.getByRole('button',{name:'측면 운동 시범 보기',exact:true}).click();await capture(`${body}-wall.png`);
-  await page.getByRole('button',{name:'저장하고 운동에 적용',exact:true}).click();await page.reload();
+  await page.getByRole('button',{name:'저장하고 운동에 적용',exact:true}).click();
+  // Exercise the high-quality portrait shader, then restore automatic GPU
+  // detection for the navigation flow (SwiftShader should use the low tier).
+  await page.evaluate(()=>{sessionStorage.setItem('synex-portrait-qa-complete','1');localStorage.removeItem('synex-render-quality');});await page.reload();
   await expect(canvas).toHaveAttribute('data-character-model','detailed',{timeout:60000});await expect(canvas).toHaveAttribute('data-character-body',body);
   await page.goto('/health/library');await page.getByLabel('운동·근육 검색').fill('맨몸 스쿼트');await page.getByRole('button',{name:'맨몸 스쿼트 동작 보기',exact:true}).click();
   canvas=page.getByRole('region',{name:'선택한 운동 시범'}).locator('canvas');await expect(canvas).toHaveAttribute('data-character-model','detailed',{timeout:60000});await expect(canvas).toHaveAttribute('data-character-body',body);await capture(`${body}-exercise.png`);

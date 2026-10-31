@@ -13,7 +13,7 @@ export function prepareDetailedModel(data,scale=1){
  const geometry=new THREE.BufferGeometry();
  geometry.setAttribute('position',new THREE.BufferAttribute(base.slice(),3));
  geometry.setAttribute('uv',new THREE.Float32BufferAttribute(data.uv,2));
- const indices=[];for(let i=0;i<data.groups.length;i++){geometry.addGroup(indices.length,data.groups[i].length,i);indices.push(...data.groups[i]);}geometry.setIndex(indices);
+ const indices=[];for(let i=0;i<data.groups.length;i++){geometry.addGroup(indices.length,data.groups[i].length,i);for(const index of data.groups[i])indices.push(index);}geometry.setIndex(indices);
  const source=data.sourceVertices||Array.from({length:base.length/3},(_,i)=>i),count=Math.max(...source)+1;
  const sums=new Float32Array(count*3);
  const model={base,rest,weights,geometry,data,scale,source,sums,expression:base.slice(),palmRoll:calibratePalmRoll(base,weights,rest)};
