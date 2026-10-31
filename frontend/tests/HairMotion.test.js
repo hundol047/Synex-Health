@@ -10,3 +10,12 @@ it('keeps roots fixed and sway bounded with a continuous repeating phase',()=>{
 it('shares phase-controlled sway in realistic and toon shaders',()=>{
  for(const style of ['realistic','toon']){const a=swayingHairMaterial({...DEFAULT_CHARACTER,style},1);try{const shader={uniforms:{},vertexShader:'#include <begin_vertex>'};a.material.onBeforeCompile(shader);a.setProgress(.25);expect(shader.uniforms.hairWave.value.x).toBeCloseTo(.72);expect(shader.vertexShader).toContain('transformed.x+=');a.setProgress(0);expect(shader.uniforms.hairWave.value.length()).toBe(0);}finally{a.dispose();}}
 });
+it('uses authored linear normal data without disposing shared texture resources',()=>{
+ const color=new THREE.Texture(),normal=new THREE.Texture();let colorDisposed=false,normalDisposed=false;
+ color.addEventListener('dispose',()=>{colorDisposed=true;});normal.addEventListener('dispose',()=>{normalDisposed=true;});
+ const hair=swayingHairMaterial(DEFAULT_CHARACTER,1,color,normal);
+ expect(hair.material.normalMap).toBe(normal);expect(hair.material.bumpMap).toBeNull();
+ expect(normal.colorSpace).toBe(THREE.NoColorSpace);expect(hair.material.normalScale.x).toBeLessThanOrEqual(.5);
+ hair.dispose();expect(colorDisposed).toBe(false);expect(normalDisposed).toBe(false);
+ color.dispose();normal.dispose();
+});

@@ -9,7 +9,7 @@ import {attachHairFlex} from './hairMotion.js';
 // nearest vertex. The cap stops above the ears; skin never becomes painted hair.
 // All distances below are in the neutral 1.78 m demonstration body's space.
 export function buildScalpHair(base,scale,anchor,character,bodyIndices){
- if(hasAuthoredHair(character.hairStyle))return buildAuthoredHair(base,scale,anchor,character);
+ if(hasAuthoredHair(character.hairStyle))return buildAuthoredHair(base,scale,anchor,character,bodyIndices);
  const volume=THREE.MathUtils.clamp(character.hairVolume||0,-1,1);
  const source=new THREE.BufferGeometry();
  source.setAttribute('position',new THREE.BufferAttribute(base,3));

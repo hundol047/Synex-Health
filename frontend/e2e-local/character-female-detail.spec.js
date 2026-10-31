@@ -14,6 +14,8 @@ test('authored female preset persists, switches hair, and follows the exercise s
  await page.getByRole('button',{name:'정면 운동 시범 보기',exact:true}).click();
  await canvas.evaluate(el=>el.scrollIntoView({block:'center',behavior:'instant'}));
  await page.screenshot({path:info.outputPath('female-app.png')});const firstPortrait=await capture('female-front.png');
+ await page.getByRole('button',{name:'45° 운동 시범 보기',exact:true}).click();await capture('female-oblique.png');
+ await page.getByRole('button',{name:'정면 운동 시범 보기',exact:true}).click();
  await page.getByRole('button',{name:'저장하고 운동에 적용',exact:true}).click();await page.reload();
  await expect(canvas).toHaveAttribute('data-character-hair','sleek',{timeout:30000});await expect(canvas).toHaveAttribute('data-character-body','female');
  await page.getByRole('button',{name:'얼굴 확대',exact:true}).click();await page.getByRole('button',{name:'정면 운동 시범 보기',exact:true}).click();

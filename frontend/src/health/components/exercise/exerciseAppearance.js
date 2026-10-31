@@ -152,11 +152,13 @@ export function exerciseMaterials(character,faceAtlas=null) {
       shader.uniforms.characterLipStrength={value:faceAtlas&&character.style!=='toon'?(character.face==='refined'?.52:.06):.55};
       shader.uniforms.characterFaceAtlas={value:faceAtlas};
       shader.uniforms.characterFaceReference={value:new THREE.Color(faceAtlasData.reference[character.body]||faceAtlasData.reference.male)};
+      shader.uniforms.characterFaceContrast={value:character.body==='female'&&character.face==='refined'?.62:1};
+      shader.uniforms.characterBrow={value:new THREE.Color(character.hair)};
       shader.uniforms.characterSmile={value:character.face==='refined'?.0014:0};
       shader.uniforms.characterTop={value:new THREE.Color(character.top)};shader.uniforms.characterBottom={value:new THREE.Color(character.bottom)};
       shader.vertexShader='attribute vec3 characterRest; attribute vec3 characterFaceUv; varying vec3 vCharacterRest; varying vec3 vCharacterFaceUv;\n'+shader.vertexShader;
       shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvCharacterRest=characterRest;vCharacterFaceUv=characterFaceUv;');
-      shader.fragmentShader='uniform float characterSmile; uniform float characterLipStrength; uniform vec3 characterLip; uniform vec3 characterTop; uniform vec3 characterBottom; uniform sampler2D characterFaceAtlas; uniform vec3 characterFaceReference; varying vec3 vCharacterRest; varying vec3 vCharacterFaceUv;\n'+shader.fragmentShader;
+      shader.fragmentShader='uniform float characterFaceContrast; uniform vec3 characterBrow; uniform float characterSmile; uniform float characterLipStrength; uniform vec3 characterLip; uniform vec3 characterTop; uniform vec3 characterBottom; uniform sampler2D characterFaceAtlas; uniform vec3 characterFaceReference; varying vec3 vCharacterRest; varying vec3 vCharacterFaceUv;\n'+shader.fragmentShader;
       shader.fragmentShader=shader.fragmentShader.replace('#include <common>',`#include <common>
         // Fine garment relief stays in rest coordinates while the body moves.
         float clothRelief(vec3 p) {
@@ -180,7 +182,7 @@ export function exerciseMaterials(character,faceAtlas=null) {
         vec4 faceTexel=texture2D(characterFaceAtlas,vCharacterFaceUv.xy);
         vec3 facialAlbedo=faceTexel.rgb;
         vec3 faceDetail=clamp(facialAlbedo/max(characterFaceReference,vec3(.001)),vec3(.06),vec3(1.65));
-        diffuseColor.rgb*=mix(vec3(1.),faceDetail,faceBlend);`:''}
+        diffuseColor.rgb*=mix(vec3(1.),faceDetail,faceBlend*characterFaceContrast);`:''}
         float sleeve=((ax-.185)*.14-(y-1.42)*.17)/(.14*.14+.17*.17);
         float neck=min(1.543,1.511-.022*clamp((z-.02)/.07,0.,1.)+.048*min(1.,pow(ax/.1,2.)));
         float shirt=smoothstep(.959,.967,y)*(1.-smoothstep(neck-.002,neck+.002,y));
@@ -201,6 +203,10 @@ export function exerciseMaterials(character,faceAtlas=null) {
         float cheekWarm=exp(-pow((ax-.045)/.032,2.)-pow((y-1.635)/.028,2.))*skinFace;
         float skinGrain=fract(sin(dot(floor(vCharacterRest.xy*4200.),vec2(12.9898,78.233)))*43758.5453)-.5;
         diffuseColor.rgb*=vec3(1.+cheekWarm*.032,1.-cheekWarm*.012,1.-cheekWarm*.018)*(1.+skinGrain*.009*skinFace);
+        float browT=clamp((ax-.014)/.038,0.,1.);
+        float browY=1.680+.003*sin(3.14159265*(browT*.87+.08));
+        float browBand=exp(-pow((y-browY-.0006)/.0010,2.))*smoothstep(.012,.018,ax)*(1.-smoothstep(.046,.055,ax))*smoothstep(.12,.135,z);
+        diffuseColor.rgb=mix(diffuseColor.rgb,characterBrow,browBand*.35);
         float lipLine=1.609+characterSmile*exp(-pow((ax-.024)/.013,2.));
         float lipShape=exp(-pow(vCharacterRest.x/.024,4.)-pow((y-lipLine)/.0048,4.))*smoothstep(.09,.12,z);
         diffuseColor.rgb=mix(diffuseColor.rgb,characterLip,lipShape*characterLipStrength);
@@ -215,7 +221,7 @@ export function exerciseMaterials(character,faceAtlas=null) {
         roughnessFactor=mix(roughnessFactor,.58-tZone,facialSkin);
       `);
     };
-    material.customProgramCacheKey=()=>`face-atlas-v6-${Boolean(faceAtlas)}-${character.outfit}-${character.pants}`;
+    material.customProgramCacheKey=()=>`face-atlas-v7-${Boolean(faceAtlas)}-${character.outfit}-${character.pants}`;
   }
   let disposed = false;
   return { materials, dispose: () => {

@@ -15,6 +15,11 @@ it.each(['male','female'].flatMap(body=>['short','parted','wavy','layered','bob'
    if(Math.abs(x)<.05&&z>.135)expect(y).toBeGreaterThan(1.69);
   }
  }
+ if(hairStyle==='sleek')for(const g of details.curves){const p=g.attributes.position;
+  for(let i=0;i<p.count;i++){const x=p.getX(i)+REST[1][0],y=p.getY(i)+REST[1][1],z=p.getZ(i)+REST[1][2];
+   if(y>1.653&&y<1.675&&z>.13)expect(Math.abs(x)).toBeGreaterThan(.048);
+  }
+ }
  expect([details.cap,...details.curves].reduce((count,g)=>count+(g.index?.count||0),0)).toBeGreaterThan(100);for(const g of [details.cap,...details.curves,...details.brows]){expect(g.attributes.position.array.every(Number.isFinite)).toBe(true);if(g.attributes.normal)expect(g.attributes.normal.array.every(Number.isFinite)).toBe(true);}
  }finally{details.dispose();}
 });

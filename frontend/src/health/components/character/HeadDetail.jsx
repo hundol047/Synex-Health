@@ -57,7 +57,7 @@ export function acquireHeadDetails(base,scale,rest,character){
  const source=templates.get(key),cap=source.cap.clone(),curves=source.curves.map(g=>g.clone()),brows=source.brows.map(g=>g.clone());
  return {...source,cap,curves,brows,eyes:source.eyes.map(v=>v.clone()),bun:source.bun.clone(),dispose(){[cap,...curves,...brows].forEach(g=>g.dispose());}};
 }
-export default function HeadDetail({base,scale,rest,joints,character,progress=0,hairAtlas=null}){
+export default function HeadDetail({base,scale,rest,joints,character,progress=0,hairAtlas=null,hairNormal=null}){
  const detail=useMemo(()=>acquireHeadDetails(base,scale,rest,character),[base,scale,rest,character.hairStyle,character.hairVolume]);
  useEffect(()=>()=>detail.dispose(),[detail]);
  const toon=character.style==='toon',hairMaterial=toon?'meshToonMaterial':'meshStandardMaterial';
@@ -81,12 +81,12 @@ export default function HeadDetail({base,scale,rest,joints,character,progress=0,
  const lids=useMemo(()=>[eyeLidGeometry(scale,true,toon?.0008:.00012),eyeLidGeometry(scale,false,toon?.00055:.00012)],[scale,toon]);
  useEffect(()=>()=>{iris.dispose();},[iris]);
  useEffect(()=>()=>lids.forEach(g=>g.dispose()),[lids]);
- const locksMaterial=useMemo(()=>swayingHairMaterial(character,scale,hairAtlas),[character.style,character.hair,scale,hairAtlas]);
+ const locksMaterial=useMemo(()=>swayingHairMaterial(character,scale,hairAtlas,hairNormal),[character.style,character.hair,scale,hairAtlas,hairNormal]);
  locksMaterial.setProgress(progress);
  useEffect(()=>()=>locksMaterial.dispose(),[locksMaterial]);
  const hairProps={color:character.hair,...(!toon?{roughness:.48,metalness:0,envMapIntensity:.65}:{})};
  return <group position={joints[1]} quaternion={rigRotation(joints,1,rest)}>
-  <mesh geometry={detail.cap}>{toon?<meshToonMaterial color={character.hair}/>:<meshStandardMaterial color={character.hair} roughness={.48} envMapIntensity={.65}/>}</mesh>
+  <mesh geometry={detail.cap}>{toon?<meshToonMaterial color={character.hair}/>:<meshStandardMaterial color={character.hair} roughness={.95} envMapIntensity={.05}/>}</mesh>
   {detail.curves.map((g,i)=><mesh key={i} geometry={g} material={locksMaterial.material}/>)}
   {character.hairStyle==='ponytail'&&<mesh position={[0,1.731*scale-rest[1][1],-.052*scale-rest[1][2]]} rotation={[Math.PI/2,0,0]}><torusGeometry args={[.012*scale,.002*scale,8,24]}/><meshStandardMaterial color={character.top} roughness={.8}/></mesh>}
   {character.hairStyle==='bun'&&<mesh position={detail.bun} scale={[.029*scale*detail.bunScale,.026*scale*detail.bunScale,.023*scale*detail.bunScale]}><sphereGeometry args={[1,24,16]}/>{React.createElement(hairMaterial,hairProps)}</mesh>}

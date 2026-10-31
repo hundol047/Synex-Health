@@ -1,13 +1,14 @@
 import * as THREE from 'three';
+import {subdivideHair} from './hairSubdivision.js';
 import layered from './assets/bob01.json';
 import bob from './assets/bob02.json';
 import pixie from './assets/short03.json';
-import sleek from './assets/long01.json';
+import sleek from './assets/medium-layered.json';
 const ASSETS={layered,bob,pixie,sleek};
 export const hasAuthoredHair=style=>Boolean(ASSETS[style]);
 // Fit local licensed hair cards to the selected cosmetic head, in meters.
-export function buildAuthoredHair(base,scale,anchor,character){
- const data=ASSETS[character.hairStyle],positions=new Float32Array(data.vertices.length*3),colors=new Float32Array(positions.length).fill(1),flex=new Float32Array(data.vertices.length);
+export function buildAuthoredHair(base,scale,anchor,character,bodyIndices=[]){
+ const data=ASSETS[character.hairStyle];
  const ratios=data.scales.map(([a,b,source],axis)=>Math.abs(base[a*3+axis]-base[b*3+axis])/source);
  const volume=THREE.MathUtils.clamp(character.hairVolume||0,-1,1),fitted=[];
  for(const [refs,weights,offset] of data.bindings){
@@ -33,18 +34,35 @@ export function buildAuthoredHair(base,scale,anchor,character){
    p[0]*=1-.24*t;
   }
  }
- data.vertices.forEach((source,i)=>{
-  const p=fitted[source];positions.set(p.map((n,k)=>n-anchor.getComponent(k)),i*3);
+ if(character.hairStyle==='sleek')for(const p of fitted){
+  // Open the front layers around the eyes while retaining the crown parting.
+  // A smooth radial expansion avoids a flat vertical cut through the fringe.
+  const frame=(1-THREE.MathUtils.smoothstep(p[1]/scale,1.685,1.735))*THREE.MathUtils.smoothstep(p[2]/scale,.05,.12);
+  p[0]=Math.sign(p[0])*Math.sqrt(p[0]*p[0]+frame*(.052*scale)**2);
+ }
+ const refined=subdivideHair(data,fitted),points=refined.points;
+ const positions=new Float32Array(refined.vertices.length*3),colors=new Float32Array(positions.length).fill(1),flex=new Float32Array(refined.vertices.length);
+ refined.vertices.forEach((source,i)=>{
+  const p=points[source];positions.set(p.map((n,k)=>n-anchor.getComponent(k)),i*3);
   // Only the loose ends move; crown roots remain attached to the scalp.
   flex[i]=Math.pow(THREE.MathUtils.clamp((1.735-p[1]/scale)/.16,0,1),2)*.002;
  });
- const locks=new THREE.BufferGeometry();locks.setAttribute('position',new THREE.BufferAttribute(positions,3));locks.setAttribute('uv',new THREE.Float32BufferAttribute(data.uv,2));locks.setAttribute('color',new THREE.BufferAttribute(colors,3));locks.setAttribute('hairFlex',new THREE.BufferAttribute(flex,1));locks.setIndex(data.indices);
+ const locks=new THREE.BufferGeometry();locks.setAttribute('position',new THREE.BufferAttribute(positions,3));locks.setAttribute('uv',new THREE.Float32BufferAttribute(refined.uv,2));locks.setAttribute('color',new THREE.BufferAttribute(colors,3));locks.setAttribute('hairFlex',new THREE.BufferAttribute(flex,1));locks.setIndex(refined.indices);
  // UV islands duplicate vertices. Compute normals on the original topology so
  // a texture seam does not become an unintended hard highlight on the hair.
- const surface=new THREE.BufferGeometry();surface.setAttribute('position',new THREE.Float32BufferAttribute(fitted.flat(),3));surface.setIndex(data.indices.map(i=>data.vertices[i]));surface.computeVertexNormals();
+ const surface=new THREE.BufferGeometry();surface.setAttribute('position',new THREE.Float32BufferAttribute(points.flat(),3));surface.setIndex(refined.indices.map(i=>refined.vertices[i]));surface.computeVertexNormals();
  const normals=new Float32Array(positions.length),sourceNormals=surface.attributes.normal.array;
- data.vertices.forEach((source,i)=>normals.set(sourceNormals.subarray(source*3,source*3+3),i*3));
- locks.setAttribute('normal',new THREE.BufferAttribute(normals,3));surface.dispose();
- const cap=new THREE.BufferGeometry();cap.setAttribute('position',new THREE.Float32BufferAttribute([],3));
+ refined.vertices.forEach((source,i)=>normals.set(sourceNormals.subarray(source*3,source*3+3),i*3));
+ locks.setAttribute('normal',new THREE.BufferAttribute(normals,3));locks.computeTangents();surface.dispose();
+ // A close-fitting scalp underlay fills transparent gaps between hair cards.
+ const cap=new THREE.BufferGeometry(),capPoints=[],capIndices=[],used=new Map();
+ const above=v=>{const y=base[v*3+1]/scale,z=base[v*3+2]/scale;return y>(z>.075?(character.hairStyle==='sleek'?1.77:1.738):1.70);};
+ for(let i=0;i<bodyIndices.length;i+=3){const tri=bodyIndices.slice(i,i+3);if(!tri.every(above))continue;
+  for(const v of tri){if(!used.has(v)){
+   used.set(v,used.size);const p=new THREE.Vector3().fromArray(base,v*3),n=p.clone().sub(new THREE.Vector3(0,1.69*scale,.045*scale)).normalize();
+   p.addScaledVector(n,.0006*scale).sub(anchor);capPoints.push(...p.toArray());
+  }capIndices.push(used.get(v));}
+ }
+ cap.setAttribute('position',new THREE.Float32BufferAttribute(capPoints,3));cap.setIndex(capIndices);cap.computeVertexNormals();
  return {cap,locks,tie:new THREE.Vector3(0,1.70*scale,-.05*scale).sub(anchor)};
 }

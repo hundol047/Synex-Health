@@ -11,7 +11,8 @@ import femaleFaceAtlas from '../character/assets/female-face.webp';
 import layeredHairAtlas from '../character/assets/bob01.webp';
 import bobHairAtlas from '../character/assets/bob02.webp';
 import pixieHairAtlas from '../character/assets/short03.webp';
-import sleekHairAtlas from '../character/assets/long01.webp';
+import sleekHairAtlas from '../character/assets/medium-layered.webp';
+import sleekHairNormal from '../character/assets/medium-layered-normal.webp';
 import Footwear from '../body3d/Footwear.jsx';
 import { exerciseAvatarGeometry, exerciseMaterials } from './exerciseAppearance.js';
 import ExerciseEquipment from './ExerciseEquipment.jsx';
@@ -51,13 +52,15 @@ function SceneCamera({ motion, view, mirror, heightScale, controls, faceFocus })
 function Athlete({ motion, progress, mirror, measurement, profile, compact, appearance, onReady, character, highlight }) {
   const actor = useRef(), readyMotion = useRef();
   // Bundled and cached by the loader; no remote request or per-frame texture allocation.
-  const faceAtlases=useTexture([maleFaceAtlas,femaleFaceAtlas,layeredHairAtlas,bobHairAtlas,pixieHairAtlas,sleekHairAtlas]);
+  const faceAtlases=useTexture([maleFaceAtlas,femaleFaceAtlas,layeredHairAtlas,bobHairAtlas,pixieHairAtlas,sleekHairAtlas,sleekHairNormal]);
   // useTexture uploads every bundled atlas eagerly. Configure all of them
   // before upload, not just the active body/hair; a later colorSpace assignment
   // alone leaves the already-uploaded texture in its old GPU color format.
-  for(const atlas of faceAtlases)if(atlas.colorSpace!==THREE.SRGBColorSpace||atlas.anisotropy!==4){
+  for(const atlas of faceAtlases.slice(0,6))if(atlas.colorSpace!==THREE.SRGBColorSpace||atlas.anisotropy!==4){
     atlas.colorSpace=THREE.SRGBColorSpace;atlas.anisotropy=4;atlas.needsUpdate=true;
   }
+  const normalAtlas=faceAtlases[6];
+  if(normalAtlas.colorSpace!==THREE.NoColorSpace||normalAtlas.anisotropy!==4){normalAtlas.colorSpace=THREE.NoColorSpace;normalAtlas.anisotropy=4;normalAtlas.needsUpdate=true;}
   const faceAtlas=faceAtlases[character.body==='female'?1:0];
   const hairAtlas=character.hairStyle==='layered'?faceAtlases[2]:character.hairStyle==='bob'?faceAtlases[3]:character.hairStyle==='pixie'?faceAtlases[4]:character.hairStyle==='sleek'?faceAtlases[5]:null;
   const { invalidate } = useThree();
@@ -115,7 +118,7 @@ function Athlete({ motion, progress, mirror, measurement, profile, compact, appe
         renderer.domElement.dataset.exerciseProgress = String(progress);
         renderer.domElement.dataset.exerciseVertices = String(model.geometry.attributes.position.count);
       }}/>
-      {appearance === 'athlete' && <HeadDetail hairAtlas={hairAtlas} base={model.headBase} scale={model.scale} rest={model.rest} joints={joints} character={character} progress={progress}/>}
+      {appearance === 'athlete' && <HeadDetail hairNormal={character.hairStyle==='sleek'?normalAtlas:null} hairAtlas={hairAtlas} base={model.headBase} scale={model.scale} rest={model.rest} joints={joints} character={character} progress={progress}/>}
       <Footwear anchors={shoes}/>
     </group>
     <ExerciseEquipment motion={motion} joints={joints} rest={model.rest} progress={progress} heightScale={model.scale}/>

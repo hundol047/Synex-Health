@@ -43,7 +43,10 @@ export function characterSurface(base,options,scale=1){
   }
   if(c.face==='refined'&&y>1.55&&z>.06){
    const jaw=bell(y,1.584,.035),nose=bell(x,0,.021)*bell(y,1.638,.025);
-   out[i]*=1-.09*jaw-.10*nose;out[i+2]-=.0015*nose*scale;
+   // The female portrait already has authored nose sculpts. Do not apply
+   // the generic nose pinch again on top of those feature targets.
+   out[i]*=1-.09*jaw-(c.body==='female'?0:.10*nose);
+   if(c.body!=='female')out[i+2]-=.0015*nose*scale;
    out[i+1]+=.0014*bell(Math.abs(x),.024,.013)*bell(y,1.607,.009)*Math.min(1,Math.max(0,(z-.10)/.04))*scale;
   }
   if(y>1.55&&y<1.76){const face=bell(y,1.63,.06);out[i]*=1+face*(c.face==='soft'?.055:c.face==='angular'?-.055:0);if(c.style==='toon')out[i]*=1+.045*face;}

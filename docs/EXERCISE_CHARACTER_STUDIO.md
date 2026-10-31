@@ -296,3 +296,46 @@ forehead RGB means were identical before and after reload (maximum channel
 difference 0.0/255). Final captures include the restored front view, blink,
 alternative hair and wall push-up. The personal build passed again. These
 checks do not establish reference-quality likeness or physical-device readiness.
+
+## New portrait assets and softer surface construction (2026-10-31)
+
+The previous rendering remained visibly below the user's realistic character
+reference. This revision replaces the medium hairstyle source and the female
+face atlas, rather than presenting a generated concept image as app output.
+
+- The medium style keeps its saved `sleek` identifier but uses Elvaerwyn's
+  Short Daisy Hair, with its authored linear normal map. The CC-BY source,
+  modifications and attribution link are recorded in the assets README and
+  exposed under 캐릭터 에셋 출처. Existing chosen colors/settings remain valid.
+- All four textured styles receive one Loop subdivision step on connected
+  topology while preserving UV islands. Head-dependent positions are recomputed;
+  only immutable topology is cached. Normal/tangent data follow the same surface.
+  Medium front layers expand smoothly around the eyes; scalp coverage is limited
+  to avoid a straight dark band across the forehead. The same wall-clearance
+  constraints still apply after fitting.
+- The female face atlas now uses OnlyTheGhosts' CC0 natural skin source. Its
+  head crop, reference color and source hash are reproducible with the existing
+  atlas tool. Refined-female diffuse contrast reduces baked dark eye/cheek
+  markings while retaining the separate microrelief channel. Normal textures
+  stay linear; color atlases remain sRGB across body/style switches and reloads.
+- Seventeen separate official graphic targets refine nose, lips, jaw and eye
+  bags. The previous generic nose pinch is disabled for the sculpted female
+  profile to avoid double application. Early visual review rejected an overly
+  pinched nose and reduced the combined feature weights.
+
+Thirty-seven focused checks passed across seven files, including head-only
+changes, eye visibility, shared texture ownership, UV-seam continuity, head
+refitting, and support-wall clearance. An additional eye-area fringe assertion
+passed with all 22 head/detail cases. The personal production build passed.
+
+These are still generic articulated assets. The work does not establish visual
+parity with the named commercial-game characters, a celebrity likeness score,
+or physical-phone performance. No new APK is implied by this source update.
+
+The final mobile DPR-2 browser flow passed in 2.9 minutes, including front and
+oblique captures, saved preset restoration, skin-color pixel comparison,
+closed-eye rendering, hairstyle switching and wall-push application. Sampled
+forehead RGB means were identical before and after reload (maximum difference
+0.0/255). No page/shader errors or horizontal overflow were reported. Visual
+captures were reviewed; the remaining generic facial styling is not presented
+as parity with the reference.
