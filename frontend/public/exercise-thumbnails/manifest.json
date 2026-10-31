@@ -10,8 +10,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 7056,
-      "sha256": "2a402c432a8cc1b0fdfe17f1e02687639fe4217f7cd6fbf6ad97d3344e903c72"
+      "bytes": 6670,
+      "sha256": "4dc1bfe9e95aa2b0bcaad7f14f202b299d2977c581ea20259ef559c1b33ab840"
     },
     {
       "id": "squat",
@@ -21,8 +21,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 6056,
-      "sha256": "0af3653d9151b6b622df8f411660e2047933bee46fa82cc0a3cb945ae62f64a8"
+      "bytes": 5630,
+      "sha256": "29df77185d2705777a199b79a5f4978c07544803649e271157cc8271933968b0"
     },
     {
       "id": "wall_push",
@@ -32,8 +32,8 @@
       "view": "side",
       "width": 508,
       "height": 430,
-      "bytes": 5868,
-      "sha256": "75134aa4bb73f3c70a9a00f89e72bf2032c16bacc630cb395dabd2ed442a526e"
+      "bytes": 5582,
+      "sha256": "063e15f91c3df8c3cdc409e57b2a3cc988885f734564cfd72a2ba4b7543a04ff"
     },
     {
       "id": "pushup",
@@ -43,8 +43,8 @@
       "view": "side",
       "width": 508,
       "height": 430,
-      "bytes": 6554,
-      "sha256": "a611592acecac49167bd567126079cc9ddd1a47f67c4d9b4da04b4a51dbcf88d"
+      "bytes": 6720,
+      "sha256": "9729d73f9059695db7616222603ff2f69262217bceabd54dbfe4807849506531"
     },
     {
       "id": "band_row",
@@ -54,8 +54,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 8102,
-      "sha256": "d963243fa8f7e80606bd6a62c7df4b23f438887107593370dc6b3c7c8dccba2f"
+      "bytes": 7700,
+      "sha256": "d404483044b8e145635cfa5e2abebdceeddfd905f88c9613039afe2e9e145436"
     },
     {
       "id": "scapular",
@@ -65,8 +65,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 6722,
-      "sha256": "f25901a4bd3bbb74d20d0795e4a3cfaf0e778dc99e678146fd2476b577bf16f5"
+      "bytes": 6448,
+      "sha256": "f3cb5e76f86a7c4f7ac75c8dce808c796621b19a60b2cfc15a98c8a54c3bd859"
     },
     {
       "id": "bridge",
@@ -76,8 +76,8 @@
       "view": "side",
       "width": 508,
       "height": 430,
-      "bytes": 7416,
-      "sha256": "e90d84faf3ac200b88987eb8949ac514c896f67c7d9e222e08ed956d3cfbb9e4"
+      "bytes": 7566,
+      "sha256": "6c6482026f31f21d37dcc45c84b14596ab31a5e3ceb5fab244d9524050a920ae"
     },
     {
       "id": "hinge",
@@ -87,8 +87,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 6458,
-      "sha256": "656db76b2b181938d9af8c1bd66ac7d1bd62a4894e85c42aa5c9e19f3030d62b"
+      "bytes": 6648,
+      "sha256": "b03d86da5e16fb2c803e00c4049ed35db6e8b70c0d6fba73140b544b8ed55624"
     },
     {
       "id": "bird_dog",
@@ -98,8 +98,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 7604,
-      "sha256": "53daf2e58973dc59c2b7c62a1c307f9972fa159db7d70409e1c5b9c8af5af0e0"
+      "bytes": 6920,
+      "sha256": "411b7630fa3fe957cc739e41fb2e72edcb62b997f57d98ab20d8fab700418f22"
     },
     {
       "id": "dead_bug",
@@ -109,8 +109,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 11044,
-      "sha256": "4f58c4caf885f03b6dc7e3911698813455126429e127ca3f0322937dd2c60937"
+      "bytes": 10660,
+      "sha256": "7ffd88b7a455ffbab09a5bbba723e3c34a52a01d82076443e936953161269479"
     },
     {
       "id": "curl",
@@ -120,8 +120,8 @@
       "view": "front",
       "width": 508,
       "height": 430,
-      "bytes": 7236,
-      "sha256": "1ae63adc01af84a1d24b95f88f66f8a02a32eff759cd789f7fa730f5e932a553"
+      "bytes": 7624,
+      "sha256": "002fc8d2790bb148abd0bc613f8781b8106623387e1aabec044c4fb785f0bf9f"
     },
     {
       "id": "calf",
@@ -131,8 +131,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 6724,
-      "sha256": "d5aaa765949515f74f922af23cecc3a3d5f7154a3d36b0ffb534da148c9ac20e"
+      "bytes": 6926,
+      "sha256": "446c6e28c49edc0be916a88cc29e7d95461b7986961b40e00f0691bf4e77afff"
     },
     {
       "id": "walk",
@@ -142,8 +142,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 6286,
-      "sha256": "cb2d4f38daaecec2c15ca1e4e7b4e3a34c751bd1aeb9536d247b234aa7b32bde"
+      "bytes": 6948,
+      "sha256": "677f380005fd97ddf3279efd5c9f093d3d95a848287f4b11a87c6f5801098c91"
     },
     {
       "id": "march",
@@ -153,8 +153,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 9966,
-      "sha256": "b754c01af157ddadbe205898274bbdb0b1c320db1e3e049e50cee56026fb479b"
+      "bytes": 8572,
+      "sha256": "03fb84849a8bd786b80f438f658470f786127981c1087151689a32e7cb25e4ce"
     },
     {
       "id": "lunge",
@@ -164,8 +164,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 6462,
-      "sha256": "ca31afb84e40bae43526ddd409975b811df4b6d183338c1943ab3908e4d1724f"
+      "bytes": 6162,
+      "sha256": "c8d885f0874093bbb1f26caff5363b523754665f58d6a0c69d24bfd84c4ca06a"
     },
     {
       "id": "shoulder_press",
@@ -175,8 +175,8 @@
       "view": "front",
       "width": 508,
       "height": 430,
-      "bytes": 7196,
-      "sha256": "e1eeb2b1c1fe3514f007976f55d674aa3b9e66b0c7f0c4bbbc198850b3769985"
+      "bytes": 6900,
+      "sha256": "6e713ef838f51e4d69970ae466a27ad5862344748c70c3f98278e4276b5133ac"
     },
     {
       "id": "lateral_raise",
@@ -186,8 +186,8 @@
       "view": "front",
       "width": 508,
       "height": 430,
-      "bytes": 7934,
-      "sha256": "b95bf8ec4bcb78060d9445f34da06e72f4194d4e070bacc94c985592f06d8dbf"
+      "bytes": 8218,
+      "sha256": "3a49797bec2eea0d5291a906c19b1ab93fe7a529787e6571dc3eb6ad3f106f2f"
     },
     {
       "id": "plank",
@@ -197,8 +197,8 @@
       "view": "side",
       "width": 508,
       "height": 430,
-      "bytes": 5934,
-      "sha256": "8474eb324ae73f1fbd47b1f8cfd89a23ae6d17dd399b069c05355f084e6e41ea"
+      "bytes": 5690,
+      "sha256": "e49263fb8fcdf2ff4b998a60b46daa30f019caece8e6c2a066ce0b8f62ae3e19"
     },
     {
       "id": "step_touch",
@@ -208,8 +208,8 @@
       "view": "front",
       "width": 508,
       "height": 430,
-      "bytes": 6964,
-      "sha256": "bf562ee367c15b5008241dd1790c78f2cabeebbfa54e86d8ceaeedcd6c63d3e8"
+      "bytes": 6914,
+      "sha256": "52e6bfd58f633066cd041c4fcf890c4d471acb31959caaee5af05cc57cfa7840"
     },
     {
       "id": "standing_march",
@@ -219,8 +219,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 6550,
-      "sha256": "74e1fae77916a62376241165b135ab447d5546214d178e5446373a0339a1e8b7"
+      "bytes": 6646,
+      "sha256": "cbbb2122aaf36934ea21a41c05ee4f5855f633020b210f5811c4b760775c86d8"
     },
     {
       "id": "hip_abduction",
@@ -230,8 +230,8 @@
       "view": "front",
       "width": 508,
       "height": 430,
-      "bytes": 7938,
-      "sha256": "89e17c3c63435b161654c0e1b37b944757b661ffe3a484318a57f597599706cc"
+      "bytes": 8624,
+      "sha256": "d039d7327d118759db4d91283dea7695aa6ac8292a974d2cfafdea818bcf4081"
     },
     {
       "id": "heel_slide",
@@ -241,8 +241,8 @@
       "view": "side",
       "width": 508,
       "height": 430,
-      "bytes": 6332,
-      "sha256": "4a8e442ebe5ec5afb937bd2f91c15a75e99ca4627635132c1ae9b17537af6b08"
+      "bytes": 6126,
+      "sha256": "61af8f083aff4820c2e3e8586f59c349f9099fa47d3271b4aafd26bd403460df"
     },
     {
       "id": "chest_open",
@@ -252,8 +252,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 6652,
-      "sha256": "29134102a9a1efe2a487590cd1ec7e1e7a077ddcc0b0c539716fed8e8bc5e657"
+      "bytes": 7198,
+      "sha256": "2ee82d6434926a1db2093f0cd2c4923f0237148eff165484ff0865a7e0e7ed4d"
     },
     {
       "id": "shoulder_roll",
@@ -263,8 +263,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 6202,
-      "sha256": "410c0665f81e619c23020c5318554937778e550b7cdb1e011b6ad7eafb796a1f"
+      "bytes": 6486,
+      "sha256": "82cb8ee83c5e89be8ad9c4baf6225c84eb81ab4ca108cc02e62e50191993fbea"
     },
     {
       "id": "cat_cow",
@@ -274,8 +274,8 @@
       "view": "side",
       "width": 508,
       "height": 430,
-      "bytes": 7218,
-      "sha256": "de349d00ce0f0deddade1eda3d30aa6a026e41442e07ddbb0a107fc462936b4d"
+      "bytes": 7728,
+      "sha256": "8981d62c1f17e236d02a8307321283134e80d6e8a0396b935e7da66fa4d452f9"
     },
     {
       "id": "thoracic_rotation",
@@ -285,8 +285,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 7082,
-      "sha256": "27d01e3da9e83db4e60892dcd22bbe49a00c0033cee62ca8537c5e8247647679"
+      "bytes": 7070,
+      "sha256": "64b27eefed14415560a850eb0b5a637b876615725c273b587ca011f295a4f8c5"
     },
     {
       "id": "ankle_pump",
@@ -296,8 +296,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 9620,
-      "sha256": "1be02503be436549a395d4a68c0545b6ca33128e98922e4886286707f4abada8"
+      "bytes": 9096,
+      "sha256": "d32ab2111a219b4ffb4028185fe4d8719ad780a3904ddd5634b95ebc378eef41"
     },
     {
       "id": "hamstring_stretch",
@@ -307,8 +307,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 10460,
-      "sha256": "5079c9a55623f952a15d7d4f2b55ba5b81c5cc879d08cfdfd01ee306145edc97"
+      "bytes": 9348,
+      "sha256": "96d7257793d42d837a178e8321602322ad6e69a5228ecc121cdb88bc260e14a5"
     },
     {
       "id": "calf_stretch",
@@ -318,8 +318,8 @@
       "view": "side",
       "width": 508,
       "height": 430,
-      "bytes": 6796,
-      "sha256": "c1faf7465257981c08df96f05bcb64b72b8f4e9b52db011c4428846adb182fef"
+      "bytes": 6458,
+      "sha256": "320a5dc9ae55a7f8d677d96938726595226f1dfc4917ac6ceb57e7a20326ff99"
     },
     {
       "id": "triceps_extension",
@@ -329,8 +329,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 6374,
-      "sha256": "e35a38ea84d9e108aeb2cd87b3360117c968d0449752840df4b118887f396250"
+      "bytes": 6406,
+      "sha256": "7e2c5d2a93dd278eee0278105aac0307e5bc24ae15678b34b119c478d4c796fe"
     },
     {
       "id": "goblet_squat",
@@ -340,8 +340,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 6484,
-      "sha256": "05a7ae4dd0da634c7c949febf81207c2a547d3f505900dbeadc822b6ed45c763"
+      "bytes": 6076,
+      "sha256": "b43ccb44cb81158800f96f2859d0c31573d6e7d525ecbb4e842148557ee64ba6"
     },
     {
       "id": "sumo_squat",
@@ -351,8 +351,8 @@
       "view": "front",
       "width": 508,
       "height": 430,
-      "bytes": 7280,
-      "sha256": "a3351d333c993f8190aef879f8eaadf580d6ef31852a284c018741d0a4eb6536"
+      "bytes": 6946,
+      "sha256": "400513cdc006adb0d689574ee62abbb759a6f58f80ebeeee112ba302fdf0776b"
     },
     {
       "id": "split_squat",
@@ -362,8 +362,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 7340,
-      "sha256": "a6ecedcfec3500c39d5292f6235ccb02748fa7eb046f6e983108a719a6b01043"
+      "bytes": 7288,
+      "sha256": "6d33a968aee11144bf4c90441fc3f3b8eec5d480bcd655bae7b031c78984a94b"
     },
     {
       "id": "reverse_lunge",
@@ -373,8 +373,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 6410,
-      "sha256": "8145dbe4fb98ac1ac925dbf0b307cb3bd62b4888fe910a8a7dc75f8aa72245f2"
+      "bytes": 6128,
+      "sha256": "b3e261c300d9c0998d2dac5ea88be3bbf13a70864430cadf81f628b9a5d13097"
     },
     {
       "id": "incline_push",
@@ -384,8 +384,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 9596,
-      "sha256": "e436a6e4d1caaab1307d6aeeeec5f90c6aa0e619f480abc5973bd9d42451a310"
+      "bytes": 9694,
+      "sha256": "2abe2b874dc71af2d1f2947099d67f54dce00f445f35088cab11bb15f9b03fc1"
     },
     {
       "id": "close_wall_push",
@@ -395,8 +395,8 @@
       "view": "side",
       "width": 508,
       "height": 430,
-      "bytes": 5828,
-      "sha256": "f3fb56148437ca70cc61386c5d59199ceb6135321d8b7fd2dc65e0aad4e8d706"
+      "bytes": 5586,
+      "sha256": "333231c250e0315c01fa688b4845c9bb67f9de619c9076a737297b9806e31b98"
     },
     {
       "id": "dumbbell_row",
@@ -406,8 +406,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 8496,
-      "sha256": "90ef886def037b841b4de7768da6be3acf25099bf0f2c516bf6f33f928822177"
+      "bytes": 8640,
+      "sha256": "bb339ddf24fae45c6bdbf4c8ce563201db4101e5630fce50e75b2a00017b8409"
     },
     {
       "id": "band_pull_apart",
@@ -417,8 +417,8 @@
       "view": "front",
       "width": 508,
       "height": 430,
-      "bytes": 7874,
-      "sha256": "bee2aa0faec3778850b98fdbf3a172d2c25ee2c3671015bfdfd5f100aca1c9a7"
+      "bytes": 7838,
+      "sha256": "4b055ef8dfb0ba745031c7c34d01c4c96cbe69c03169d5281fd73ffb1f28b11c"
     },
     {
       "id": "hammer_curl",
@@ -428,8 +428,8 @@
       "view": "front",
       "width": 508,
       "height": 430,
-      "bytes": 7760,
-      "sha256": "e596438c53062515d656c8f5fab4eac739d63302abca3e2ea58cab3def2dd1f1"
+      "bytes": 7882,
+      "sha256": "07e59ec6861beae7e6450ca8abad9558e8af7995bd1d3367365b33f07d7365c7"
     },
     {
       "id": "front_raise",
@@ -439,8 +439,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 7510,
-      "sha256": "c585e9c150c6c73494ea89fdafe76fec6ca6c93c5e2dbdb86f318a3122eeda90"
+      "bytes": 7430,
+      "sha256": "504a08ceec9b5e430dcdc0d6974414ea104a980cd020aed44523c8307e8c7a87"
     },
     {
       "id": "single_bridge",
@@ -450,8 +450,8 @@
       "view": "side",
       "width": 508,
       "height": 430,
-      "bytes": 6676,
-      "sha256": "c8371f2a8a516678c051423ef86dbb5174dad584772a89bcd2a56f6ae353c1e3"
+      "bytes": 7262,
+      "sha256": "3ddcce8c64217407802a510b508b6b4c467ca88adb6f9319721caf5e66fe4a55"
     },
     {
       "id": "wall_hinge",
@@ -461,8 +461,8 @@
       "view": "side",
       "width": 508,
       "height": 430,
-      "bytes": 6236,
-      "sha256": "b27499dde6ceecf9e2c0e55eca845f6bc69409c13241ba8363613e76ffe5bdb1"
+      "bytes": 6330,
+      "sha256": "efcc6dd549ef6b4239633ca55b223741d18716de379f8c9d1ce024ee9d0c912b"
     },
     {
       "id": "seated_calf",
@@ -472,8 +472,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 9928,
-      "sha256": "c8f8d44ce2f93f8a94479aa11056e20a6565c2887e5d360c216e1272de373eab"
+      "bytes": 9234,
+      "sha256": "a95a0e6ae43a0f499d15bbf4841a11f0c298e0913d12ef1cf34028c1fddbd6a4"
     },
     {
       "id": "brisk_walk",
@@ -483,8 +483,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 6934,
-      "sha256": "1649ce1bc40c86a82b82358f4f81ccce9e8a0f88a8c4e98ee8706bf47de407c5"
+      "bytes": 6926,
+      "sha256": "64b424de596ace5c2072a94e6cfbc19a9a60f4ac99ac9446a9622dd1ebb96423"
     },
     {
       "id": "full_pushup",
@@ -494,8 +494,8 @@
       "view": "side",
       "width": 508,
       "height": 430,
-      "bytes": 6528,
-      "sha256": "8637507deed9eb3c152271e144f6c985f455aed02ba4e00e3aec27c0bf275dd3"
+      "bytes": 6098,
+      "sha256": "44a865730b796652c82a4ba107cf555a3a66f960cdad7e94c6d15dcf40b3200d"
     },
     {
       "id": "side_lunge",
@@ -505,8 +505,8 @@
       "view": "front",
       "width": 508,
       "height": 430,
-      "bytes": 7792,
-      "sha256": "404e10b311222ad3abc57667f86237ee6e64175f1d228ab310b265874d02888d"
+      "bytes": 7416,
+      "sha256": "f0aabf495f449102b40f3eba40ab43cc1bc908684a4c7c798beb9f72f5459358"
     },
     {
       "id": "wall_sit",
@@ -516,8 +516,8 @@
       "view": "side",
       "width": 508,
       "height": 430,
-      "bytes": 6134,
-      "sha256": "85c3eb15f88ff2ca9f1563d7b49740d3363073ca0aaf7849564add50c759c435"
+      "bytes": 6464,
+      "sha256": "d8a7f8d7d9559624f1e2a20ed750c328782531894acab45ce5db567240a038a4"
     },
     {
       "id": "knee_side_plank",
@@ -527,8 +527,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 9272,
-      "sha256": "5890293c6e532b2e01e9a419c1881dfc68d81c4f68b945bc15a1a89dc7a39b18"
+      "bytes": 9144,
+      "sha256": "8a35cd6f6b433228d3ad573bd3654f5e238f6c4edb49ec5592d72c9383601575"
     },
     {
       "id": "standing_knee_crunch",
@@ -538,8 +538,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 6236,
-      "sha256": "16fec1810d5caf72b32fa0b9799162b3fa0e0237aad8861316c67e0513e81d9b"
+      "bytes": 6162,
+      "sha256": "119bb93e21e8721de698419aae5e112bffef817141846a60d9eb5f3bfcaae6d4"
     },
     {
       "id": "clamshell",
@@ -549,8 +549,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 9344,
-      "sha256": "3c9fdf0ed934836599683c064660eb5ea32723bea6beaed19f39f269133117b0"
+      "bytes": 10400,
+      "sha256": "40c342c04b5f4624cde0edab6ce38f06d41980b4876a9c95e3bde29c402f9f0b"
     },
     {
       "id": "prone_y",
@@ -560,8 +560,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 7138,
-      "sha256": "7954f27cb436b2ad8a5df96835a54d80522dcfaf3a07c11de1247ae79598059c"
+      "bytes": 6968,
+      "sha256": "b4d3b79c16fa1481fb75da38575816188744b23feff324524d11296bc2fd9872"
     },
     {
       "id": "single_calf",
@@ -571,8 +571,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 6968,
-      "sha256": "266cb3bc61ceb95cd5ecd5f9b8d4a2513d40ae48eb8dcec7af680121c2396759"
+      "bytes": 6808,
+      "sha256": "06a84a7b9d3a54fb1f917d882c39012baf59726221a09aa70bf2fa12c71f7f67"
     },
     {
       "id": "machine_chest_press",
@@ -582,8 +582,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 12992,
-      "sha256": "5d8b1369651d6e76810f81f57a669bcead49f9b39a5a5d9c2901f93ab89d0c48"
+      "bytes": 12518,
+      "sha256": "37caef2c5a0cdd984aefa46b6bed65ab62207fff8ce8fc24b61f82363ef4b167"
     },
     {
       "id": "lat_pulldown",
@@ -593,8 +593,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 10210,
-      "sha256": "d3c9faa732657f96ecbf96ebc1c1103f4fc6bf2c3583223dbee696a635afcd05"
+      "bytes": 9816,
+      "sha256": "829f909b93d1741845e6f273db451a8df23335562d10544c8713b33beab1fb10"
     },
     {
       "id": "machine_row",
@@ -604,8 +604,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 11516,
-      "sha256": "ad1f5c2d6f506bec980d2ebe42d0ac8e1fe3d7b8e221a621b339c2ee6c5c8abc"
+      "bytes": 11510,
+      "sha256": "b05de1f897e0bc7403b97cfb8dcf6d4f8e0b2a27cb265a855f933dd2755ed12f"
     },
     {
       "id": "leg_press",
@@ -615,8 +615,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 14136,
-      "sha256": "33eee5307de380e22d8801b4469399452ce4edc0cb1436904843d461b63080ca"
+      "bytes": 14934,
+      "sha256": "19836db5bde0469e469e1003ed093b9435f154553983ae2edbdd6dcc24527ef0"
     },
     {
       "id": "leg_extension",
@@ -626,8 +626,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 12948,
-      "sha256": "58f3498cb075b1b2014cace5a67680a2eb635d8a765c0177e2494e58e56db97c"
+      "bytes": 13082,
+      "sha256": "7122b6ce62892644a8efcc2ef08ac4f759cd90b21a4f5f3b1cfd3b9e724cab0b"
     },
     {
       "id": "seated_leg_curl",
@@ -637,8 +637,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 10570,
-      "sha256": "cd9ed9f7d11306922e7b1705441586a9e8bf970541834381a9678981b4157d6b"
+      "bytes": 10560,
+      "sha256": "cad5fc5b82fbebaf93bcdf81b879f4345210ae0a0a917619855cb17194ad89a6"
     },
     {
       "id": "machine_hip_abduction",
@@ -648,8 +648,8 @@
       "view": "front",
       "width": 508,
       "height": 430,
-      "bytes": 9808,
-      "sha256": "c3062625223c66ef50f282b8991f44a8b8b77f5488d11ba17c40458a26f314be"
+      "bytes": 9752,
+      "sha256": "29237f46bbbc00b4a4a1d851a9256f538846b2a01ff47c3906f8c60fa4c809df"
     },
     {
       "id": "cable_pushdown",
@@ -659,8 +659,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 8628,
-      "sha256": "81ff06fba69c42f3430e8a013dbc6c1efa9de3856f4a45d47af55f89ec4bdd97"
+      "bytes": 9016,
+      "sha256": "313f8b91ed3c71a35eb0c0a17ed8abee60cf3739a338587981beaf3998cf98fc"
     },
     {
       "id": "cable_face_pull",
@@ -670,8 +670,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 8414,
-      "sha256": "66ae5838ca506a95c33449606f1088eb61422622fc7dd0535b2bb2b987d8f091"
+      "bytes": 8378,
+      "sha256": "fcf5f2b655e0114639142949db2cc269a05460e11d78da035471411e8a22de42"
     },
     {
       "id": "cable_row",
@@ -681,8 +681,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 9186,
-      "sha256": "90b175818ff17106c50c05a379d26aac085d6c38ab9dc3332054d28a7b1b961c"
+      "bytes": 9220,
+      "sha256": "cfc42c40cb46bc73bd5f6039cdfe57afbf026c89ad47b2bc2b758b6f7fe32338"
     },
     {
       "id": "dumbbell_bench_press",
@@ -692,8 +692,8 @@
       "view": "side",
       "width": 508,
       "height": 430,
-      "bytes": 9314,
-      "sha256": "de599883b196cdd36a32597364f01e8166d4789015cdf41eeb6f169b29cb6afd"
+      "bytes": 8438,
+      "sha256": "7cdd00f7bfec37be12a49cf2b4455b1a000188a23164421ef608b985b9ed5cf2"
     },
     {
       "id": "dumbbell_floor_press",
@@ -703,8 +703,8 @@
       "view": "side",
       "width": 508,
       "height": 430,
-      "bytes": 7774,
-      "sha256": "b569cc35e92429f8a78d5793065d10ffd946c275b76b582fd71a54f8329d0bed"
+      "bytes": 7304,
+      "sha256": "05bd2fe3fbf4463c37d7047d3850a7141be2a98d390317be8ad0da41a4b7fca5"
     },
     {
       "id": "dumbbell_rdl",
@@ -714,8 +714,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 7394,
-      "sha256": "6331e9b8a6c35569119e29b0ee8c38e0d1d0cdd82fef96e9461011f28dc884b1"
+      "bytes": 7180,
+      "sha256": "0c68e7225e345f6db73a5c06242a16bb7c23f3f030b0a6512446d254dc3ae097"
     },
     {
       "id": "barbell_rdl",
@@ -725,8 +725,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 8626,
-      "sha256": "ee1068513b64c60d3f352bb3230015571d3978a707011660dbdcc3a46e10353a"
+      "bytes": 8106,
+      "sha256": "cc2081898abd6a8c8e107189a91e9790e46cff89b072abe7e4f8265e6d56dace"
     },
     {
       "id": "barbell_bench_press",
@@ -736,8 +736,8 @@
       "view": "side",
       "width": 508,
       "height": 430,
-      "bytes": 12124,
-      "sha256": "87e1c4c9a2bf0124417fc37054043ab37ddea86c01e6c52fc03df8c24930fd30"
+      "bytes": 10934,
+      "sha256": "9cec886cfad0a53dcc18d21a6c23f4525b4710dfe4b406872314ba7ed24e822a"
     },
     {
       "id": "barbell_squat",
@@ -747,8 +747,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 8144,
-      "sha256": "8d7d95a543037a41ec1cf9afb002239460dc67b9a4450af39947d4b4c36a58f2"
+      "bytes": 8032,
+      "sha256": "a2493a05f8f620515970e9d55f2ac33ee6d2942a4c588423d70c7c9d435d8f5b"
     },
     {
       "id": "dumbbell_split_squat",
@@ -758,8 +758,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 7022,
-      "sha256": "77aaa653b07088207f033e91249e25e97a3a92a3d9f97de9cd107c0d443d6f9c"
+      "bytes": 6604,
+      "sha256": "dd0d773d552e3d0a60699cf1013721d05d940ae30083ed72acd56ebd5bfd94ef"
     },
     {
       "id": "dumbbell_shrug",
@@ -769,8 +769,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 6920,
-      "sha256": "088cf5b7a73c848c5bc683482f18a0b2e21ed09ab7834811d5aa0938b7eb2b36"
+      "bytes": 6704,
+      "sha256": "ae2efcdff6da8c627a3bf04b0c7aecc90a42fc0d3c8713d714d908530ace95d6"
     },
     {
       "id": "treadmill_walk",
@@ -780,8 +780,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 10192,
-      "sha256": "395e0dc541eca1c6eb18a8d04602ed9393bd6c9333fbbb9b512bba715253bb2e"
+      "bytes": 9982,
+      "sha256": "6fbb4e3fd1e4ce5ba8dcd40af1df10e1ad78ff7ed236393802be8095a9e9fdf3"
     },
     {
       "id": "stationary_cycle",
@@ -791,8 +791,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 10976,
-      "sha256": "14fe0ab712779e1578551cb7edb25b9678e0e2f2c8142b538933cc69aa369966"
+      "bytes": 10698,
+      "sha256": "007a810efd81462fefc6d92e7c2b39f83499947fc375e8c6dcd7526ae62ac5b3"
     },
     {
       "id": "elliptical",
@@ -802,8 +802,8 @@
       "view": "45",
       "width": 508,
       "height": 430,
-      "bytes": 10020,
-      "sha256": "c4877e0a8cdcd65638a004a09e4fa3caf7acb6d8b7560b8998bd1aeed904098c"
+      "bytes": 9660,
+      "sha256": "38a6d91a2b5d20f3bff6762b7486541b48f3ff424b74946393e2ab2a252ee08f"
     },
     {
       "id": "cable_pallof",
@@ -813,8 +813,8 @@
       "view": "front",
       "width": 508,
       "height": 430,
-      "bytes": 8928,
-      "sha256": "c9aa0e87b720b47d438eef0d0f9f17ec79b77fac6cd8dd473f4219d043616981"
+      "bytes": 9252,
+      "sha256": "b1b138da5d8fccd646ff73909dd4b393ae28baee307d338666367687227b5e62"
     }
   ]
 }
