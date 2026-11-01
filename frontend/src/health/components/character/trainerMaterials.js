@@ -4,7 +4,7 @@ import {createTrainerSkinMaterial} from './trainerSkin.js';
 // Treat photographed skin, a wet eye surface, strands and woven clothing as
 // different materials. The scan's solid hair shell must still write depth;
 // only the MakeHuman strand/lash cards need alpha blending.
-export function createTrainerSurfaceMaterial(surface, maps, {scanned=false, body='male'}={}) {
+export function createTrainerSurfaceMaterial(surface, maps, {scanned=false, body='male',natural=false}={}) {
  const {kind}=surface;
  const options={...maps,metalness:0,roughness:.86,specularIntensity:.2,
   envMapIntensity:.65,ior:1.45,normalScale:new THREE.Vector2(.22,.22),bumpScale:.0004,
@@ -17,7 +17,7 @@ export function createTrainerSurfaceMaterial(surface, maps, {scanned=false, body
   ior:1.376,clearcoat:.6,clearcoatRoughness:.12,
  });
  if(kind==='Hair')Object.assign(options,{
-  color:surface.color||(scanned?'#ffffff':'#74665c'),
+  color:natural?(scanned?'#8291a3':'#655c55'):surface.color||(scanned?'#ffffff':'#74665c'),
   // The scan's atlas is not strand-aligned. An anisotropic lobe exaggerates
   // tangent changes into polygon-shaped highlights around its hair crown.
   roughness:scanned?.62:.55,specularIntensity:scanned?.3:.35,ior:1.46,

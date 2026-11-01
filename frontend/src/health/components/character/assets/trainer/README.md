@@ -1,8 +1,14 @@
 # Authored exercise trainers
 
-The current `detailed` selection uses complete, coherently fitted adult trainers
-exported from **MPFB 2.0.18**, rather than a separately reshaped head on the old
-Rocketbox body. The female and male meshes are loaded in separate lazy chunks.
+Current runtime note (2026-11-02): the male preset uses this export; the active
+female preset uses the separately attributed `assets/scanned` model. Both offer
+a Natural portrait option with bounded face-contour/resting-lid adjustments and
+a dark-brown hair tint. The Original option retains the preceding source-based
+appearance. The bundled source meshes/textures below remain unchanged.
+
+This directory contains complete, coherently fitted adult trainers exported from
+**MPFB 2.0.18**, rather than a separately fitted head on the old Rocketbox body.
+The active female and male meshes are loaded in separate lazy chunks.
 The previous Rocketbox files are retained for historical reproduction, but are
 not loaded by this renderer.
 

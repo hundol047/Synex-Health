@@ -1,5 +1,53 @@
 # Detailed character rendering
 
+## Natural portrait option — 2026-11-02
+
+The character studio now offers **내추럴 / 원본** for both detailed trainers.
+The Natural option responds to the requested Korean-inspired visual direction
+with dark-brown hair, a softer nose profile and small cheek/chin adjustments,
+plus relaxed resting eyelids. It is an artistic preset, not a claim about the
+source model's ethnicity or a population-standard face. Skin color, eye-globe
+size/position and body proportions are preserved.
+
+`naturalTrainer.js` applies smooth, bounded rest-space adjustments before the
+existing support calibration and exercise deformation. The protected eye/socket
+region keeps the complete globes intact. Native eyelid deltas are remapped with
+the relaxed base so a full blink still reaches the transformed native closure.
+The body below the head, hands, grips, triangle topology and skin weights are
+unchanged. No new texture/model download or paid service is needed.
+
+The selected option is stored in `detailedStyle`; absent/invalid values use
+Natural. Existing model/body/custom choices and health records remain in place.
+Original restores the preceding detailed face and hair tint. The existing
+source assets remain unchanged and attribution now describes the added option.
+
+**21 unit checks pass** across NaturalTrainer, Character, TrainerMaterials,
+InstructionMannequin and RenderQuality. The nine NaturalTrainer checks also
+pass after the final smoothing adjustment. These include all 74 exercise and
+30 stretch geometries at five phases for both active models, wall/floor support,
+finite normals, unchanged eyes/body, welded seams, portrait-triangle orientation,
+full eyelid closure and preference persistence. The personal web build passes.
+Four browser flows pass: each gender's original/natural comparison, saved
+selection and automatic exercise; and each gender's five bodyweight/gym motion
+demonstrations. No page or shader errors are reported. Both portrait flows were
+rerun after the final smoothing/tint adjustment, and the captures were inspected.
+
+Unretouched app captures:
+
+- [Female front](character-natural-captures/female-natural-front.png),
+  [three-quarter](character-natural-captures/female-natural-45.png) and
+  [full blink](character-natural-captures/female-natural-blink.png).
+- [Male front](character-natural-captures/male-natural-front.png),
+  [three-quarter](character-natural-captures/male-natural-45.png) and
+  [full blink](character-natural-captures/male-natural-blink.png).
+- [Push-up](character-natural-captures/female-full_pushup.png),
+  [dumbbell bench press](character-natural-captures/female-dumbbell_bench_press.png)
+  and [male curl](character-natural-captures/male-curl.png).
+
+These are rendered characters. Browser checks use Chromium/SwiftShader and do
+not establish physical Android performance or photographic equivalence. No new
+signed APK is produced by this portrait change.
+
 ## Skin, eyes and hair refinement — 2026-11-02
 
 The current detailed presets now use a shared surface-material factory. The

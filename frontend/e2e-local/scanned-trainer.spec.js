@@ -9,7 +9,7 @@ test('scanned female portrait keeps its original face and saves the same trainer
  page.on('request',r=>{if(/^https?:/.test(r.url())&&!/^http:\/\/(127\.0\.0\.1|localhost):/.test(r.url()))external.push(r.url());});
  await page.addInitScript(()=>{
   localStorage.setItem('synex-personal-onboarding-v1','done');localStorage.setItem('synex-personal-consent-v1','accepted');
-  localStorage.setItem('synex-exercise-character-v1',JSON.stringify({model:'detailed',body:'female'}));
+  localStorage.setItem('synex-exercise-character-v1',JSON.stringify({model:'detailed',body:'female',detailedStyle:'original'}));
   localStorage.setItem('synex-render-quality',sessionStorage.getItem('authored-portrait-done')?'low':'medium');
  });
  await page.goto('/health/character');const portrait=page.locator('canvas');
