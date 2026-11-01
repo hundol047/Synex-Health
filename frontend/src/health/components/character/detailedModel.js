@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {REST,calibratePalmRoll,deformSurface,poseJoints} from '../exercise/rig.js';
+import {REST,calibratePalmRoll,deformSurface,poseJoints,rigRotation} from '../exercise/rig.js';
 import {calibrateWallSupport} from '../exercise/wallSupportCalibration.js';
 import {calibrateGripScale} from '../exercise/exerciseGrip.js';
 import {exerciseHandShape} from '../exercise/handPoses.js';
@@ -17,6 +17,18 @@ export function prepareDetailedModel(data,scale=1){
  const source=data.sourceVertices||Array.from({length:base.length/3},(_,i)=>i),count=Math.max(...source)+1;
  const sums=new Float32Array(count*3);
  const model={base,rest,weights,geometry,data,scale,source,sums,expression:base.slice(),palmRoll:calibratePalmRoll(base,weights,rest)};
+ if(data.rigidHead){
+  // Dense authored hair stays rigid on the head: keep every strand vertex,
+  // but let the GPU transform it instead of skinning/rebuilding its normals.
+  const hair=data.rigidHead,g=new THREE.BufferGeometry(),positions=Float32Array.from(hair.positions,(v,i)=>v*scale-rest[1][i%3]);
+  g.setAttribute('position',new THREE.BufferAttribute(positions,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(hair.uv,2));g.setAttribute('normal',new THREE.Float32BufferAttribute(hair.normals,3));
+  const indices=[];hair.groups.forEach((group,i)=>{g.addGroup(indices.length,group.length,i);for(const v of group)indices.push(v);});g.setIndex(indices);g.computeBoundingBox();g.computeBoundingSphere();
+  model.rigidHeadGeometry=g;model.rigidHeadPosition=new THREE.Vector3();model.rigidHeadRotation=new THREE.Quaternion();
+  model.rigidHeadHull=Float32Array.from(hair.boundsHull,(v,i)=>v*scale-rest[1][i%3]);
+  // Wall clearance must include the hair silhouette, including the nape.
+  const fullBase=new Float32Array(base.length+hair.positions.length);fullBase.set(base);fullBase.set(Float32Array.from(hair.positions,v=>v*scale),base.length);
+  rest.wallSupport=calibrateWallSupport(fullBase,[...weights,...Array.from({length:hair.positions.length/3},()=>[[1,1]])],rest);
+ }
  updateDetailedNormals(model);return model;
 }
 export function updateDetailedNormals(model){
@@ -40,7 +52,15 @@ export function poseDetailedModel(model,motion,progress){
  for(const name of ['AK_09_EyeBlinkLeft','AK_10_EyeBlinkRight'])for(const [i,x,y,z] of data.morphs[name]||[]){expression[i*3]+=x*scale*blink;expression[i*3+1]+=y*scale*blink;expression[i*3+2]+=z*scale*blink;}
  deformSurface(expression,weights,joints,geometry.attributes.position.array,rest,false);
  geometry.attributes.position.needsUpdate=true;updateDetailedNormals(model);
- geometry.computeBoundingBox();geometry.boundingSphere||=new THREE.Sphere();geometry.boundingBox.getBoundingSphere(geometry.boundingSphere);
+ geometry.computeBoundingBox();
+ if(model.rigidHeadGeometry){
+  model.rigidHeadPosition.fromArray(joints[1]);model.rigidHeadRotation.copy(rigRotation(joints,1,rest));
+  const point=new THREE.Vector3();
+  // A convex hull gives exact extremal bounds for the rigid hair at any angle.
+  // Include it in floor support so prone poses cannot push it through the mat.
+  for(let i=0;i<model.rigidHeadHull.length;i+=3){point.fromArray(model.rigidHeadHull,i).applyQuaternion(model.rigidHeadRotation).add(model.rigidHeadPosition);geometry.boundingBox.expandByPoint(point);}
+ }
+ geometry.boundingSphere||=new THREE.Sphere();geometry.boundingBox.getBoundingSphere(geometry.boundingSphere);
  return joints;
 }
 

@@ -61,9 +61,9 @@ export function mannequinMaterials() {
 
 // Keep clothing, skin and hair materials while tinting the demonstrated regions.
 // The weights stay attached to the same vertices as the skinned body.
-export function applyAthleteHighlights(geometry, stature, motion, materials) {
+export function applyAthleteHighlights(geometry, stature, motion, materials, restPositions=geometry.attributes.position.array) {
   const {primary, secondary} = mannequinGuide(motion);
-  const positions = geometry.attributes.position.array;
+  const positions = restPositions;
   const weights = new Float32Array(positions.length / 3);
   for (let i = 0; i < weights.length; i++) {
     const point = [positions[i*3]/stature, positions[i*3+1]/stature, positions[i*3+2]/stature];
@@ -72,7 +72,7 @@ export function applyAthleteHighlights(geometry, stature, motion, materials) {
   }
   geometry.setAttribute('exerciseHighlight', new THREE.BufferAttribute(weights, 1));
   const red = new THREE.Color(MANNEQUIN_COLORS.primary);
-  for (const material of materials.slice(0,3)) {
+  for (const material of materials) {
     const previousCompile=material.onBeforeCompile,previousKey=material.customProgramCacheKey();
     material.onBeforeCompile = shader => {
       previousCompile?.(shader);

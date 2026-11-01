@@ -1,6 +1,80 @@
 # Detailed character rendering
 
-## Relaxed face and unobstructed eyes — 2026-11-01
+## Authored female replacement — 2026-11-01
+
+The female detailed preset now uses **Alina Ip by Jungle Jim**, with the
+publisher's CC BY 4.0 attribution linked in the character page. It replaces the
+MakeHuman female model rejected in the preceding review. The complete source
+face, eyes, hair, fitted top, shorts, shoes and finger weights are retained.
+The neutral facial identity is not procedurally resculpted. The source neck and
+shoulder blend is preserved at the head/body boundary; treating the whole head
+material as rigid would separate that boundary during exercise.
+
+Provenance, the exact input hash, conversion commands, attribution and the
+distinction between the publisher's license and independent upstream rights
+clearance are in
+[`assets/authored/README.md`](../frontend/src/health/components/character/assets/authored/README.md).
+The model is an authored adult character, not a reconstruction of an app user.
+The male detailed preset and configurable avatars retain their own sources.
+
+The 28,644 body vertices use the existing exercise deformation. All 62,325 hair
+vertices keep their authored topology and normals and follow a separate rigid
+head transform. A 554-point convex hull includes the complete hair silhouette
+in wall clearance and floor support. No physical hair simulation is claimed.
+Skin uses its source diffuse/normal maps without the old skin blur. The front
+hair is tinted to better match the rear hair, and the fitted top is tinted blue.
+An alpha-to-coverage trial made hair edges stippled, so the final renderer keeps
+soft alpha-tested blending. Non-highlighted preview materials are reused across
+exercise changes to avoid unnecessary reconstruction.
+
+Exercise highlights now cover every selected skin/clothing surface, including
+the new model's separate arms and legs. Masks are computed from the resting
+anatomy, so switching exercises cannot place a new muscle mask on the previous
+exercise's bent pose. Eyes, mouth, shoes and hair stay outside the highlight.
+The legacy configurable avatar still passes only its original three body/outfit
+materials to this helper.
+
+The redistributed USDZ has **no facial blendshape targets**. This preset has a
+neutral expression and does not inherit the old female model's eyelid animation.
+Do not label a capture at a particular exercise phase as a verified blink.
+Portrait realism, physical-phone performance and upstream commercial clearance
+remain separate from geometry/browser correctness.
+
+### Actual app captures and verification
+
+These are unretouched Chromium app captures, not generated concept images:
+
+| Portrait | Exercise |
+| --- | --- |
+| [Front, DPR 2](character-authored-captures/female-front.png) | [Automatic squat with muscle guidance](character-authored-captures/female-squat-highlight.png) |
+| [Three-quarter, DPR 2](character-authored-captures/female-45.png) | [Push-up](character-authored-captures/female-full_pushup.png) |
+| | [Dumbbell bench press](character-authored-captures/female-dumbbell_bench_press.png) |
+| | [Curl](character-authored-captures/female-curl.png) |
+| | [Lat pulldown](character-authored-captures/female-lat_pulldown.png) |
+
+- 29 distinct unit checks pass: 7 authored-character checks, 4 highlight checks,
+  14 existing trainer checks and 4 render-quality checks. The first combined run
+  passed 28; after preserving the native neck blend and adding its seam check,
+  all 7 authored-character checks passed again. The new character is sampled
+  across all 74 exercises and 30 stretches at five phases. Wall checks cover
+  17 phases, including the complete rigid hair hull. These are sampled geometry
+  checks, not proof that every possible surface contact is perfect.
+- The personal production build passes. Three browser flows pass: new female
+  portrait/selection/persistence/automatic exercise (6.6 minutes), female motion
+  (2.8 minutes), and unchanged male motion regression (1.3 minutes). Motion flows
+  cover squat, full push-up, curl, dumbbell bench press and lat pulldown. They
+  report no page/shader errors; the portrait flow also confirms no external HTTP
+  requests during use. The captures above were visually inspected.
+- An initial portrait-resolution poll timed out behind the software GPU queue.
+  The final test reads resolution after the screenshot's frame fence and still
+  requires DPR 2. These software-renderer timings do not measure Android speed.
+- Geometry and 28 bundled texture maps total 22,807,621 bytes. Maps retain source
+  dimensions up to 1024 px; this is not an invented 4K or photographic texture.
+  The new source still has a neutral expression, rigid hair and a fixed native
+  outfit. Reference-photo equivalence and physical-phone performance remain
+  unverified. No new APK is claimed by these source/browser checks.
+
+## Earlier relaxed MakeHuman face — 2026-11-01
 
 The resting face is rebuilt with native MakeHuman targets: lip compression,
 slightly lifted mouth corners and softer cheek/chin proportions. Upper lids rest
@@ -18,7 +92,7 @@ files, new target values and eyelid angles are
 recorded with the generated assets for reproduction. Changes affect the
 demonstration avatar only, preserving saved body/health records.
 
-Current front and three-quarter captures use the same medium tier and DPR 2:
+At that revision, front and three-quarter captures used the same medium tier and DPR 2:
 
 | Trainer | Front | Three-quarter |
 | --- | --- | --- |
@@ -34,7 +108,7 @@ This records a remaining software-renderer timing variability, not verified
 Android performance. Final blink captures: [female](character-trainer-captures/calm-female-blink.png)
 and [male](character-trainer-captures/calm-male-blink.png).
 
-## Skin finish and portrait clarity — 2026-11-01
+## Earlier skin finish and portrait clarity — 2026-11-01
 
 The trainer skin now has its own physical material instead of sharing the
 outfit's matte treatment. It uses a softer specular lobe (IOR 1.4, roughness .44)
@@ -70,7 +144,7 @@ They are real app screenshots without post-capture retouching:
 | Female | [Capture](character-trainer-captures/skin-before-female-45.png) | [Capture](character-trainer-captures/skin-after-female-45.png) |
 | Male | [Capture](character-trainer-captures/skin-before-male-45.png) | [Capture](character-trainer-captures/skin-after-male-45.png) |
 
-## Current replacement — 2026-11-01
+## Earlier MakeHuman replacement — 2026-11-01
 
 The `detailed` selection now loads complete **MPFB / MakeHuman CC0 adult
 trainers**, replacing the Rocketbox runtime described in the historical sections
@@ -105,7 +179,7 @@ percentage, physical hair simulation or real-phone performance is claimed.
 The historical investigation below explains the availability of other sources;
 it is not proof that this visual acceptance criterion has been completed.
 
-### Current verification
+### Verification at that revision
 
 - 14 trainer geometry tests passed on the final exported meshes: every exercise
   (74) and recovery stretch (30) at five phases, finite surfaces and unit normals,

@@ -88,7 +88,7 @@ function Athlete({ motion, progress, mirror, measurement, profile, compact, appe
     const geometry = exerciseAvatarGeometry(wear, scale, character);
     const surface = appearance === 'mannequin' ? mannequinMaterials() : exerciseMaterials(character,faceAtlas);
     if (appearance === 'mannequin') applyMannequinColors(geometry, scale, motion);
-    else if(highlight) applyAthleteHighlights(geometry, scale, motion, surface.materials);
+    else if(highlight) applyAthleteHighlights(geometry, scale, motion, surface.materials.slice(0,3));
     return { ...prepared, geometry, appearance: surface };
   }, [measurement, profile, appearance, motion, JSON.stringify(character),highlight,faceAtlas]);
   const joints = useMemo(() => {
