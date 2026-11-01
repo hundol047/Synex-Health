@@ -29,14 +29,22 @@ if body not in ['female','male']:raise SystemExit('Invalid body profile')
 bpy.ops.object.select_all(action='SELECT');bpy.ops.object.delete(use_global=False)
 macro=TargetService.get_default_macro_info_dict();macro.update(gender=0 if body=='female' else 1,age=.5,muscle=.5 if body=='female' else .6,weight=.4,cupsize=.4,firmness=.7);macro['race']={'asian':.8,'caucasian':.2,'african':0}
 base=HumanService.create_human(macro_detail_dict=macro)
-for name,value in [('head/head-oval',.15),('head/head-age-decr',.3),('nose/nose-scale-horiz-decr',.12)]:
+faceTargets=[('head/head-oval',.22),('head/head-age-decr',.18),('nose/nose-scale-horiz-decr',.10),
+ ('chin/chin-width-decr',.12 if body=='female' else .04),('chin/chin-prominent-decr',.12),
+ ('mouth/mouth-scale-depth-decr',.18),('mouth/mouth-scale-vert-decr',.16),
+ ('expression/units/asian/mouth-compression',.75),('mouth/mouth-upperlip-middle-down',.12),
+ ('mouth/mouth-angles-up',.14),('mouth/mouth-lowerlip-volume-decr',.12)]
+for side in ['l','r']:
+ faceTargets.extend([(f'cheek/{side}-cheek-bones-decr',.08),(f'cheek/{side}-cheek-volume-incr',.08)])
+for name,value in faceTargets:
  TargetService.load_target(base,str(Path(LocationService.get_mpfb_data('targets'))/(name+'.target.gz')),weight=value)
 rig=HumanService.add_builtin_rig(base,'default')
 graph=bpy.context.evaluated_depsgraph_get();graph.update()
 ev=base.evaluated_get(graph);mesh=ev.to_mesh();bounds=[base.matrix_world@v.co for v in mesh.vertices];lo=min(p.z for p in bounds);scale=1.78/(max(p.z for p in bounds)-lo);ev.to_mesh_clear()
 print('SCALE',scale,lo,flush=True)
 # Each authored MHCLO is fitted by MPFB before the exercise-rig conversion.
-files=[('eyes/high-poly/high-poly.mhclo','Eyes'),('eyebrows/eyebrow010/eyebrow010.mhclo','Eyebrows'),('eyelashes/eyelashes01/eyelashes01.mhclo','Eyelashes'),('hair/ponytail01/ponytail01.mhclo','Hair'),('clothes/female_sportsuit01/female_sportsuit01.mhclo','Clothes'),('clothes/shoes06/shoes06.mhclo','Clothes')]
+brow='eyebrow005' if body=='female' else 'eyebrow001'
+files=[('eyes/high-poly/high-poly.mhclo','Eyes'),(f'eyebrows/{brow}/{brow}.mhclo','Eyebrows'),('eyelashes/eyelashes01/eyelashes01.mhclo','Eyelashes'),('hair/bob02/bob02.mhclo','Hair'),('clothes/female_sportsuit01/female_sportsuit01.mhclo','Clothes'),('clothes/shoes06/shoes06.mhclo','Clothes')]
 files.append(('clothes/toigo_basic_tucked_t-shirt/toigo_basic_tucked_t-shirt.mhclo','Clothes'))
 if body=='male':files=[('hair/short02/short02.mhclo',k) if k=='Hair' else (p,k) for p,k in files]
 skin='skins/bobby_03_young_female_hairless/bobby_03_young_female_hairless.mhmat' if body=='female' else 'skins/young_asian_male/young_asian_male.mhmat'
@@ -51,6 +59,13 @@ for rel,kind in files:
 for obj,kind,_ in meshes:
  for m in obj.modifiers:
   if m.type=='SUBSURF':m.levels=0;m.render_levels=0
+# A relaxed upper lid covers part of the iris instead of holding a surprised
+# wide-open expression. Skin and lashes use the same native facial pivots.
+lidRest={'orbicularis03':.075 if body=='female' else .045,'orbicularis04':-.018 if body=='female' else -.008}
+def set_lid(label,closed=False):
+ for n,angle in ({'orbicularis03':.43,'orbicularis04':-.18} if closed else lidRest).items():
+  bone=rig.pose.bones[n+'.'+label];bone.rotation_mode='QUATERNION';basis=bone.bone.matrix_local.to_3x3();bone.rotation_quaternion=Quaternion(basis.inverted()@Vector((1,0,0)),angle)
+for label in ['L','R']:set_lid(label)
 # Uniform scale to a standard exercise height, no facial-axis stretch.
 graph=bpy.context.evaluated_depsgraph_get();graph.update()
 
@@ -87,7 +102,7 @@ def deform(p,ws,delta=False):
   v=p if delta else p-S[a];v=v+axis*(v.dot(axis)*(factor-1));v=q@v
   out+=(v if delta else v+T[a])*w
  return out
-out=dict(sourceModel='MPFB adult trainer',sourceRevision='d0a32e57a7f915cb2f2b95410e2117648c7bbb7e',positions=[],uv=[],weights=[],sourceVertices=[],groups=[],materials=[],surfaceMaterials=[],morphs={'AK_09_EyeBlinkLeft':[],'AK_10_EyeBlinkRight':[]},grips={k:[[],[]] for k in ['relaxed','clasp','closed']},eyes=[list(deform(joint('eye.'+s),[[1,1]])) for s in ['L','R']],profile=macro)
+out=dict(sourceModel='MPFB adult trainer',sourceRevision='d0a32e57a7f915cb2f2b95410e2117648c7bbb7e',positions=[],uv=[],weights=[],sourceVertices=[],groups=[],materials=[],surfaceMaterials=[],morphs={'AK_09_EyeBlinkLeft':[],'AK_10_EyeBlinkRight':[]},grips={k:[[],[]] for k in ['relaxed','clasp','closed']},eyes=[list(deform(joint('eye.'+s),[[1,1]])) for s in ['L','R']],profile=macro,faceTargets=dict(faceTargets),lidRest=lidRest)
 sourceOffset=0
 for obj,kind,material in meshes:
  graph.update();ev=obj.evaluated_get(graph);mesh=ev.to_mesh(preserve_all_data_layers=True,depsgraph=graph);mesh.calc_loop_triangles()
@@ -114,6 +129,13 @@ for obj,kind,material in meshes:
   if kind in ['Eyes','Eyebrows','Eyelashes','Hair']:w={1:1}
   total=sum(w.values());weights.append([[k,v/total] for k,v in w.items()] if total else [[1 if raw[v.index].y>1.48 else 0,1]])
  posed=[deform(p,w) for p,w in zip(raw,weights)]
+ if kind=='Hair' and body=='female':
+  # Lift the stock bob's heavy front fringe above both eyes. The smooth
+  # falloff keeps the crown, side locks and rear silhouette intact.
+  smooth=lambda t:(lambda v:v*v*(3-2*v))(max(0,min(1,t)))
+  for p in posed:
+   front=smooth((p.z-.075)/.045)
+   p.y+=.060*front*math.exp(-((p.y-1.67)/.075)**2-(p.x/.085)**6)
  # The exercise rig slightly changes the abdomen/pelvis blend. Preserve a
  # 4 mm fitting allowance at the waistband so it does not expose skin flecks.
  if 'female_sportsuit01' in str(material):
@@ -140,6 +162,7 @@ for obj,kind,material in meshes:
    pair=line.split(None,1)
    if len(pair)==2:mh[pair[0]]=pair[1]
  surface={'kind':kind,'map':str(material.parent/mh['diffuseTexture']),'muscleGuide':kind=='Skin' or (kind=='Clothes' and 'shoes06' not in str(material))}
+ if kind=='Hair' and body=='female':surface['color']='#40362f'
  if 't_shirt_basic_tucked' in str(material):surface['color']='#a4c8ef'
  if 'normalmapTexture' in mh:surface['normalMap']=str(material.parent/mh['normalmapTexture'])
  bump=mh.get('bumpmapTexture',mh.get('bumpTexture'))
@@ -169,15 +192,14 @@ for obj,kind,material in meshes:
  ev.to_mesh_clear()
  if kind in ['Skin','Eyelashes']:
   for side,label in enumerate(['L','R']):
-   for n,angle in [('orbicularis03',.43),('orbicularis04',-.18)]:
-    bone=rig.pose.bones[n+'.'+label];bone.rotation_mode='QUATERNION';basis=bone.bone.matrix_local.to_3x3();bone.rotation_quaternion=Quaternion(basis.inverted()@Vector((1,0,0)),angle)
+   set_lid(label,True)
    graph.update();blinkmesh=obj.evaluated_get(graph).to_mesh()
    assert len(blinkmesh.vertices)==len(raw)
    for idx,vi in orig:
     p=norm(obj.matrix_world@blinkmesh.vertices[vi].co);delta=deform(p-raw[vi],weights[vi],True)
     if delta.length>1e-6:out['morphs']['AK_09_EyeBlinkLeft' if side==0 else 'AK_10_EyeBlinkRight'].append([idx,*[round(v,6) for v in delta]])
    obj.evaluated_get(graph).to_mesh_clear()
-   for n in ['orbicularis03','orbicularis04']:rig.pose.bones[n+'.'+label].rotation_quaternion=Quaternion()
+   set_lid(label)
    graph.update()
  sourceOffset+=len(raw)
  print('PART',kind,len(orig),len(indices)//3,flush=True)

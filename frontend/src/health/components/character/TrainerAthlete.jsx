@@ -21,15 +21,16 @@ export default function TrainerAthlete({data,body,motion,progress,mirror,measure
    const options={roughness:eye?.2:skin?.65:hair?.7:.9,metalness:0,specularIntensity:eye?.8:skin?.35:hair?.35:.2,envMapIntensity:.6,normalScale:new THREE.Vector2(.22,.22),bumpScale:.0004};
    for(let j=0;j<slots.length;j++)if(slots[j].i===i)options[slots[j].k]=maps[j];
    if(alpha)Object.assign(options,{transparent:true,depthWrite:false,side:THREE.DoubleSide,alphaTest:.12});
+   if(s.kind==='Eyelashes')Object.assign(options,{opacity:body==='female'?.85:.55,specularIntensity:0,roughness:1});
    if(hair)options.color='#74665c';
    if(s.color)options.color=s.color;
-   if(eye)Object.assign(options,{clearcoat:1,clearcoatRoughness:.08,ior:1.38});
+   if(eye)Object.assign(options,{color:'#f0ece5',roughness:.28,specularIntensity:.45,clearcoat:.35,clearcoatRoughness:.18,ior:1.38});
    if(s.kind==='Clothes')Object.assign(options,{sheen:.2,sheenRoughness:.9});
    return skin?createTrainerSkinMaterial(options):new THREE.MeshPhysicalMaterial(options);
   });
   if(highlight)applyAthleteHighlights(model.geometry,scale,motion,mats.filter((_,i)=>data.surfaceMaterials[i].muscleGuide));
   return mats;
- },[maps,slots,data,model,scale,motion,highlight]);
+ },[maps,slots,data,body,model,scale,motion,highlight]);
  const hidden=useMemo(()=>new THREE.MeshBasicMaterial({visible:false}),[]);
  const opaque=useMemo(()=>materials.map(m=>m.transparent?hidden:m),[materials,hidden]);
  const transparent=useMemo(()=>materials.map(m=>m.transparent?m:hidden),[materials,hidden]);

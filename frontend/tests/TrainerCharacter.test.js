@@ -1,4 +1,5 @@
 import {it,expect} from 'vitest';
+import {Ray,Vector3} from 'three';
 import female from '../src/health/components/character/assets/trainer/female.json';
 import male from '../src/health/components/character/assets/trainer/male.json';
 import {prepareDetailedModel,poseDetailedModel,detailedFloorOffset} from '../src/health/components/character/detailedModel.js';
@@ -38,6 +39,18 @@ for(const [body,data] of [['female',female],['male',male]]){
    poseDetailedModel(model,motion,.5);const p=model.geometry.attributes.position.array;
    for(let i=0;i<eyes.length-40;i+=40)expect(distance(p,eyes[i],eyes[i+40])).toBeCloseTo(distance(model.base,eyes[i],eyes[i+40]),5);
   }}finally{model.geometry.dispose();}
+ });
+ it(`${body} trainer: keeps the resting fringe out of both eyes`,()=>{
+  const hair=data.groups[data.materials.indexOf('Hair')],point=i=>new Vector3().fromArray(data.positions,i*3);
+  // Test the actual exported hair triangles, including the fringe fitting.
+  // A side sweep can otherwise move a lock across the other eye unnoticed.
+  for(const eye of data.eyes)for(const xOffset of [-.004,0,.004]){
+   const ray=new Ray(new Vector3(eye[0]+xOffset,eye[1],eye[2]+.30),new Vector3(0,0,-1));
+   for(let i=0;i<hair.length;i+=3){
+    const hit=ray.intersectTriangle(point(hair[i]),point(hair[i+1]),point(hair[i+2]),false,new Vector3());
+    if(hit)expect(hit.z,`${body}: hair covers eye at ${eye[0]}, offset ${xOffset}`).toBeLessThan(eye[2]);
+   }
+  }
  });
  it(`${body} trainer: has finite surfaces and unit normals across every exercise and recovery stretch`,()=>{
   const model=prepareDetailedModel(data);

@@ -1,5 +1,39 @@
 # Detailed character rendering
 
+## Relaxed face and unobstructed eyes — 2026-11-01
+
+The resting face is rebuilt with native MakeHuman targets: lip compression,
+slightly lifted mouth corners and softer cheek/chin proportions. Upper lids rest
+lower than the original wide-open pose, with a smaller adjustment on the male
+face. Eyelid skin and lashes are posed together; blink deltas are measured from
+the new resting pose, with fixed eye globes. Eye whites/reflections are toned
+down, and male lash opacity is reduced. The presets use the natural eyebrow005
+and eyebrow001 maps respectively.
+
+The female ponytail is replaced with the fitted CC0 bob02 hairstyle. A smooth
+vertical fringe adjustment raises the front strands above the eyes while keeping
+the crown, side locks and rear silhouette. Its source topology is preserved.
+Both eyes are visible in the front and three-quarter app captures. The source
+files, new target values and eyelid angles are
+recorded with the generated assets for reproduction. Changes affect the
+demonstration avatar only, preserving saved body/health records.
+
+Current front and three-quarter captures use the same medium tier and DPR 2:
+
+| Trainer | Front | Three-quarter |
+| --- | --- | --- |
+| Female | [Capture](character-trainer-captures/calm-female-front.png) | [Capture](character-trainer-captures/calm-female-45.png) |
+| Male | [Capture](character-trainer-captures/calm-male-front.png) | [Capture](character-trainer-captures/calm-male-45.png) |
+
+The final exports pass all 14 geometry checks. The female high-tier and male
+medium-tier portrait flows pass, including native blinks and animated curls with
+muscle guidance. Both five-exercise motion flows pass. The first combined browser
+run timed out in the male motion flow after 240 seconds; the identical test,
+without changing assertions or timeout, passed in a fresh browser in 1.5 minutes.
+This records a remaining software-renderer timing variability, not verified
+Android performance. Final blink captures: [female](character-trainer-captures/calm-female-blink.png)
+and [male](character-trainer-captures/calm-male-blink.png).
+
 ## Skin finish and portrait clarity — 2026-11-01
 
 The trainer skin now has its own physical material instead of sharing the
@@ -47,14 +81,14 @@ No paid service, external login or user photo is required at runtime.
 
 The coherent source head, fitted eyes, eyelids, brows and lashes replace the
 separately refined head/portrait overlay. The female preset uses bobby_03's
-natural skin map and a fitted ponytail; the male preset uses the authored
+natural skin map and a fitted bob; the male preset uses the authored
 young-adult skin and short hairstyle. Both wear a blue fabric tee, dark exercise
 trousers and trainers. Texture-defined skin detail, cloth grain, brown irises,
 eye reflections and native eyelid motion are retained. A full authored Margaret
 Toigo tee replaces a cropped-shirt extension that visibly intersected the body
 during a squat. Clothing components retain their authored topology and rig
-weights. The new meshes have 19,150 / 17,042 vertices and 32,972 / 30,964 triangles
-(female / male). Geometry and 13 shared maps total 8,047,785 bytes (7.68 MiB).
+weights. The current meshes have 16,936 / 17,042 vertices and 29,868 / 30,964 triangles
+(female / male). Geometry and 15 shared maps total 7,519,325 bytes (7.17 MiB).
 The source fabric/brow bump maps are retained, and the waistband receives a
 4 mm radial allowance after rig conversion to reduce abdomen intersections.
 
@@ -73,11 +107,13 @@ it is not proof that this visual acceptance criterion has been completed.
 
 ### Current verification
 
-- 12 trainer geometry tests passed on the final exported meshes: every exercise
+- 14 trainer geometry tests passed on the final exported meshes: every exercise
   (74) and recovery stretch (30) at five phases, finite surfaces and unit normals,
-  facial rigidity, isolated eye surfaces, finger grips, wall clearance and floor
-  support. Sampled checks do not certify every possible intersection or coaching
-  accuracy.
+  facial rigidity, isolated eye surfaces, unobstructed eye sightlines through the
+  hair, finger grips, wall clearance and floor support. The new hair check caught
+  the rejected fringe variants (3/6 and 6/6 sightlines blocked); the shipped
+  female and male models have 0/6 blocked. Sampled checks do not certify every
+  possible intersection or coaching accuracy.
 - 14 additional integration/geometry tests passed: saved character settings,
   scene fallback recovery, render quality, elbow hinges, ankle twist and joint
   seams.

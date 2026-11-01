@@ -31,8 +31,8 @@ and [official asset/output clarification](https://static.makehumancommunity.org/
   `d0a32e57a7f915cb2f2b95410e2117648c7bbb7e` (`v2.0.18`).
 - Female skin: **bobby_03**, `young_female_hairless`, from the official
   [skins01 CC0 pack](https://static.makehumancommunity.org/assets/assetpacks/skins01.html).
-- Male skin, high-poly eyes and brown iris maps, eyebrow010, eyelashes01,
-  ponytail01, short02, female_sportsuit01 and shoes06: MakeHuman Team,
+- Male skin, high-poly eyes and brown iris maps, eyebrow005/eyebrow001, eyelashes01,
+  bob02, short02, female_sportsuit01 and shoes06: MakeHuman Team,
   Data Collection AB, Joel Palmius and Jonas Hauquier; official
   [MakeHuman system assets CC0 pack](https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html).
 - Full tee: **Margaret Toigo (MRT)**, `toigo_basic_tucked_t-shirt`, from the
@@ -92,3 +92,17 @@ photographic/premium-game reference quality. The source hair cards, skin maps an
 limited facial expression still show that gap. Hair is fitted geometry; this
 renderer does not claim a strand-based physical hair simulation. CPU/browser
 verification does not establish Android hardware frame rate or thermal behavior.
+
+## Relaxed default face
+
+The export records the native face targets and default eyelid angles in
+`faceTargets` and `lidRest`. The face uses softer cheek/chin proportions, a small
+mouth-corner lift and native lip compression. Upper lids rest slightly lower;
+blinks are exported relative to that resting pose and reset to it after each
+sample. Skin and lashes use the same pivots, while the eye globes stay fixed.
+The female trainer uses the fitted CC0 `bob02` side-parted bob, with a smooth
+vertical adjustment of the front fringe above both eyes; the male keeps
+`short02`. Brows use `eyebrow005` / `eyebrow001`. Eye highlights and male eyelash
+opacity are reduced in the renderer. The exported hair triangles are checked
+with rays through both eye centers and adjacent iris points to catch fringe
+occlusion, alongside visual checks from the front and three-quarter view.
