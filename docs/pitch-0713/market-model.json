@@ -1,19 +1,62 @@
 {
-  "scope": "국내 일반·전문대학의 초기 진입 시장",
-  "statisticsDate": "2026-04-01",
+  "scope": "기관은 전국 신고 헬스장과 캠퍼스형 대학 스포츠센터 후보군, 개인은 초기 일반·전문대학생 시장",
+  "statisticsDates": {
+    "gyms": "2024-12-31",
+    "schools": "2026-04-01"
+  },
   "checkedAt": "2026-11-01",
-  "source": "https://www.kedi.re.kr/khome/main/announce/selectBroadAnnounceForm.do?selectTp=0&board_sq_no=3&article_sq_no=36467",
+  "sources": {
+    "schools": "https://www.kedi.re.kr/khome/main/announce/selectBroadAnnounceForm.do?selectTp=0&board_sq_no=3&article_sq_no=36467",
+    "schoolTypes": "https://eiec.kdi.re.kr/policy/materialView.do?num=285801",
+    "gyms": "https://www.spoinfo.or.kr/board/boardFileDownAct.do?fileSeq=3201"
+  },
+  "schoolTypes": {
+    "일반대학": 188,
+    "교육대학": 10,
+    "전문대학": 126,
+    "산업대학": 2,
+    "기술대학": 1,
+    "각종학교": 2,
+    "전공대학": 3,
+    "사내대학": 7,
+    "기능대학": 9
+  },
+  "schoolCentersPerSchoolAssumption": 1,
+  "gymUniversityOverlapAssumption": 0,
   "samShareAssumption": "0.10",
   "somHorizonMonthsAfterLaunch": 24,
   "institution": {
-    "tam": 314,
-    "sam": 31,
-    "som": 5,
-    "monthlyFeeWon": 200000,
+    "tam": 15896,
+    "sam": 1588,
+    "som": 35,
+    "tiers": {
+      "gym": {
+        "tam": 15548,
+        "sam": 1554,
+        "som": 30,
+        "monthlyFeeWon": 490000,
+        "annualPotentialWon": {
+          "tam": 91422240000,
+          "sam": 9137520000,
+          "som": 176400000
+        }
+      },
+      "university": {
+        "tam": 348,
+        "sam": 34,
+        "som": 5,
+        "monthlyFeeWon": 990000,
+        "annualPotentialWon": {
+          "tam": 4134240000,
+          "sam": 403920000,
+          "som": 59400000
+        }
+      }
+    },
     "annualPotentialWon": {
-      "tam": 753600000,
-      "sam": 74400000,
-      "som": 12000000
+      "tam": 95556480000,
+      "sam": 9541440000,
+      "som": 235800000
     }
   },
   "individual": {

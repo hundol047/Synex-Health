@@ -1,0 +1,43 @@
+{
+  "checkedAt": "2026-11-01",
+  "gyms": {
+    "url": "https://www.spoinfo.or.kr/board/boardFileDownAct.do?fileSeq=3201",
+    "sha256": "df959d2b0460eb9bd3c3bcb5703d7175e717626ae0a133e56bebf527089c800b",
+    "bytes": 8676356,
+    "pdfPages": 1401,
+    "countPages": [
+      12,
+      13,
+      28,
+      34,
+      42
+    ],
+    "publisher": "문화체육관광부",
+    "publicDistributor": "국민체육진흥공단 체육시설알리미",
+    "statisticsDate": "2024-12-31",
+    "reportedGymCount": 15548
+  },
+  "schools": {
+    "publisher": "교육부·한국교육개발원",
+    "url": "https://eiec.kdi.re.kr/policy/materialView.do?num=285801",
+    "statisticsDate": "2026-04-01",
+    "pdfPages": [
+      18,
+      19
+    ],
+    "sha256": "67b97fae3d755268b3588e2320fc68f6e7d45041550b4a1979b0c2e971000b1f",
+    "schoolTypes": {
+      "일반대학": 188,
+      "교육대학": 10,
+      "전문대학": 126,
+      "산업대학": 2,
+      "기술대학": 1,
+      "각종학교": 2,
+      "전공대학": 3,
+      "사내대학": 7,
+      "기능대학": 9
+    },
+    "derivedCandidateSchools": 348,
+    "actualSportsCentersCountVerified": false
+  }
+}

@@ -13,7 +13,7 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from PIL import Image
 from content import SLIDES5,SLIDES7,SOURCES,SOURCES7,QA,QA7
-from market import METHOD as MARKET_METHOD
+from market import METHOD as MARKET_METHOD, MODEL as MARKET_MODEL, hundred_million
 ROOT=Path(__file__).resolve().parent
 OUT=ROOT/'files';OUT.mkdir(exist_ok=True)
 IMG=ROOT/'screens'
@@ -91,21 +91,22 @@ def build_deck(slides,minutes):
    footer_note(s,'S3–S5 공식 소개의 중심 기능 비교입니다. 타 서비스의 기능 부재나 독점 기술을 주장하지 않습니다.')
   elif id=='customer':
    title(s,item)
-   itemcard(s,'이용자','혼자 운동하는\n대학생 초보자',.6,3.15,3.5,2.15)
-   itemcard(s,'구매 검토자','대학 스포츠센터·\n학생 건강관리 부서',4.55,3.15,3.75,2.15)
+   itemcard(s,'이용자','대학생·헬스장의\n운동 초보자' if minutes==7 else '혼자 운동하는\n대학생 초보자',.6,3.15,3.5,2.15)
+   itemcard(s,'구매 검토자','대학 스포츠센터·\n헬스장 운영자' if minutes==7 else '대학 스포츠센터·\n학생 건강관리 부서',4.55,3.15,3.75,2.15)
    box(s,8.75,3.15,4,2.15,BLUE,radius=True);txt(s,'첫 실증',9.02,3.4,3.4,.4,18,WHITE);txt(s,'기관 1곳',9.02,4.05,3.4,.7,36,WHITE,True)
    txt(s,'담당자 인터뷰  →  자발적 체험  →  4주 실증  →  유료 도입 협의',.7,5.8,12,.5,19,TEAL,True)
    footer_note(s,'현재 기관 계약·협약은 없습니다. 자동 연동에는 기관 승인·공식 API·사용자 동의가 필요합니다.')
   elif id=='market':
    txt(s,'기관용과 개인용의 TAM · SAM · SOM',.55,1.0,12.2,.62,31,NAVY,True)
-   txt(s,'초기 대학 시장 기준 · TAM 전체 시장 / SAM 유효 시장 / SOM 초기 확보 목표',.58,1.7,12.1,.4,14,GRAY)
+   txt(s,'기관은 전국 헬스장·대학 스포츠센터 / 개인은 초기 대학생 직접 구독 시장',.58,1.7,12.1,.4,14,GRAY)
+   inst=MARKET_MODEL['institution']
    columns=[
-    (3.38,'기관용 B2B · 대학 스포츠·건강센터','학교당 월 20만 원 가정',BLUE,['E4EDFD','B7D0FA',BLUE],[('TAM · 전체','314개교','약 7.54억 원'),('SAM · 가정','31곳','7,440만 원'),('SOM · 목표','5곳','1,200만 원')]),
+    (3.38,'기관용 B2B · 전국 헬스장·대학센터','헬스장 월 49만 원 · 대학 월 99만 원 가정',BLUE,['E4EDFD','B7D0FA',BLUE],[('TAM · 상한 가정',f'{inst["tam"]:,}곳',f'약 {hundred_million(inst["annualPotentialWon"]["tam"],1)}억 원'),('SAM · 가정',f'{inst["sam"]:,}곳',f'약 {hundred_million(inst["annualPotentialWon"]["sam"])}억 원'),('SOM · 목표',f'{inst["som"]}곳',f'{hundred_million(inst["annualPotentialWon"]["som"])}억 원')]),
     (9.90,'개인용 B2C · 대학생 직접 구독','개인당 월 4,900원 가정',TEAL,['E1F2F1','B1DDDA',TEAL],[('TAM · 전체','약 237만 명','약 1,395억 원'),('SAM · 가정','약 23.7만 명','약 139.5억 원'),('SOM · 목표','500명','2,940만 원')]),
    ]
    for cx,label,price,color,colors,rows in columns:
     txt(s,label,cx-2.8,2.17,5.6,.4,18,color,True,PP_ALIGN.CENTER)
-    txt(s,price+' · 금액은 연간 잠재 이용료',cx-2.9,2.60,5.8,.28,11,GRAY,align=PP_ALIGN.CENTER)
+    txt(s,price,cx-2.9,2.60,5.8,.28,11,GRAY,align=PP_ALIGN.CENTER)
     for diameter,y,fill in [(3.4,2.98,colors[0]),(2.4,3.98,colors[1]),(1.4,4.98,colors[2])]:
      shape=s.shapes.add_shape(MSO_SHAPE.OVAL,Inches(cx-diameter/2),Inches(y),Inches(diameter),Inches(diameter))
      shape.fill.solid();shape.fill.fore_color.rgb=rgb(fill);shape.line.fill.background();shape._element.spPr.append(PptElement('a:effectLst'))
@@ -114,14 +115,23 @@ def build_deck(slides,minutes):
      txt(s,tag,cx-width/2,y,width,.25,10 if i==2 else 11,ink,True,PP_ALIGN.CENTER)
      txt(s,count,cx-width/2,y+.28,width,.35,16 if i==2 else 19,ink,True,PP_ALIGN.CENTER)
      txt(s,value,cx-width/2,y+.63,width,.25,11 if i==2 else 12,ink,False,PP_ALIGN.CENTER)
-   txt(s,'SAM: 도입·이용 조건 충족 비율 10% 가정  ·  SOM: 출시 후 24개월 목표  ·  공식 통계 S8 / 산식·가정 S9',.58,6.48,12.2,.25,10,GRAY)
-   txt(s,'원은 포함 관계를 나타내며 면적 비례가 아닙니다. 재적학생에는 휴학생 등이 포함되며 두 시장은 중복 가능성으로 합산하지 않습니다.',.58,6.73,12.2,.21,8.6,GRAY)
+   txt(s,'기관: 헬스장 15,548곳(2024년 말) + 대학 348교×센터 1곳 가정  ·  SAM 각 10% 가정 / SOM 출시 후 24개월 목표',.58,6.48,12.2,.25,9.4,GRAY)
+   txt(s,'금액은 연간 잠재 이용료·시설 중복 없음의 가정입니다. 학교 수≠센터 실측 수 / 원 면적 비례 아님 / 두 시장 합산 안 함 / 출처 S8–S10',.58,6.73,12.2,.21,8.6,GRAY)
   elif id=='validation':
    title(s,item)
    for i,(big,tag,body) in enumerate([('74 + 30','현재 콘텐츠','운동 74종\n스트레칭 30종'),('5종','우선 평가할 운동','대표 동작부터\n실제 영상 검증'),('20명','평가 참여자 계획','전문가 2인의\n독립 평가와 비교')]):
     x=.6+4.15*i;box(s,x,3.2,3.85,2.4,LIGHT,line=LINE,radius=True);txt(s,tag,x+.22,3.42,3.4,.35,15,GRAY);txt(s,big,x+.22,3.92,3.4,.75,39,BLUE,True);txt(s,body,x+.22,4.8,3.4,.65,16,GRAY)
    txt(s,'오류별 정밀도·재현율   /   잘못된 경고   /   판정 보류   /   기기별 지연',.65,5.96,12,.4,17,TEAL,True)
    footer_note(s,'구현 수와 자동 검사 통과는 실제 자세 분석 정확도를 입증하는 수치가 아닙니다.')
+  elif id=='business' and minutes==7:
+   title(s,item)
+   for x,label,price,body,fill in [(.62,'헬스장형','월 49만 원','회원 운동 코칭\n직원 확인·운영 지원',BLUE),(4.77,'대학 스포츠센터형','월 99만 원','센터 운영·권한 관리\n기관 연결 지원',NAVY),(8.92,'개인 선택 구독','월 4,900원','대학생 직접 구독\n개인 운동 경험',TEAL)]:
+    box(s,x,3.1,3.8,2.5,fill,radius=True)
+    txt(s,label,x+.22,3.34,3.36,.4,18,WHITE,True)
+    txt(s,price,x+.22,4.03,3.36,.65,29,WHITE,True)
+    txt(s,body,x+.22,4.88,3.36,.6,15,WHITE)
+   txt(s,'24개월 기관 목표  헬스장 30곳 + 대학 5곳 → 연환산 약 2.36억 원',.65,5.96,12,.4,19,BLUE,True)
+   footer_note(s,'가격·제공 범위·확보 목표는 검증 가설입니다. 계정 수·지원 시간·별도 구축·연동비를 확인하며 첫해 또는 누적 매출 전망이 아닙니다.')
   elif id=='business':
    title(s,item)
    box(s,.62,3.12,4.05,2.82,BLUE,radius=True);txt(s,'기관 이용료 검증 범위',.88,3.43,3.5,.5,18,WHITE);txt(s,'월 10–30만 원',.88,4.2,3.5,.75,30,WHITE,True);txt(s,'이용 규모 · 지원 범위에 따라 협의',.88,5.2,3.5,.5,14,WHITE)
