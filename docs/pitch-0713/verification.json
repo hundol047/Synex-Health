@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-11-01",
+  "checkedAt": "2026-11-02",
   "presentationChecks": {
     "5": {
       "mainSlides": 8,
@@ -24,10 +24,14 @@
       "sourcesAtScriptEnd": true,
       "marketSlideNumber": 7,
       "marketCircleCount": 6,
-      "pricingSlideNumber": 9
+      "pricingSlideNumber": 9,
+      "topDurationBadgeRemoved": true,
+      "affirmativeVisibleCopyChecked": true,
+      "affirmativePresenterNotesChecked": true,
+      "assumptionAndPlanLabelsPreserved": true
     }
   },
-  "renderReview": "Reviewed six market circles, age-based individual market, pricing, and script source pages. No blank/orphan script pages. Statistics and assumptions distinguished. Sources remain after 20 Q&A.",
+  "renderReview": "All 11 slides rendered and visually reviewed after removing the top duration badge and rewriting titles, captions, presenter notes and main script with affirmative wording. Market assumptions, proposed pricing, sample screen labels and planned validation remain explicit. Script pagination and sources checked.",
   "realDeviceValidated": false,
   "captureData": "fictional demo values; camera permission not requested",
   "browserCaptureFlow": "passed; 5 production UI screens",
@@ -37,11 +41,11 @@
     "files/Synex_0713_5min_script_QA.docx": "5a77981cf212b46ce1aca24849246663775a1c27a1e4d8c1788b306b25590e00",
     "files/Synex_0713_5min_script_QA.md": "cfcaa3f47fe615ae58b036bd95e2fb8c96f6e9937b57f89bf945d2d0bcf53f76",
     "files/Synex_0713_5min_script_QA.pdf": "59f8cb2059c78db21d62dbec04de807775ea47e24001d111f7ff4c1416a867e2",
-    "files/Synex_0713_7min.pdf": "e38fb9a176a5a2ec75f0e71a68d1875748b49ec1354b58c893474ed4549ab2b9",
-    "files/Synex_0713_7min.pptx": "39b6ea47712f8b0f87e009f82d9c444641c17dca98490fe937b372d499d6cdbe",
-    "files/Synex_0713_7min_script_QA.docx": "651ba2328fe159254d09901373afb50acaff2497a2de74a821392cc7ecc0bb85",
-    "files/Synex_0713_7min_script_QA.md": "706d29dbe8e5f783fd3364ce34bccaa9e40757c6184740155c73f572a3897b86",
-    "files/Synex_0713_7min_script_QA.pdf": "b4a337425b9980d7421b909281c657abf25b437733e3aadd7b6f62e4cc05e8bf"
+    "files/Synex_0713_7min.pdf": "1544fd739529098538ef557fc629026024dd955fc5ae06d34f3625ba21012337",
+    "files/Synex_0713_7min.pptx": "6ff14dc9182fb048126b5d196e0f86c8d7558db61473e28868c37f986346ee9f",
+    "files/Synex_0713_7min_script_QA.docx": "0c08c711d2da3f3ca80f05bc29794de08fa841727d31d678fb13ba5a022777a4",
+    "files/Synex_0713_7min_script_QA.md": "04e615170b141670748a71b19b43d1f5922185d373ec2e3fba9b4e7cabe6039d",
+    "files/Synex_0713_7min_script_QA.pdf": "f7210dacd73220688bf48d19fa1c549734c14bfea2d6aa00f0f74a5605985b5f"
   },
   "marketChecks": {
     "statisticsDates": {

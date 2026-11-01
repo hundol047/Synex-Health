@@ -43,7 +43,6 @@ def header(s,item,n,total,minutes,dark=False):
  if dark:box(s,0,0,13.333,7.5,NAVY)
  color=WHITE if dark else NAVY
  txt(s,item['kicker'],.55,.35,11,.3,11, 'B4CAED' if dark else BLUE,True)
- txt(s,f'0713  /  {minutes} MIN',11.15,.35,1.65,.3,10,'B4CAED' if dark else GRAY,align=PP_ALIGN.RIGHT)
  txt(s,f'SYNEX HEALTH   ·   팀 0713',.55,7.1,9,.2,9,'B4CAED' if dark else GRAY)
  txt(s,f'{n:02d} / {total:02d}',11.65,7.07,1.1,.25,10,'B4CAED' if dark else GRAY,align=PP_ALIGN.RIGHT)
  if not dark:box(s,.55,6.96,12.23,.01,LINE)
@@ -72,30 +71,30 @@ def build_deck(slides,minutes):
   elif id=='problem':
    title(s,item)
    for i,(k,b) in enumerate(item['items']):itemcard(s,k,b,.58+i*4.13,3.35,3.87,2.35)
-   footer_note(s,'문제는 고객 검증 가설입니다. 학생 15명 · 센터 담당자 3명 인터뷰를 계획합니다.')
+   footer_note(s,'고객 검증 계획 · 학생 15명과 센터 담당자 3명의 인터뷰로 핵심 수요를 구체화합니다.')
   elif id=='flow':
    txt(s,item['title'],.55,1.03,4.3,1.65,32,NAVY,True);txt(s,'측정 결과를\n실행 가능한 행동으로\n연결하는 이용 흐름입니다.',.6,3.0,3.7,1.7,23,GRAY)
    for i,(name,cap) in enumerate([('body','01  내 몸 이해'),('coach','02  수행 확인'),('routine','03  계획·기록')]):
     x=5.0+i*2.62;txt(s,cap,x,.98,2.4,.42,17,BLUE,True);phone(s,name,x,1.6,2.18)
-   footer_note(s,'실제 앱 캡처 · 예제 체성분 수치 · 카메라 패널은 권한 요청 전 화면입니다.')
+   footer_note(s,'실제 시제품 화면 · 예제 체성분 수치 · 카메라 패널은 촬영 준비 화면입니다.')
   elif id=='coaching':
    phone(s,'coach',.72,.92,2.55);txt(s,item['title'],4.03,1.02,8.2,1.4,34,NAVY,True)
    for i,(k,b) in enumerate(item['items']):
     y=3.0+i*1.03;txt(s,f'0{i+1}',4.05,y,.6,.5,21,BLUE,True);txt(s,k,4.85,y,7.6,.45,21,NAVY,True);txt(s,b,4.85,y+.45,7.6,.5,16,GRAY)
-   footer_note(s,'관찰 가능한 관절에 대한 안내입니다. 근육 활성도·통증 원인의 직접 측정이 아닙니다.')
+   footer_note(s,'관찰 가능한 관절 위치·각도 기반 자세 안내 · 운동 부위와 힘주기 요령을 함께 제공합니다.')
   elif id=='competition':
    title(s,item)
    rows=[('Nike Training Club','트레이너 안내 · 운동 프로그램 · 회복·웰니스'),('Hevy','운동 기록 · 진행도 · 루틴·개인화 프로그램'),('Fitbod','목표·장비·수준에 맞춘 운동 계획'),('Synex Health','체성분 이해 → 수행 확인 → 기록·회복 → 기관 실증')]
    for i,(a,b) in enumerate(rows):
     y=3.08+i*.72;box(s,.58,y,12.17,.64,BLUE if i==3 else LIGHT,radius=True);txt(s,a,.8,y+.12,3.0,.43,18,WHITE if i==3 else NAVY,True);txt(s,b,4.0,y+.13,8.5,.44,17,WHITE if i==3 else GRAY)
-   footer_note(s,'S3–S5 공식 소개의 중심 기능 비교입니다. 타 서비스의 기능 부재나 독점 기술을 주장하지 않습니다.')
+   footer_note(s,'공식 서비스 소개 기준 비교 · 운동 프로그램, 기록, 개인화와 측정 후 실행을 연결하는 경험입니다. (S3–S5)')
   elif id=='customer':
    title(s,item)
    itemcard(s,'이용자','대학생·헬스장의\n운동 초보자' if minutes==7 else '혼자 운동하는\n대학생 초보자',.6,3.15,3.5,2.15)
    itemcard(s,'구매 검토자','대학 스포츠센터·\n헬스장 운영자' if minutes==7 else '대학 스포츠센터·\n학생 건강관리 부서',4.55,3.15,3.75,2.15)
-   box(s,8.75,3.15,4,2.15,BLUE,radius=True);txt(s,'첫 실증',9.02,3.4,3.4,.4,18,WHITE);txt(s,'기관 1곳',9.02,4.05,3.4,.7,36,WHITE,True)
+   box(s,8.75,3.15,4,2.15,BLUE,radius=True);txt(s,'첫 실증 목표',9.02,3.4,3.4,.4,18,WHITE);txt(s,'기관 1곳',9.02,4.05,3.4,.7,36,WHITE,True)
    txt(s,'담당자 인터뷰  →  자발적 체험  →  4주 실증  →  유료 도입 협의',.7,5.8,12,.5,19,TEAL,True)
-   footer_note(s,'현재 기관 계약·협약은 없습니다. 자동 연동에는 기관 승인·공식 API·사용자 동의가 필요합니다.')
+   footer_note(s,'첫 기관 실증 추진 계획 · 기관 승인, 공식 API와 사용자 동의를 기반으로 연결합니다.')
   elif id=='market':
    txt(s,'기관용과 개인용의 TAM · SAM · SOM',.55,1.0,12.2,.62,31,NAVY,True)
    txt(s,'기관은 전국 헬스장·대학 스포츠센터 / 개인은 국내 만 14~65세 직접 구독 시장',.58,1.7,12.1,.4,14,GRAY)
@@ -117,13 +116,13 @@ def build_deck(slides,minutes):
      txt(s,count,cx-width/2,y+.28,width,.35,16 if i==2 else 19,ink,True,PP_ALIGN.CENTER)
      txt(s,value,cx-width/2,y+.63,width,.25,11 if i==2 else 12,ink,False,PP_ALIGN.CENTER)
    txt(s,'기관: 헬스장 15,548곳(2024년 말) + 대학 348교×센터 1곳 가정 / 개인: 2025년 말 주민등록 인구, 등록외국인 제외',.58,6.48,12.2,.25,9.2,GRAY)
-   txt(s,'연간 잠재 이용료 · SAM 각 10% 가정 · SOM 출시 후 24개월 목표 · 시설 중복 없음 가정 · 원 면적 비례 아님 · 시장 합산 안 함 · S8–S11',.58,6.73,12.2,.21,8.4,GRAY)
+   txt(s,'연간 잠재 이용료 · SAM 각 10% 가정 · SOM 출시 후 24개월 목표 · 시설 중복 제외 가정 · 원은 포함 관계 표시 · 기관·개인 별도 산정 · S8–S11',.58,6.73,12.2,.21,8.4,GRAY)
   elif id=='validation':
    title(s,item)
    for i,(big,tag,body) in enumerate([('74 + 30','현재 콘텐츠','운동 74종\n스트레칭 30종'),('5종','우선 평가할 운동','대표 동작부터\n실제 영상 검증'),('20명','평가 참여자 계획','전문가 2인의\n독립 평가와 비교')]):
     x=.6+4.15*i;box(s,x,3.2,3.85,2.4,LIGHT,line=LINE,radius=True);txt(s,tag,x+.22,3.42,3.4,.35,15,GRAY);txt(s,big,x+.22,3.92,3.4,.75,39,BLUE,True);txt(s,body,x+.22,4.8,3.4,.65,16,GRAY)
-   txt(s,'오류별 정밀도·재현율   /   잘못된 경고   /   판정 보류   /   기기별 지연',.65,5.96,12,.4,17,TEAL,True)
-   footer_note(s,'구현 수와 자동 검사 통과는 실제 자세 분석 정확도를 입증하는 수치가 아닙니다.')
+   txt(s,'자세별 정밀도·재현율   /   경고 정확성   /   관찰 신뢰도   /   기기별 응답 속도',.65,5.96,12,.4,17,TEAL,True)
+   footer_note(s,'성능 검증 계획 · 대표 운동부터 전문가 비교 평가를 진행하고 운동별 분석 품질을 단계적으로 검증합니다.')
   elif id=='business' and minutes==7:
    title(s,item)
    for x,label,price,body,fill in [(.62,'헬스장형','월 49만 원','회원 운동 코칭\n직원 확인·운영 지원',BLUE),(4.77,'대학 스포츠센터형','월 99만 원','센터 운영·권한 관리\n기관 연결 지원',NAVY),(8.92,'개인 선택 구독',f'월 {MARKET_MODEL["individual"]["monthlyFeeWon"]:,}원','만 14~65세로 확장\n성인 대학생부터 실증',TEAL)]:
@@ -132,7 +131,7 @@ def build_deck(slides,minutes):
     txt(s,price,x+.22,4.03,3.36,.65,29,WHITE,True)
     txt(s,body,x+.22,4.88,3.36,.6,15,WHITE)
    txt(s,'24개월 목표   기관 35곳 · 연환산 2.36억 원   /   개인 500명 · 연환산 5,940만 원',.65,5.96,12,.4,17,BLUE,True)
-   footer_note(s,'가격·제공 범위·확보 목표는 검증 가설입니다. 계정 수·지원 시간·별도 구축·연동비를 확인하며 첫해 또는 누적 매출 전망이 아닙니다.')
+   footer_note(s,'구독료·제공 범위는 검증 제안 · 목표 고객 12개월 유지 기준의 연환산 이용료 · 계정 수, 운영 지원과 구축·연동 범위별 협의')
   elif id=='business':
    title(s,item)
    box(s,.62,3.12,4.05,2.82,BLUE,radius=True);txt(s,'기관 이용료 검증 범위',.88,3.43,3.5,.5,18,WHITE);txt(s,'월 10–30만 원',.88,4.2,3.5,.75,30,WHITE,True);txt(s,'이용 규모 · 지원 범위에 따라 협의',.88,5.2,3.5,.5,14,WHITE)
@@ -148,13 +147,13 @@ def build_deck(slides,minutes):
     x=.6+i*3.13;badge(s,date,x,3.12,2.83);itemcard(s,k,b,x,3.64,2.87,1.97)
    txt(s,'팀 역할   개발·검증  +  기획·고객 조사',.65,5.94,6.2,.45,18,BLUE,True)
    txt(s,'보완 계획   운동 전문가 평가 · 계약·개인정보 검토',6.6,5.96,6.1,.45,15,GRAY)
-   footer_note(s,'목표: 첫 운동 완료율 70% / 4주차 재사용률 30%. 현재 성과가 아닌 검증 목표이며 일정은 조건에 따라 조정합니다.')
+   footer_note(s,'실증 목표 · 첫 운동 완료율 70% / 4주차 재사용률 30% · 단계별 평가를 통해 실행 일정과 확장 계획을 구체화합니다.')
   elif id=='close':
    txt(s,item['title'],.7,1.55,11.8,1.75,43,WHITE,True);txt(s,item['subtitle'],.75,3.9,11.7,.8,24,'C9DCF6')
    for i,t in enumerate(['실증 파트너 1곳','운동 전문가 평가','유료 도입 의향 검증']):
     box(s,.75+i*4.16,5.4,3.82,.73,'203F65',radius=True);txt(s,t,.95+i*4.16,5.6,3.42,.4,18,WHITE,True)
   t=item['seconds'];start=f'{elapsed//60:02d}:{elapsed%60:02d}';elapsed+=t;end=f'{elapsed//60:02d}:{elapsed%60:02d}'
-  s.notes_slide.notes_text_frame.text=f'발표 구간 {start}–{end} / {t}초 목표\n\n{item["script"]}\n\n발표자 메모: 실제 말하기 속도에 따라 리허설에서 조정합니다. 계획·가정을 실적으로 바꾸어 읽지 않습니다.\n출처: '+'\n'.join(f'{key} · {label}: {detail}\n{url}' for key,label,detail,url in sources)
+  s.notes_slide.notes_text_frame.text=f'발표 구간 {start}–{end} / {t}초 목표\n\n{item["script"]}\n\n발표자 메모: 실제 말하기 속도에 따라 리허설에서 조정합니다. 계획·가정·목표는 해당 표현과 함께 설명합니다.\n출처: '+'\n'.join(f'{key} · {label}: {detail}\n{url}' for key,label,detail,url in sources)
  file=OUT/f'Synex_0713_{minutes}min.pptx';prs.save(file);return file
 
 def setup_doc(doc):
