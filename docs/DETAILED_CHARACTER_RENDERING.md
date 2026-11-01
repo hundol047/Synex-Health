@@ -1,5 +1,72 @@
 # Detailed character rendering
 
+## Current replacement — 2026-11-01
+
+The `detailed` selection now loads complete **MPFB / MakeHuman CC0 adult
+trainers**, replacing the Rocketbox runtime described in the historical sections
+below. Source archives, individual asset hashes, conversion scripts and license
+references are documented in
+`frontend/src/health/components/character/assets/trainer/README.md`.
+No paid service, external login or user photo is required at runtime.
+
+The coherent source head, fitted eyes, eyelids, brows and lashes replace the
+separately refined head/portrait overlay. The female preset uses bobby_03's
+natural skin map and a fitted ponytail; the male preset uses the authored
+young-adult skin and short hairstyle. Both wear a blue fabric tee, dark exercise
+trousers and trainers. Texture-defined skin detail, cloth grain, brown irises,
+eye reflections and native eyelid motion are retained. A full authored Margaret
+Toigo tee replaces a cropped-shirt extension that visibly intersected the body
+during a squat. Clothing components retain their authored topology and rig
+weights. The new meshes have 19,150 / 17,042 vertices and 32,972 / 30,964 triangles
+(female / male). Geometry and 13 shared maps total 8,047,785 bytes (7.68 MiB).
+The source fabric/brow bump maps are retained, and the waistband receives a
+4 mm radial allowance after rig conversion to reduce abdomen intersections.
+
+Female and male meshes are loaded in separate lazy chunks. Opaque skin/outfits
+and transparent hair render separately, preserving the existing AO behavior.
+Red muscle guidance targets skin, trousers and the tee, excluding eye and shoe
+materials. Exercise preview now includes the complete 74-exercise catalog.
+Saving the selected trainer applies that same mesh to workout demonstrations.
+Existing configurable avatars and their controls remain available separately.
+
+**Reference-image quality remains NOT met.** The result is still a rendered
+character, especially in the hair and face close-ups. No photographic-similarity
+percentage, physical hair simulation or real-phone performance is claimed.
+The historical investigation below explains the availability of other sources;
+it is not proof that this visual acceptance criterion has been completed.
+
+### Current verification
+
+- 12 trainer geometry tests passed on the final exported meshes: every exercise
+  (74) and recovery stretch (30) at five phases, finite surfaces and unit normals,
+  facial rigidity, isolated eye surfaces, finger grips, wall clearance and floor
+  support. Sampled checks do not certify every possible intersection or coaching
+  accuracy.
+- 14 additional integration/geometry tests passed: saved character settings,
+  scene fallback recovery, render quality, elbow hinges, ankle twist and joint
+  seams.
+- Both selection/persistence browser flows passed (5.5 minutes), covering the
+  female and male preset, eye closure, wall view, save/reload, actual exercise
+  library demonstration and return to the configurable model. Neither flow
+  reported page/shader errors or external HTTP requests. The subsequent
+  waistband/bump-map adjustment is covered by the final geometry and motion
+  runs below; it does not change persistence or eyelid geometry.
+- The personal production build passed. Both real-browser motion flows passed,
+  checking that playback changes the rendered frame and that the
+  same selected trainer renders squat, push-up, dumbbell curl, dumbbell bench
+  press and lat pulldown. All ten final motion captures were inspected for
+  clothing fit and obvious detached surfaces.
+- These checks use Chromium/SwiftShader at a 393 × 852 mobile viewport. They
+  do not verify Android frame rate, thermal behavior or a newly distributed APK.
+
+Actual app captures, rather than generated concept images:
+
+- [Female close-up](character-trainer-captures/female-front.png)
+- [Female dumbbell curl](character-trainer-captures/female-curl.png)
+- [Male lat pulldown](character-trainer-captures/male-lat-pulldown.png)
+
+## Historical implementation and investigation
+
 The previous procedural head and separately fitted hair do not reach the visual
 quality requested for the exercise character. This change adds a full authored
 character pipeline instead of further small edits to that head. It starts from

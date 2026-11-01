@@ -10,6 +10,7 @@ for(const [body,label] of [['female','여성 디테일 모델'],['male','남성 
   await expect(canvas).toHaveAttribute('data-character-model','custom',{timeout:60000});
   await page.getByRole('button',{name:label,exact:true}).click();
   await expect(canvas).toHaveAttribute('data-character-model','detailed',{timeout:60000});await expect(canvas).toHaveAttribute('data-character-body',body);
+  await expect(canvas).toHaveAttribute('data-character-face','authored-trainer');
   await expect(page.getByLabel('피부색',{exact:true})).toHaveCount(0);await expect(page.getByRole('group',{name:'확대 화면 눈동자 색'})).toHaveCount(0);
   const capture=async name=>{await canvas.evaluate(el=>el.scrollIntoView({block:'center',behavior:'instant'}));await canvas.screenshot({path:info.outputPath(name)});};
   await page.getByRole('button',{name:'정면 운동 시범 보기',exact:true}).click();await capture(`${body}-front.png`);await page.screenshot({path:info.outputPath(`${body}-app.png`)});
