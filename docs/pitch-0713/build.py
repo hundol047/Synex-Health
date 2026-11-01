@@ -12,7 +12,8 @@ from docx.shared import Inches as DI,Pt as DP,RGBColor as DC
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from PIL import Image
-from content import SLIDES5,SLIDES7,SOURCES,QA
+from content import SLIDES5,SLIDES7,SOURCES,SOURCES7,QA,QA7
+from market import METHOD as MARKET_METHOD
 ROOT=Path(__file__).resolve().parent
 OUT=ROOT/'files';OUT.mkdir(exist_ok=True)
 IMG=ROOT/'screens'
@@ -55,6 +56,7 @@ def itemcard(s,k,b,x,y,w,h=2.1):
  box(s,x,y,w,h,LIGHT,line=LINE,radius=True);txt(s,k,x+.22,y+.22,w-.44,.55,21,BLUE,True);txt(s,b,x+.22,y+.94,w-.44,h-1.05,17,GRAY)
 def footer_note(s,text):txt(s,text,.57,6.52,12,.35,10,GRAY)
 def build_deck(slides,minutes):
+ sources=SOURCES7 if minutes==7 else SOURCES
  prs=Presentation();prs.slide_width=Inches(13.333);prs.slide_height=Inches(7.5)
  prs.core_properties.title=f'Synex Health · 팀 0713 · {minutes}분 발표';prs.core_properties.author='팀 0713';prs.core_properties.subject='제27회 강원특별자치도 대학생 창업경진대회'
  total=len(slides);elapsed=0
@@ -94,6 +96,26 @@ def build_deck(slides,minutes):
    box(s,8.75,3.15,4,2.15,BLUE,radius=True);txt(s,'첫 실증',9.02,3.4,3.4,.4,18,WHITE);txt(s,'기관 1곳',9.02,4.05,3.4,.7,36,WHITE,True)
    txt(s,'담당자 인터뷰  →  자발적 체험  →  4주 실증  →  유료 도입 협의',.7,5.8,12,.5,19,TEAL,True)
    footer_note(s,'현재 기관 계약·협약은 없습니다. 자동 연동에는 기관 승인·공식 API·사용자 동의가 필요합니다.')
+  elif id=='market':
+   txt(s,'기관용과 개인용의 TAM · SAM · SOM',.55,1.0,12.2,.62,31,NAVY,True)
+   txt(s,'초기 대학 시장 기준 · TAM 전체 시장 / SAM 유효 시장 / SOM 초기 확보 목표',.58,1.7,12.1,.4,14,GRAY)
+   columns=[
+    (3.38,'기관용 B2B · 대학 스포츠·건강센터','학교당 월 20만 원 가정',BLUE,['E4EDFD','B7D0FA',BLUE],[('TAM · 전체','314개교','약 7.54억 원'),('SAM · 가정','31곳','7,440만 원'),('SOM · 목표','5곳','1,200만 원')]),
+    (9.90,'개인용 B2C · 대학생 직접 구독','개인당 월 4,900원 가정',TEAL,['E1F2F1','B1DDDA',TEAL],[('TAM · 전체','약 237만 명','약 1,395억 원'),('SAM · 가정','약 23.7만 명','약 139.5억 원'),('SOM · 목표','500명','2,940만 원')]),
+   ]
+   for cx,label,price,color,colors,rows in columns:
+    txt(s,label,cx-2.8,2.17,5.6,.4,18,color,True,PP_ALIGN.CENTER)
+    txt(s,price+' · 금액은 연간 잠재 이용료',cx-2.9,2.60,5.8,.28,11,GRAY,align=PP_ALIGN.CENTER)
+    for diameter,y,fill in [(3.4,2.98,colors[0]),(2.4,3.98,colors[1]),(1.4,4.98,colors[2])]:
+     shape=s.shapes.add_shape(MSO_SHAPE.OVAL,Inches(cx-diameter/2),Inches(y),Inches(diameter),Inches(diameter))
+     shape.fill.solid();shape.fill.fore_color.rgb=rgb(fill);shape.line.fill.background();shape._element.spPr.append(PptElement('a:effectLst'))
+    for i,(tag,count,value) in enumerate(rows):
+     y=3.13+i*1.0;ink=WHITE if i==2 else NAVY;width=1.35 if i==2 else 3.0
+     txt(s,tag,cx-width/2,y,width,.25,10 if i==2 else 11,ink,True,PP_ALIGN.CENTER)
+     txt(s,count,cx-width/2,y+.28,width,.35,16 if i==2 else 19,ink,True,PP_ALIGN.CENTER)
+     txt(s,value,cx-width/2,y+.63,width,.25,11 if i==2 else 12,ink,False,PP_ALIGN.CENTER)
+   txt(s,'SAM: 도입·이용 조건 충족 비율 10% 가정  ·  SOM: 출시 후 24개월 목표  ·  공식 통계 S8 / 산식·가정 S9',.58,6.48,12.2,.25,10,GRAY)
+   txt(s,'원은 포함 관계를 나타내며 면적 비례가 아닙니다. 재적학생에는 휴학생 등이 포함되며 두 시장은 중복 가능성으로 합산하지 않습니다.',.58,6.73,12.2,.21,8.6,GRAY)
   elif id=='validation':
    title(s,item)
    for i,(big,tag,body) in enumerate([('74 + 30','현재 콘텐츠','운동 74종\n스트레칭 30종'),('5종','우선 평가할 운동','대표 동작부터\n실제 영상 검증'),('20명','평가 참여자 계획','전문가 2인의\n독립 평가와 비교')]):
@@ -106,7 +128,7 @@ def build_deck(slides,minutes):
    txt(s,'월 20만 원 × 12개월 가정',5.2,3.24,7.2,.5,21,NAVY,True)
    for i,(label,value,width) in enumerate([('기관 1곳','240만 원',.75),('기관 5곳','1,200만 원',3.75)]):
     y=4.12+i*.85;txt(s,label,5.2,y,1.4,.4,17,GRAY);box(s,6.7,y,width,.38,TEAL if i==0 else BLUE,radius=True);txt(s,value,10.75,y-.02,2,.5,18,NAVY,True)
-   txt(s,'초기 검증 예산 제안 500만 원',5.2,5.9,7.2,.45,19,TEAL,True)
+   txt(s,'개인 선택 구독 월 4,900원 · 추가 검증 가설' if minutes==7 else '초기 검증 예산 제안 500만 원',5.2,5.9,7.2,.45,17 if minutes==7 else 19,TEAL,True)
    footer_note(s,'계약·매출 실적이 아닌 가정입니다. 부가세·비용 차감 전이며 창업자 인건비와 상용 전체 운영비는 별도입니다.')
   elif id=='roadmap':
    title(s,item)
@@ -121,7 +143,7 @@ def build_deck(slides,minutes):
    for i,t in enumerate(['실증 파트너 1곳','운동 전문가 평가','유료 도입 의향 검증']):
     box(s,.75+i*4.16,5.4,3.82,.73,'203F65',radius=True);txt(s,t,.95+i*4.16,5.6,3.42,.4,18,WHITE,True)
   t=item['seconds'];start=f'{elapsed//60:02d}:{elapsed%60:02d}';elapsed+=t;end=f'{elapsed//60:02d}:{elapsed%60:02d}'
-  s.notes_slide.notes_text_frame.text=f'발표 구간 {start}–{end} / {t}초 목표\n\n{item["script"]}\n\n발표자 메모: 실제 말하기 속도에 따라 리허설에서 조정합니다. 계획·가정을 실적으로 바꾸어 읽지 않습니다.\n출처: '+'\n'.join(f'{key} · {label}: {detail}\n{url}' for key,label,detail,url in SOURCES)
+  s.notes_slide.notes_text_frame.text=f'발표 구간 {start}–{end} / {t}초 목표\n\n{item["script"]}\n\n발표자 메모: 실제 말하기 속도에 따라 리허설에서 조정합니다. 계획·가정을 실적으로 바꾸어 읽지 않습니다.\n출처: '+'\n'.join(f'{key} · {label}: {detail}\n{url}' for key,label,detail,url in sources)
  file=OUT/f'Synex_0713_{minutes}min.pptx';prs.save(file);return file
 
 def setup_doc(doc):
@@ -133,6 +155,8 @@ def setup_doc(doc):
  footer=sec.footer.paragraphs[0];footer.text='TEAM 0713  |  SYNEX HEALTH  ·  발표 연습용  |  ';footer.style=doc.styles['Caption']
  field=OxmlElement('w:fldSimple');field.set(qn('w:instr'),'PAGE');footer._p.append(field)
 def build_script(slides,minutes):
+ sources=SOURCES7 if minutes==7 else SOURCES
+ questions=QA7 if minutes==7 else QA
  doc=Document();setup_doc(doc);doc.add_heading(f'Synex Health\n{minutes}분 발표 대본',0);doc.add_paragraph('팀 0713 · 제27회 강원특별자치도 대학생 창업경진대회');doc.add_paragraph(f'주 발표 {len(slides)}장 / 목표 {minutes}:00 / 예상 질의응답 20개',style='Subtitle')
  doc.add_heading('읽기 전 확인',1);doc.add_paragraph('대본의 장 번호는 같은 이름의 PPT와 일치합니다. 장별 시간은 리허설용 목표이며 실제 낭독 시간을 측정한 값은 아닙니다. 7분 결선은 공고문상 질의응답 3분이 별도입니다. 모든 화면은 실제 앱 캡처이며 수치는 예제입니다. 계획과 가정을 실적처럼 읽지 않습니다.')
  elapsed=0;md=[f'# 팀 0713 · Synex Health {minutes}분 발표 대본','',f'주 발표 {len(slides)}장. 목표 시간 {minutes}:00. 장별 시간은 리허설 기준입니다.','']
@@ -140,12 +164,22 @@ def build_script(slides,minutes):
   start=f'{elapsed//60:02d}:{elapsed%60:02d}';elapsed+=s['seconds'];end=f'{elapsed//60:02d}:{elapsed%60:02d}'
   h=f'{i:02d}. {s["title"].replace(chr(10)," ")}  [{start}–{end}]';doc.add_heading(h,1);doc.add_paragraph(s['script']);md.extend([f'## {h}','',s['script'],''])
  doc.add_page_break();doc.add_heading('예상 질의응답 20개',0);doc.add_paragraph('각 답변은 핵심 결론부터 20~30초 안에 말하고 추가 질문이 있을 때 근거를 설명하는 연습용입니다. 아래 계획 수치는 확정 실적이 아닙니다.');md.extend(['# 예상 질의응답 20개',''])
- for i,(q,a) in enumerate(QA,1):
+ for i,(q,a) in enumerate(questions,1):
   doc.add_heading(f'Q{i:02d}. {q}',2);doc.add_paragraph(a);md.extend([f'## Q{i:02d}. {q}','',a,''])
  doc.add_page_break();doc.add_heading('근거와 자료 · 출처·사실 확인표',0);md.extend(['# 근거와 자료 · 출처·사실 확인표',''])
- for key,label,detail,url in SOURCES:doc.add_heading(key+' · '+label,2);doc.add_paragraph(detail);doc.add_paragraph(url);md.extend([f'- {key} · {label}: {detail} — {url}'])
+ if minutes==7:
+  for heading,body in MARKET_METHOD:
+   doc.add_heading(heading,2);doc.add_paragraph(body);md.extend([f'## {heading}','',body,''])
+  doc.add_page_break();doc.add_heading('출처 목록',1);md.extend(['## 출처 목록',''])
+ for key,label,detail,url in sources:
+  doc.add_heading(key+' · '+label,2);paragraph=doc.add_paragraph(detail)
+  if minutes==7:paragraph.paragraph_format.keep_with_next=True
+  doc.add_paragraph(url);md.extend([f'- {key} · {label}: {detail} — {url}'])
  path=OUT/f'Synex_0713_{minutes}min_script_QA.docx';doc.save(path);(OUT/f'Synex_0713_{minutes}min_script_QA.md').write_text('\n'.join(md));return path
 if __name__=='__main__':
+ import argparse
+ parser=argparse.ArgumentParser();parser.add_argument('--minutes',type=int,choices=[5,7]);args=parser.parse_args()
  for minutes,slides in [(5,SLIDES5),(7,SLIDES7)]:
+  if args.minutes and minutes!=args.minutes:continue
   assert sum(s['seconds'] for s in slides)==minutes*60;assert len(QA)==20
   print(build_deck(slides,minutes));print(build_script(slides,minutes))

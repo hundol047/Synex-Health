@@ -1,0 +1,30 @@
+{
+  "scope": "국내 일반·전문대학의 초기 진입 시장",
+  "statisticsDate": "2026-04-01",
+  "checkedAt": "2026-11-01",
+  "source": "https://www.kedi.re.kr/khome/main/announce/selectBroadAnnounceForm.do?selectTp=0&board_sq_no=3&article_sq_no=36467",
+  "samShareAssumption": "0.10",
+  "somHorizonMonthsAfterLaunch": 24,
+  "institution": {
+    "tam": 314,
+    "sam": 31,
+    "som": 5,
+    "monthlyFeeWon": 200000,
+    "annualPotentialWon": {
+      "tam": 753600000,
+      "sam": 74400000,
+      "som": 12000000
+    }
+  },
+  "individual": {
+    "tam": 2372654,
+    "sam": 237265,
+    "som": 500,
+    "monthlyFeeWon": 4900,
+    "annualPotentialWon": {
+      "tam": 139512055200,
+      "sam": 13951182000,
+      "som": 29400000
+    }
+  }
+}

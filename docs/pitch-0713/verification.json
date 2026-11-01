@@ -13,18 +13,20 @@
       "sourcesAtScriptEnd": true
     },
     "7": {
-      "mainSlides": 10,
+      "mainSlides": 11,
       "appendixSlides": 0,
       "targetSeconds": 420,
       "embeddedAppImages": 4,
       "scriptQuestions": 20,
-      "pdfSlideCount": 10,
-      "pdfScriptPages": 7,
+      "pdfSlideCount": 11,
+      "pdfScriptPages": 10,
       "notesChecked": true,
-      "sourcesAtScriptEnd": true
+      "sourcesAtScriptEnd": true,
+      "marketSlideNumber": 7,
+      "marketCircleCount": 6
     }
   },
-  "renderReview": "Appendix slides removed from both decks. All 18 retained slide texts match prior reviewed PDFs; both closing slides are pixel-identical to previous closing slides. Final sources pages rendered and visually checked.",
+  "renderReview": "The new market slide and revised business slide were rendered and visually inspected. References remain at the end of the script; no appendix slides were added.",
   "realDeviceValidated": false,
   "captureData": "fictional demo values; camera permission not requested",
   "browserCaptureFlow": "passed; 5 production UI screens",
@@ -34,10 +36,20 @@
     "files/Synex_0713_5min_script_QA.docx": "5a77981cf212b46ce1aca24849246663775a1c27a1e4d8c1788b306b25590e00",
     "files/Synex_0713_5min_script_QA.md": "cfcaa3f47fe615ae58b036bd95e2fb8c96f6e9937b57f89bf945d2d0bcf53f76",
     "files/Synex_0713_5min_script_QA.pdf": "59f8cb2059c78db21d62dbec04de807775ea47e24001d111f7ff4c1416a867e2",
-    "files/Synex_0713_7min.pdf": "6558820788c389877cd2e19cc1b9723b35209cbb9a60796473d0e3aea3a9e524",
-    "files/Synex_0713_7min.pptx": "bf75eb4b538e7cc3896026c9dba83b9682958f55c50df7c7f9c48a7efcc6744f",
-    "files/Synex_0713_7min_script_QA.docx": "283a8deac8b66015b8f4df1534966c3658d3effc4391af75f66eeafe963c6d99",
-    "files/Synex_0713_7min_script_QA.md": "5a57f8e061d7d1ef7eca0e30fcf0f777c2bed4e4556561e739afee100f3ddcd2",
-    "files/Synex_0713_7min_script_QA.pdf": "293ad1419dcad0fcfffa86e994c869f54fff38b81e85adaeffc4181af4b1ff60"
+    "files/Synex_0713_7min.pdf": "d952eba060985cb8da02a0c8b8e1dddda6153b3c67e05f3e4d4d92296b0eef9f",
+    "files/Synex_0713_7min.pptx": "bef58add9e48be752d4256d3b97356456c5bffad8b736c3e8a0a5212257064ff",
+    "files/Synex_0713_7min_script_QA.docx": "d58ef691eb14d8c4ec238949935b6e95a5e3c29128d2a4437c6982f274c6cac1",
+    "files/Synex_0713_7min_script_QA.md": "8bafbb203fafc829fb920c2e616819ddcd28e66ebb9916e3851dbcb749352b20",
+    "files/Synex_0713_7min_script_QA.pdf": "6610cbe794295f31e3895290f62499f3cd7d9d0a151586c65e347ecb9e0ccea6"
+  },
+  "marketChecks": {
+    "officialStatisticsDate": "2026-04-01",
+    "sourceCheckedAt": "2026-11-01",
+    "institutionTamSchools": 314,
+    "individualTamEnrolledStudents": 2372654,
+    "samIsAssumption": true,
+    "somIs24MonthGoal": true,
+    "arithmeticChecked": true,
+    "fiveMinuteFilesByteUnchanged": true
   }
 }
