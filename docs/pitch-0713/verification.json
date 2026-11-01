@@ -1,0 +1,41 @@
+{
+  "checkedAt": "2026-11-01",
+  "presentationChecks": {
+    "5": {
+      "mainSlides": 8,
+      "appendixSlides": 2,
+      "targetSeconds": 300,
+      "embeddedAppImages": 4,
+      "scriptQuestions": 20,
+      "pdfSlideCount": 10,
+      "pdfScriptPages": 6,
+      "notesChecked": true
+    },
+    "7": {
+      "mainSlides": 10,
+      "appendixSlides": 2,
+      "targetSeconds": 420,
+      "embeddedAppImages": 4,
+      "scriptQuestions": 20,
+      "pdfSlideCount": 12,
+      "pdfScriptPages": 7,
+      "notesChecked": true
+    }
+  },
+  "renderReview": "All 22 deck pages reviewed; final typography changes reviewed in affected examples. Script openings, questions and sources checked.",
+  "realDeviceValidated": false,
+  "captureData": "fictional demo values; camera permission not requested",
+  "browserCaptureFlow": "passed; 5 production UI screens",
+  "files": {
+    "files/Synex_0713_5min.pdf": "07192ae4f319eee9a8bf5b4b2fc68b9a542114ee3a515480da105f1205eb4c45",
+    "files/Synex_0713_5min.pptx": "4d9e73f41e79e3316823cc446a546c5b630ed75287bda53609a3675437ffff16",
+    "files/Synex_0713_5min_script_QA.docx": "2a4ec4ec4fe43ef8e450e8c5f55c37636951b5a273c0d769ed955cd202c8b567",
+    "files/Synex_0713_5min_script_QA.md": "98f2263fb54699b3bf227a6d355be4d4f41c2e51e545dbb342ea61b856c69acc",
+    "files/Synex_0713_5min_script_QA.pdf": "34e46b2eff0ce93d3ab52a7312170f84f1b84965b417680d35cadbeeebea0cbf",
+    "files/Synex_0713_7min.pdf": "0ca37523045dca695da28e1f128044dc3ecf1fac51939383d2de9d109dffd583",
+    "files/Synex_0713_7min.pptx": "f342c63a0c0870cadf5ae84bc77798860244038342becc5ede740e72da954c24",
+    "files/Synex_0713_7min_script_QA.docx": "f322c1677a92aeff257db0fa95cf0be8c3a51c9273ccb97a08cf6a147ef7f780",
+    "files/Synex_0713_7min_script_QA.md": "30fa11543c8c0a6074a3040b27c9f4c69746c05bd8fe25bd42704508f2e7be3c",
+    "files/Synex_0713_7min_script_QA.pdf": "fdf805750da16fa27e9d3cd0fa925f3b515e394b46f3f9e189180194a26ea0d6"
+  }
+}
