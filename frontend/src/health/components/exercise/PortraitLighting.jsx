@@ -12,5 +12,5 @@ export default function PortraitLighting(){
   gl.domElement.dataset.portraitLighting='softboxes';invalidate();
   return()=>{delete gl.domElement.dataset.portraitLighting;};
  },[gl,invalidate]);
- return <><rectAreaLight ref={key} position={[-1.1,2.35,1.8]} width={1.6} height={2} intensity={3.2} color="#fff6ee"/><rectAreaLight ref={fill} position={[1.3,1.8,1.8]} width={1.8} height={2.2} intensity={1.3} color="#eef4ff"/></>;
+ return <><rectAreaLight ref={key} position={[-1.1,2.35,1.8]} width={1.6} height={2} intensity={3.2} color="#fffdf9"/><rectAreaLight ref={fill} position={[1.3,1.8,1.8]} width={1.8} height={2.2} intensity={1.05} color="#eef4ff"/></>;
 }

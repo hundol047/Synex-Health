@@ -67,15 +67,15 @@ g=coo_matrix((np.ones(faces.size),(faces.flatten(),np.roll(faces,1,axis=1).flatt
 _,components=connected_components(g,directed=False)
 img=Image.open(src/'textures/rp_sophia_animated_003_mat_baseColor.jpeg');size=np.array(img.size)
 patches={}
-for c in [4,12,15,19,20]:
+for c in [4,12,15,17,19,20]:
  ids=np.where(components==c)[0];lo=np.maximum(0,np.floor(uv[ids].min(0)*size-8).astype(int));hi=np.minimum(size,np.ceil(uv[ids].max(0)*size+8).astype(int));file=out/('island-'+str(c)+'.png');img.crop((*lo,*hi)).save(file);patches[c]=(file,lo,hi)
 bodyfile=out/'body.png';bodyimg=img.copy();bodyimg.thumbnail((2048,2048));bodyimg.save(bodyfile)
 # Keep the original separate eye surfaces, hair and garment texture islands.
-kind=lambda c:'Skin' if c in [7,10,12,18,21] else 'Eyes' if c in [4,15,19,20] else 'Mouth' if c in [0,1,2,3,9,22,23] else 'Clothes'
+kind=lambda c:'Skin' if c in [7,10,12,18,21] else 'Eyes' if c in [4,15,19,20] else 'Hair' if c==17 else 'Mouth' if c in [0,1,2,3,9,22,23] else 'Clothes'
 groups=[];materials=[]
 for c in range(int(components.max())+1):
  group=faces[components[faces[:,0]]==c].flatten().tolist();groups.append(group)
- materials.append(dict(kind=kind(c),name='ScanIsland_'+str(c),map=str(patches[c][0] if c in patches else bodyfile),muscleGuide=c in [6,7,8,10,11,12,13,16,18,21]))
+ materials.append(dict(kind=kind(c),name='ScanIsland_'+str(c),map=str(patches[c][0] if c in patches else bodyfile),alphaMode='OPAQUE',muscleGuide=c in [6,7,8,10,11,12,13,16,18,21]))
 uvout=uv.copy()
 for c,(_,lo,hi) in patches.items():
  ids=np.where(components==c)[0];uvout[ids]=(uv[ids]*size-lo)/(hi-lo)

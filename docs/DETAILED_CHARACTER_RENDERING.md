@@ -1,5 +1,56 @@
 # Detailed character rendering
 
+## Skin, eyes and hair refinement — 2026-11-02
+
+The current detailed presets now use a shared surface-material factory. The
+female scan's hair island was previously classified as clothing and sampled the
+2048 px body atlas. It now has a dedicated **1615 × 2048** texture cropped from
+the hash-verified 8192 px source, preserving about **2.15×** its previous linear
+texture resolution. Skin, eyes, hair and fabric have separate physical finishes.
+Solid scanned hair writes depth; authored strand cards keep alpha blending.
+
+The scan's photographed skin is sampled without a blur filter. The male skin
+filter is reduced from nine samples at 90% strength to five at 30%, with a much
+smaller radius, preserving pigmentation and fine detail. Eye reflections are
+separated from skin reflections; portrait fill/rim lighting is reduced to retain
+facial contours. An anisotropic hair-material trial exposed faceted highlights
+on the scan's non-strand-aligned UV atlas; the final material uses a soft,
+isotropic highlight instead.
+
+Positions, skin weights, triangle groups, hand grips, eye centers and eyelid
+morphs match the preceding asset exactly. No saved preferences or health records
+are migrated or reset. The female asset is **5,119,347 bytes** including JSON and
+seven textures, an increase of **380,388 bytes** for the dedicated hair map and
+metadata. The checked-in files match the source converter/packer output.
+
+Validation: **29 unit checks pass** across ScannedTrainer, TrainerCharacter,
+TrainerMaterials, InstructionMannequin and RenderQuality. The geometry suites
+sample all 74 exercises and 30 stretches and include wall/floor support, welded
+seams, eyelid isolation and finite unit normals. Material checks cover depth
+handling and composition with red exercise guidance. The personal production
+build passes, with existing large-chunk and React Router directive warnings.
+Four production-browser flows pass: female portrait/blink/save/automatic squat,
+female and male five-exercise demonstrations, and male portrait/blink/automatic
+curl with muscle guidance. No page or shader errors were reported. The female
+portrait flow also verifies no external HTTP requests during use. These checks
+use Chromium/SwiftShader, not a physical phone. The final hair correction was
+recaptured and inspected after the initial anisotropic trial.
+
+Actual, unretouched production-app captures:
+
+- [Female front](character-realism-captures/female-front.png),
+  [three-quarter](character-realism-captures/female-45.png) and
+  [eyelid closure](character-realism-captures/female-blink.png).
+- [Automatic squat with muscle guidance](character-realism-captures/female-squat-highlight.png),
+  [push-up](character-realism-captures/female-full_pushup.png) and
+  [dumbbell bench press](character-realism-captures/female-dumbbell_bench_press.png).
+- [Male front](character-realism-captures/male-front.png),
+  [three-quarter](character-realism-captures/male-45.png) and
+  [curl](character-realism-captures/male-curl.png).
+
+The changes improve the current real-time characters; they do not establish
+photo equivalence, hair physics, physical-device frame rate or a new signed APK.
+
 ## Scanned female replacement — 2026-11-01
 
 The current female detailed preset uses **Sophia Animated 003 by Renderpeople**,

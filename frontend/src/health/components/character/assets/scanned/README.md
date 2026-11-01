@@ -31,16 +31,22 @@ extraction, paid download or user photo submission was used.
 - Native inverse bind matrices and weights retarget the body to the existing
   exercise joints. The original facial identity is retained.
 - The 8192 px texture's face and four eye islands are cropped at their native
-  resolution and UVs are remapped exactly. The rest uses a 2048 px map. No skin
-  detail is invented by upscaling or a blur shader.
+  resolution and UVs are remapped exactly. Hair has its own 3004 × 3810 crop,
+  packed to 1615 × 2048: about 2.15 times the linear detail previously retained
+  in the full-body 2048 px atlas. The rest keeps that body atlas. No skin detail
+  is invented by upscaling or a blur shader.
+- Hair is identified as hair rather than clothing. Its solid surface retains
+  depth writing and uses soft highlights; eyes use a separate corneal
+  reflection and skin uses a softer physical highlight.
 - Source eyelid animation supplies two blink shapes. The resting pose uses 18%
   of its own closure to relax the upper lids; full closure remains in the exercise
   animation. Native finger weights supply relaxed/clasped/closed grips.
 - One shared-edge subdivision removes coarse sampling. Loop smoothing affects
   only the upper hair silhouette, with a transition below it. Face coordinates
   stay on their original surface; UV seams share geometric positions/weights.
-- The final model has 35,182 vertices and 65,900 triangles. Six local WebP maps
-  replace the previous 28-map female asset. This reduces the bundled payload;
+- The final model has 35,182 vertices and 65,900 triangles. Seven local WebP maps
+  plus JSON total 5,119,347 bytes. They replace the previous 28-map female asset.
+  This reduces the bundled payload compared with that earlier asset;
   it does not establish phone frame rate or thermal behavior.
 
 ## Reproduce

@@ -5,11 +5,14 @@ import {prepareDetailedModel,poseDetailedModel,detailedFloorOffset} from '../src
 import catalog from '../src/shared/lib/localCatalog.json';
 import {STRETCHES} from '../src/health/components/exercise/stretchCatalog.js';
 const dispose=m=>m.geometry.dispose();
-it('keeps traceable scan attribution and separate native-resolution face/eye maps',()=>{
+it('keeps traceable scan attribution and separate face, eye and hair maps',()=>{
  expect(data.sourceLicense).toMatchObject({author:'Renderpeople',license:'CC BY 4.0'});
  expect(data.sourceLicense.url).toContain('dc448c3be0e74f96a55fb475a13433cf');
  expect(data.refinement.faceResculpted).toBe(false);
- const names=new Set(data.surfaceMaterials.map(s=>s.map));expect(names.size).toBe(6);
+ const names=new Set(data.surfaceMaterials.map(s=>s.map));expect(names.size).toBe(7);
+ const hair=data.surfaceMaterials[17];
+ expect(hair).toMatchObject({kind:'Hair',alphaMode:'OPAQUE',muscleGuide:false});
+ expect(hair.map).not.toBe(data.surfaceMaterials[0].map);
  for(const map of names)expect(fs.existsSync(new URL('../src/health/components/character/assets/scanned/'+map,import.meta.url))).toBe(true);
  expect(data.positions.length/3).toBeLessThan(45000);expect(data.groups.reduce((n,g)=>n+g.length/3,0)).toBe(65900);
  for(const row of data.weights)expect(row.reduce((n,[,w])=>n+w,0)).toBeCloseTo(1,5);

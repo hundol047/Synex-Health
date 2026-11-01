@@ -6,7 +6,7 @@ import {prepareDetailedModel,poseDetailedModel,detailedFloorOffset} from './deta
 import ExerciseEquipment from '../exercise/ExerciseEquipment.jsx';
 import {applyAthleteHighlights} from '../exercise/instructionMannequin.js';
 import {morphParameters} from '../body3d/morph.js';
-import {createTrainerSkinMaterial} from './trainerSkin.js';
+import {createTrainerSurfaceMaterial} from './trainerMaterials.js';
 const textures=import.meta.glob(['./assets/trainer/*.webp','./assets/scanned/*.webp'],{eager:true,query:'?url',import:'default'});
 
 export default function TrainerAthlete({data,body,motion,progress,mirror,measurement,profile,compact,onReady,highlight}){
@@ -19,18 +19,9 @@ export default function TrainerAthlete({data,body,motion,progress,mirror,measure
  const guideMotion=highlight?motion:null;
  const materials=useMemo(()=>{
   const mats=data.surfaceMaterials.map((s,i)=>{
-   const skin=s.kind==='Skin',eye=s.kind==='Eyes',hair=s.kind==='Hair',alpha=['Hair','Eyebrows','Eyelashes'].includes(s.kind);
-   const options={roughness:eye?.2:skin?.65:hair?.7:.9,metalness:0,specularIntensity:eye?.8:skin?.35:hair?.35:.2,envMapIntensity:.6,normalScale:new THREE.Vector2(.22,.22),bumpScale:.0004};
+   const options={};
    for(let j=0;j<slots.length;j++)if(slots[j].i===i)options[slots[j].k]=maps[j];
-   if(alpha)Object.assign(options,{transparent:true,depthWrite:false,side:THREE.DoubleSide,alphaTest:.12});
-   if(s.kind==='Eyelashes')Object.assign(options,{opacity:body==='female'?.85:.55,specularIntensity:0,roughness:1});
-   if(hair&&!authored)options.color='#74665c';
-   if(s.color)options.color=s.color;
-   if(eye)Object.assign(options,{color:'#f0ece5',roughness:.28,specularIntensity:.45,clearcoat:.35,clearcoatRoughness:.18,ior:1.38});
-   if(s.kind==='Clothes')Object.assign(options,{sheen:.2,sheenRoughness:.9});
-   if(authored)Object.assign(options,{side:THREE.DoubleSide,roughness:skin?.76:.9,specularIntensity:skin?.22:.15,ior:1.4,clearcoat:0});
-   if(authored&&eye)Object.assign(options,{color:'#ffffff',roughness:.24,specularIntensity:.3,ior:1.37,clearcoat:.4,clearcoatRoughness:.15});
-   return skin&&!authored?createTrainerSkinMaterial(options):new THREE.MeshPhysicalMaterial(options);
+   return createTrainerSurfaceMaterial(s,options,{scanned:authored,body});
   });
   if(highlight)applyAthleteHighlights(model.geometry,scale,guideMotion,mats.filter((_,i)=>data.surfaceMaterials[i].muscleGuide),model.base);
   return mats;

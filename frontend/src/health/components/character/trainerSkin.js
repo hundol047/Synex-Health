@@ -2,19 +2,22 @@ import * as THREE from 'three';
 
 // A low-contrast skin lobe, separate from fabric and the wet eye surface.
 // This is a real-time approximation, not a biometric skin/SSS simulation.
-export function createTrainerSkinMaterial(options) {
+export function createTrainerSkinMaterial(options,{nativeTexture=false}={}) {
  const material=new THREE.MeshPhysicalMaterial({...options,
-  roughness:.44,metalness:0,ior:1.4,specularIntensity:.85,
-  clearcoat:.08,clearcoatRoughness:.32,envMapIntensity:.9,
+  roughness:nativeTexture?.53:.48,metalness:0,ior:1.4,specularIntensity:.5,
+  clearcoat:.035,clearcoatRoughness:.45,envMapIntensity:.65,
  });
+ // A photographed scan already contains its skin detail. Preserve those
+ // samples exactly; its previous fabric-like finish hid the softbox lobe.
+ if(nativeTexture)return material;
  const image=options.map?.image;
  const texel=new THREE.Vector2(1/(image?.width||2048),1/(image?.height||2048));
  material.onBeforeCompile=shader=>{
   shader.uniforms.synexSkinTexel={value:texel};
   const filter=`
    #ifdef USE_MAP
-   // Filter baked-in speckle in linear color while protecting lip/eyelid
-   // boundaries. The source UVs and authored facial features stay in place.
+   // A small, low-strength filter keeps the authored pores and pigmentation.
+   // Broad nine-tap blurring used to flatten cheeks and the nose into wax.
    vec3 synexSkinSample(vec2 uv, vec3 center, vec2 offset, inout float total) {
     vec3 color=texture2D(map,uv+offset*synexSkinTexel).rgb;
     vec3 difference=color-center;
@@ -32,18 +35,14 @@ export function createTrainerSkinMaterial(options) {
     vec4 skinSource=texture2D(map,vMapUv);
     float total=1.0;
     vec3 filtered=skinSource.rgb*total;
-    filtered+=synexSkinSample(vMapUv,skinSource.rgb,vec2(5.0,0.0),total);
-    filtered+=synexSkinSample(vMapUv,skinSource.rgb,vec2(-5.0,0.0),total);
-    filtered+=synexSkinSample(vMapUv,skinSource.rgb,vec2(0.0,5.0),total);
-    filtered+=synexSkinSample(vMapUv,skinSource.rgb,vec2(0.0,-5.0),total);
-    filtered+=synexSkinSample(vMapUv,skinSource.rgb,vec2(3.5,3.5),total);
-    filtered+=synexSkinSample(vMapUv,skinSource.rgb,vec2(-3.5,3.5),total);
-    filtered+=synexSkinSample(vMapUv,skinSource.rgb,vec2(3.5,-3.5),total);
-    filtered+=synexSkinSample(vMapUv,skinSource.rgb,vec2(-3.5,-3.5),total);
-    diffuseColor*=vec4(mix(skinSource.rgb,filtered/total,.90),skinSource.a);
+    filtered+=synexSkinSample(vMapUv,skinSource.rgb,vec2(1.5,0.0),total);
+    filtered+=synexSkinSample(vMapUv,skinSource.rgb,vec2(-1.5,0.0),total);
+    filtered+=synexSkinSample(vMapUv,skinSource.rgb,vec2(0.0,1.5),total);
+    filtered+=synexSkinSample(vMapUv,skinSource.rgb,vec2(0.0,-1.5),total);
+    diffuseColor*=vec4(mix(skinSource.rgb,filtered/total,.30),skinSource.a);
    #endif
   `);
  };
- material.customProgramCacheKey=()=> 'synex-trainer-skin-v1';
+ material.customProgramCacheKey=()=> 'synex-trainer-skin-v2';
  return material;
 }
