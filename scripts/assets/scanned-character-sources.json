@@ -1,0 +1,33 @@
+{
+  "author": "Renderpeople",
+  "title": "Sophia Animated 003 - Animated 3D Woman",
+  "license": "CC BY 4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+  "artwork": "https://sketchfab.com/3d-models/dc448c3be0e74f96a55fb475a13433cf",
+  "metadata": "https://api.sketchfab.com/v3/models/dc448c3be0e74f96a55fb475a13433cf",
+  "checkedAt": "2026-11-01",
+  "revision": "390e4671632cd0e01460521e4927ed67f8061be3",
+  "baseUrl": "https://raw.githubusercontent.com/Xornotor/cg-2023-1/390e4671632cd0e01460521e4927ed67f8061be3/atividade01-vistandomaquetevirtual-Xornotor/gltf/avatar_c/",
+  "files": [
+    {
+      "path": "license.txt",
+      "bytes": 788,
+      "sha256": "655d20cef7c6f726b12fa7928510511409e1d8b3ef3bb5162c669d3806183da5"
+    },
+    {
+      "path": "scene.gltf",
+      "bytes": 171648,
+      "sha256": "88729af52e1cf137fb05098126e28294c5efe4c612b36418eb48d7c81cdb6709"
+    },
+    {
+      "path": "scene.bin",
+      "bytes": 2371076,
+      "sha256": "de393b155cdeb5153eb20cc570637206df3de9aa0e6d8bcad911b90f280c3da2"
+    },
+    {
+      "path": "textures/rp_sophia_animated_003_mat_baseColor.jpeg",
+      "bytes": 11058395,
+      "sha256": "d231e3872dc0ffc74be093d6d3ba913f3a10efc35cc4fe7c6e87862c7dc65c4a"
+    }
+  ]
+}

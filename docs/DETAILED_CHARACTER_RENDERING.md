@@ -1,6 +1,64 @@
 # Detailed character rendering
 
-## Authored female replacement — 2026-11-01
+## Scanned female replacement — 2026-11-01
+
+The current female detailed preset uses **Sophia Animated 003 by Renderpeople**,
+a complete scanned adult character. The publisher identifies this particular
+work as **CC BY 4.0**. Attribution, original artwork link and changes are visible
+on the character page. The male preset and configurable avatars are unchanged.
+This replaces the preceding Alina preset; the older sections below are historical.
+
+The converter retains the original face and complete hair, uses native eyelid
+animation for resting lids and blinks, and preserves separate native-resolution
+eye texture islands. One shared-edge subdivision rounds the hair crown without
+resculpting the face. Original hand weights supply relaxed, clasped and closed
+grips. Skin and eyes use separate physical materials. Muscle guidance uses the
+existing rest-pose masks and follows the deforming skin and clothes.
+
+Source licensing, pinned input hashes, the six texture maps and reproduction
+commands are in [the asset README](../frontend/src/health/components/character/assets/scanned/README.md).
+The render uses 35,182 vertices and 65,900 triangles. JSON plus six WebP maps total
+**4,738,959 bytes**, compared with the preceding female asset's 22,807,621 bytes.
+The reduction measures bundled asset bytes, not Android loading speed.
+
+### Actual app captures
+
+These are unretouched Chromium captures of the production app:
+
+| Portrait | Exercise |
+| --- | --- |
+| [Front, DPR 2](character-scanned-captures/female-front.png) | [Automatic squat / red muscle guidance](character-scanned-captures/female-squat-highlight.png) |
+| [Three-quarter, DPR 2](character-scanned-captures/female-45.png) | [Push-up](character-scanned-captures/female-full_pushup.png) |
+| [Native eyelid closure](character-scanned-captures/female-blink.png) | [Dumbbell bench press](character-scanned-captures/female-dumbbell_bench_press.png) |
+| | [Curl](character-scanned-captures/female-curl.png) |
+| | [Lat pulldown](character-scanned-captures/female-lat_pulldown.png) |
+
+### Verification and limits
+
+- **27 unit checks pass** across ScannedTrainer, InstructionMannequin,
+  TrainerCharacter and RenderQuality. The new scan is sampled across all 74
+  exercises and 30 stretches at five phases. Checks cover finite geometry,
+  normalized weights/normals, isolated eyelid deformation, welded UV seams,
+  and wall/floor/bench/machine support. Sampling is not an exhaustive guarantee
+  of perfect surface contact at every instant.
+- The personal production build passes. **Three browser flows pass** for the
+  female portrait/selection/persistence/blink/automatic exercise, five female
+  exercise demonstrations, and five unchanged male demonstrations. There are
+  no page or shader errors; the portrait flow also checks no external HTTP
+  requests during use. Actual captures were inspected.
+- Rebuilding from the four hash-verified public source files, then packing the
+  textures, reproduces all **seven runtime files byte-for-byte**. A fourth browser
+  flow captures five real product screens for the competition decks. Its initial
+  runs exposed outdated capture selectors and the omitted routine-confirmation
+  step in the new test; the corrected flow passes, with a 90-second model-ready
+  allowance for the software renderer. No assertion or product check is removed.
+- The fixed original blouse, jeans and shoes are retained. This scan does not
+  provide selectable sportswear or physical hair simulation. Its facial texture
+  remains a real-time 3D scan; reference-photo equivalence is not established.
+- Browser checks use Chromium/SwiftShader. Physical Android performance, camera
+  accuracy and a new signed APK are **not** established by these checks.
+
+## Earlier authored female replacement — 2026-11-01
 
 The female detailed preset now uses **Alina Ip by Jungle Jim**, with the
 publisher's CC BY 4.0 attribution linked in the character page. It replaces the

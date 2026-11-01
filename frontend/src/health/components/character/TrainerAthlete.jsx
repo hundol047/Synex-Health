@@ -7,11 +7,11 @@ import ExerciseEquipment from '../exercise/ExerciseEquipment.jsx';
 import {applyAthleteHighlights} from '../exercise/instructionMannequin.js';
 import {morphParameters} from '../body3d/morph.js';
 import {createTrainerSkinMaterial} from './trainerSkin.js';
-const textures=import.meta.glob(['./assets/trainer/*.webp','./assets/authored/*.webp'],{eager:true,query:'?url',import:'default'});
+const textures=import.meta.glob(['./assets/trainer/*.webp','./assets/scanned/*.webp'],{eager:true,query:'?url',import:'default'});
 
 export default function TrainerAthlete({data,body,motion,progress,mirror,measurement,profile,compact,onReady,highlight}){
- const authored=data.sourceFamily==='authored-usd';
- const slots=useMemo(()=>data.surfaceMaterials.flatMap((s,i)=>['map','normalMap','bumpMap'].filter(k=>s[k]).map(k=>({i,k,url:textures[`./assets/${authored?'authored':'trainer'}/${s[k]}`]}))),[data,authored]);
+ const authored=data.sourceFamily==='scanned-gltf';
+ const slots=useMemo(()=>data.surfaceMaterials.flatMap((s,i)=>['map','normalMap','bumpMap'].filter(k=>s[k]).map(k=>({i,k,url:textures[`./assets/${authored?'scanned':'trainer'}/${s[k]}`]}))),[data,authored]);
  const maps=useTexture(slots.map(s=>s.url));
  maps.forEach((t,i)=>{const space=slots[i].k==='map'?THREE.SRGBColorSpace:THREE.NoColorSpace;if(t.colorSpace!==space){t.colorSpace=space;t.needsUpdate=true;}t.anisotropy=4;});
  const scale=morphParameters(measurement,profile).heightScale;
@@ -28,7 +28,8 @@ export default function TrainerAthlete({data,body,motion,progress,mirror,measure
    if(s.color)options.color=s.color;
    if(eye)Object.assign(options,{color:'#f0ece5',roughness:.28,specularIntensity:.45,clearcoat:.35,clearcoatRoughness:.18,ior:1.38});
    if(s.kind==='Clothes')Object.assign(options,{sheen:.2,sheenRoughness:.9});
-   if(authored&&skin)Object.assign(options,{roughness:.52,specularIntensity:.5,ior:1.4,normalScale:new THREE.Vector2(.45,.45),clearcoat:.03,clearcoatRoughness:.35});
+   if(authored)Object.assign(options,{side:THREE.DoubleSide,roughness:skin?.76:.9,specularIntensity:skin?.22:.15,ior:1.4,clearcoat:0});
+   if(authored&&eye)Object.assign(options,{color:'#ffffff',roughness:.24,specularIntensity:.3,ior:1.37,clearcoat:.4,clearcoatRoughness:.15});
    return skin&&!authored?createTrainerSkinMaterial(options):new THREE.MeshPhysicalMaterial(options);
   });
   if(highlight)applyAthleteHighlights(model.geometry,scale,guideMotion,mats.filter((_,i)=>data.surfaceMaterials[i].muscleGuide),model.base);
@@ -46,7 +47,7 @@ export default function TrainerAthlete({data,body,motion,progress,mirror,measure
  useEffect(()=>()=>materials.forEach(m=>m.dispose()),[materials]);
  useEffect(()=>()=>hidden.dispose(),[hidden]);
  return <group scale={[mirror?-1:1,1,1]}><group position={[0,offset,0]}><mesh geometry={model.geometry} material={opaque} castShadow={!compact} receiveShadow onAfterRender={renderer=>{
-  const el=renderer.domElement;el.dataset.characterModel='detailed';el.dataset.characterBody=body;el.dataset.characterStyle='realistic';el.dataset.exerciseRendered=motion;el.dataset.exerciseProgress=String(progress);el.dataset.characterFace='authored-trainer';el.dataset.characterSource=authored?'jungle-jim-alina':'mpfb-trainer';
+  const el=renderer.domElement;el.dataset.characterModel='detailed';el.dataset.characterBody=body;el.dataset.characterStyle='realistic';el.dataset.exerciseRendered=motion;el.dataset.exerciseProgress=String(progress);el.dataset.characterFace='authored-trainer';el.dataset.characterSource=authored?'renderpeople-sophia':'mpfb-trainer';
   const key=body+':'+motion;if(ready.current!==key){ready.current=key;requestAnimationFrame(()=>onReady?.());}
  }}/><mesh geometry={model.geometry} material={transparent}/>{model.rigidHeadGeometry&&<mesh geometry={model.rigidHeadGeometry} material={materials} position={model.rigidHeadPosition.toArray()} quaternion={model.rigidHeadRotation.toArray()}/>} {!wall&&equipment}</group>{wall&&equipment}</group>;
 }
