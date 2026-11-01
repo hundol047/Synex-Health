@@ -3,39 +3,41 @@
   "presentationChecks": {
     "5": {
       "mainSlides": 8,
-      "appendixSlides": 2,
+      "appendixSlides": 0,
       "targetSeconds": 300,
       "embeddedAppImages": 4,
       "scriptQuestions": 20,
-      "pdfSlideCount": 10,
+      "pdfSlideCount": 8,
       "pdfScriptPages": 6,
-      "notesChecked": true
+      "notesChecked": true,
+      "sourcesAtScriptEnd": true
     },
     "7": {
       "mainSlides": 10,
-      "appendixSlides": 2,
+      "appendixSlides": 0,
       "targetSeconds": 420,
       "embeddedAppImages": 4,
       "scriptQuestions": 20,
-      "pdfSlideCount": 12,
+      "pdfSlideCount": 10,
       "pdfScriptPages": 7,
-      "notesChecked": true
+      "notesChecked": true,
+      "sourcesAtScriptEnd": true
     }
   },
-  "renderReview": "All 22 deck pages reviewed; final typography changes reviewed in affected examples. Script openings, questions and sources checked.",
+  "renderReview": "Appendix slides removed from both decks. All 18 retained slide texts match prior reviewed PDFs; both closing slides are pixel-identical to previous closing slides. Final sources pages rendered and visually checked.",
   "realDeviceValidated": false,
   "captureData": "fictional demo values; camera permission not requested",
   "browserCaptureFlow": "passed; 5 production UI screens",
   "files": {
-    "files/Synex_0713_5min.pdf": "07192ae4f319eee9a8bf5b4b2fc68b9a542114ee3a515480da105f1205eb4c45",
-    "files/Synex_0713_5min.pptx": "4d9e73f41e79e3316823cc446a546c5b630ed75287bda53609a3675437ffff16",
-    "files/Synex_0713_5min_script_QA.docx": "2a4ec4ec4fe43ef8e450e8c5f55c37636951b5a273c0d769ed955cd202c8b567",
-    "files/Synex_0713_5min_script_QA.md": "98f2263fb54699b3bf227a6d355be4d4f41c2e51e545dbb342ea61b856c69acc",
-    "files/Synex_0713_5min_script_QA.pdf": "34e46b2eff0ce93d3ab52a7312170f84f1b84965b417680d35cadbeeebea0cbf",
-    "files/Synex_0713_7min.pdf": "0ca37523045dca695da28e1f128044dc3ecf1fac51939383d2de9d109dffd583",
-    "files/Synex_0713_7min.pptx": "f342c63a0c0870cadf5ae84bc77798860244038342becc5ede740e72da954c24",
-    "files/Synex_0713_7min_script_QA.docx": "f322c1677a92aeff257db0fa95cf0be8c3a51c9273ccb97a08cf6a147ef7f780",
-    "files/Synex_0713_7min_script_QA.md": "30fa11543c8c0a6074a3040b27c9f4c69746c05bd8fe25bd42704508f2e7be3c",
-    "files/Synex_0713_7min_script_QA.pdf": "fdf805750da16fa27e9d3cd0fa925f3b515e394b46f3f9e189180194a26ea0d6"
+    "files/Synex_0713_5min.pdf": "261aa56753a9e13537ef1f999aa6505c2254767194e86f162c6e82c146b42b55",
+    "files/Synex_0713_5min.pptx": "13f75ff47feea3528563d1d382dacaee18a061b9a30f839f4ffeaf956fea4929",
+    "files/Synex_0713_5min_script_QA.docx": "5a77981cf212b46ce1aca24849246663775a1c27a1e4d8c1788b306b25590e00",
+    "files/Synex_0713_5min_script_QA.md": "cfcaa3f47fe615ae58b036bd95e2fb8c96f6e9937b57f89bf945d2d0bcf53f76",
+    "files/Synex_0713_5min_script_QA.pdf": "59f8cb2059c78db21d62dbec04de807775ea47e24001d111f7ff4c1416a867e2",
+    "files/Synex_0713_7min.pdf": "6558820788c389877cd2e19cc1b9723b35209cbb9a60796473d0e3aea3a9e524",
+    "files/Synex_0713_7min.pptx": "bf75eb4b538e7cc3896026c9dba83b9682958f55c50df7c7f9c48a7efcc6744f",
+    "files/Synex_0713_7min_script_QA.docx": "283a8deac8b66015b8f4df1534966c3658d3effc4391af75f66eeafe963c6d99",
+    "files/Synex_0713_7min_script_QA.md": "5a57f8e061d7d1ef7eca0e30fcf0f777c2bed4e4556561e739afee100f3ddcd2",
+    "files/Synex_0713_7min_script_QA.pdf": "293ad1419dcad0fcfffa86e994c869f54fff38b81e85adaeffc4181af4b1ff60"
   }
 }

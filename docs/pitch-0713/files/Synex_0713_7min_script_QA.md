@@ -124,6 +124,8 @@ Synex Health는 측정 결과를 보여주는 데서 끝나지 않고, 사용자
 
 학생이 반복해서 사용하지 않거나 기관이 비용을 지불할 이유가 약한 위험입니다. 그래서 첫 목표는 고객 인터뷰, 대표 운동 평가, 기관 한 곳의 실증 조건 확보입니다. 결과가 목표에 미치지 못하면 기능 추가보다 문제 정의와 사용 흐름, 가격을 먼저 수정하겠습니다.
 
+# 근거와 자료 · 출처·사실 확인표
+
 - S1 · 대회 모집공고문: 제27회 강원특별자치도 대학생 창업경진대회(2026), 사전발표 5분 / 결선 7분+질의응답 3분, PDF 5·8쪽 — 사용자 제공 모집공고문
 - S2 · 제품 구현 범위: Synex Health 소스: docs/POSE_ANALYSIS.md, docs/GYM_RECOVERY.md 및 실제 앱 캡처 — https://github.com/hundol047/Synex-Health/tree/feat/routine-conditions-period
 - S3 · Nike Training Club: 공식 소개: 운동 프로그램, 트레이너 안내, 회복·웰니스 정보 — https://www.nike.com/ntc-app

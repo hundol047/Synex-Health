@@ -12,7 +12,7 @@ from docx.shared import Inches as DI,Pt as DP,RGBColor as DC
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from PIL import Image
-from content import SLIDES5,SLIDES7,SOURCES,QA,BUDGET
+from content import SLIDES5,SLIDES7,SOURCES,QA
 ROOT=Path(__file__).resolve().parent
 OUT=ROOT/'files';OUT.mkdir(exist_ok=True)
 IMG=ROOT/'screens'
@@ -121,22 +121,7 @@ def build_deck(slides,minutes):
    for i,t in enumerate(['실증 파트너 1곳','운동 전문가 평가','유료 도입 의향 검증']):
     box(s,.75+i*4.16,5.4,3.82,.73,'203F65',radius=True);txt(s,t,.95+i*4.16,5.6,3.42,.4,18,WHITE,True)
   t=item['seconds'];start=f'{elapsed//60:02d}:{elapsed%60:02d}';elapsed+=t;end=f'{elapsed//60:02d}:{elapsed%60:02d}'
-  s.notes_slide.notes_text_frame.text=f'발표 구간 {start}–{end} / {t}초 목표\n\n{item["script"]}\n\n발표자 메모: 실제 말하기 속도에 따라 리허설에서 조정합니다. 계획·가정을 실적으로 바꾸어 읽지 않습니다.\n출처: '+', '.join(x[0]+': '+x[1] for x in SOURCES)
- # Untimed appendix pages are clearly separated.
- for kind in ['budget','sources']:
-  s=prs.slides.add_slide(prs.slide_layouts[6]);header(s,{'kicker':'APPENDIX · 질의응답 참고'},total+1 if kind=='budget' else total+2,total+2,minutes)
-  txt(s,'초기 검증 예산 제안' if kind=='budget' else '근거와 자료의 범위',.6,1.0,12,.8,34,NAVY,True)
-  if kind=='budget':
-   txt(s,'합계 500만 원 · 견적·조달 확정 전 · 확보 자금으로 표시하지 않습니다.',.63,2.0,12,.5,17,GRAY)
-   for i,(label,value) in enumerate(BUDGET):
-    y=2.95+i*.48;box(s,.65,y,12,.42,LIGHT if i%2==0 else WHITE);txt(s,label,.9,y+.03,7,.32,16,GRAY);txt(s,f'{value:,}만 원',9.75,y+.03,2.5,.32,17,NAVY,True,PP_ALIGN.RIGHT)
-   txt(s,'개발·기획 인건비와 상용 전체 운영비는 별도 산정이 필요합니다.',.7,6.18,12,.4,16,ORANGE,True)
-  else:
-   for i,(key,label,detail,url) in enumerate(SOURCES):
-    y=1.95+i*.63;txt(s,key,.64,y,.5,.35,14,BLUE,True);txt(s,label,1.25,y,10.9,.35,16,NAVY,True);t=txt(s,detail,1.25,y+.32,10.9,.3,10.5,GRAY)
-    if url.startswith('http'):t.text_frame.paragraphs[0].runs[0].hyperlink.address=url
-   footer_note(s,'확인일 2026.11.01 · 앱 화면은 실제 시제품 / 예제 데이터입니다. 전체 출처 URL과 검증 범위는 발표 대본에 수록했습니다.')
-  s.notes_slide.notes_text_frame.text='발표 시간에 포함하지 않는 질의응답 참고 자료입니다.\n'+'\n'.join(f'{a} {b}: {c}\n{u}' for a,b,c,u in SOURCES)
+  s.notes_slide.notes_text_frame.text=f'발표 구간 {start}–{end} / {t}초 목표\n\n{item["script"]}\n\n발표자 메모: 실제 말하기 속도에 따라 리허설에서 조정합니다. 계획·가정을 실적으로 바꾸어 읽지 않습니다.\n출처: '+'\n'.join(f'{key} · {label}: {detail}\n{url}' for key,label,detail,url in SOURCES)
  file=OUT/f'Synex_0713_{minutes}min.pptx';prs.save(file);return file
 
 def setup_doc(doc):
@@ -149,7 +134,7 @@ def setup_doc(doc):
  field=OxmlElement('w:fldSimple');field.set(qn('w:instr'),'PAGE');footer._p.append(field)
 def build_script(slides,minutes):
  doc=Document();setup_doc(doc);doc.add_heading(f'Synex Health\n{minutes}분 발표 대본',0);doc.add_paragraph('팀 0713 · 제27회 강원특별자치도 대학생 창업경진대회');doc.add_paragraph(f'주 발표 {len(slides)}장 / 목표 {minutes}:00 / 예상 질의응답 20개',style='Subtitle')
- doc.add_heading('읽기 전 확인',1);doc.add_paragraph('대본의 장 번호는 같은 이름의 PPT와 일치합니다. 장별 시간은 리허설용 목표이며 실제 낭독 시간을 측정한 값은 아닙니다. 부록 2장은 발표 시간에 포함하지 않습니다. 7분 결선은 공고문상 질의응답 3분이 별도입니다. 모든 화면은 실제 앱 캡처이며 수치는 예제입니다. 계획과 가정을 실적처럼 읽지 않습니다.')
+ doc.add_heading('읽기 전 확인',1);doc.add_paragraph('대본의 장 번호는 같은 이름의 PPT와 일치합니다. 장별 시간은 리허설용 목표이며 실제 낭독 시간을 측정한 값은 아닙니다. 7분 결선은 공고문상 질의응답 3분이 별도입니다. 모든 화면은 실제 앱 캡처이며 수치는 예제입니다. 계획과 가정을 실적처럼 읽지 않습니다.')
  elapsed=0;md=[f'# 팀 0713 · Synex Health {minutes}분 발표 대본','',f'주 발표 {len(slides)}장. 목표 시간 {minutes}:00. 장별 시간은 리허설 기준입니다.','']
  for i,s in enumerate(slides,1):
   start=f'{elapsed//60:02d}:{elapsed%60:02d}';elapsed+=s['seconds'];end=f'{elapsed//60:02d}:{elapsed%60:02d}'
@@ -157,7 +142,7 @@ def build_script(slides,minutes):
  doc.add_page_break();doc.add_heading('예상 질의응답 20개',0);doc.add_paragraph('각 답변은 핵심 결론부터 20~30초 안에 말하고 추가 질문이 있을 때 근거를 설명하는 연습용입니다. 아래 계획 수치는 확정 실적이 아닙니다.');md.extend(['# 예상 질의응답 20개',''])
  for i,(q,a) in enumerate(QA,1):
   doc.add_heading(f'Q{i:02d}. {q}',2);doc.add_paragraph(a);md.extend([f'## Q{i:02d}. {q}','',a,''])
- doc.add_page_break();doc.add_heading('출처·사실 확인표',0)
+ doc.add_page_break();doc.add_heading('근거와 자료 · 출처·사실 확인표',0);md.extend(['# 근거와 자료 · 출처·사실 확인표',''])
  for key,label,detail,url in SOURCES:doc.add_heading(key+' · '+label,2);doc.add_paragraph(detail);doc.add_paragraph(url);md.extend([f'- {key} · {label}: {detail} — {url}'])
  path=OUT/f'Synex_0713_{minutes}min_script_QA.docx';doc.save(path);(OUT/f'Synex_0713_{minutes}min_script_QA.md').write_text('\n'.join(md));return path
 if __name__=='__main__':
