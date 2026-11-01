@@ -98,11 +98,12 @@ def build_deck(slides,minutes):
    footer_note(s,'현재 기관 계약·협약은 없습니다. 자동 연동에는 기관 승인·공식 API·사용자 동의가 필요합니다.')
   elif id=='market':
    txt(s,'기관용과 개인용의 TAM · SAM · SOM',.55,1.0,12.2,.62,31,NAVY,True)
-   txt(s,'기관은 전국 헬스장·대학 스포츠센터 / 개인은 초기 대학생 직접 구독 시장',.58,1.7,12.1,.4,14,GRAY)
+   txt(s,'기관은 전국 헬스장·대학 스포츠센터 / 개인은 국내 만 14~65세 직접 구독 시장',.58,1.7,12.1,.4,14,GRAY)
    inst=MARKET_MODEL['institution']
+   person=MARKET_MODEL['individual']
    columns=[
     (3.38,'기관용 B2B · 전국 헬스장·대학센터','헬스장 월 49만 원 · 대학 월 99만 원 가정',BLUE,['E4EDFD','B7D0FA',BLUE],[('TAM · 상한 가정',f'{inst["tam"]:,}곳',f'약 {hundred_million(inst["annualPotentialWon"]["tam"],1)}억 원'),('SAM · 가정',f'{inst["sam"]:,}곳',f'약 {hundred_million(inst["annualPotentialWon"]["sam"])}억 원'),('SOM · 목표',f'{inst["som"]}곳',f'{hundred_million(inst["annualPotentialWon"]["som"])}억 원')]),
-    (9.90,'개인용 B2C · 대학생 직접 구독','개인당 월 4,900원 가정',TEAL,['E1F2F1','B1DDDA',TEAL],[('TAM · 전체','약 237만 명','약 1,395억 원'),('SAM · 가정','약 23.7만 명','약 139.5억 원'),('SOM · 목표','500명','2,940만 원')]),
+    (9.90,'개인용 B2C · 국내 만 14~65세',f'개인당 월 {person["monthlyFeeWon"]:,}원 가정',TEAL,['E1F2F1','B1DDDA',TEAL],[('TAM · 잠재 상한',f'약 {person["tam"]/10_000:,.0f}만 명',f'약 {person["annualPotentialWon"]["tam"]/1_000_000_000_000:.2f}조 원'),('SAM · 가정',f'약 {person["sam"]/10_000:,.1f}만 명',f'약 {person["annualPotentialWon"]["sam"]/100_000_000:,.0f}억 원'),('SOM · 목표',f'{person["som"]:,}명',f'{person["annualPotentialWon"]["som"]/10_000:,.0f}만 원')]),
    ]
    for cx,label,price,color,colors,rows in columns:
     txt(s,label,cx-2.8,2.17,5.6,.4,18,color,True,PP_ALIGN.CENTER)
@@ -115,8 +116,8 @@ def build_deck(slides,minutes):
      txt(s,tag,cx-width/2,y,width,.25,10 if i==2 else 11,ink,True,PP_ALIGN.CENTER)
      txt(s,count,cx-width/2,y+.28,width,.35,16 if i==2 else 19,ink,True,PP_ALIGN.CENTER)
      txt(s,value,cx-width/2,y+.63,width,.25,11 if i==2 else 12,ink,False,PP_ALIGN.CENTER)
-   txt(s,'기관: 헬스장 15,548곳(2024년 말) + 대학 348교×센터 1곳 가정  ·  SAM 각 10% 가정 / SOM 출시 후 24개월 목표',.58,6.48,12.2,.25,9.4,GRAY)
-   txt(s,'금액은 연간 잠재 이용료·시설 중복 없음의 가정입니다. 학교 수≠센터 실측 수 / 원 면적 비례 아님 / 두 시장 합산 안 함 / 출처 S8–S10',.58,6.73,12.2,.21,8.6,GRAY)
+   txt(s,'기관: 헬스장 15,548곳(2024년 말) + 대학 348교×센터 1곳 가정 / 개인: 2025년 말 주민등록 인구, 등록외국인 제외',.58,6.48,12.2,.25,9.2,GRAY)
+   txt(s,'연간 잠재 이용료 · SAM 각 10% 가정 · SOM 출시 후 24개월 목표 · 시설 중복 없음 가정 · 원 면적 비례 아님 · 시장 합산 안 함 · S8–S11',.58,6.73,12.2,.21,8.4,GRAY)
   elif id=='validation':
    title(s,item)
    for i,(big,tag,body) in enumerate([('74 + 30','현재 콘텐츠','운동 74종\n스트레칭 30종'),('5종','우선 평가할 운동','대표 동작부터\n실제 영상 검증'),('20명','평가 참여자 계획','전문가 2인의\n독립 평가와 비교')]):
@@ -125,12 +126,12 @@ def build_deck(slides,minutes):
    footer_note(s,'구현 수와 자동 검사 통과는 실제 자세 분석 정확도를 입증하는 수치가 아닙니다.')
   elif id=='business' and minutes==7:
    title(s,item)
-   for x,label,price,body,fill in [(.62,'헬스장형','월 49만 원','회원 운동 코칭\n직원 확인·운영 지원',BLUE),(4.77,'대학 스포츠센터형','월 99만 원','센터 운영·권한 관리\n기관 연결 지원',NAVY),(8.92,'개인 선택 구독','월 4,900원','대학생 직접 구독\n개인 운동 경험',TEAL)]:
+   for x,label,price,body,fill in [(.62,'헬스장형','월 49만 원','회원 운동 코칭\n직원 확인·운영 지원',BLUE),(4.77,'대학 스포츠센터형','월 99만 원','센터 운영·권한 관리\n기관 연결 지원',NAVY),(8.92,'개인 선택 구독',f'월 {MARKET_MODEL["individual"]["monthlyFeeWon"]:,}원','만 14~65세로 확장\n성인 대학생부터 실증',TEAL)]:
     box(s,x,3.1,3.8,2.5,fill,radius=True)
     txt(s,label,x+.22,3.34,3.36,.4,18,WHITE,True)
     txt(s,price,x+.22,4.03,3.36,.65,29,WHITE,True)
     txt(s,body,x+.22,4.88,3.36,.6,15,WHITE)
-   txt(s,'24개월 기관 목표  헬스장 30곳 + 대학 5곳 → 연환산 약 2.36억 원',.65,5.96,12,.4,19,BLUE,True)
+   txt(s,'24개월 목표   기관 35곳 · 연환산 2.36억 원   /   개인 500명 · 연환산 5,940만 원',.65,5.96,12,.4,17,BLUE,True)
    footer_note(s,'가격·제공 범위·확보 목표는 검증 가설입니다. 계정 수·지원 시간·별도 구축·연동비를 확인하며 첫해 또는 누적 매출 전망이 아닙니다.')
   elif id=='business':
    title(s,item)
@@ -138,7 +139,7 @@ def build_deck(slides,minutes):
    txt(s,'월 20만 원 × 12개월 가정',5.2,3.24,7.2,.5,21,NAVY,True)
    for i,(label,value,width) in enumerate([('기관 1곳','240만 원',.75),('기관 5곳','1,200만 원',3.75)]):
     y=4.12+i*.85;txt(s,label,5.2,y,1.4,.4,17,GRAY);box(s,6.7,y,width,.38,TEAL if i==0 else BLUE,radius=True);txt(s,value,10.75,y-.02,2,.5,18,NAVY,True)
-   txt(s,'개인 선택 구독 월 4,900원 · 추가 검증 가설' if minutes==7 else '초기 검증 예산 제안 500만 원',5.2,5.9,7.2,.45,17 if minutes==7 else 19,TEAL,True)
+   txt(s,'초기 검증 예산 제안 500만 원',5.2,5.9,7.2,.45,19,TEAL,True)
    footer_note(s,'계약·매출 실적이 아닌 가정입니다. 부가세·비용 차감 전이며 창업자 인건비와 상용 전체 운영비는 별도입니다.')
   elif id=='roadmap':
    title(s,item)
@@ -180,7 +181,7 @@ def build_script(slides,minutes):
  if minutes==7:
   for heading,body in MARKET_METHOD:
    doc.add_heading(heading,2);doc.add_paragraph(body);md.extend([f'## {heading}','',body,''])
-  doc.add_page_break();doc.add_heading('출처 목록',1);md.extend(['## 출처 목록',''])
+  source_heading=doc.add_heading('출처 목록',1);source_heading.paragraph_format.page_break_before=True;md.extend(['## 출처 목록',''])
  for key,label,detail,url in sources:
   doc.add_heading(key+' · '+label,2);paragraph=doc.add_paragraph(detail)
   if minutes==7:paragraph.paragraph_format.keep_with_next=True
@@ -192,4 +193,5 @@ if __name__=='__main__':
  for minutes,slides in [(5,SLIDES5),(7,SLIDES7)]:
   if args.minutes and minutes!=args.minutes:continue
   assert sum(s['seconds'] for s in slides)==minutes*60;assert len(QA)==20
+  if minutes==7:(ROOT/'market-model.json').write_text(json.dumps(MARKET_MODEL,ensure_ascii=False,indent=2)+'\n')
   print(build_deck(slides,minutes));print(build_script(slides,minutes))

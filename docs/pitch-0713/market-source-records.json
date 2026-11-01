@@ -39,5 +39,32 @@
     },
     "derivedCandidateSchools": 348,
     "actualSportsCentersCountVerified": false
+  },
+  "population": {
+    "originalPublisher": "행정안전부",
+    "publicDistributor": "한국여성정책연구원 성인지통계",
+    "tableTitle": "주민등록 인구(성/행정구역(시군구)/연령1세별)",
+    "url": "https://gsis.kwdi.re.kr/statHtml/statHtml.do?orgId=338&tblId=DT_GIABRM17_001",
+    "tableId": "DT_GIABRM17_001",
+    "statisticsDate": "2025-12-31",
+    "tableUpdatedAt": "2026-04-01",
+    "downloadedAt": "2026-11-01",
+    "endpoint": "https://gsis.kwdi.re.kr/statHtml/html.do",
+    "responseSha256": "44a134ef46d54aba89688c701d9e210ffbcd864ed92737ddf73ba005de5208a8",
+    "responseBytes": 1284738,
+    "region": "전국",
+    "sex": "전체",
+    "ageMinInclusive": 14,
+    "ageMaxInclusive": 65,
+    "ageCount": 52,
+    "population": 36378106,
+    "age14Population": 476544,
+    "age65Population": 880186,
+    "allAgesControlTotal": 51117378,
+    "sumOfAllSingleAgesMatchesControl": true,
+    "malePlusFemaleMatchesEachAge": true,
+    "scope": "주민등록 인구 기준, 등록외국인 제외. 전체 국내 상주인구 총조사가 아닙니다.",
+    "extractedCsv": "sources/population-2025-ages14-65.csv",
+    "csvSha256": "4d93144599415a7ba5744368a9e708a78edbe65d644dd0c41cd13db424b76a88"
   }
 }

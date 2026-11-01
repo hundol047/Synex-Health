@@ -1,14 +1,16 @@
 {
-  "scope": "기관은 전국 신고 헬스장과 캠퍼스형 대학 스포츠센터 후보군, 개인은 초기 일반·전문대학생 시장",
+  "scope": "기관은 전국 신고 헬스장과 캠퍼스형 대학 스포츠센터 후보군, 개인은 국내 만 14~65세 주민등록 인구",
   "statisticsDates": {
     "gyms": "2024-12-31",
-    "schools": "2026-04-01"
+    "schools": "2026-04-01",
+    "population": "2025-12-31"
   },
   "checkedAt": "2026-11-01",
   "sources": {
     "schools": "https://www.kedi.re.kr/khome/main/announce/selectBroadAnnounceForm.do?selectTp=0&board_sq_no=3&article_sq_no=36467",
     "schoolTypes": "https://eiec.kdi.re.kr/policy/materialView.do?num=285801",
-    "gyms": "https://www.spoinfo.or.kr/board/boardFileDownAct.do?fileSeq=3201"
+    "gyms": "https://www.spoinfo.or.kr/board/boardFileDownAct.do?fileSeq=3201",
+    "population": "https://gsis.kwdi.re.kr/statHtml/statHtml.do?orgId=338&tblId=DT_GIABRM17_001"
   },
   "schoolTypes": {
     "일반대학": 188,
@@ -25,6 +27,12 @@
   "gymUniversityOverlapAssumption": 0,
   "samShareAssumption": "0.10",
   "somHorizonMonthsAfterLaunch": 24,
+  "individualAgeRange": {
+    "minInclusive": 14,
+    "maxInclusive": 65,
+    "ageDefinition": "만 나이"
+  },
+  "individualPopulationBasis": "2025년 말 주민등록 인구, 등록외국인 제외",
   "institution": {
     "tam": 15896,
     "sam": 1588,
@@ -60,14 +68,14 @@
     }
   },
   "individual": {
-    "tam": 2372654,
-    "sam": 237265,
+    "tam": 36378106,
+    "sam": 3637810,
     "som": 500,
-    "monthlyFeeWon": 4900,
+    "monthlyFeeWon": 9900,
     "annualPotentialWon": {
-      "tam": 139512055200,
-      "sam": 13951182000,
-      "som": 29400000
+      "tam": 4321718992800,
+      "sam": 432171828000,
+      "som": 59400000
     }
   }
 }

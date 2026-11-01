@@ -27,7 +27,7 @@
       "pricingSlideNumber": 9
     }
   },
-  "renderReview": "Nationwide market circles, tiered institutional prices, customer slide and final source pages rendered and visually reviewed. No appendix slides added; sources remain at script end.",
+  "renderReview": "Reviewed six market circles, age-based individual market, pricing, and script source pages. No blank/orphan script pages. Statistics and assumptions distinguished. Sources remain after 20 Q&A.",
   "realDeviceValidated": false,
   "captureData": "fictional demo values; camera permission not requested",
   "browserCaptureFlow": "passed; 5 production UI screens",
@@ -37,16 +37,17 @@
     "files/Synex_0713_5min_script_QA.docx": "5a77981cf212b46ce1aca24849246663775a1c27a1e4d8c1788b306b25590e00",
     "files/Synex_0713_5min_script_QA.md": "cfcaa3f47fe615ae58b036bd95e2fb8c96f6e9937b57f89bf945d2d0bcf53f76",
     "files/Synex_0713_5min_script_QA.pdf": "59f8cb2059c78db21d62dbec04de807775ea47e24001d111f7ff4c1416a867e2",
-    "files/Synex_0713_7min.pdf": "97806a587aed13f843ba0192a0fca06523d512e1dc7243c2d193c673d4ee0229",
-    "files/Synex_0713_7min.pptx": "342fa7c79e48aff7effc530c0b905c4f1fa8f1a71aa1cfb08ffd3e6d8dcc5d76",
-    "files/Synex_0713_7min_script_QA.docx": "d3629884d4dfa79895dc4bb10263673616b879fee66bcfc480c9d9d73fc05fc2",
-    "files/Synex_0713_7min_script_QA.md": "b4178ea697c82313215218a5d79458f03c4b2da42d3477a661f3aca47a9d9c56",
-    "files/Synex_0713_7min_script_QA.pdf": "0eb68a5f15f4f526e440b09dfd5f56512918aac6ea366fa79e80021e7c5900a3"
+    "files/Synex_0713_7min.pdf": "e38fb9a176a5a2ec75f0e71a68d1875748b49ec1354b58c893474ed4549ab2b9",
+    "files/Synex_0713_7min.pptx": "39b6ea47712f8b0f87e009f82d9c444641c17dca98490fe937b372d499d6cdbe",
+    "files/Synex_0713_7min_script_QA.docx": "651ba2328fe159254d09901373afb50acaff2497a2de74a821392cc7ecc0bb85",
+    "files/Synex_0713_7min_script_QA.md": "706d29dbe8e5f783fd3364ce34bccaa9e40757c6184740155c73f572a3897b86",
+    "files/Synex_0713_7min_script_QA.pdf": "b4a337425b9980d7421b909281c657abf25b437733e3aadd7b6f62e4cc05e8bf"
   },
   "marketChecks": {
     "statisticsDates": {
       "gyms": "2024-12-31",
-      "schools": "2026-04-01"
+      "schools": "2026-04-01",
+      "population": "2025-12-31"
     },
     "sourceCheckedAt": "2026-11-01",
     "reportedGyms": 15548,
@@ -65,6 +66,22 @@
     "somIs24MonthGoal": true,
     "arithmeticChecked": true,
     "fiveMinuteFilesByteUnchanged": true,
-    "sourceHashesRecorded": true
+    "sourceHashesRecorded": true,
+    "individualPopulation": 36378106,
+    "individualAgeMinInclusive": 14,
+    "individualAgeMaxInclusive": 65,
+    "individualSingleAgeRows": 52,
+    "individualMonthlyFeeAssumptionWon": 9900,
+    "individualAnnualPotentialWon": {
+      "tam": 4321718992800,
+      "sam": 432171828000,
+      "som": 59400000
+    },
+    "individualSamCount": 3637810,
+    "individualSomCount": 500,
+    "populationSourceCsvSha256": "4d93144599415a7ba5744368a9e708a78edbe65d644dd0c41cd13db424b76a88",
+    "ageEndpointsIncluded": true,
+    "individualSamShareIsAssumption": true,
+    "institutionModelUnchanged": true
   }
 }
