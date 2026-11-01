@@ -32,6 +32,7 @@ import MotionFigure from './MotionFigure.jsx';
 import { applyAthleteHighlights, applyMannequinColors, mannequinGuide, mannequinMaterials } from './instructionMannequin.js';
 
 const DetailedAthlete=React.lazy(()=>import('../character/DetailedAthlete.jsx'));
+const PortraitLighting=React.lazy(()=>import('./PortraitLighting.jsx'));
 const FLOOR_MOTIONS = /plank|bridge|dead_bug|bird_dog|push_?up|clamshell|prone_y|heel_slide|cat_cow|floor_press|bench_press/;
 const PLANTED_FLOOR_MOTIONS = new Set(['full_pushup', 'push_up', 'plank', 'bridge', 'glute_bridge']);
 const ORIGINAL_MOTIONS = new Set(['squat', 'lunge', 'side_lunge', 'full_pushup', 'push_up', 'plank', 'bridge', 'glute_bridge', 'hinge', 'hip_hinge']);
@@ -184,11 +185,12 @@ function Studio({ compact, heightScale, motion, portrait=false, shadowMap=1024 }
   const floor = FLOOR_MOTIONS.test(motion) || FLOOR_STRETCHES.has(motion) || MOTIONS[motion]?.prop === 'mat';
   return <>
     <StudioEnvironment portrait={portrait}/>
+    {portrait&&<React.Suspense fallback={null}><PortraitLighting/></React.Suspense>}
     <color attach="background" args={['#f7faff']}/>
     <fog attach="fog" args={['#f7faff', 5, 11]}/>
     <hemisphereLight args={['#fffaf6', '#c4cedb', portrait?.42:.45]}/>
-    <directionalLight position={portrait?[-2,3,4]:[-3,5,4]} color="#fff8f1" intensity={portrait?1.20:1.7} castShadow={!compact} shadow-mapSize={[shadowMap, shadowMap]} shadow-camera-left={-2} shadow-camera-right={2} shadow-camera-top={2.6} shadow-camera-bottom={-1.3} shadow-bias={-.0003} shadow-normalBias={.012} shadow-radius={4}/>
-    <directionalLight position={[3, 2, 2]} color="#e4efff" intensity={portrait?.50:.65}/>
+    <directionalLight position={portrait?[-2,3,4]:[-3,5,4]} color="#fff8f1" intensity={portrait?.55:1.7} castShadow={!compact&&!portrait} shadow-mapSize={[shadowMap, shadowMap]} shadow-camera-left={-2} shadow-camera-right={2} shadow-camera-top={2.6} shadow-camera-bottom={-1.3} shadow-bias={-.0003} shadow-normalBias={.012} shadow-radius={4}/>
+    <directionalLight position={[3, 2, 2]} color="#e4efff" intensity={portrait?.25:.65}/>
     <directionalLight position={[1, 3, -3]} color="#edf3ff" intensity={.85}/>
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -.021, 0]} userData={{ noAO: true }}><planeGeometry args={[30, 30]}/><meshStandardMaterial color="#eff4fb" roughness={.95}/></mesh>
     {floor && <TrainingMat heightScale={heightScale}/>}
@@ -233,7 +235,7 @@ export default function ExerciseMotion3D({ motion, progress, mirror, measurement
   const [view, setView] = useState(initialView);
   const [appearance, setAppearance] = useState('athlete');
   const [quality, setQuality] = useState(() => detectRenderQuality());
-  const render = useMemo(() => renderSettings(quality, { compact, devicePixelRatio: globalThis.devicePixelRatio || 1 }), [quality, compact]);
+  const render = useMemo(() => renderSettings(quality, { compact, portrait:faceFocus, devicePixelRatio: globalThis.devicePixelRatio || 1 }), [quality, compact,faceFocus]);
   const anatomy = mannequinGuide(motion);
   useEffect(() => setView(initialView), [motion, initialView,faceFocus]);
   // The instructor has a consistent demonstration build. Personal body

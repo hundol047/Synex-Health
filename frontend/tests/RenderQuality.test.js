@@ -23,4 +23,15 @@ describe('render quality tiers', () => {
     expect(usesQualityPipeline(renderSettings('medium', { compact: true, devicePixelRatio: 3 }))).toBe(false);
     expect(usesQualityPipeline(renderSettings('low'))).toBe(false);
   });
+
+  it('keeps portraits sharp without raising the live exercise or low-GPU budget',()=>{
+    for(const tier of ['medium','high']){
+      const portrait=renderSettings(tier,{portrait:true,devicePixelRatio:1});
+      expect(portrait.dpr).toEqual([2,2]);
+      expect(portrait.refineSamples).toBeLessThanOrEqual(1);
+      expect(renderSettings(tier,{portrait:true,devicePixelRatio:4}).dpr[1]).toBe(2);
+    }
+    expect(renderSettings('low',{portrait:true,devicePixelRatio:3})).toMatchObject({dpr:[1,1.5],ao:false,refineSamples:0});
+    expect(renderSettings('medium',{compact:true,devicePixelRatio:3}).dpr[1]).toBe(1.5);
+  });
 });

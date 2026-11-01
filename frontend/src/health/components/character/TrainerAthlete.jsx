@@ -6,6 +6,7 @@ import {prepareDetailedModel,poseDetailedModel,detailedFloorOffset} from './deta
 import ExerciseEquipment from '../exercise/ExerciseEquipment.jsx';
 import {applyAthleteHighlights} from '../exercise/instructionMannequin.js';
 import {morphParameters} from '../body3d/morph.js';
+import {createTrainerSkinMaterial} from './trainerSkin.js';
 const textures=import.meta.glob('./assets/trainer/*.webp',{eager:true,query:'?url',import:'default'});
 
 export default function TrainerAthlete({data,body,motion,progress,mirror,measurement,profile,compact,onReady,highlight}){
@@ -24,7 +25,7 @@ export default function TrainerAthlete({data,body,motion,progress,mirror,measure
    if(s.color)options.color=s.color;
    if(eye)Object.assign(options,{clearcoat:1,clearcoatRoughness:.08,ior:1.38});
    if(s.kind==='Clothes')Object.assign(options,{sheen:.2,sheenRoughness:.9});
-   return new THREE.MeshPhysicalMaterial(options);
+   return skin?createTrainerSkinMaterial(options):new THREE.MeshPhysicalMaterial(options);
   });
   if(highlight)applyAthleteHighlights(model.geometry,scale,motion,mats.filter((_,i)=>data.surfaceMaterials[i].muscleGuide));
   return mats;

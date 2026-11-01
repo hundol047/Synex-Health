@@ -1,5 +1,41 @@
 # Detailed character rendering
 
+## Skin finish and portrait clarity — 2026-11-01
+
+The trainer skin now has its own physical material instead of sharing the
+outfit's matte treatment. It uses a softer specular lobe (IOR 1.4, roughness .44)
+and a restrained surface coat. A nine-tap color-distance-weighted filter reduces
+baked-in skin speckle while retaining the UV layout and high-contrast lip/eyelid
+boundaries. It operates on the original 2048-pixel maps; no fabricated 4K detail,
+new personal photo or external inference request is involved.
+
+Portraits use two broad softbox lights and gentler fill light. The high-tier AO
+radius/intensity is reduced to avoid dirty-looking shadows across the cheeks and
+eye sockets. Extra area-light lookup data is lazy loaded only for a close-up.
+Medium/high portraits render at DPR 2 with two settled refinement samples; weak
+GPUs retain a DPR 1.5 cap without AO or supersampling. Full-body and camera split
+exercise views keep their existing rendering budgets. These are renderer
+settings, not a measurement of real-phone frame rate or photographic fidelity.
+
+The same skin shader remains composed with red exercise-muscle guidance. The
+source mesh, eyelid morphs, finger grips, saved avatar settings and exercise rig
+are unchanged. The photographic reference-quality limitation below remains.
+
+The portrait budget and scene-fallback suites pass (6 tests). The personal
+production build passes. Browser checks cover the female high tier and male
+medium tier at DPR 2, front/three-quarter views, eyelid closure, and animated
+dumbbell curls with red muscle guidance. Real mobile-viewport captures are
+622 × 600 pixels for a 311 × 300 CSS-pixel canvas. This is software-rendered
+Chromium validation; Android thermal behavior has not been measured.
+
+Before/after captures below use the same medium tier, DPR 2 and camera angle.
+They are real app screenshots without post-capture retouching:
+
+| | Before | After |
+| --- | --- | --- |
+| Female | [Capture](character-trainer-captures/skin-before-female-45.png) | [Capture](character-trainer-captures/skin-after-female-45.png) |
+| Male | [Capture](character-trainer-captures/skin-before-male-45.png) | [Capture](character-trainer-captures/skin-after-male-45.png) |
+
 ## Current replacement — 2026-11-01
 
 The `detailed` selection now loads complete **MPFB / MakeHuman CC0 adult

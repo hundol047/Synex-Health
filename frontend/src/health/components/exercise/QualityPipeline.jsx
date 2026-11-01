@@ -68,8 +68,8 @@ export default function QualityPipeline({ settings, portrait = false }) {
     if (settings.ao) {
       const ao = new SurfaceGTAOPass(scene, camera, 1, 1);
       // Metric scene: a tight radius keeps close-up AO in creases (eyes, nostrils, ears) instead of haloing the head.
-      ao.blendIntensity = portrait ? .55 : .7;
-      ao.updateGtaoMaterial({ radius: portrait ? .05 : .2, distanceExponent: 1.5, thickness: portrait ? .03 : .2, scale: 1, samples: 16 });
+      ao.blendIntensity = portrait ? .25 : .7;
+      ao.updateGtaoMaterial({ radius: portrait ? .018 : .2, distanceExponent: 1.5, thickness: portrait ? .012 : .2, scale: 1, samples: 16 });
       ao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 16 });
       composer.addPass(ao);
     }

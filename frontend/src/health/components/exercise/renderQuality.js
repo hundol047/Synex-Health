@@ -27,8 +27,14 @@ export function refineRenderQuality(tier, rendererName = '') {
   return SOFTWARE_GPU.test(rendererName) ? 'low' : tier;
 }
 
-export function renderSettings(tier, { compact = false, devicePixelRatio = 1 } = {}) {
+export function renderSettings(tier, { compact = false, portrait = false, devicePixelRatio = 1 } = {}) {
   const dprCap = Math.min(2, Math.max(1, devicePixelRatio));
+  // A close-up needs native pixels to retain eyes, lashes and skin edges.
+  // Keep exercise/camera split views on the existing, cheaper mobile budget.
+  if(portrait){
+    if(tier==='low')return {dpr:[1,1.5],shadowMap:512,msaa:0,ao:false,refineSamples:0,powerPreference:'low-power'};
+    return {dpr:[2,2],shadowMap:1024,msaa:4,ao:tier==='high',refineSamples:1,powerPreference:tier==='high'?'high-performance':'default'};
+  }
   if (tier === 'high') return { dpr: [1, dprCap], shadowMap: 2048, msaa: 4, ao: true, refineSamples: 3, powerPreference: 'high-performance' };
   if (tier === 'medium') return { dpr: [1, compact ? Math.min(1.5, dprCap) : dprCap], shadowMap: 1024, msaa: 0, ao: false, refineSamples: compact ? 0 : 2, powerPreference: 'default' };
   return { dpr: [1, compact ? 1 : 1.25], shadowMap: 512, msaa: 0, ao: false, refineSamples: 0, powerPreference: 'low-power' };
