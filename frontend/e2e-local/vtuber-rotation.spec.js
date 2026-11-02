@@ -5,6 +5,8 @@ test('full orbit, return to front, portrait orbit and animated surfaces',async({
  page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error'&&/shader|WebGLProgram/.test(m.text()))errors.push(m.text());});
  await page.addInitScript(()=>{localStorage.setItem('synex-personal-onboarding-v1','done');localStorage.setItem('synex-personal-consent-v1','accepted');localStorage.setItem('synex-render-quality','medium');localStorage.setItem('synex-exercise-character-v1',JSON.stringify({model:'vtuber',vtuberOutfit:'crop',vtuberHair:'#a98bda',vtuberEyes:'#3d86c9',vtuberTop:'#d680a8',vtuberBottom:'#403454',vtuberChest:1,vtuberHips:1,vtuberGlutes:1}));});
  await page.goto('/health/character');const canvas=page.locator('canvas');await expect(canvas).toHaveAttribute('data-character-model','vtuber');
+ await expect(canvas).toHaveAttribute('data-character-surface','smooth');
+ expect(Number(await canvas.getAttribute('data-character-vertices'))).toBeLessThan(100000);
  for(const mode of ['standing','squat','portrait']){
   if(mode==='squat'){await page.getByLabel('미리볼 운동').selectOption('squat');await page.getByLabel('미리보기 동작 구간').fill('500');}
   if(mode==='portrait')await page.getByRole('button',{name:'얼굴 확대',exact:true}).click();
