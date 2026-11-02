@@ -9,7 +9,7 @@ export const smoothStep = (start,end,value) => {
 // the old 14%-cycle frozen turnaround. Timed isometric holds are managed by
 // the workout player, not by inserting a stop into every moving repetition.
 export const repetition = t => smoothStep(0,.5,t)*(1-smoothStep(.5,1,t));
-export const scaleFor = rest => rest[0][1]/.94;
+export const scaleFor = rest => rest.statureScale??rest[0][1]/.94;
 export const segmentLength = (rest,a,b) => vector(rest[a]).distanceTo(vector(rest[b]));
 export function orientation(up,front=[0,0,1]) {
   const y=vector(up).normalize(), z=vector(front).addScaledVector(y,-vector(front).dot(y));

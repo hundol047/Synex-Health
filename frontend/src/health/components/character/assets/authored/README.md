@@ -1,9 +1,31 @@
 # Authored female exercise character
 
-The female detailed preset uses **Alina Ip, realistic Asian woman (Animated)**
+The female **Studio** option uses **Alina Ip, realistic Asian woman (Animated)**
 by **Jungle Jim**, under the CC BY 4.0 license displayed by its publisher.
 The [attribution and modification notice](NOTICE.md) is also linked in the app.
 The male preset and configurable avatars have separate sources and licenses.
+
+## Studio revision (2026-11-02)
+
+The original source export remains intact. `studioTrainer.js` maps the complete
+body, clothing, rig, eyes, finger shapes and hair to a longer-leg proportion:
+the pelvis rises from 0.940 to 1.005 m in the standard demonstration space,
+and the upper head/eyes scale to 90%, blended through the jaw/neck. The rest joints follow the same mapping;
+equipment scale is kept independent of pelvis height. Hair normals are transformed
+with the inverse transpose and its convex hull is rebuilt for support bounds.
+These are cosmetic trainer dimensions, not the user's measurements or calorie inputs.
+
+`studio-head-v1.webp` is a generated edit of the attributed head albedo, retaining
+the same UV layout with revised skin detail and a softer rose lip color. Its source,
+generation and packed hashes are in `studio-head.json`. Generated detail is not a
+skin scan, and no identity resemblance or reference-quality percentage is asserted.
+The neutral source expression still has no native blink animation.
+
+The studio hair has a high-alpha colored core plus a soft blended strand pass, so
+back layers do not show through the front fringe. Palm frames are fitted to each
+model's hand surface. Clasped hands use a small stagger and diagonal finger
+direction, and unsupported hands inherit the forearm's twist. Old presets and
+saved health records remain available.
 
 ## Provenance
 

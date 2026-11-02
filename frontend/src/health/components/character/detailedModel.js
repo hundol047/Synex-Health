@@ -1,13 +1,17 @@
 import * as THREE from 'three';
 import {REST,calibratePalmRoll,deformSurface,poseJoints,rigRotation} from '../exercise/rig.js';
 import {calibrateWallSupport} from '../exercise/wallSupportCalibration.js';
-import {calibrateGripScale} from '../exercise/exerciseGrip.js';
+import {calibrateGripScale,calibrateHandFrames} from '../exercise/exerciseGrip.js';
 import {exerciseHandShape} from '../exercise/handPoses.js';
 import {blinkAmount} from './livingFace.js';
 
 export function prepareDetailedModel(data,scale=1){
- const base=Float32Array.from(data.positions,v=>v*scale),rest=REST.map(p=>p.map(v=>v*scale));
+ const base=Float32Array.from(data.positions,v=>v*scale),rest=(data.rest||REST).map(p=>p.map(v=>v*scale));
+ // The pelvis may be higher in a cosmetic proportion preset. It is not the
+ // person's stature and must not enlarge equipment or support distances.
+ rest.statureScale=scale;
  const weights=data.weights.map(row=>{const total=row.reduce((s,[,w])=>s+w,0);return row.map(([b,w])=>[b,w/total]);});
+ rest.handFrames=calibrateHandFrames(base,weights,rest);
  rest.handGripScale=calibrateGripScale(base,weights,rest);
  rest.wallSupport=calibrateWallSupport(base,weights,rest);
  const geometry=new THREE.BufferGeometry();
@@ -16,7 +20,8 @@ export function prepareDetailedModel(data,scale=1){
  const indices=[];for(let i=0;i<data.groups.length;i++){geometry.addGroup(indices.length,data.groups[i].length,i);for(const index of data.groups[i])indices.push(index);}geometry.setIndex(indices);
  const source=data.sourceVertices||Array.from({length:base.length/3},(_,i)=>i),count=Math.max(...source)+1;
  const sums=new Float32Array(count*3);
- const model={base,rest,weights,geometry,data,scale,source,sums,expression:base.slice(),palmRoll:calibratePalmRoll(base,weights,rest)};
+ const guideBase=data.guidePositions?Float32Array.from(data.guidePositions,v=>v*scale):base;
+ const model={base,guideBase,rest,weights,geometry,data,scale,source,sums,expression:base.slice(),palmRoll:calibratePalmRoll(base,weights,rest)};
  if(data.rigidHead){
   // Dense authored hair stays rigid on the head: keep every strand vertex,
   // but let the GPU transform it instead of skinning/rebuilding its normals.

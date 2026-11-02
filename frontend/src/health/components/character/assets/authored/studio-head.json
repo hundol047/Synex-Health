@@ -1,0 +1,13 @@
+{
+  "map": "studio-head-v1.webp",
+  "sourceMap": "Std_Skin_Head_diffuse.jpg",
+  "sourceMapSha256": "8eeb5ddc65c70359c342b88fcead619e3fea5ecfbba08854cee2cb2004901546",
+  "generatedImageSha256": "722b9eeb0e2bcb43e6744ed450715983cbb11f8ff2ab3e93aefd6ec784f0849b",
+  "packedMapSha256": "4dd5b92ddfac837968ab4c85a7f0821cce8113a028d31040d42ff88db36c2285",
+  "generatedOn": "2026-11-02",
+  "method": "Image generation edit of the attributed source UV albedo; original UV layout retained; WebP packaging only.",
+  "sourceAuthor": "Jungle Jim",
+  "sourceLicense": "CC BY 4.0",
+  "sourceArtwork": "https://sketchfab.com/3d-models/600d4d4aa71c4181b2567a3605ce8c57",
+  "changes": "Skin color/detail and subdued rose lip tint. Generated detail is not a captured skin scan."
+}

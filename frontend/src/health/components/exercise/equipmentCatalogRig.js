@@ -28,7 +28,7 @@ const HINGED_ARM_IDS = new Set(['shoulder_press', 'dumbbell_bench_press', 'dumbb
 export function equipmentCatalogPose(id, progress, rest) {
   if (!EQUIPMENT_CATALOG_IDS.has(id)) return null;
   const t = Number.isFinite(progress) ? THREE.MathUtils.clamp(progress, 0, 1) : 0;
-  const e = rep(t), h = rest[0][1] / .94;
+  const e = rep(t), h = (rest.statureScale ?? rest[0][1] / .94);
   const joints = rest.map(point => point.slice());
   const length = (a, b) => v(rest[a]).distanceTo(v(rest[b]));
   const arm = [[3, 4, 5, 17], [6, 7, 8, 18]];

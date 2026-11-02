@@ -9,6 +9,9 @@ export const WALL_SUPPORTED_MOTIONS = Object.freeze([
 export function calibrateWallSupport(base, weights, rest) {
   const contact = { palmRoll: calibratePalmRoll(base, weights, rest) };
   const uncalibratedRest = rest.map(joint => joint.slice());
+  uncalibratedRest.statureScale=rest.statureScale;
+  uncalibratedRest.handGripScale=rest.handGripScale;
+  uncalibratedRest.handFrames=rest.handFrames;
   uncalibratedRest.wallSupport = { palmRoll: contact.palmRoll };
   // The pose envelope has a flat maximum, but intermediate arm blending also
   // matters. Fit the complete cycle once per avatar, never once per frame.

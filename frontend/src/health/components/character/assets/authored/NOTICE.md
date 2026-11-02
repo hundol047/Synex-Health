@@ -16,3 +16,9 @@ physical materials and exercise-muscle color guidance.
 The original facial identity, UV layout and dense hair topology are retained.
 This attribution does not imply endorsement of Synex Health by the author or
 any person depicted. See README.md for exact input hashes and reproduction.
+
+Studio option, 2026-11-02: additional cosmetic body/rig proportions, fitted palm
+frames, wrist/forearm rotation, hair materials and opaque colored core. The studio head
+albedo is an image-generated edit of the attributed source UV texture; generated
+skin detail is not a photographic capture. Original author and license remain
+as above. See studio-head.json for source and generated-output hashes.

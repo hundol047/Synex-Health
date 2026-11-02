@@ -14,6 +14,15 @@ function elbowTwist(p,upper){
 }
 const handBack=(p,side)=>handRestFrame(REST,side).back.applyQuaternion(new Quaternion().fromArray(p.boneRotations[12+side]));
 
+it('keeps unsupported palms continuous with the forearm instead of adding axial wrist twist',()=>{
+ for(const id of ['shoulder_roll','scapular','chest_open','walk','brisk_walk','standing_march'])for(const t of cycle)for(const side of [0,1]){
+  const p=poseJoints(id,t),lower=rigRotation(p,side?5:3),hand=rigRotation(p,12+side),w=side?8:5,f=side?18:17;
+  const transported=v(REST[f]).sub(v(REST[w])).normalize().applyQuaternion(lower),target=v(p[f]).sub(v(p[w])).normalize();
+  // Only the required wrist bend remains; there is no extra twist about it.
+  expect(Math.abs(lower.angleTo(hand)-transported.angleTo(target)),`${id}/${side}/${t}`).toBeLessThan(.0001);
+ }
+});
+
 it('keeps pressing elbows untwisted so their skin does not crumple',()=>{
  for(const id of ['shoulder_press','dumbbell_bench_press','dumbbell_floor_press','barbell_bench_press'])for(const t of cycle){
   const p=poseJoints(id,t);

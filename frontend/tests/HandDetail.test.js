@@ -35,7 +35,7 @@ describe('articulated demonstration hands', () => {
         for (const [elbow, wrist, finger] of [[4, 5, 17], [7, 8, 18]]) {
           const forearm = v(joints[wrist]).sub(v(joints[elbow]));
           expect(forearm.length(), motion).toBeCloseTo(v(REST[wrist]).distanceTo(v(REST[elbow])), 7);
-          expect(forearm.angleTo(v(joints[finger]).sub(v(joints[wrist]))), motion).toBeLessThan(Math.PI / 3);
+          expect(forearm.angleTo(v(joints[finger]).sub(v(joints[wrist]))), motion).toBeLessThan(40*Math.PI/180);
         }
         for (const bone of [12, 13]) expect(new Quaternion().fromArray(joints.boneRotations[bone]).angleTo(new Quaternion().fromArray(initial.boneRotations[bone])), motion).toBeLessThan(1e-6);
       }
@@ -54,6 +54,9 @@ describe('articulated demonstration hands', () => {
     for (const motion of ['full_pushup', 'wall_push', 'close_wall_push', 'bird_dog', 'cat_cow', 'recovery_child']) expect(gripSurface(base, weights, REST, exerciseHandShape(motion, poseJoints(motion, .5)))).toEqual(base);
   });
 
+  // Exhaustively curls/deforms both meshes for the complete 104-motion catalog.
+  // This verifies geometry, not device frame rate; slower CI hosts need time
+  // to run the same coverage instead of dropping motions to meet 30 seconds.
   it('renders finite articulated surfaces for every exercise and stretch in both body profiles', () => {
     for (const gender of ['male', 'female']) {
       const base = Float32Array.from(mesh.profiles[gender], value => value * mesh.scale), weights = bindSurface(base);
@@ -65,5 +68,5 @@ describe('articulated demonstration hands', () => {
         expect(deformSurface(surface, weights, pose, new Float32Array(base.length), rest, false).every(Number.isFinite), `${gender} ${motion}`).toBe(true);
       }
     }
-  });
+  },90000);
 });

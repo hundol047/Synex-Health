@@ -42,7 +42,7 @@ function solveLimb(origin, target, upper, lower, toward) {
 export function standingCatalogPose(id, progress, rest) {
   if (!STANDING_CATALOG_IDS.has(id)) return null;
   const t = Number.isFinite(progress) ? THREE.MathUtils.clamp(progress, 0, 1) : 0;
-  const h = rest[0][1] / .94;
+  const h = (rest.statureScale ?? rest[0][1] / .94);
   const length = (a, b) => vec(rest[a]).distanceTo(vec(rest[b]));
   const torso = length(0, 1), neck = length(1, 2);
   const joints = rest.map(p => p.slice());

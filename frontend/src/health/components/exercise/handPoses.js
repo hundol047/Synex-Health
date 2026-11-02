@@ -18,18 +18,19 @@ export function exerciseHandShape(motion, joints) {
   return 'relaxed';
 }
 
-// Opposed palms, staggered finger rows and fixed-length arm IK. The two hands
-// share one contact frame throughout the repetition instead of independently
-// aiming two flat palms at the same point and letting their surfaces intersect.
+// Hands meet diagonally in front of the chest. The previous horizontal palms
+// and 13.4 cm vertical stagger bent both wrists sideways and separated the hands.
+// Keep a small finger stagger and carry pronation through the entire forearm.
 export function refineExerciseHands(motion, joints, rest) {
   if (!CLASP_MOTIONS.has(motion)) return joints;
   const h = scaleFor(rest), center = vector(joints[5]).add(vector(joints[8])).multiplyScalar(.5);
   joints.boneRotations ||= {};
+  joints.hingeArms = true;
   for (const side of [0, 1]) {
     const { wrist, finger, sign, along, back } = handRestFrame(rest, side);
     const handScale = h * (rest.handGripScale?.[side] || 1);
-    const direction = [-sign, 0, 0], palmBack = [0, 0, sign];
-    const target = center.clone().add(new THREE.Vector3(sign * .174 * handScale, (side ? .074 : -.060) * handScale, -sign * .004 * handScale));
+    const direction = vector([-sign * .50, .15, .85]).normalize().toArray(), palmBack = [sign, 0, 0];
+    const target = center.clone().add(new THREE.Vector3(sign * .115 * handScale, (side ? .010 : -.010) * handScale, -.045 * handScale));
     solveLimb(joints, rest, side, 'arm', target.toArray(), [sign * .7, -.7, -.1]);
     joints[finger] = vector(joints[wrist]).addScaledVector(vector(direction), segmentLength(rest, wrist, finger)).toArray();
     const rotation = orientation(direction, palmBack).multiply(orientation(along.toArray(), back.toArray()).invert());

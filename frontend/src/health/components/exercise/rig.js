@@ -71,9 +71,13 @@ export function bindSurface(base){
 // Fit palm pronation once to each avatar's actual hand surface. Stature changes
 // the authored joint direction and male/female hands have different thickness.
 export function calibratePalmRoll(base,weights,rest=REST){
- const target=.04*rest[0][1]/.94;
+ const target=.04*(rest.statureScale??rest[0][1]/.94);
  return [[5,17,12,1],[8,18,13,-1]].map(([wrist,finger,bone,side])=>{
   const rotation=new THREE.Quaternion().setFromUnitVectors(vec(rest[finger]).sub(vec(rest[wrist])).normalize(),new THREE.Vector3(0,0,1));
+  if(rest.handFrames?.[bone-12]?.back){
+   const back=vec(rest.handFrames[bone-12].back).applyQuaternion(rotation);
+   return Math.atan2(back.x,back.y);
+  }
   const points=[];
   for(let i=0;i<weights.length;i++)if(weights[i].some(([index,weight])=>index===bone&&weight>.8))points.push(new THREE.Vector3().fromArray(base,i*3).sub(vec(rest[wrist])).applyQuaternion(rotation));
   if(!points.length)return side*.9;
@@ -90,6 +94,14 @@ export function calibratePalmRoll(base,weights,rest=REST){
 // through its forearm, not abruptly twist at the wrist blend seam.
 function segmentRotation(joints,index,rest){
  const [a,b]=BONES[index],authored=joints.boneRotations?.[index];
+ if(!authored&&index>=12&&!joints.handRoll?.[index-12]){
+  // An unsupported hand inherits the forearm's twist. Independently taking
+  // two shortest arcs could spin the palm around a straight wrist.
+  const lower=segmentRotation(joints,index===12?3:5,rest);
+  const from=vec(rest[b]).sub(vec(rest[a])).normalize().applyQuaternion(lower);
+  const to=vec(joints[b]).sub(vec(joints[a])).normalize();
+  return new THREE.Quaternion().setFromUnitVectors(from,to).multiply(lower);
+ }
  if(!authored&&(index===3||index===5)){
   const side=index===3?0:1,hand=12+side;
   if(joints.boneRotations?.[hand]||joints.handRoll?.[side]){

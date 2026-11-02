@@ -29,7 +29,7 @@ function limb(origin, target, upperLength, lowerLength, bendToward) {
 export function bodyweightPoseJoints(id, progress, rest) {
   if (!bodyweightMotions.has(id)) return null;
   const t = Number.isFinite(progress) ? THREE.MathUtils.clamp(progress, 0, 1) : 0;
-  const h = rest[0][1] / .94;
+  const h = (rest.statureScale ?? rest[0][1] / .94);
   const joints = rest.map(point => point.slice());
   const length = (a, b) => v(rest[a]).distanceTo(v(rest[b]));
   const torsoLength = length(0, 1), neckLength = length(1, 2);

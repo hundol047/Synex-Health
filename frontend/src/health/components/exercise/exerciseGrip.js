@@ -9,9 +9,33 @@ import { orientation, scaleFor, smoothStep, vector } from './poseMath.js';
 export function handRestFrame(rest, side) {
   const wrist = side === 0 ? 5 : 8, finger = side === 0 ? 17 : 18, sign = side === 0 ? 1 : -1;
   const along = vector(rest[finger]).sub(vector(rest[wrist])).normalize();
-  const back = new THREE.Vector3(sign * .68, .71, .18);
+  const back = rest.handFrames?.[side]?.back
+    ? vector(rest.handFrames[side].back) : new THREE.Vector3(sign * .68, .71, .18);
   back.addScaledVector(along, -back.dot(along)).normalize();
   return { wrist, finger, sign, along, back, across: back.clone().cross(along).normalize() };
+}
+
+// Fit the palm plane from each detailed model's actual surface, excluding the
+// wrist and finger tips. A shared default normal fits only the original mesh.
+export function calibrateHandFrames(base,weights,rest) {
+  return [0,1].map(side=>{
+    const {wrist,along,back}=handRestFrame(rest,side),origin=vector(rest[wrist]),points=[];
+    let length=0;
+    for(let i=0;i<weights.length;i++)if(weights[i].some(([b,w])=>b===12+side&&w>.9)){
+      const p=new THREE.Vector3().fromArray(base,i*3).sub(origin);points.push(p);length=Math.max(length,p.dot(along));
+    }
+    const palm=points.filter(p=>p.dot(along)>.20*length&&p.dot(along)<.55*length);
+    if(palm.length<12)return {back:back.toArray()};
+    const center=palm.reduce((sum,p)=>sum.add(p),new THREE.Vector3()).divideScalar(palm.length),cov=new THREE.Matrix3();cov.elements.fill(0);
+    for(const p of palm){const a=p.clone().sub(center).toArray();for(let r=0;r<3;r++)for(let c=0;c<3;c++)cov.elements[c*3+r]+=a[r]*a[c]/palm.length;}
+    for(const i of [0,4,8])cov.elements[i]+=1e-10;
+    cov.invert();const fitted=back.clone();
+    for(let i=0;i<18;i++)fitted.applyMatrix3(cov).normalize();
+    fitted.addScaledVector(along,-fitted.dot(along)).normalize();
+    if(fitted.dot(back)<0)fitted.negate();
+    // Do not accept an ambiguous finger/edge fit as a 90-degree palm rotation.
+    return {back:(fitted.dot(back)>.5?fitted:back).toArray()};
+  });
 }
 
 export function toolHandRotation(rest, joints, side, gripAxis = [1, 0, 0]) {
