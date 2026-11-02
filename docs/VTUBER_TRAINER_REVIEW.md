@@ -8,11 +8,12 @@ official pixiv three-vrm sample. It does not recolor the existing realistic head
 
 Profile → My exercise character → **버튜버 캐릭터** → Save and apply to exercise.
 The model has its own native eyes, face, clothes, hair and blink/relaxed expression
-shapes. Existing saved trainers and health records are preserved. The current
-anime model uses its native face/hair/outfit; unsupported customization controls
-are hidden. The existing custom model remains available for those controls.
+shapes. Existing saved trainers and health records are preserved. The subsequent
+[customization update](VTUBER_CUSTOMIZATION_REVIEW.md) adds hair/iris colors,
+six outfits, clothing colors and independent body controls. The native face and
+hairstyle remain intact; the existing custom model remains selectable.
 
-The native atlas colors are retained for skin, face, eyes and hair. Relighting
+The native atlas colors are retained by default for skin, face, eyes and hair. Relighting
 the painted face with the realistic softboxes produced a grey, faceted result
 during review and was rejected. Clothes use restrained toon shading and a blue
 top. Thin outlines define the silhouette. The portrait camera pulls back enough

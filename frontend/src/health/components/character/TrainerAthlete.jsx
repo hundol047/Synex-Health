@@ -26,11 +26,11 @@ export default function TrainerAthlete({data:source,character,body,motion,progre
   const mats=data.surfaceMaterials.map((s,i)=>{
    const options={};
    for(let j=0;j<slots.length;j++)if(slots[j].i===i)options[slots[j].k]=maps[j];
-   return createTrainerSurfaceMaterial(s,options,{scanned,authored,body,natural,studio});
+   return createTrainerSurfaceMaterial(s,options,{scanned,authored,body,natural,studio,character});
   });
   if(highlight)applyAthleteHighlights(model.geometry,scale,guideMotion,mats.filter((_,i)=>data.surfaceMaterials[i].muscleGuide),model.guideBase);
   return mats;
- },[maps,slots,data,body,authored,scanned,natural,studio,model,scale,guideMotion,highlight]);
+ },[maps,slots,data,body,authored,scanned,natural,studio,model,scale,guideMotion,highlight,character?.vtuberHair,character?.vtuberEyes,character?.vtuberTop,character?.vtuberBottom]);
  const hidden=useMemo(()=>new THREE.MeshBasicMaterial({visible:false}),[]);
  const opaque=useMemo(()=>materials.map(m=>m.transparent?hidden:m),[materials,hidden]);
  const transparent=useMemo(()=>materials.map(m=>m.transparent?m:hidden),[materials,hidden]);
@@ -51,6 +51,7 @@ export default function TrainerAthlete({data:source,character,body,motion,progre
  useEffect(()=>()=>hairCore?.forEach(m=>{if(m!==hidden)m.dispose();}),[hairCore,hidden]);
  return <group scale={[mirror?-1:1,1,1]}><group position={[0,offset,0]}><mesh geometry={model.geometry} material={opaque} castShadow={!compact} receiveShadow onAfterRender={renderer=>{
   const el=renderer.domElement;el.dataset.characterModel=vtuber?'vtuber':'detailed';el.dataset.characterBody=body;el.dataset.characterStyle=vtuber?'toon':'realistic';el.dataset.exerciseRendered=motion;el.dataset.exerciseProgress=String(progress);el.dataset.characterFace=vtuber?'vrm-expressions':'authored-trainer';el.dataset.characterSource=vtuber?'pixiv-vrm':authored?'jungle-jim-alina':scanned?'renderpeople-sophia':'mpfb-trainer';el.dataset.portraitStyle=vtuber?'vtuber':studio?'studio':natural?'natural':'original';
+  if(vtuber){el.dataset.characterOutfit=data.wardrobe||'casual';el.dataset.characterHair=character?.vtuberHair||'#9b714e';el.dataset.characterEyes=character?.vtuberEyes||'#95652b';}
   const key=body+':'+motion;if(ready.current!==key){ready.current=key;requestAnimationFrame(()=>onReady?.());}
  }}/><mesh geometry={model.geometry} material={transparent}/>{outlines&&<mesh geometry={model.geometry} material={outlines}/>} {model.rigidHeadGeometry&&<group position={model.rigidHeadPosition.toArray()} quaternion={model.rigidHeadRotation.toArray()}><mesh geometry={model.rigidHeadGeometry} material={hairCore}/><mesh geometry={model.rigidHeadGeometry} material={materials}/></group>} {!wall&&equipment}</group>{wall&&equipment}</group>;
 }

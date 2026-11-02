@@ -5,8 +5,8 @@ import {createVtuberMaterial} from './vtuberMaterials.js';
 // Treat photographed skin, a wet eye surface, strands and woven clothing as
 // different materials. The scan's solid hair shell must still write depth;
 // only the MakeHuman strand/lash cards need alpha blending.
-export function createTrainerSurfaceMaterial(surface, maps, {scanned=false,authored=false,body='male',natural=false,studio=false}={}) {
- if(surface.toon)return createVtuberMaterial(surface,maps);
+export function createTrainerSurfaceMaterial(surface, maps, {scanned=false,authored=false,body='male',natural=false,studio=false,character}={}) {
+ if(surface.toon)return createVtuberMaterial(surface,maps,character);
  const {kind}=surface;
  const options={...maps,metalness:0,roughness:.86,specularIntensity:.2,
   envMapIntensity:.65,ior:1.45,normalScale:new THREE.Vector2(.22,.22),bumpScale:.0004,

@@ -45,6 +45,19 @@ packed as WebP at up to 2048 px; no generated skin texture or remote rendering
 API is used. Toon surfaces, painted eyes and a thin outline replace realistic
 skin highlights. Exercise-muscle colors remain attached to the posed geometry.
 
-The current model has a fixed native face/hair/outfit. The existing custom and
-realistic models remain selectable; existing preferences and health records are
-not migrated or replaced automatically.
+The native face and hairstyle remain intact. The VTuber editor adds independent
+hair/iris colors, six sportswear combinations, top/bottom colors and bounded
+chest, hip-width, glute-volume and waist controls. Hair and iris recoloring keeps
+painted luminance, pupil and highlight details. New fitted garments partition
+the native body surface into opaque fabric and skin; shared boundary vertices
+avoid overlapping skin or open hems. Retained and refitted panels from the native
+tee/shorts complete the upper torso and central pelvis omitted beneath the
+original clothes. Loose garments and the underlying body
+use the same cosmetic deformation field. These changes are in
+`vtuberAppearance.js` and `vtuberMaterials.js`, so rerunning the source converter
+does not bake or erase customization.
+
+The existing custom and realistic models remain selectable. Old VTuber settings
+receive default customization values; health records are not changed. Appearance
+does not alter measurements or the exercise skeleton. The sliders use a bounded
+range to preserve fitting, rather than arbitrary scaling of individual bones.
