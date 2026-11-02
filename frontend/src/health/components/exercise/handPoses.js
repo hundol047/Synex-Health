@@ -33,7 +33,7 @@ export function refineExerciseHands(motion, joints, rest) {
   for (const side of [0, 1]) {
     const { wrist, finger, sign, along, back } = handRestFrame(rest, side);
     const handScale = h * (rest.handGripScale?.[side] || 1);
-    const direction = vector([-sign * .55, .32, .85]).normalize().applyQuaternion(torso).toArray(), palmBack = vector([sign,0,0]).applyQuaternion(torso).toArray();
+    const direction = vector([-sign * .55, .34, .85]).normalize().applyQuaternion(torso).toArray(), palmBack = vector([sign,0,0]).applyQuaternion(torso).toArray();
     const target = center.clone().add(new THREE.Vector3(sign * .115 * handScale, (side ? .010 : -.010) * handScale, -.045 * handScale).applyQuaternion(torso));
     solveLimb(joints, rest, side, 'arm', target.toArray(), vector([sign*.7,-.7,-.1]).applyQuaternion(torso).toArray());
     joints[finger] = vector(joints[wrist]).addScaledVector(vector(direction), segmentLength(rest, wrist, finger)).toArray();

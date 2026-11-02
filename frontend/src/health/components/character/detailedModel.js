@@ -56,6 +56,11 @@ export function poseDetailedModel(model,motion,progress){
   for(const [i,x,y,z] of data.grips?.[shape]?.[side]||[]){expression[i*3]+=x*scale;expression[i*3+1]+=y*scale;expression[i*3+2]+=z*scale;}
  }
  const blink=blinkAmount(progress);
+ if(data.sourceFamily==='vrm-toon'){
+  for(const [name,amount] of [['vtuberRelaxed',.12],['vtuberHairSway',Math.sin(progress*Math.PI*2)]]){
+   for(const [i,x,y,z] of data.morphs[name]||[]){expression[i*3]+=x*scale*amount;expression[i*3+1]+=y*scale*amount;expression[i*3+2]+=z*scale*amount;}
+  }
+ }
  for(const name of ['AK_09_EyeBlinkLeft','AK_10_EyeBlinkRight'])for(const [i,x,y,z] of data.morphs[name]||[]){expression[i*3]+=x*scale*blink;expression[i*3+1]+=y*scale*blink;expression[i*3+2]+=z*scale*blink;}
  deformSurface(expression,weights,joints,geometry.attributes.position.array,rest,false);
  geometry.attributes.position.needsUpdate=true;updateDetailedNormals(model);

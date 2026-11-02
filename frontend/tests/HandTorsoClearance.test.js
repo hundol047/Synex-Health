@@ -3,6 +3,7 @@ import {BufferGeometry,BufferAttribute,Vector3,Ray,DoubleSide} from 'three';
 import {MeshBVH} from 'three-mesh-bvh';
 import female from '../src/health/components/character/assets/studio/female.json';
 import male from '../src/health/components/character/assets/trainer/male.json';
+import vtuber from '../src/health/components/character/assets/vtuber/female.json';
 import {studioTrainerData} from '../src/health/components/character/studioTrainer.js';
 import {prepareDetailedModel,poseDetailedModel} from '../src/health/components/character/detailedModel.js';
 import {rigRotation} from '../src/health/components/exercise/rig.js';
@@ -11,9 +12,9 @@ import {CLASP_MOTIONS} from '../src/health/components/exercise/handPoses.js';
 // Independent surface test: ray-cast the rendered shirt/chest triangles, not
 // the controller's clearance value or joint positions. The previous controller
 // put the fingers 35–63 mm inside this surface in upright clasped poses.
-for(const source of [female,male])it(`${source.body}: clasped hands stay in front of the actual chest through each repetition`,()=>{
+for(const source of [female,male,vtuber])it(`${source.sourceFamily}/${source.body}: clasped hands stay in front of the actual chest through each repetition`,()=>{
  for(const scale of [.85,1.15]){
-  const model=prepareDetailedModel(studioTrainerData(source),scale),torso=new BufferGeometry();
+  const model=prepareDetailedModel(source.sourceFamily==='vrm-toon'?source:studioTrainerData(source),scale),torso=new BufferGeometry();
   try{
    const ids=Array.from(model.geometry.index.array),triangles=[];
    for(let i=0;i<ids.length;i+=3){const face=ids.slice(i,i+3);
