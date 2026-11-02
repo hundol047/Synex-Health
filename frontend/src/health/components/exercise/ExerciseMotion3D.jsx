@@ -55,7 +55,7 @@ function SceneCamera({ motion, view, mirror, heightScale, controls, faceFocus,vt
   const { camera, size, invalidate } = useThree();
   useEffect(() => {
     camera.fov=faceFocus?24:36;
-    if (view === 'free' && !faceFocus) { camera.updateProjectionMatrix();invalidate();return; }
+    if (view === 'free') { camera.updateProjectionMatrix();invalidate();return; }
     const preset = exerciseCameraPreset(motion, view, heightScale, size.width / Math.max(1, size.height), mirror);
     // A longer portrait lens avoids exaggerating the nose/lips at close range.
     if(faceFocus){const angle=view==='side'?Math.PI/2:view==='back'?Math.PI:view==='front'?0:Math.PI/6,distance=vtuber?1.04:.855;preset.target=[0,1.67*heightScale,.055*heightScale];preset.position=[Math.sin(angle)*distance*heightScale,1.693*heightScale,(.055+Math.cos(angle)*distance)*heightScale];}
@@ -229,7 +229,8 @@ export class SceneBoundary extends React.Component {
 }
 
 export default function ExerciseMotion3D({ motion, progress, mirror, measurement, profile, compact = false, defaultView, fallbackContent, onReady, character: overrideCharacter, highlight=true, faceFocus=false, angleControls=false }) {
-  const controls = useRef();
+  const controls = useRef(), canvasRegion=useRef();
+  const orbitStep=direction=>{setView('free');rotateView(controls,direction);requestAnimationFrame(()=>canvasRegion.current?.scrollIntoView({block:'center',behavior:'instant'}));};
   const savedCharacter = useCharacter();
   const character = overrideCharacter || savedCharacter;
   const initialView = defaultView || (FLOOR_MOTIONS.test(motion) ? 'side' : '45');
@@ -255,11 +256,12 @@ export default function ExerciseMotion3D({ motion, progress, mirror, measurement
       <button type="button" className="btn btn-ghost" aria-label="왼쪽으로 회전" onClick={() => rotateView(controls, -1)}><RotateCcw size={16}/> 회전</button>
       <button type="button" className="btn btn-ghost" aria-label="오른쪽으로 회전" onClick={() => rotateView(controls, 1)}>회전 <RotateCw size={16}/></button>
     </div>}
-    <div className="motion-3d-canvas" style={{ position: 'relative', height: compact ? undefined : 340, flex: compact ? '1 1 0' : undefined, minHeight: compact ? 0 : undefined, touchAction: 'none' }}>
+    {angleControls&&<div className="motion-controls" role="group" aria-label="360도 회전"><button type="button" className="btn btn-ghost" aria-label="왼쪽 45도 회전" onClick={()=>orbitStep(-1)}>↶ 왼쪽 45°</button><button type="button" className="btn btn-ghost" aria-label="오른쪽 45도 회전" onClick={()=>orbitStep(1)}>오른쪽 45° ↷</button></div>}
+    <div ref={canvasRegion} className="motion-3d-canvas" style={{ position: 'relative', height: compact ? undefined : 340, flex: compact ? '1 1 0' : undefined, minHeight: compact ? 0 : undefined, touchAction: 'none' }}>
       <SceneBoundary motion={motion} resetKey={`${character.model}:${character.body}`} fallback={fallback}><React.Suspense fallback={<p className="motion-loading" role="status">캐릭터를 준비하고 있습니다.</p>}><Canvas shadows={!compact} dpr={render.dpr} frameloop="demand" gl={{ antialias: true, alpha: true, powerPreference: render.powerPreference }} onCreated={({ gl }) => { if (forcedRenderQuality()) return; const ctx = gl.getContext(), info = ctx.getExtension('WEBGL_debug_renderer_info'); setQuality(tier => refineRenderQuality(tier, String(ctx.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : ctx.RENDERER) || ''))); }} camera={{ position: [3, 1.5, 3], fov: 36 }} fallback={fallback} aria-label={appearance === 'mannequin' ? '운동 부위를 강조한 3D 운동 시범' : '운동복을 입은 3D 운동 시범'}>
         <SceneCamera motion={motion} view={view} mirror={mirror} heightScale={heightScale} controls={controls} faceFocus={faceFocus} vtuber={character.model==='vtuber'}/><Studio compact={compact} heightScale={heightScale} motion={motion} portrait={faceFocus} shadowMap={render.shadowMap}/>{usesQualityPipeline(render) && <QualityPipeline settings={render} portrait={faceFocus}/>}
         {character.model==='vtuber'&&appearance==='athlete'?<VtuberTrainer {...{motion,progress,mirror,compact,onReady,character,highlight}} measurement={m} profile={p}/>:character.model==='detailed'&&appearance==='athlete'?<DetailedAthlete {...{motion,progress,mirror,compact,onReady,character,highlight}} measurement={m} profile={p}/>:<Athlete {...{ motion, progress, mirror, compact, appearance, onReady, character, highlight }} measurement={m} profile={p}/>}
-        <OrbitControls ref={controls} enabled={view === 'free' || !angleControls} enablePan={false} minDistance={(faceFocus ? .38 : 1.2) * heightScale} maxDistance={(faceFocus ? character.model==='vtuber'?1.2:.95 : 6) * heightScale} maxPolarAngle={Math.PI / 2 - .02}/>
+        <OrbitControls ref={controls} enabled={view === 'free' || !angleControls} enablePan={false} minDistance={(faceFocus ? character.model==='vtuber'?.75:.38 : 1.2) * heightScale} maxDistance={(faceFocus ? character.model==='vtuber'?1.2:.95 : 6) * heightScale} maxPolarAngle={Math.PI / 2 - .02}/>
       </Canvas></React.Suspense></SceneBoundary>
       {compact && highlight && anatomy.primary.length > 0 && <span className="motion-anatomy-badge" title={`주요 부위: ${anatomy.primaryLabel}. 운동 안내이며 실제 근육 사용량 측정이 아닙니다.`}>빨강 · 주요 운동 부위</span>}
     </div>

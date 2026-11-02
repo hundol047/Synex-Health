@@ -12,24 +12,24 @@ export function finishVtuberSurface(material,surface,character){
  material.userData.vtuberFinish=kind;
  material.onBeforeCompile=shader=>{
   previous?.(shader);
-  shader.vertexShader='attribute vec3 vtuberRest; varying vec3 vVtuberRest; varying vec3 vVtuberNormal; varying vec2 vVtuberUV;\n'+shader.vertexShader;
+  shader.vertexShader='attribute vec3 vtuberRest; varying vec3 vVtuberRest; varying vec3 vVtuberNormal; varying vec2 vVtuberUV; varying vec3 vVtuberView;\n'+shader.vertexShader;
   shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>',`#include <begin_vertex>
-   vVtuberRest=vtuberRest; vVtuberNormal=normalize(normalMatrix*normal); vVtuberUV=uv;
+   vVtuberRest=vtuberRest; vVtuberNormal=normalize(mat3(modelMatrix)*normal); vVtuberUV=uv; vVtuberView=cameraPosition-(modelMatrix*vec4(position,1.0)).xyz;
   `);
-  shader.fragmentShader=`varying vec3 vVtuberRest; varying vec3 vVtuberNormal; varying vec2 vVtuberUV;
+  shader.fragmentShader=`varying vec3 vVtuberRest; varying vec3 vVtuberNormal; varying vec2 vVtuberUV; varying vec3 vVtuberView;
    float vtuberLine(float distance,float width){float aa=max(fwidth(distance),.0002);return 1.0-smoothstep(width-aa,width+aa,abs(distance));}
    float vtuberThread(float phase){return sin(phase)*(1.0-smoothstep(.7,1.8,fwidth(phase)));}
   `+shader.fragmentShader;
   let detail='';
   if(kind==='hair')detail=`
-   vec3 hn=normalize(vVtuberNormal);float hlight=dot(hn,normalize(vec3(-.4,.65,1.0)))*.5+.5;
+   vec3 hn=normalize(vVtuberNormal)*(gl_FrontFacing?1.0:-1.0);float hlight=dot(hn,normalize(vec3(-.4,.65,1.0)))*.5+.5;
    float fibers=.035*vtuberThread(vVtuberUV.x*190.0+sin(vVtuberUV.y*9.0)*.4)+.022*vtuberThread(vVtuberUV.x*45.0+sin(vVtuberUV.y*5.0)*.15);
-   float gloss=pow(max(0.0,dot(hn,normalize(vec3(-.28,.45,1.0)))),18.0);
+   float gloss=pow(max(0.0,dot(hn,normalize(normalize(vec3(-.4,.65,1.0))+normalize(vVtuberView)))),18.0);
    diffuseColor.rgb*=.82+.20*hlight+fibers;
    diffuseColor.rgb+=mix(diffuseColor.rgb,vec3(1.0),.3)*gloss*.16;
   `;
   if(kind==='skin')detail=`
-   float softKey=dot(normalize(vVtuberNormal),normalize(vec3(-.4,.65,1.0)))*.5+.5;
+   float softKey=dot((normalize(vVtuberNormal)*(gl_FrontFacing?1.0:-1.0)),normalize(vec3(-.4,.65,1.0)))*.5+.5;
    diffuseColor.rgb*=mix(vec3(.955,.938,.93),vec3(1.015,1.01,1.005),softKey);
   `;
   if(kind==='iris')detail=`
@@ -46,10 +46,10 @@ export function finishVtuberSurface(material,surface,character){
    shader.uniforms.vtuberHem={value:hem};shader.uniforms.vtuberWaist={value:waist};
    shader.fragmentShader='uniform float vtuberHem; uniform float vtuberWaist;\n'+shader.fragmentShader;
    detail=`
-    vec3 fn=normalize(vVtuberNormal);
+    vec3 fn=normalize(vVtuberNormal)*(gl_FrontFacing?1.0:-1.0);
     float fabricLight=dot(fn,normalize(vec3(-.5,.65,1.0)))*.5+.5;
     diffuseColor.rgb*=.72+.30*fabricLight;
-    float fabricSheen=pow(max(0.0,dot(fn,normalize(vec3(-.3,.5,1.0)))),16.0);
+    float fabricSheen=pow(max(0.0,dot(fn,normalize(normalize(vec3(-.5,.65,1.0))+normalize(vVtuberView)))),16.0);
     diffuseColor.rgb+=mix(diffuseColor.rgb,vec3(1.0),.08)*fabricSheen*.045;
     float weave=vtuberThread(vVtuberRest.x*1700.0+vVtuberRest.y*850.0)*vtuberThread(vVtuberRest.y*1700.0-vVtuberRest.z*850.0);
     diffuseColor.rgb*=1.0+weave*.022;
@@ -66,5 +66,5 @@ export function finishVtuberSurface(material,surface,character){
   // at color_fragment and must remain visible over the garment finish.
   shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',detail+'\n#include <color_fragment>');
  };
- material.customProgramCacheKey=()=>key+'-vtuber-finish-'+kind+'-v1';return material;
+ material.customProgramCacheKey=()=>key+'-vtuber-finish-'+kind+'-v2';return material;
 }

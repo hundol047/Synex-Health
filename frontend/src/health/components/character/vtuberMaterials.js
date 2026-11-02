@@ -44,7 +44,9 @@ export function createVtuberMaterial(surface,maps,character){
 }
 
 export function createVtuberOutline(material,surface){
- if(!['Skin','Hair','Clothes'].includes(surface.kind))return new THREE.MeshBasicMaterial({visible:false});
+ // Layered hair cards have authored edges; an inverted hull prints dots over
+ // neighboring strands when viewed from behind. Keep outlines on solid skin/fabric.
+ if(!['Skin','Clothes'].includes(surface.kind))return new THREE.MeshBasicMaterial({visible:false});
  const color=surface.kind==='Skin'?new THREE.Color('#906c61'):surface.kind==='Hair'?new THREE.Color(material.userData.vtuberTint||'#704b3c').multiplyScalar(.32):material.color.clone().multiplyScalar(.35);
  const width=surface.kind==='Skin'?.0004:surface.kind==='Hair'?.00045:.00055;
  const line=new THREE.MeshBasicMaterial({color,map:material.map,side:THREE.BackSide,alphaTest:material.alphaTest,toneMapped:false,depthWrite:false,polygonOffset:true,polygonOffsetFactor:1,polygonOffsetUnits:1});

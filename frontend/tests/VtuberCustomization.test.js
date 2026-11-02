@@ -15,6 +15,21 @@ const v=p=>new Vector3(...p);
 const area=(positions,indices)=>{let sum=0;for(let i=0;i<indices.length;i+=3){const [a,b,c]=indices.slice(i,i+3).map(j=>v(positions.slice(j*3,j*3+3)));sum+=b.sub(a).cross(c.sub(a)).length()/2;}return sum;};
 const extremes=[{}, {vtuberChest:1,vtuberHips:1,vtuberGlutes:1,vtuberWaist:-1},{vtuberChest:-1,vtuberHips:-1,vtuberGlutes:-1,vtuberWaist:1}];
 
+it('fits retained pelvic fabric without shifting interior vertices onto adjacent thighs',()=>{
+ const d=vtuberWardrobe(source,'crop'),panel=d.surfaceMaterials.findIndex(s=>s.name==='VtuberPelvis');
+ const edges=new Map();
+ for(let i=0;i<d.groups[panel].length;i+=3){const t=d.groups[panel].slice(i,i+3).map(j=>d.sourceVertices[j]);for(let j=0;j<3;j++){const key=[t[j],t[(j+1)%3]].sort((a,b)=>a-b).join(':');edges.set(key,(edges.get(key)||0)+1);}}
+ const rim=new Set([...edges].filter(([,count])=>count===1).flatMap(([key])=>key.split(':').map(Number)));
+ const original=new Map(source.groups[1].map(i=>[source.sourceVertices[i],source.positions.slice(i*3,i*3+3)]));let checked=0;
+ for(const i of new Set(d.groups[panel])){const p=original.get(d.sourceVertices[i]);if(!p||rim.has(d.sourceVertices[i])||Math.abs(p[0])>=.08||p[1]<=.85||p[1]>=1.02)continue;
+  // The fitted surface includes 0.8 mm normal clearance to avoid z-fighting.
+  expect(Math.abs(d.positions[i*3]-p[0])).toBeLessThanOrEqual(.000801);
+  expect(Math.abs(d.positions[i*3+1]-p[1])).toBeLessThanOrEqual(.000801);
+  expect(Math.abs(d.positions[i*3+2]-p[2])).toBeLessThanOrEqual(.050801);checked++;
+ }
+ expect(checked).toBeGreaterThan(10);
+});
+
 it('migrates old saved choices and validates all new inputs without touching records',()=>{
  expect(normalizeCharacter({model:'vtuber'})).toMatchObject(VTUBER_DEFAULTS);
  expect(normalizeVtuberOptions({vtuberChest:Infinity,vtuberHips:99,vtuberGlutes:-99,vtuberHair:'url(x)',vtuberEyes:'#55AACC',vtuberOutfit:'missing'})).toMatchObject({...VTUBER_DEFAULTS,vtuberHips:1,vtuberGlutes:-1,vtuberEyes:'#55aacc'});

@@ -35,7 +35,7 @@ it('keeps native whites/highlights untouched and uses restrained depth-safe outl
   const m=createVtuberMaterial(surface,{map},{vtuberHair:'#ece5dc',vtuberEyes:'#3d86c9'}),line=createVtuberOutline(m,surface);
   try{
    if(['EyeWhite_00_EYE','EyeHighlight_00_EYE'].includes(surface.name)){expect(m.userData.vtuberFinish).toBeUndefined();expect(m.toneMapped).toBe(false);}
-   if(['Skin','Hair','Clothes'].includes(surface.kind)){expect(line.depthWrite).toBe(false);expect(line.polygonOffset).toBe(true);}
+   if(['Skin','Clothes'].includes(surface.kind)){expect(line.depthWrite).toBe(false);expect(line.polygonOffset).toBe(true);}
    if(surface.name==='EyeIris_00_EYE'){
     const s={uniforms:{},vertexShader:ShaderLib.basic.vertexShader,fragmentShader:ShaderLib.basic.fragmentShader};m.onBeforeCompile(s);
     expect(s.uniforms.vtuberTint).toBeDefined();expect(s.fragmentShader.match(/float pigment=/g)).toHaveLength(1);expect(s.fragmentShader).toContain('irisPigment');

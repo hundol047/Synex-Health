@@ -1,5 +1,5 @@
 import {VTUBER_OUTFITS,normalizeVtuberOptions,VTUBER_SHAPE_KEYS} from './vtuberOptions.js';
-import {Triangle,Vector3} from 'three';
+import {Triangle,Vector3,Ray} from 'three';
 
 const smooth=(a,b,v)=>{const t=Math.max(0,Math.min(1,(v-a)/(b-a)));return t*t*(3-2*t);};
 const bell=(v,center,width)=>Math.exp(-(((v-center)/width)**2));
@@ -137,10 +137,18 @@ export function vtuberWardrobe(source,id){
   for(let i=0;i<source.groups[skinIndex].length;i+=3){const t=source.groups[skinIndex].slice(i,i+3);if(t.every(j=>source.positions[j*3+1]<1.11&&Math.abs(source.positions[j*3])<.26))candidates.push(t);}
   const triangle=new Triangle(),target=new Vector3(),closest=new Vector3(),best=new Vector3(),bary=new Vector3(),normal=new Vector3(),attached=new Map();
   for(const i of new Set(groups[pelvis])){
-   const key=sources[i];if(!boundary.has(key))continue;
+   const key=sources[i];
    if(!attached.has(key)){
     target.fromArray(positions,i*3);let distance=Infinity,bestTri;
     for(const t of candidates){triangle.a.fromArray(source.positions,t[0]*3);triangle.b.fromArray(source.positions,t[1]*3);triangle.c.fromArray(source.positions,t[2]*3);triangle.closestPointToPoint(target,closest);const d=closest.distanceToSquared(target);if(d<distance){distance=d;best.copy(closest);bestTri=t;}}
+    // Interior fabric projects along the body's depth at the same height.
+    // Nearest-point snapping can jump onto a neighboring thigh/crotch surface.
+    if(!boundary.has(key)){
+     const front=target.z>.04,ray=new Ray(new Vector3(target.x,target.y,front?2:-2),new Vector3(0,0,front?-1:1));let hitDistance=Infinity,hitTri;
+     for(const t of candidates){triangle.a.fromArray(source.positions,t[0]*3);triangle.b.fromArray(source.positions,t[1]*3);triangle.c.fromArray(source.positions,t[2]*3);if(ray.intersectTriangle(triangle.a,triangle.b,triangle.c,false,closest)){const d=closest.distanceToSquared(ray.origin);if(d<hitDistance){hitDistance=d;best.copy(closest);hitTri=t;}}}
+     if(!hitTri||Math.abs(best.z-target.z)>.05){attached.set(key,{point:point(i),weights:weights[i]});continue;}
+     bestTri=hitTri;
+    }
     triangle.a.fromArray(source.positions,bestTri[0]*3);triangle.b.fromArray(source.positions,bestTri[1]*3);triangle.c.fromArray(source.positions,bestTri[2]*3);triangle.getBarycoord(best,bary);triangle.getNormal(normal);
     const row=new Map();bestTri.forEach((j,k)=>{for(const [bone,w]of source.weights[j])row.set(bone,(row.get(bone)||0)+w*bary.getComponent(k));});
     attached.set(key,{point:best.clone().addScaledVector(normal,.0008).toArray(),weights:[...row].filter(([,w])=>w>1e-9)});
