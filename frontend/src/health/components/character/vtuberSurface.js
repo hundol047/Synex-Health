@@ -64,11 +64,18 @@ export function finishVtuberSurface(material,surface,character){
     float shirtSide=smoothstep(.075,.115,abs(vVtuberRest.x))*smoothstep(vtuberHem+.018,vtuberHem+.045,vVtuberRest.y)*(1.0-smoothstep(1.35,1.40,vVtuberRest.y));
     float sideSeam=vtuberLine(vVtuberRest.z-.045,.0012)*shirtSide;
     diffuseColor.rgb*=1.0-${role==='top'&&!outfit.nativeTop?'.065':'0.0'}*sideSeam;
+    // Tonal sportswear panels and narrow piping keep user-selected colors,
+    // while giving the fitted outfit a readable, finished silhouette.
+    float panelHeight=smoothstep(${role==='top'?'1.17':'0.18'},${role==='top'?'1.21':'0.23'},vVtuberRest.y)*(1.0-smoothstep(${role==='top'?'1.35':'1.01'},${role==='top'?'1.40':'1.05'},vVtuberRest.y));
+    float outerPanel=smoothstep(${role==='top'?'.085':'.11'},${role==='top'?'.14':'.17'},abs(vVtuberRest.x))*panelHeight;
+    float piping=vtuberLine(vVtuberRest.z-.055,.0016)*outerPanel;
+    diffuseColor.rgb*=1.0-${role==='top'&&!outfit.nativeTop||role==='bottom'&&!outfit.nativeBottom?'.10':'0.0'}*outerPanel;
+    diffuseColor.rgb=mix(diffuseColor.rgb,mix(diffuseColor.rgb,vec3(1.0),.35),piping*${role==='top'&&!outfit.nativeTop||role==='bottom'&&!outfit.nativeBottom?'.55':'0.0'});
    `;
   }
   // Existing pigment recoloring comes first; muscle guidance is composed later
   // at color_fragment and must remain visible over the garment finish.
   shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',detail+'\n#include <color_fragment>');
  };
- material.customProgramCacheKey=()=>key+'-vtuber-finish-'+kind+'-v3';return material;
+ material.customProgramCacheKey=()=>key+'-vtuber-finish-'+kind+'-v4';return material;
 }

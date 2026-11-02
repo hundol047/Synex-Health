@@ -3,7 +3,7 @@ import {BufferGeometry,Float32BufferAttribute,Ray,Vector3,DoubleSide} from 'thre
 import {MeshBVH} from 'three-mesh-bvh';
 import source from '../src/health/components/character/assets/vtuber/female.json';
 import {VTUBER_OUTFITS} from '../src/health/components/character/vtuberOptions.js';
-import {slimVtuberTorso,vtuberWardrobe,customizeVtuberData} from '../src/health/components/character/vtuberAppearance.js';
+import {softenVtuberShoulders,slimVtuberTorso,vtuberWardrobe,customizeVtuberData} from '../src/health/components/character/vtuberAppearance.js';
 const surface=data=>{
  const g=new BufferGeometry();g.setAttribute('position',new Float32BufferAttribute(data.positions,3));g.setIndex(data.groups.flat());
  const bvh=new MeshBVH(g,{verbose:false});
@@ -30,4 +30,11 @@ it('keeps all outfits closed across the chest and retains independent chest adju
    }
   }finally{original.g.dispose();slim.g.dispose();large.g.dispose();}
  }
+});
+
+it('softens shoulder caps symmetrically without changing hand, hip or neck anchors',()=>{
+ const right=softenVtuberShoulders([.185,1.425,.08]),left=softenVtuberShoulders([-.185,1.425,.08]);
+ expect(right[0]).toBeLessThan(.175);expect(right[0]).toBeGreaterThan(.165);
+ expect(left[0]).toBe(-right[0]);expect(right[1]).toBe(1.425);expect(right[2]).toBeLessThan(.08);
+ for(const p of [[.45,1.1,.13],[.1,.94,.02],[0,1.5,.02]])expect(softenVtuberShoulders(p)).toEqual(p);
 });

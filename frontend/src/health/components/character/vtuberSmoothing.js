@@ -6,12 +6,15 @@ import {BufferGeometry,Float32BufferAttribute} from 'three';
 const edgeKey=(a,b)=>a<b?`${a}:${b}`:`${b}:${a}`;
 export function createVtuberSmoothing(model){
  const {data}=model,source=data.sourceVertices,physical=new Map(),representatives=[],ids=[];
- source.forEach((key,i)=>{if(!physical.has(key)){physical.set(key,physical.size);representatives.push(i);}ids.push(physical.get(key));});
+ const legVertex=i=>data.positions[i*3+1]>.17&&data.positions[i*3+1]<.85&&data.weights[i].some(([b,w])=>b>=6&&b<=9&&w>.3);
+ // Coincident leg UV splits can carry different source IDs. Weld only when
+ // both position and deformation weights match, preserving animated seams.
+ source.forEach((key,i)=>{if(legVertex(i))key='leg:'+data.positions.slice(i*3,i*3+3).map(v=>Math.round(v*1e6)).join(',')+':'+data.weights[i].map(([b,w])=>[b,Math.round(w*1e6)]).sort((a,b)=>a[0]-b[0]).join(';');if(!physical.has(key)){physical.set(key,physical.size);representatives.push(i);}ids.push(physical.get(key));});
  const count=physical.size,neighbors=Array.from({length:count},()=>new Set()),edges=new Map(),amount=new Float32Array(count).fill(1),hairOnly=new Uint8Array(count).fill(1);
  data.groups.forEach((group,g)=>{
   const material=data.surfaceMaterials[g],hair=material.kind==='Hair';
   for(const i of group){const hand=data.weights[i].some(([bone,w])=>bone>=12&&w>.2);
-   const blend=hand?0:hair?.85:material.name==='Face_00_SKIN'?.25:['Skin','Clothes'].includes(material.kind)?.75:0;
+   const blend=hand?0:legVertex(i)?1:hair?.85:material.name==='Face_00_SKIN'?.25:['Skin','Clothes'].includes(material.kind)?.75:0;
    amount[ids[i]]=Math.min(amount[ids[i]],blend);if(!hair)hairOnly[ids[i]]=0;
   }
   for(let i=0;i<group.length;i+=3){const t=group.slice(i,i+3).map(v=>ids[v]);if(new Set(t).size!==3)continue;
@@ -37,6 +40,18 @@ export function createVtuberSmoothing(model){
   const blend=e.opposite.length===2&&!irregular.has(e.a)&&!irregular.has(e.b)?Math.min(amount[e.a],amount[e.b]):0;
   e.id=stencils.length;
   stencils.push([[representatives[e.a],.5-.125*blend],[representatives[e.b],.5-.125*blend],...(blend?e.opposite.map(i=>[representatives[i],.125*blend]):[])]);
+ }
+ // A second, gentle leg relaxation is composed into the cached stencils.
+ // It rounds the knee/calf transitions without adding another mesh subdivision
+ // or repeating skeleton deformation each frame. Positive weights cannot overshoot.
+ const relaxed=representatives.map((v,i)=>{
+  const y=data.positions[v*3+1],fade=Math.max(0,Math.min(1,(y-.2)/.12,(.84-y)/.12));
+  const amount=legVertex(v)&&!border[i].size&&!irregular.has(i)?.22*fade:0;
+  return amount&&neighbors[i].size?[[v,1-amount],...[...neighbors[i]].map(j=>[representatives[j],amount/neighbors[i].size])]:[[v,1]];
+ });
+ for(let i=0;i<stencils.length;i++){
+  const combined=new Map();for(const [v,w]of stencils[i])for(const [j,a]of relaxed[ids[v]])combined.set(j,(combined.get(j)||0)+w*a);
+  stencils[i]=[...combined];
  }
  const vertexIds=[...ids],uv=[...data.uv],uvEdges=new Map(),groups=[];
  const midpoint=(a,b)=>{

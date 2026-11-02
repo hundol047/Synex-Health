@@ -158,6 +158,14 @@ export function slimVtuberTorso(point){
  return [x*(1-.16*blend),y,.06+(z-.06)*(1-.18*blend)];
 }
 
+// Cosmetic shoulder-cap refinement; joint centers and hand anchors stay fixed.
+export function softenVtuberShoulders(point){
+ const [x,y,z]=point,ax=Math.abs(x);
+ const blend=bell(y,1.425,.07)*smooth(1.26,1.35,y)*(1-smooth(1.48,1.52,y))*smooth(.10,.17,ax)*(1-smooth(.23,.32,ax));
+ if(!blend)return point.slice();
+ return [x-Math.sign(x)*.014*blend,y,.025+(z-.025)*(1-.10*blend)];
+}
+
 export function vtuberShapePoint(point,options){
  const [x,y,z]=point,c=options,central=1-smooth(.16,.30,Math.abs(x));
  if(y<.62||y>1.49||!central)return point.slice();
@@ -174,7 +182,7 @@ export function customizeVtuberData(source,value){
  base.groups.forEach((g,i)=>{const s=base.surfaceMaterials[i];if(s.name==='Body_00_SKIN'||s.kind==='Clothes')for(const id of g)eligible.add(id);});
  for(const i of eligible){
   if(base.weights[i].some(([bone,w])=>(bone===1||bone>=12)&&w>.5))continue;
-  const mapped=vtuberShapePoint(slimVtuberTorso(base.positions.slice(i*3,i*3+3)),c);for(let k=0;k<3;k++)positions[i*3+k]=mapped[k];
+  const mapped=vtuberShapePoint(softenVtuberShoulders(slimVtuberTorso(base.positions.slice(i*3,i*3+3))),c);for(let k=0;k<3;k++)positions[i*3+k]=mapped[k];
  }
  // Keep long front strands outside an enlarged chest, with roots unchanged.
  base.groups.forEach((g,gi)=>{if(base.surfaceMaterials[gi].kind!=='Hair')return;for(const i of new Set(g)){
