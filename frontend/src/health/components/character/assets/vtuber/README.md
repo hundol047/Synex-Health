@@ -61,3 +61,9 @@ The existing custom and realistic models remain selectable. Old VTuber settings
 receive default customization values; health records are not changed. Appearance
 does not alter measurements or the exercise skeleton. The sliders use a bounded
 range to preserve fitting, rather than arbitrary scaling of individual bones.
+
+`vtuberSurface.js` adds filtered hair/iris detail, soft surface shading and fabric
+finishing. Hem/waistband detail follows immutable bind coordinates through the
+exercise pose. The original maps remain unchanged; the finish adds no texture
+download. The anime skin retains an unlit base, and the layered VTuber surfaces
+skip self-shadow reception and high-tier GTAO to avoid grey/blotchy shading.

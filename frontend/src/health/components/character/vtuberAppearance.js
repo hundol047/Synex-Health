@@ -52,7 +52,9 @@ export function vtuberWardrobe(source,id){
  };
  const topFields=[
   ([,y])=>y-(outfit.topHem||1.035),
-  ([x,y])=>1.405+.035*smooth(.035,.15,Math.abs(x))-y,
+  // Keep a low neckline centrally, but wrap the complete shoulder cap. The
+  // lower cutoff left triangular skin gaps between the fitted/native panels.
+  ([x,y])=>1.405+.09*smooth(.035,.16,Math.abs(x))-y,
   ([x,y,z])=>{
    // A plane across each upper/lower arm gives a consistent sleeve hem.
    if(Math.abs(x)<.205)return 1;

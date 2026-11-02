@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import {normalizeVtuberOptions,VTUBER_DEFAULTS} from './vtuberOptions.js';
+import {finishVtuberSurface} from './vtuberSurface.js';
 
 // One coordinated toon treatment for the authored anime face/body. The eyes
 // retain their painted iris/highlights, without the realistic skin specular lobe.
-const ramp=new THREE.DataTexture(new Uint8Array([205,222,240,255]),4,1,THREE.RedFormat);
-ramp.minFilter=THREE.NearestFilter;ramp.magFilter=THREE.NearestFilter;ramp.generateMipmaps=false;ramp.needsUpdate=true;
+const ramp=new THREE.DataTexture(Uint8Array.from({length:32},(_,i)=>195+60*Math.pow(i/31,.7)),32,1,THREE.RedFormat);
+ramp.minFilter=THREE.LinearFilter;ramp.magFilter=THREE.LinearFilter;ramp.generateMipmaps=false;ramp.needsUpdate=true;
 // Recolor only the dedicated hair/iris/fabric material. Painted luminance and
 // iris pupil/highlight masks stay intact; the eye whites are a separate mesh.
 function tintMaterial(material,color,mode){
@@ -31,19 +32,22 @@ export function createVtuberMaterial(surface,maps,character){
  // with portrait softboxes double-shaded the face grey and exposed triangles.
  if(surface.kind!=='Clothes'){
   const m=new THREE.MeshBasicMaterial({...options,toneMapped:false});
-  if((surface.kind==='Hair'||surface.name==='FaceBrow_00_FACE')&&c.vtuberHair!==VTUBER_DEFAULTS.vtuberHair)return tintMaterial(m,c.vtuberHair,'hair');
-  if(surface.name==='EyeIris_00_EYE'&&c.vtuberEyes!==VTUBER_DEFAULTS.vtuberEyes)return tintMaterial(m,c.vtuberEyes,'iris');
-  return m;
+  if((surface.kind==='Hair'||surface.name==='FaceBrow_00_FACE')&&c.vtuberHair!==VTUBER_DEFAULTS.vtuberHair)tintMaterial(m,c.vtuberHair,'hair');
+  if(surface.name==='EyeIris_00_EYE'&&c.vtuberEyes!==VTUBER_DEFAULTS.vtuberEyes)tintMaterial(m,c.vtuberEyes,'iris');
+  return finishVtuberSurface(m,surface,c);
  }
  const role=surface.tintRole||(surface.name==='Tops_01_CLOTH'?'top':surface.name==='Bottoms_01_CLOTH'?'bottom':null);
  const color=role==='top'?c.vtuberTop:role==='bottom'?c.vtuberBottom:'#ffffff';
  const m=new THREE.MeshToonMaterial({...options,color:role==='bottom'&&maps.map?'#ffffff':color,gradientMap:ramp,emissive:color,emissiveMap:maps.map,emissiveIntensity:.18});
- return role==='bottom'&&maps.map?tintMaterial(m,color,'fabric'):m;
+ if(role==='bottom'&&maps.map)tintMaterial(m,color,'fabric');
+ return finishVtuberSurface(m,surface,c);
 }
 
 export function createVtuberOutline(material,surface){
  if(!['Skin','Hair','Clothes'].includes(surface.kind))return new THREE.MeshBasicMaterial({visible:false});
- const line=new THREE.MeshBasicMaterial({color:'#352d42',map:material.map,side:THREE.BackSide,alphaTest:material.alphaTest,toneMapped:false});
- line.onBeforeCompile=shader=>{shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\ntransformed += normal * 0.00085;');};
- line.customProgramCacheKey=()=> 'synex-vtuber-outline-v1';return line;
+ const color=surface.kind==='Skin'?new THREE.Color('#906c61'):surface.kind==='Hair'?new THREE.Color(material.userData.vtuberTint||'#704b3c').multiplyScalar(.32):material.color.clone().multiplyScalar(.35);
+ const width=surface.kind==='Skin'?.0004:surface.kind==='Hair'?.00045:.00055;
+ const line=new THREE.MeshBasicMaterial({color,map:material.map,side:THREE.BackSide,alphaTest:material.alphaTest,toneMapped:false,depthWrite:false,polygonOffset:true,polygonOffsetFactor:1,polygonOffsetUnits:1});
+ line.onBeforeCompile=shader=>{shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>',`#include <begin_vertex>\ntransformed += normal * ${width};`);};
+ line.customProgramCacheKey=()=> 'synex-vtuber-outline-v2-'+width;return line;
 }

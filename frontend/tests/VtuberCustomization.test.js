@@ -73,6 +73,7 @@ it('keeps the chest and pelvis covered by opaque fabric in every fitted outfit',
    const ps=skin.slice(i,i+3).map(j=>d.positions.slice(j*3,j*3+3)),p=[0,1,2].map(k=>ps.reduce((s,a)=>s+a[k],0)/3);
    expect(Math.abs(p[0])<.10&&p[1]>1.19&&p[1]<1.36&&p[2]>.07,`${outfit.id}: chest skin`).toBe(false);
    expect(Math.abs(p[0])<.12&&p[1]>.84&&p[1]<1.01,`${outfit.id}: pelvis skin`).toBe(false);
+   expect(Math.abs(p[0])>.15&&Math.abs(p[0])<.19&&p[1]>1.445&&p[1]<1.465,`${outfit.id}: shoulder gap`).toBe(false);
   }
  }
 });

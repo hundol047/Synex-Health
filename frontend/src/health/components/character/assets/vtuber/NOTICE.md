@@ -15,7 +15,8 @@ The original work is provided without warranties under the linked license.
 Synex modifications: conversion to the exercise rig, local WebP texture packing,
 source-weighted finger poses, native blink and relaxed expression shapes, small
 deterministic hair-tip sway, toon/outline rendering, hair/iris recoloring,
-opaque fitted sportswear variants and bounded cosmetic body deformation. The converted
+opaque fitted sportswear variants, bounded cosmetic body deformation, and
+procedural hair/iris/fabric finishing. The converted
 model and textures retain the same VRM Public License and original settings.
 No endorsement by pixiv is implied. This is a bundled exercise demonstration
 model; it does not track the user's facial expression.

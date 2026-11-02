@@ -1,5 +1,8 @@
 # VTuber customization — 2026-11-02
 
+The subsequent [surface refinement](VTUBER_SURFACE_REVIEW.md) improves hair,
+fabric, outlines and shoulder coverage while preserving these saved controls.
+
 Profile → My exercise character → VTuber character now offers:
 
 - Hair and iris palettes plus arbitrary RGB color pickers; pupil, highlights,
