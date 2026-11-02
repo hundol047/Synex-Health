@@ -60,11 +60,15 @@ export function finishVtuberSurface(material,surface,character){
     float waistStitch=vtuberLine(vVtuberRest.y-(vtuberWaist-.026),.0008);
     float stitch=max(hemStitch,waistStitch)*(.75+.25*vtuberThread((vVtuberRest.x+vVtuberRest.z)*1100.0));
     diffuseColor.rgb=mix(diffuseColor.rgb,mix(diffuseColor.rgb,vec3(1.0),.3),stitch*.6);
+    // Quiet side stitching follows the fitted shirt in bind space.
+    float shirtSide=smoothstep(.075,.115,abs(vVtuberRest.x))*smoothstep(vtuberHem+.018,vtuberHem+.045,vVtuberRest.y)*(1.0-smoothstep(1.35,1.40,vVtuberRest.y));
+    float sideSeam=vtuberLine(vVtuberRest.z-.045,.0012)*shirtSide;
+    diffuseColor.rgb*=1.0-${role==='top'&&!outfit.nativeTop?'.065':'0.0'}*sideSeam;
    `;
   }
   // Existing pigment recoloring comes first; muscle guidance is composed later
   // at color_fragment and must remain visible over the garment finish.
   shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',detail+'\n#include <color_fragment>');
  };
- material.customProgramCacheKey=()=>key+'-vtuber-finish-'+kind+'-v2';return material;
+ material.customProgramCacheKey=()=>key+'-vtuber-finish-'+kind+'-v3';return material;
 }

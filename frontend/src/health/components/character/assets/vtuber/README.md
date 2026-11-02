@@ -70,3 +70,11 @@ finishing. Hem/waistband detail follows immutable bind coordinates through the
 exercise pose. The original maps remain unchanged; the finish adds no texture
 download. The anime skin retains an unlit base, and the layered VTuber surfaces
 skip self-shadow reception and high-tier GTAO to avoid grey/blotchy shading.
+
+
+The subsequent upper-body fit uses a smooth ribcage field shared by cloth and
+adjacent skin. It fades into the waist and shoulder/neck anchors, while the
+independent chest control adds bounded volume. Sleeve hems are fitted from
+physical boundary edges, excluding UV duplicates. See
+[the fit review](../../../../../../../docs/VTUBER_SLIM_TORSO_REVIEW.md) for
+geometry checks and matching-pose browser comparisons.

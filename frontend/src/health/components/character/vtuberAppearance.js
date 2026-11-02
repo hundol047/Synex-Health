@@ -1,4 +1,4 @@
-import {VTUBER_OUTFITS,normalizeVtuberOptions,VTUBER_SHAPE_KEYS} from './vtuberOptions.js';
+import {VTUBER_OUTFITS,normalizeVtuberOptions} from './vtuberOptions.js';
 import {Triangle,Vector3} from 'three';
 
 const smooth=(a,b,v)=>{const t=Math.max(0,Math.min(1,(v-a)/(b-a)));return t*t*(3-2*t);};
@@ -106,12 +106,23 @@ export function vtuberWardrobe(source,id){
   // Keeping its connected surface and moving its rim retains a closed torso.
   const armWeight=row=>row.reduce((sum,[b,w])=>sum+(b>=2&&b<=5?w:0),0),armTriangles=[];
   for(let i=0;i<nativeBody.length;i+=3){const t=nativeBody.slice(i,i+3);if(t.every(j=>armWeight(source.weights[j])>.3))armTriangles.push(t);}
+  // Find actual open sleeve hems by position, not UV IDs. Atlas duplicates
+  // inside the shirt must not be treated as new cut edges.
+  const sleeveEdges=new Map(),sleevePointKey=i=>source.positions.slice(i*3,i*3+3).map(v=>Math.round(v*1e6)).join(',');
+  const tee=source.groups[teeIndex];
+  for(let i=0;i<tee.length;i+=3)for(let j=0;j<3;j++){
+   const a=sleevePointKey(tee[i+j]),b=sleevePointKey(tee[i+(j+1)%3]),key=[a,b].sort().join('/');
+   if(sleeveEdges.has(key))sleeveEdges.get(key).count++;else sleeveEdges.set(key,{a,b,count:1});
+  }
+  const sleeveRim=new Set([...sleeveEdges.values()].filter(e=>e.count===1).flatMap(e=>[e.a,e.b]));
   const triangle=new Triangle(),target=new Vector3(),closest=new Vector3(),best=new Vector3(),bary=new Vector3(),normal=new Vector3();
   for(const i of new Set(source.groups[teeIndex])){
    const amount=smooth(.25,.75,armWeight(weights[i]));if(!amount)continue;
    const p=point(i),side=p[0]>=0?0:1,a=source.rest[side?6:3],b=source.rest[side?8:5],axis=b.map((v,k)=>v-a[k]);
    const t=Math.max(0,p.reduce((sum,v,k)=>sum+(v-a[k])*axis[k],0)/axis.reduce((sum,v)=>sum+v*v,0));
-   target.fromArray(p.map((v,k)=>v-.82*t*axis[k]));let distance=Infinity,bestTri;
+   const hem=sleeveRim.has(sleevePointKey(i))&&amount>.99;
+   const fittedT=hem?.05:.18*t;
+   target.fromArray(p.map((v,k)=>v-(t-fittedT)*axis[k]));let distance=Infinity,bestTri;
    for(const tri of armTriangles){triangle.a.fromArray(source.positions,tri[0]*3);triangle.b.fromArray(source.positions,tri[1]*3);triangle.c.fromArray(source.positions,tri[2]*3);triangle.closestPointToPoint(target,closest);const d=closest.distanceToSquared(target);if(d<distance){distance=d;best.copy(closest);bestTri=tri;}}
    triangle.a.fromArray(source.positions,bestTri[0]*3);triangle.b.fromArray(source.positions,bestTri[1]*3);triangle.c.fromArray(source.positions,bestTri[2]*3);triangle.getBarycoord(best,bary);triangle.getNormal(normal);
    best.addScaledVector(normal,.0015);for(let k=0;k<3;k++)positions[i*3+k]=p[k]+amount*(best.getComponent(k)-p[k]);
@@ -138,29 +149,37 @@ export function vtuberWardrobe(source,id){
  cache.set(outfit.id,result);return result;
 }
 
+// A smooth fit through the ribcage, with the waist, neck and shoulder anchors
+// unchanged. Apply to both cloth and its adjacent skin to preserve their seams.
+export function slimVtuberTorso(point){
+ const [x,y,z]=point;
+ const blend=smooth(1.15,1.24,y)*(1-smooth(1.36,1.46,y))*(1-smooth(.13,.23,Math.abs(x)));
+ if(!blend)return point.slice();
+ return [x*(1-.16*blend),y,.06+(z-.06)*(1-.18*blend)];
+}
+
 export function vtuberShapePoint(point,options){
  const [x,y,z]=point,c=options,central=1-smooth(.16,.30,Math.abs(x));
  if(y<.62||y>1.49||!central)return point.slice();
  // Spread proportional changes through the upper thigh/waist instead of
  // producing a narrow hip bulge and isolated rear protrusion at slider limits.
  const hip=bell(y,.94,.17)*central,waist=bell(y,1.12,.12)*central,chest=bell(y,1.32,.105)*central;
- return [x*(1+.12*c.vtuberHips*hip+.12*c.vtuberWaist*waist+.045*c.vtuberChest*chest),y,
-  z+.045*c.vtuberChest*chest*smooth(.015,.10,z)-.028*c.vtuberGlutes*bell(y,.93,.145)*central*(1-smooth(-.04,.04,z))];
+ return [x*(1+.12*c.vtuberHips*hip+.12*c.vtuberWaist*waist+.025*c.vtuberChest*chest),y,
+  z+.028*c.vtuberChest*chest*smooth(.015,.10,z)-.028*c.vtuberGlutes*bell(y,.93,.145)*central*(1-smooth(-.04,.04,z))];
 }
 
 export function customizeVtuberData(source,value){
  const c=normalizeVtuberOptions(value),base=vtuberWardrobe(source,c.vtuberOutfit);
- if(VTUBER_SHAPE_KEYS.every(k=>c[k]===0))return base;
  const positions=base.positions.slice(),eligible=new Set();
  base.groups.forEach((g,i)=>{const s=base.surfaceMaterials[i];if(s.name==='Body_00_SKIN'||s.kind==='Clothes')for(const id of g)eligible.add(id);});
  for(const i of eligible){
   if(base.weights[i].some(([bone,w])=>(bone===1||bone>=12)&&w>.5))continue;
-  const mapped=vtuberShapePoint(base.positions.slice(i*3,i*3+3),c);for(let k=0;k<3;k++)positions[i*3+k]=mapped[k];
+  const mapped=vtuberShapePoint(slimVtuberTorso(base.positions.slice(i*3,i*3+3)),c);for(let k=0;k<3;k++)positions[i*3+k]=mapped[k];
  }
  // Keep long front strands outside an enlarged chest, with roots unchanged.
  base.groups.forEach((g,gi)=>{if(base.surfaceMaterials[gi].kind!=='Hair')return;for(const i of new Set(g)){
   const [x,y,z]=base.positions.slice(i*3,i*3+3);
-  if(z>.07&&y<1.49&&y>1.12)positions[i*3+2]+=.045*Math.max(0,c.vtuberChest)*bell(y,1.32,.12)*(1-smooth(.16,.30,Math.abs(x)));
+  if(z>.07&&y<1.49&&y>1.12)positions[i*3+2]+=.028*Math.max(0,c.vtuberChest)*bell(y,1.32,.12)*(1-smooth(.16,.30,Math.abs(x)));
  }});
  return {...base,positions,guidePositions:base.positions};
 }
