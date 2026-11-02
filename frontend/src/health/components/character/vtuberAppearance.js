@@ -1,5 +1,5 @@
 import {VTUBER_OUTFITS,normalizeVtuberOptions,VTUBER_SHAPE_KEYS} from './vtuberOptions.js';
-import {Triangle,Vector3,Ray} from 'three';
+import {Triangle,Vector3} from 'three';
 
 const smooth=(a,b,v)=>{const t=Math.max(0,Math.min(1,(v-a)/(b-a)));return t*t*(3-2*t);};
 const bell=(v,center,width)=>Math.exp(-(((v-center)/width)**2));
@@ -123,39 +123,10 @@ export function vtuberWardrobe(source,id){
   // partitioned lower surface already supply those regions.
   for(let i=0;i<source.groups[teeIndex].length;i+=3)cover(source.groups[teeIndex].slice(i,i+3),fields,'upper',groups[upper],[]);
  }
- if(!outfit.nativeBottom){
-  // The native shorts also hide a small omitted central pelvic surface.
-  // Keep that authored panel beneath the new opaque lower garment.
-  const fields=[([x])=>.10-Math.abs(x),([,y])=>1.04-y,([,y])=>y-.80];
-  for(let i=0;i<source.groups[shortsIndex].length;i+=3)cover(source.groups[shortsIndex].slice(i,i+3),fields,'pelvis',groups[pelvis],[]);
-  // Stitch the retained crotch panel onto the surrounding body. Native shorts
-  // are looser than leggings; leaving their cut edges in place makes flaps.
-  const edgeCounts=new Map(),edgeKey=(a,b)=>[sources[a],sources[b]].sort((x,y)=>x-y).join(':');
-  for(let i=0;i<groups[pelvis].length;i+=3){const t=groups[pelvis].slice(i,i+3);for(let j=0;j<3;j++){const key=edgeKey(t[j],t[(j+1)%3]);edgeCounts.set(key,(edgeCounts.get(key)||0)+1);}}
-  const boundary=new Set([...edgeCounts].filter(([,n])=>n===1).flatMap(([k])=>k.split(':').map(Number)));
-  const candidates=[];
-  for(let i=0;i<source.groups[skinIndex].length;i+=3){const t=source.groups[skinIndex].slice(i,i+3);if(t.every(j=>source.positions[j*3+1]<1.11&&Math.abs(source.positions[j*3])<.26))candidates.push(t);}
-  const triangle=new Triangle(),target=new Vector3(),closest=new Vector3(),best=new Vector3(),bary=new Vector3(),normal=new Vector3(),attached=new Map();
-  for(const i of new Set(groups[pelvis])){
-   const key=sources[i];
-   if(!attached.has(key)){
-    target.fromArray(positions,i*3);let distance=Infinity,bestTri;
-    for(const t of candidates){triangle.a.fromArray(source.positions,t[0]*3);triangle.b.fromArray(source.positions,t[1]*3);triangle.c.fromArray(source.positions,t[2]*3);triangle.closestPointToPoint(target,closest);const d=closest.distanceToSquared(target);if(d<distance){distance=d;best.copy(closest);bestTri=t;}}
-    // Interior fabric projects along the body's depth at the same height.
-    // Nearest-point snapping can jump onto a neighboring thigh/crotch surface.
-    if(!boundary.has(key)){
-     const front=target.z>.04,ray=new Ray(new Vector3(target.x,target.y,front?2:-2),new Vector3(0,0,front?-1:1));let hitDistance=Infinity,hitTri;
-     for(const t of candidates){triangle.a.fromArray(source.positions,t[0]*3);triangle.b.fromArray(source.positions,t[1]*3);triangle.c.fromArray(source.positions,t[2]*3);if(ray.intersectTriangle(triangle.a,triangle.b,triangle.c,false,closest)){const d=closest.distanceToSquared(ray.origin);if(d<hitDistance){hitDistance=d;best.copy(closest);hitTri=t;}}}
-     if(!hitTri||Math.abs(best.z-target.z)>.05){attached.set(key,{point:point(i),weights:weights[i]});continue;}
-     bestTri=hitTri;
-    }
-    triangle.a.fromArray(source.positions,bestTri[0]*3);triangle.b.fromArray(source.positions,bestTri[1]*3);triangle.c.fromArray(source.positions,bestTri[2]*3);triangle.getBarycoord(best,bary);triangle.getNormal(normal);
-    const row=new Map();bestTri.forEach((j,k)=>{for(const [bone,w]of source.weights[j])row.set(bone,(row.get(bone)||0)+w*bary.getComponent(k));});
-    attached.set(key,{point:best.clone().addScaledVector(normal,.0008).toArray(),weights:[...row].filter(([,w])=>w>1e-9)});
-   }
-   const mapped=attached.get(key);positions.splice(i*3,3,...mapped.point);weights[i]=mapped.weights;
-  }
- }
+ // The body already contains a complete pelvic surface. Its duplicate UV
+ // seam vertices are not a hole. Retaining a piece of the loose shorts here
+ // created a second shell, baggy folds and floating flaps in fitted outfits.
+ // The opaque partitioned body is the sole fitted lower-garment surface.
  // Inactive native garments must not enlarge collision/floor bounds or consume
  // skinning time. Compact all attributes and sparse face/finger shapes together.
  const used=[...new Set(groups.flat())].sort((a,b)=>a-b),remap=new Map(used.map((v,i)=>[v,i]));
@@ -170,9 +141,11 @@ export function vtuberWardrobe(source,id){
 export function vtuberShapePoint(point,options){
  const [x,y,z]=point,c=options,central=1-smooth(.16,.30,Math.abs(x));
  if(y<.62||y>1.49||!central)return point.slice();
- const hip=bell(y,.94,.13)*central,waist=bell(y,1.12,.10)*central,chest=bell(y,1.32,.105)*central;
- return [x*(1+.18*c.vtuberHips*hip+.14*c.vtuberWaist*waist+.045*c.vtuberChest*chest),y,
-  z+.045*c.vtuberChest*chest*smooth(.015,.10,z)-.045*c.vtuberGlutes*bell(y,.91,.115)*central*(1-smooth(-.04,.04,z))];
+ // Spread proportional changes through the upper thigh/waist instead of
+ // producing a narrow hip bulge and isolated rear protrusion at slider limits.
+ const hip=bell(y,.94,.17)*central,waist=bell(y,1.12,.12)*central,chest=bell(y,1.32,.105)*central;
+ return [x*(1+.12*c.vtuberHips*hip+.12*c.vtuberWaist*waist+.045*c.vtuberChest*chest),y,
+  z+.045*c.vtuberChest*chest*smooth(.015,.10,z)-.028*c.vtuberGlutes*bell(y,.93,.145)*central*(1-smooth(-.04,.04,z))];
 }
 
 export function customizeVtuberData(source,value){

@@ -50,9 +50,12 @@ hair/iris colors, six sportswear combinations, top/bottom colors and bounded
 chest, hip-width, glute-volume and waist controls. Hair and iris recoloring keeps
 painted luminance, pupil and highlight details. New fitted garments partition
 the native body surface into opaque fabric and skin; shared boundary vertices
-avoid overlapping skin or open hems. Retained and refitted panels from the native
-tee/shorts complete the upper torso and central pelvis omitted beneath the
-original clothes. Loose garments and the underlying body
+avoid overlapping skin or open hems. A retained and refitted native tee panel
+completes the upper torso. The native body already covers the pelvis; duplicate
+UV seam vertices were previously mistaken for a hole. Fitted bottoms now use
+only that body surface, without an overlapping shorts fragment. Hip and glute
+controls spread moderate changes over a broader waist/upper-thigh transition.
+Loose garments and the underlying body
 use the same cosmetic deformation field. These changes are in
 `vtuberAppearance.js` and `vtuberMaterials.js`, so rerunning the source converter
 does not bake or erase customization.

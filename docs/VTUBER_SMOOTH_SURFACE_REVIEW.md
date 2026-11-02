@@ -1,5 +1,11 @@
 # VTuber surface refinement — 2026-11-02
 
+**Correction:** the native pelvic body surface is complete. The later
+[body-fit correction](VTUBER_BODY_FIT_REVIEW.md) removes the unnecessary shorts
+patch described in this historical review; UV seam duplicates were mistaken
+for missing geometry. Its old pelvic-fit limitations and assumptions are
+superseded by that correction.
+
 The character's visible surfaces now use one blended Loop subdivision step.
 This rounds the polygon silhouettes of the hair, shoulders, hips and knees
 instead of blurring the screenshot or changing the selected character style.

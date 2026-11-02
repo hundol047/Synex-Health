@@ -7,8 +7,17 @@ test('full orbit, return to front, portrait orbit and animated surfaces',async({
  await page.goto('/health/character');const canvas=page.locator('canvas');await expect(canvas).toHaveAttribute('data-character-model','vtuber');
  await expect(canvas).toHaveAttribute('data-character-surface','smooth');
  expect(Number(await canvas.getAttribute('data-character-vertices'))).toBeLessThan(100000);
+ await expect(page.getByLabel('미리볼 운동')).toHaveValue('shoulder_roll');
  for(const mode of ['standing','squat','portrait']){
-  if(mode==='squat'){await page.getByLabel('미리볼 운동').selectOption('squat');await page.getByLabel('미리보기 동작 구간').fill('500');}
+  if(mode==='squat'){
+   await page.getByLabel('미리볼 운동').selectOption('squat');
+   for(const [label,name]of [['정면','front'],['측면','side'],['후면','back']]){
+    await page.getByRole('button',{name:label+' 운동 시범 보기',exact:true}).click();
+    await canvas.evaluate(el=>el.scrollIntoView({block:'center',behavior:'instant'}));
+    await canvas.screenshot({path:info.outputPath('reference-'+name+'.png')});
+   }
+   await page.getByLabel('미리보기 동작 구간').fill('500');
+  }
   if(mode==='portrait')await page.getByRole('button',{name:'얼굴 확대',exact:true}).click();
   await page.getByRole('button',{name:'정면 운동 시범 보기',exact:true}).click();
   await canvas.evaluate(el=>el.scrollIntoView({block:'center',behavior:'instant'}));

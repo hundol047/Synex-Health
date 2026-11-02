@@ -15,19 +15,23 @@ const v=p=>new Vector3(...p);
 const area=(positions,indices)=>{let sum=0;for(let i=0;i<indices.length;i+=3){const [a,b,c]=indices.slice(i,i+3).map(j=>v(positions.slice(j*3,j*3+3)));sum+=b.sub(a).cross(c.sub(a)).length()/2;}return sum;};
 const extremes=[{}, {vtuberChest:1,vtuberHips:1,vtuberGlutes:1,vtuberWaist:-1},{vtuberChest:-1,vtuberHips:-1,vtuberGlutes:-1,vtuberWaist:1}];
 
-it('fits retained pelvic fabric without shifting interior vertices onto adjacent thighs',()=>{
- const d=vtuberWardrobe(source,'crop'),panel=d.surfaceMaterials.findIndex(s=>s.name==='VtuberPelvis');
- const edges=new Map();
- for(let i=0;i<d.groups[panel].length;i+=3){const t=d.groups[panel].slice(i,i+3).map(j=>d.sourceVertices[j]);for(let j=0;j<3;j++){const key=[t[j],t[(j+1)%3]].sort((a,b)=>a-b).join(':');edges.set(key,(edges.get(key)||0)+1);}}
- const rim=new Set([...edges].filter(([,count])=>count===1).flatMap(([key])=>key.split(':').map(Number)));
- const original=new Map(source.groups[1].map(i=>[source.sourceVertices[i],source.positions.slice(i*3,i*3+3)]));let checked=0;
- for(const i of new Set(d.groups[panel])){const p=original.get(d.sourceVertices[i]);if(!p||rim.has(d.sourceVertices[i])||Math.abs(p[0])>=.08||p[1]<=.85||p[1]>=1.02)continue;
-  // The fitted surface includes 0.8 mm normal clearance to avoid z-fighting.
-  expect(Math.abs(d.positions[i*3]-p[0])).toBeLessThanOrEqual(.000801);
-  expect(Math.abs(d.positions[i*3+1]-p[1])).toBeLessThanOrEqual(.000801);
-  expect(Math.abs(d.positions[i*3+2]-p[2])).toBeLessThanOrEqual(.050801);checked++;
+it('uses one continuous fitted lower surface without an overlapping native-shorts patch',()=>{
+ for(const outfit of VTUBER_OUTFITS.filter(o=>!o.nativeBottom)){
+  const d=vtuberWardrobe(source,outfit.id),g=new BufferGeometry();
+  expect(d.groups[d.surfaceMaterials.findIndex(s=>s.name==='VtuberPelvis')]).toEqual([]);
+  expect(d.groups[d.surfaceMaterials.findIndex(s=>s.name==='Bottoms_01_CLOTH')]).toEqual([]);
+  g.setIndex(d.groups[d.surfaceMaterials.findIndex(s=>s.name==='VtuberFittedBottom')]);
+  g.setAttribute('position',new BufferAttribute(new Float32Array(d.positions),3));
+  try{const bvh=new MeshBVH(g,{verbose:false}),ray=new Ray();
+   for(const y of [.85,.87,.90,.92,.95,.98,1.02])for(const x of [-.06,-.03,-.001,.001,.03,.06]){
+    const depths=[];
+    for(const side of [-1,1]){ray.origin.set(x,y,side*2);ray.direction.set(0,0,-side);
+     const hit=bvh.raycastFirst(ray,DoubleSide);expect(hit,`${outfit.id}: ${x}/${y}/${side}`).not.toBeNull();depths.push(hit.point.z);
+    }
+    expect(depths[1]-depths[0],`${outfit.id}: enclosed pelvis ${x}/${y}`).toBeGreaterThan(.02);
+   }
+  }finally{g.dispose();}
  }
- expect(checked).toBeGreaterThan(10);
 });
 
 it('migrates old saved choices and validates all new inputs without touching records',()=>{
@@ -39,8 +43,8 @@ it('migrates old saved choices and validates all new inputs without touching rec
 
 it('changes hip width independently of rear volume and preserves joint heights',()=>{
  const p=[.12,.94,-.08],hips=vtuberShapePoint(p,{...VTUBER_DEFAULTS,vtuberHips:1}),rear=vtuberShapePoint(p,{...VTUBER_DEFAULTS,vtuberGlutes:1});
- expect(hips[0]).toBeGreaterThan(p[0]+.015);expect(hips[2]).toBe(p[2]);
- expect(rear[2]).toBeLessThan(p[2]-.03);expect(rear[0]).toBe(p[0]);expect(hips[1]).toBe(p[1]);expect(rear[1]).toBe(p[1]);
+ expect(hips[0]).toBeGreaterThan(p[0]+.01);expect(hips[2]).toBe(p[2]);
+ expect(rear[2]).toBeLessThan(p[2]-.02);expect(rear[0]).toBe(p[0]);expect(hips[1]).toBe(p[1]);expect(rear[1]).toBe(p[1]);
 });
 
 it('partitions six outfits without deleting body surface or leaving unused bounds vertices',()=>{

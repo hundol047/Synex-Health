@@ -17,7 +17,7 @@ import {SKIN_TONES} from '../components/character/skinTone.js';
 const TABS=['스타일','얼굴·헤어','체형','운동복'];
 const COLORS=['#272323','#241d2b','#73513a','#e1c6a1','#f2edf5','#6989d6','#b883c7','#ce7896','#53a6a0'];
 export default function CharacterPage(){
- const [draft,setDraft]=useState(readCharacter),[saved,setSaved]=useState(readCharacter),[tab,setTab]=useState(0),[motion,setMotion]=useState('squat'),[playing,setPlaying]=useState(false),[progress,setProgress]=useState(0),[message,setMessage]=useState('');
+ const [draft,setDraft]=useState(readCharacter),[saved,setSaved]=useState(readCharacter),[tab,setTab]=useState(0),[motion,setMotion]=useState('shoulder_roll'),[playing,setPlaying]=useState(false),[progress,setProgress]=useState(0),[message,setMessage]=useState('');
  const [faceFocus,setFaceFocus]=useState(false);
  const preview=useRef(null);
  const guard=useRef({}),dirty=JSON.stringify(draft)!==JSON.stringify(saved);

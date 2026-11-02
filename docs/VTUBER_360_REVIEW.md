@@ -1,5 +1,11 @@
 # VTuber orbit review — 2026-11-02
 
+**Correction:** the native pelvic body surface is complete. The later
+[body-fit correction](VTUBER_BODY_FIT_REVIEW.md) removes the unnecessary shorts
+patch described in this historical review; UV seam duplicates were mistaken
+for missing geometry. Its old pelvic-fit limitations and assumptions are
+superseded by that correction.
+
 The character editor now has left/right 45° orbit buttons alongside the existing
 free drag view. Selecting front/side/back restores the corresponding preset.
 
