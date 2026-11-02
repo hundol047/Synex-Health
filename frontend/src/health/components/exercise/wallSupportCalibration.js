@@ -12,6 +12,7 @@ export function calibrateWallSupport(base, weights, rest) {
   uncalibratedRest.statureScale=rest.statureScale;
   uncalibratedRest.handGripScale=rest.handGripScale;
   uncalibratedRest.handFrames=rest.handFrames;
+  uncalibratedRest.torsoClearance=rest.torsoClearance;
   uncalibratedRest.wallSupport = { palmRoll: contact.palmRoll };
   // The pose envelope has a flat maximum, but intermediate arm blending also
   // matters. Fit the complete cycle once per avatar, never once per frame.

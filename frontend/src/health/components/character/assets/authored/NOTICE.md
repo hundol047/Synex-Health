@@ -22,3 +22,9 @@ frames, wrist/forearm rotation, hair materials and opaque colored core. The stud
 albedo is an image-generated edit of the attributed source UV texture; generated
 skin detail is not a photographic capture. Original author and license remain
 as above. See studio-head.json for source and generated-output hashes.
+
+Fitted exercise revision, 2026-11-02: a derived leg/pelvis fabric shell and upper
+panel, recolored native tank/sneakers, mildly narrower limb shafts and reduced
+chest projection, shorter lash wings, and removal of separate sparse fringe
+cards. The scalp and main hair topology remain. The original source export is
+retained; scripts/build-studio-athlete.py reproduces the derivative.

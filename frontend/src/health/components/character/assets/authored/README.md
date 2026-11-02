@@ -7,6 +7,10 @@ The male preset and configurable avatars have separate sources and licenses.
 
 ## Studio revision (2026-11-02)
 
+The active Studio model now loads the [fitted exercise derivative](../studio/README.md),
+which also changes the outfit, limb shafts, chest projection and sparse fringe.
+The original export in this directory is retained as its reproducible input.
+
 The original source export remains intact. `studioTrainer.js` maps the complete
 body, clothing, rig, eyes, finger shapes and hair to a longer-leg proportion:
 the pelvis rises from 0.940 to 1.005 m in the standard demonstration space,

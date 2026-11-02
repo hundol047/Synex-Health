@@ -3,7 +3,7 @@ import { Vector3, Quaternion } from 'three';
 import mesh from '../src/health/components/body3d/assets/human-mesh.json';
 import catalog from '../src/shared/lib/localCatalog.json';
 import { STRETCHES } from '../src/health/components/exercise/stretchCatalog.js';
-import { REST, bindSurface, poseJoints, deformSurface } from '../src/health/components/exercise/rig.js';
+import { REST, bindSurface, poseJoints, deformSurface, rigRotation } from '../src/health/components/exercise/rig.js';
 import { calibrateGripScale, gripSurface } from '../src/health/components/exercise/exerciseGrip.js';
 import { CLASP_MOTIONS, exerciseHandShape } from '../src/health/components/exercise/handPoses.js';
 
@@ -28,16 +28,19 @@ describe('articulated demonstration hands', () => {
 
   it('keeps both clasped hands in one stable contact frame through each complete repetition', () => {
     for (const motion of CLASP_MOTIONS) {
-      const initial = poseJoints(motion, 0), separation = v(initial[5]).sub(v(initial[8]));
+      const initial = poseJoints(motion, 0), initialTorso = rigRotation(initial,0).invert();
+      const separation = v(initial[5]).sub(v(initial[8])).applyQuaternion(initialTorso);
       for (let frame = 0; frame <= 120; frame++) {
         const joints = poseJoints(motion, frame / 120);
-        expect(v(joints[5]).sub(v(joints[8])).distanceTo(separation), motion).toBeLessThan(1e-6);
+        const torso = rigRotation(joints,0).invert();
+        expect(v(joints[5]).sub(v(joints[8])).applyQuaternion(torso).distanceTo(separation), motion).toBeLessThan(1e-6);
         for (const [elbow, wrist, finger] of [[4, 5, 17], [7, 8, 18]]) {
           const forearm = v(joints[wrist]).sub(v(joints[elbow]));
           expect(forearm.length(), motion).toBeCloseTo(v(REST[wrist]).distanceTo(v(REST[elbow])), 7);
           expect(forearm.angleTo(v(joints[finger]).sub(v(joints[wrist]))), motion).toBeLessThan(40*Math.PI/180);
         }
-        for (const bone of [12, 13]) expect(new Quaternion().fromArray(joints.boneRotations[bone]).angleTo(new Quaternion().fromArray(initial.boneRotations[bone])), motion).toBeLessThan(1e-6);
+        // The contact frame follows the chest when it leans during a squat.
+        for (const bone of [12, 13]) expect(torso.clone().multiply(new Quaternion().fromArray(joints.boneRotations[bone])).angleTo(initialTorso.clone().multiply(new Quaternion().fromArray(initial.boneRotations[bone]))), motion).toBeLessThan(1e-6);
       }
     }
   });

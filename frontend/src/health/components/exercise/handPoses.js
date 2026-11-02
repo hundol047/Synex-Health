@@ -24,14 +24,18 @@ export function exerciseHandShape(motion, joints) {
 export function refineExerciseHands(motion, joints, rest) {
   if (!CLASP_MOTIONS.has(motion)) return joints;
   const h = scaleFor(rest), center = vector(joints[5]).add(vector(joints[8])).multiplyScalar(.5);
+  const torso=joints.boneRotations?.[0]?new THREE.Quaternion().fromArray(joints.boneRotations[0]):new THREE.Quaternion().setFromUnitVectors(vector(rest[1]).sub(vector(rest[0])).normalize(),vector(joints[1]).sub(vector(joints[0])).normalize());
+  const local=center.clone().sub(vector(joints[0])).applyQuaternion(torso.clone().invert());
+  local.z=Math.max(local.z,(rest.torsoClearance?.front??.17*h)+.105*h);
+  center.copy(local.applyQuaternion(torso).add(vector(joints[0])));
   joints.boneRotations ||= {};
   joints.hingeArms = true;
   for (const side of [0, 1]) {
     const { wrist, finger, sign, along, back } = handRestFrame(rest, side);
     const handScale = h * (rest.handGripScale?.[side] || 1);
-    const direction = vector([-sign * .50, .15, .85]).normalize().toArray(), palmBack = [sign, 0, 0];
-    const target = center.clone().add(new THREE.Vector3(sign * .115 * handScale, (side ? .010 : -.010) * handScale, -.045 * handScale));
-    solveLimb(joints, rest, side, 'arm', target.toArray(), [sign * .7, -.7, -.1]);
+    const direction = vector([-sign * .55, .32, .85]).normalize().applyQuaternion(torso).toArray(), palmBack = vector([sign,0,0]).applyQuaternion(torso).toArray();
+    const target = center.clone().add(new THREE.Vector3(sign * .115 * handScale, (side ? .010 : -.010) * handScale, -.045 * handScale).applyQuaternion(torso));
+    solveLimb(joints, rest, side, 'arm', target.toArray(), vector([sign*.7,-.7,-.1]).applyQuaternion(torso).toArray());
     joints[finger] = vector(joints[wrist]).addScaledVector(vector(direction), segmentLength(rest, wrist, finger)).toArray();
     const rotation = orientation(direction, palmBack).multiply(orientation(along.toArray(), back.toArray()).invert());
     joints.boneRotations[12 + side] = rotation.toArray();

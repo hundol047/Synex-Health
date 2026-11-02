@@ -33,6 +33,19 @@ export function createTrainerSurfaceMaterial(surface, maps, {scanned=false,autho
  if(['Hair','Eyebrows','Eyelashes'].includes(kind)&&surface.alphaMode!=='OPAQUE'){
   Object.assign(options,{transparent:true,depthWrite:false,side:THREE.DoubleSide,alphaTest:.10});
  }
- if(kind==='Eyelashes')Object.assign(options,{opacity:body==='female'?.85:.55,specularIntensity:0,roughness:1});
- return new THREE.MeshPhysicalMaterial(options);
+ if(kind==='Eyelashes')Object.assign(options,{opacity:studio?.55:body==='female'?.85:.55,specularIntensity:0,roughness:1});
+ const material=new THREE.MeshPhysicalMaterial(options);
+ if(surface.neutralFabric){
+  // Retain textile/stitch detail while making the chosen navy/ivory color
+  // independent of the old blue shoes and almost-black sportsuit albedo.
+  material.onBeforeCompile=shader=>{shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',`
+   #ifdef USE_MAP
+    vec4 fabric=texture2D(map,vMapUv);
+    float weave=dot(fabric.rgb,vec3(.2126,.7152,.0722));
+    diffuseColor*=vec4(vec3(.38+.62*sqrt(weave)),fabric.a);
+   #endif
+  `);};
+  material.customProgramCacheKey=()=> 'synex-neutral-sports-fabric-v1';
+ }
+ return material;
 }

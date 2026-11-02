@@ -15,7 +15,7 @@ export default function TrainerAthlete({data:source,character,body,motion,progre
  const studio=character?.detailedStyle==='studio',natural=!studio&&character?.detailedStyle!=='original';
  const data=useMemo(()=>studio?studioTrainerData(source):natural?naturalTrainerData(source):source,[source,natural,studio]);
  const scanned=data.sourceFamily==='scanned-gltf',authored=data.sourceFamily==='authored-usd';
- const slots=useMemo(()=>data.surfaceMaterials.flatMap((s,i)=>['map','normalMap','bumpMap'].filter(k=>s[k]).map(k=>({i,k,url:textures[`./assets/${authored?'authored':scanned?'scanned':'trainer'}/${s[k]}`]}))),[data,authored,scanned]);
+ const slots=useMemo(()=>data.surfaceMaterials.flatMap((s,i)=>(data.groups[i]?.length||data.rigidHead?.groups[i]?.length)?['map','normalMap','bumpMap'].filter(k=>s[k]).map(k=>({i,k,url:textures[`./assets/${s.assetFolder||(authored?'authored':scanned?'scanned':'trainer')}/${s[k]}`]})):[]),[data,authored,scanned]);
  const maps=useTexture(slots.map(s=>s.url));
  maps.forEach((t,i)=>{const space=slots[i].k==='map'?THREE.SRGBColorSpace:THREE.NoColorSpace;if(t.colorSpace!==space){t.colorSpace=space;t.needsUpdate=true;}t.anisotropy=4;});
  const scale=morphParameters(measurement,profile).heightScale;

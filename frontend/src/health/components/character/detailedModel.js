@@ -4,6 +4,7 @@ import {calibrateWallSupport} from '../exercise/wallSupportCalibration.js';
 import {calibrateGripScale,calibrateHandFrames} from '../exercise/exerciseGrip.js';
 import {exerciseHandShape} from '../exercise/handPoses.js';
 import {blinkAmount} from './livingFace.js';
+import {calibrateTorsoClearance} from '../exercise/torsoClearance.js';
 
 export function prepareDetailedModel(data,scale=1){
  const base=Float32Array.from(data.positions,v=>v*scale),rest=(data.rest||REST).map(p=>p.map(v=>v*scale));
@@ -13,6 +14,7 @@ export function prepareDetailedModel(data,scale=1){
  const weights=data.weights.map(row=>{const total=row.reduce((s,[,w])=>s+w,0);return row.map(([b,w])=>[b,w/total]);});
  rest.handFrames=calibrateHandFrames(base,weights,rest);
  rest.handGripScale=calibrateGripScale(base,weights,rest);
+ rest.torsoClearance=calibrateTorsoClearance(base,weights,rest);
  rest.wallSupport=calibrateWallSupport(base,weights,rest);
  const geometry=new THREE.BufferGeometry();
  geometry.setAttribute('position',new THREE.BufferAttribute(base.slice(),3));

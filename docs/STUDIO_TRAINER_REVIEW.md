@@ -1,5 +1,9 @@
 # Studio trainer and wrist review — 2026-11-02
 
+This records the first Studio revision. The subsequent hand/chest collision and
+outfit correction is documented in [Studio contact redesign](STUDIO_CONTACT_REDESIGN.md).
+The original checks below did not test hand/torso intersections.
+
 The previous clasp placed wrists far apart vertically and bent them sideways.
 The new clasp uses diagonally opposed hands, a small finger stagger, fixed arm
 lengths and forearm rotation continuous with the hand. Detailed models fit their

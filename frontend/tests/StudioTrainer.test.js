@@ -2,7 +2,7 @@ import {it,expect} from 'vitest';
 import fs from 'node:fs';
 import {createHash} from 'node:crypto';
 import {Vector3,Quaternion} from 'three';
-import female from '../src/health/components/character/assets/authored/female.json';
+import female from '../src/health/components/character/assets/studio/female.json';
 import male from '../src/health/components/character/assets/trainer/male.json';
 import {studioTrainerData} from '../src/health/components/character/studioTrainer.js';
 import {prepareDetailedModel,poseDetailedModel,detailedFloorOffset} from '../src/health/components/character/detailedModel.js';
