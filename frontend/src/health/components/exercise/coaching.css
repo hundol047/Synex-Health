@@ -159,3 +159,17 @@
  .pose-coach-page .coach-camera-empty{padding-top:23px}
 }
 @media(prefers-reduced-motion:reduce){.pose-coach-page .coach-preferences input,.pose-coach-page .coach-preferences input::after{transition:none}}
+
+/* Filming guide: dashed body silhouette and corner marks for the detectable frame */
+.coach-feed .coach-framing-guide{z-index:1;--frame:#ffffff;filter:drop-shadow(0 0 2px #0b1a2bcc)}
+.coach-feed .coach-framing-guide.is-ok{--frame:#22c55e}
+.coach-feed .coach-framing-guide.is-partial{--frame:#f59e0b}
+.camera-coaching .coach-feed .coach-framing-guide .coach-framing-corners path,.pose-coach-page .coach-feed .coach-framing-guide .coach-framing-corners path{stroke:var(--frame)}
+.camera-coaching .coach-feed .coach-framing-guide .coach-framing-body circle,.camera-coaching .coach-feed .coach-framing-guide .coach-framing-body path,.camera-coaching .coach-feed .coach-framing-guide .coach-framing-body line,.coach-feed .coach-framing-guide .coach-framing-body *{fill:#ffffff14;stroke:var(--frame);stroke-opacity:.95;transition:stroke .25s,opacity .25s}
+.camera-coaching .coach-feed .coach-framing-guide .coach-framing-body .coach-framing-floor{fill:none;stroke-opacity:.7}
+.camera-coaching .coach-feed .coach-framing-guide .coach-framing-edges line,.coach-feed .coach-framing-guide .coach-framing-edges line{stroke:#ef4444}
+.coach-feed .coach-framing-guide.is-ok .coach-framing-body{opacity:.55}
+.coach-framing-hint{position:absolute;z-index:2;left:50%;top:38px;transform:translateX(-50%);max-width:calc(100% - 20px);padding:5px 10px;border-radius:999px;background:#0b1a2bc4;color:#fff;font-size:11px;line-height:1.35;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.coach-framing-hint.is-ok{background:#15803dd9}
+.coach-framing-hint.is-partial{background:#b45309e6}
+@media(max-width:600px){.coach-framing-hint{font-size:10px;top:34px;white-space:normal}}
