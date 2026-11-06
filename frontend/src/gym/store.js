@@ -46,17 +46,28 @@ export function mutateGym(fn) {
 export async function ensureGym() {
   return mutateGym(() => {});
 }
+export function validDate(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value))
+    return false;
+  const d = new Date(value + "T12:00:00");
+  return (
+    Number.isFinite(d.getTime()) &&
+    d.getFullYear() === Number(value.slice(0, 4)) &&
+    d.getMonth() + 1 === Number(value.slice(5, 7)) &&
+    d.getDate() === Number(value.slice(8))
+  );
+}
 export function validateAppointment(rows, date, time, id) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(time))
+  if (!validDate(date) || !/^\d{2}:\d{2}$/.test(time))
     throw Error("PT 날짜와 시간을 선택하세요.");
   const stamp = Date.parse(date + "T" + time);
   if (
     !Number.isFinite(stamp) ||
     new Date(stamp).getHours() !== Number(time.slice(0, 2)) ||
     new Date(stamp).getMinutes() !== Number(time.slice(3)) ||
-    date < today()
+    stamp <= Date.now()
   )
-    throw Error("오늘 이후의 올바른 날짜를 선택하세요.");
+    throw Error("지금 이후의 올바른 PT 날짜와 시간을 선택하세요.");
   if (
     rows.some(
       (a) =>
@@ -98,6 +109,8 @@ export function makePlan(ids, count, appointments, startDate) {
   const future = appointments
     .filter((a) => a.date >= today())
     .sort((a, b) => a.date.localeCompare(b.date));
+  if (startDate && !validDate(startDate))
+    throw Error("계획 시작 날짜를 확인해 주세요.");
   const start = new Date(
     (startDate || future[0]?.date || today()) + "T12:00:00",
   );
@@ -151,6 +164,17 @@ function limitedText(v, max = 200) {
   return v;
 }
 export function parseTransfer(raw) {
+  try {
+    return parseTransferData(raw);
+  } catch (e) {
+    if (e instanceof TypeError)
+      throw Error(
+        "공유 파일 형식이 올바르지 않습니다. 최신 Synex 파일을 선택하세요.",
+      );
+    throw e;
+  }
+}
+function parseTransferData(raw) {
   if (raw.length > 12 * 1024 * 1024)
     throw Error("12MB 이하의 공유 파일을 선택하세요.");
   let v;
@@ -193,21 +217,42 @@ export function parseTransfer(raw) {
       !Array.isArray(p.ptDays) ||
       !Array.isArray(p.dates) ||
       p.dates.length !== 7 ||
-      p.dates.some((d) => !/^\d{4}-\d{2}-\d{2}$/.test(d))
+      p.dates.some((d) => !validDate(d)) ||
+      p.ptDays.some((d) => !Number.isInteger(d) || d < 0 || d > 6) ||
+      new Set(p.days).size !== p.days.length ||
+      p.days.length !== p.frequency
     )
       throw Error("주간 계획을 확인해 주세요.");
+    if (new Set(p.options.map((o) => o?.id)).size !== 2)
+      throw Error("루틴 구분을 확인해 주세요.");
     p.options.forEach((o) => {
+      if (
+        !o ||
+        !Number.isFinite(o.minutes) ||
+        o.minutes < 1 ||
+        o.minutes > 1440
+      )
+        throw Error("루틴 시간을 확인해 주세요.");
       limitedText(o.id, 40);
       limitedText(o.name, 40);
-      if (!Array.isArray(o.exercises) || o.exercises.length > 20)
+      if (
+        !Array.isArray(o.exercises) ||
+        !o.exercises.length ||
+        o.exercises.length > 20 ||
+        new Set(o.exercises.map((e) => e?.id)).size !== o.exercises.length
+      )
         throw Error("운동 개수를 확인해 주세요.");
       o.exercises.forEach((e) => {
-        if (!exercises.some((x) => x.id === e.id))
+        if (!e || !exercises.some((x) => x.id === e.id))
           throw Error("지원하지 않는 운동입니다.");
         limitedText(e.name, 80);
         if (!Number.isInteger(e.sets) || e.sets < 1 || e.sets > 20)
           throw Error("세트 수가 올바르지 않습니다.");
+        if (!["string", "number"].includes(typeof e.reps))
+          throw Error("운동 횟수 형식을 확인하세요.");
         limitedText(String(e.reps), 40);
+        if (e.dose !== undefined && !["duration", "reps"].includes(e.dose))
+          throw Error("운동 단위를 확인하세요.");
         if (
           e.rest !== undefined &&
           (!Number.isInteger(e.rest) || e.rest < 0 || e.rest > 300)
@@ -217,7 +262,7 @@ export function parseTransfer(raw) {
     });
     v.appointments.forEach((a) => {
       limitedText(a.id, 80);
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(a.date) || !/^\d{2}:\d{2}$/.test(a.time))
+      if (!validDate(a.date) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(a.time))
         throw Error("PT 일정 형식 오류");
     });
     if (!Array.isArray(v.feedback) || v.feedback.length > 100)
@@ -239,6 +284,15 @@ export function parseTransfer(raw) {
       limitedText(l.date, 10);
       limitedText(l.name, 80);
       limitedText(l.effort, 20);
+      if (!validDate(l.date)) throw Error("운동 기록 날짜를 확인하세요.");
+      if (l.status !== undefined && !["partial", "complete"].includes(l.status))
+        throw Error("운동 완료 상태를 확인하세요.");
+      for (const key of ["minutes", "completedSets", "totalSets"])
+        if (
+          l[key] !== undefined &&
+          (!Number.isInteger(l[key]) || l[key] < 0 || l[key] > 100000)
+        )
+          throw Error("운동량 형식을 확인하세요.");
     });
     v.meals.forEach((m) => {
       limitedText(m.id, 80);
@@ -255,7 +309,7 @@ export function parseTransfer(raw) {
   return v;
 }
 export function transferFor(state, role, member) {
-  return {
+  const packet = {
     format: "synex-gym-transfer",
     version: 1,
     kind: role === "coach" ? "plan" : "progress",
@@ -267,16 +321,28 @@ export function transferFor(state, role, member) {
       ? {
           plan: member.plan,
           appointments: member.appointments,
-          feedback: member.meals.map((m) => ({
+          feedback: member.meals.slice(0, 100).map((m) => ({
             id: m.id,
             feedback: m.feedback || "",
           })),
         }
       : {
-          logs: member.logs,
-          meals: member.meals.map(({ feedback, ...m }) => m),
+          logs: member.logs.slice(0, 500),
+          meals: member.meals.slice(0, 100).map(({ feedback, ...m }) => m),
         }),
   };
+  if (role !== "coach") {
+    const photos = packet.meals;
+    packet.meals = [];
+    let bytes = new TextEncoder().encode(JSON.stringify(packet)).length;
+    for (const meal of photos) {
+      const size = new TextEncoder().encode(JSON.stringify(meal)).length + 1;
+      if (bytes + size > 11 * 1024 * 1024) break;
+      packet.meals.push(meal);
+      bytes += size;
+    }
+  }
+  return packet;
 }
 export function applyTransfer(state, v, role) {
   if (role === "coach") {
@@ -287,14 +353,16 @@ export function applyTransfer(state, v, role) {
     const merge = (old, rows) => [
       ...new Map([...old, ...rows].map((x) => [x.id, x])).values(),
     ];
-    m.logs = merge(m.logs, v.logs);
+    m.logs = merge(m.logs, v.logs).sort((a, b) => b.date.localeCompare(a.date));
     m.meals = merge(
       m.meals,
       v.meals.map((x) => ({
         ...x,
         feedback: m.meals.find((y) => y.id === x.id)?.feedback || "",
+        feedbackDraft: m.meals.find((y) => y.id === x.id)?.feedbackDraft,
       })),
-    );
+    ).sort((a, b) => b.date.localeCompare(a.date));
+    state.selected = m.id;
   } else {
     if (v.kind !== "plan")
       throw Error("트레이너가 보낸 계획 파일을 선택하세요.");

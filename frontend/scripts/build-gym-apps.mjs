@@ -4,7 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const out =
   process.env.SYNEX_GYM_OUTPUT ||
-  path.resolve(root, "../../work/apps_quality_20261106");
+  path.resolve(root, "../../work/apps_usability_20261106");
 fs.mkdirSync(out, { recursive: true });
 const configPath = path.join(root, "capacitor.config.json"),
   stringsPath = path.join(root, "android/app/src/main/res/values/strings.xml");
@@ -22,8 +22,8 @@ const base = {
   VITE_LOCAL_ONLY: "true",
   VITE_RELEASE_BUILD: "false",
   VITE_API_BASE: "",
-  SYNEX_VERSION_CODE: process.env.SYNEX_VERSION_CODE || "2026110602",
-  SYNEX_VERSION_NAME: process.env.SYNEX_VERSION_NAME || "2.1.0-gym",
+  SYNEX_VERSION_CODE: process.env.SYNEX_VERSION_CODE || "2026110603",
+  SYNEX_VERSION_NAME: process.env.SYNEX_VERSION_NAME || "2.2.0-gym",
 };
 const gradleArgs = ["assembleDebug", "--no-daemon"];
 const proxy = process.env.HTTPS_PROXY || process.env.https_proxy;
@@ -68,7 +68,7 @@ try {
       path.join(root, "android/app/build/outputs/apk/debug/app-debug.apk"),
       path.join(
         out,
-        `Synex_${role === "coach" ? "Coach" : "Member"}_20261106_v2.apk`,
+        `Synex_${role === "coach" ? "Coach" : "Member"}_20261106_v3.apk`,
       ),
     );
     fs.cpSync(path.join(root, "dist"), path.join(out, `web-${role}`), {

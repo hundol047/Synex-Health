@@ -2440,3 +2440,244 @@
     gap: 8px;
   }
 }
+/* Usability pass: large touch targets, visible actions and a complete mobile menu. */
+.gym-header-actions {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+.gym-menu-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 9px;
+  border: 1px solid #dce7e7;
+  border-radius: 12px;
+  background: #fff;
+  color: #22545b;
+  cursor: pointer;
+}
+.gym-menu-sheet {
+  border: 0;
+  border-radius: 24px;
+  padding: 28px;
+  width: min(560px, calc(100vw - 28px));
+  max-height: 85dvh;
+  overflow: auto;
+  background: #f8fafb;
+  color: #163340;
+  box-shadow: 0 25px 80px #052a3740;
+}
+.gym-menu-sheet::backdrop {
+  background: #0a28377a;
+  backdrop-filter: blur(4px);
+}
+.gym-sheet-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+.gym-sheet-heading h2 {
+  font-size: 23px;
+  margin: 0;
+}
+.gym-sheet-heading .gym-eyebrow {
+  margin-bottom: 6px;
+}
+.gym-menu-sheet nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.gym-menu-sheet nav > a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 64px;
+  background: white;
+  border: 1px solid #e1eaea;
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 12px;
+  font-weight: 650;
+}
+.gym-menu-sheet nav > a > svg:last-child {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.gym-menu-sheet nav .gym-avatar {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 9px;
+}
+.gym-menu-sheet .gym-muted {
+  font-size: 10px;
+  margin-top: 20px;
+}
+.gym-menu-sheet nav > a.active {
+  border-color: #9ecfbd;
+  background: #edf7f1;
+}
+.gym-session-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 15px;
+}
+.gym-quiet-button {
+  background: transparent;
+  border: 0;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  color: #687f87;
+  font-size: 12px;
+  cursor: pointer;
+  min-height: 44px;
+  padding: 10px;
+}
+.gym-jump-link {
+  display: none;
+}
+.gym-recovery {
+  max-width: 600px;
+  margin: 30px auto;
+  padding: 30px;
+}
+.gym-recovery h1 {
+  font-size: 24px;
+}
+.gym-recovery p {
+  font-size: 14px;
+  line-height: 1.8;
+}
+.gym-finish-card {
+  scroll-margin: 100px;
+}
+.gym-studio-toolbar {
+  position: sticky;
+  top: 10px;
+  z-index: 25;
+  background: #e6f0edf5;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 5px 16px #153f3c09;
+}
+.gym-icon-actions button,
+.gym-icon-button {
+  min-width: 40px;
+  min-height: 40px;
+}
+.gym-notice {
+  overflow-wrap: anywhere;
+}
+.gym-field input,
+.gym-field select,
+.gym-field textarea {
+  scroll-margin: 110px;
+}
+#routine-editor {
+  scroll-margin-top: 150px;
+}
+.gym-session-motion {
+  scroll-margin-top: 100px;
+}
+@media (max-width: 760px) {
+  .gym-top {
+    position: sticky;
+    top: 0;
+    z-index: 35;
+    background: #fbfcfdf5;
+    backdrop-filter: blur(10px);
+  }
+  .gym-header-actions {
+    gap: 9px;
+  }
+  .gym-header-actions .gym-pill {
+    font-size: 9px;
+    padding: 7px 8px;
+  }
+  .gym-menu-button {
+    min-width: 40px;
+    min-height: 40px;
+    padding: 8px;
+    border-radius: 10px;
+  }
+  .gym-menu-sheet {
+    padding: 22px;
+    border-radius: 20px;
+    max-height: 82dvh;
+  }
+  .gym-menu-sheet nav {
+    grid-template-columns: 1fr;
+  }
+  .gym-menu-sheet nav > a {
+    min-height: 54px;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  .gym-menu-sheet nav .gym-avatar {
+    width: 31px;
+    height: 31px;
+  }
+  .gym-sheet-heading h2 {
+    font-size: 21px;
+  }
+  .gym-studio-toolbar {
+    top: calc(67px + env(safe-area-inset-top));
+    border-radius: 12px;
+  }
+  .gym-jump-link {
+    display: block;
+    border: 1px solid #d7e5e0;
+    border-radius: 10px;
+    padding: 13px 15px;
+    margin-bottom: 18px;
+    background: #fff;
+    color: #167e6a !important;
+    font-size: 12px;
+    font-weight: 650;
+    text-align: center;
+  }
+  .gym-dose-fields .gym-field > span {
+    line-height: 1.5;
+    min-height: 27px;
+  }
+  .gym-icon-actions button,
+  .gym-icon-button {
+    min-width: 38px;
+    min-height: 40px;
+  }
+  .gym-set-list button {
+    min-height: 66px;
+  }
+  .gym-mobile-nav a {
+    min-height: 44px;
+  }
+  .gym-rest-panel {
+    scroll-margin-top: 95px;
+  }
+  .gym-row .gym-text-link {
+    min-height: 40px;
+    align-items: center;
+  }
+  .gym-session-tools .gym-button {
+    margin: 0;
+  }
+  .gym-sheet-heading .gym-eyebrow {
+    font-size: 9px;
+  }
+}
+.gym-form-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.gym-form-fieldset:disabled {
+  opacity: 0.65;
+}

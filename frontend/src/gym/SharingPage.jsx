@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { Download, Upload, Link2 } from "lucide-react";
 import { Capacitor } from "@capacitor/core";
 import { useGym } from "./GymContext.jsx";
 import { parseTransfer, applyTransfer, transferFor } from "./store.js";
+import useMemberSelection from "./useMemberSelection.js";
 import { MemberSelect } from "./CoachPages.jsx";
 import { PageHead, Card, Field, Notice } from "./ui.jsx";
 async function shareFile(data, name) {
@@ -38,16 +39,17 @@ async function shareFile(data, name) {
 export default function SharingPage() {
   const { state, update } = useGym();
   const coach = useLocation().pathname.startsWith("/coach");
-  const [params] = useSearchParams();
-  const [id, setId] = useState(
-      params.get("member") || state.selected || state.members[0]?.id || "",
-    ),
-    [consent, setConsent] = useState(false),
+  const [id, setId, selectionError] = useMemberSelection();
+  const [consent, setConsent] = useState(false),
     [preview, setPreview] = useState(null),
     [error, setError] = useState(""),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false);
   const m = coach ? state.members.find((m) => m.id === id) : state.self;
+  const packet = useMemo(
+    () => (m ? transferFor(state, coach ? "coach" : "member", m) : null),
+    [state, coach, m],
+  );
   async function send() {
     try {
       setBusy(true);
@@ -56,7 +58,7 @@ export default function SharingPage() {
       if (!coach && !m.linkedCoach)
         throw Error("트레이너의 계획 파일을 먼저 가져오세요.");
       await shareFile(
-        transferFor(state, coach ? "coach" : "member", m),
+        parseTransfer(JSON.stringify(packet)),
         `Synex-${coach ? "plan" : "records"}-${m.id.slice(0, 8)}.json`,
       );
       setMessage("공유 파일을 준비했습니다. 받는 사람을 확인해 전달하세요.");
@@ -122,12 +124,33 @@ export default function SharingPage() {
       </div>
       <div className="gym-two">
         <Card title={coach ? "계획·PT·피드백 보내기" : "운동·식단 기록 보내기"}>
-          {coach && <MemberSelect value={id} onChange={setId} />}
+          {coach && (
+            <MemberSelect
+              value={id}
+              onChange={(value) => {
+                setId(value);
+                setConsent(false);
+                setMessage("");
+              }}
+            />
+          )}
+          <Notice error>{selectionError}</Notice>
           <p>
             {coach
               ? "선택한 회원의 계획과 일정, 피드백만 포함됩니다."
               : "나의 운동 기록과 식단 사진이 포함됩니다."}
           </p>
+          {packet && (
+            <div className="gym-note">
+              {coach
+                ? `주 ${m.plan?.frequency || 0}회 · PT ${m.appointments.length}건`
+                : `운동 ${packet.logs.length}건 · 식단 ${packet.meals.length}건 포함`}
+              <br />
+              {coach
+                ? "선택한 회원을 확인하고 공유하세요."
+                : "최근 기록부터 최대 11MB까지 보냅니다. 이전 기록은 기기에 남아 있습니다."}
+            </div>
+          )}
           <label className="gym-check">
             <input
               type="checkbox"
@@ -151,7 +174,12 @@ export default function SharingPage() {
             <input
               type="file"
               accept=".json,application/json"
-              onChange={(e) => e.target.files[0] && read(e.target.files[0])}
+              disabled={busy}
+              onChange={(e) => {
+                const file = e.target.files[0];
+                e.target.value = "";
+                if (file) read(file);
+              }}
             />
           </Field>
           {preview && (

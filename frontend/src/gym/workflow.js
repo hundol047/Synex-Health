@@ -1,4 +1,4 @@
-import { exercises, makePlan, today } from "./store.js";
+import { exercises, makePlan, today, validDate } from "./store.js";
 export const DAYS = ["월", "화", "수", "목", "금", "토", "일"];
 export function dateKey(date) {
   const d = new Date(date);
@@ -40,16 +40,11 @@ export function entryFor(id) {
     sets: e.sets || 2,
     reps: e.dose_type === "duration" ? "30" : String(e.reps || "8–12"),
     dose: e.dose_type,
-    rest: e.rest || 60,
+    rest: e.rest ?? 60,
   };
 }
 export function editablePlan(entries, count, appointments, start) {
-  if (
-    start &&
-    (!/^\d{4}-\d{2}-\d{2}$/.test(start) ||
-      !Number.isFinite(Date.parse(start + "T12:00:00")))
-  )
-    throw Error("계획 시작 날짜를 선택하세요.");
+  if (start && !validDate(start)) throw Error("계획 시작 날짜를 선택하세요.");
   if (entries.length < 1 || entries.length > 12)
     throw Error("운동을 1~12개 선택해 주세요.");
   if (new Set(entries.map((e) => e.id)).size !== entries.length)
@@ -66,6 +61,9 @@ export function editablePlan(entries, count, appointments, start) {
       Number(String(e.reps).split(/[-–~]/)[0]) < 1
     )
       throw Error("횟수·시간은 1 이상의 숫자 또는 범위로 입력하세요.");
+    const dose = String(e.reps).split(/[-–~]/).map(Number);
+    if (dose.length === 2 && dose[0] > dose[1])
+      throw Error("횟수 범위는 작은 값부터 입력하세요.");
     if (
       !Number.isInteger(Number(e.rest)) ||
       Number(e.rest) < 0 ||
@@ -144,6 +142,9 @@ export function newSession(plan, option) {
     exercises: structuredClone(option.exercises),
     date: today(),
     startedAt: Date.now(),
+    runningSince: Date.now(),
+    elapsedMs: 0,
+    paused: false,
     checked: [],
     index: 0,
     restUntil: null,
@@ -175,9 +176,33 @@ export function finishSession(member, effort, now = Date.now()) {
     status: done === total ? "complete" : "partial",
     completedSets: done,
     totalSets: total,
-    minutes: Math.max(1, Math.round((now - s.startedAt) / 60000)),
+    minutes: Math.max(1, Math.round(sessionElapsed(s, now) / 60000)),
   };
   if (!member.logs.some((l) => l.id === s.id)) member.logs.unshift(log);
   member.session = null;
   return log;
+}
+
+export function sessionElapsed(session, now = Date.now()) {
+  return Math.max(
+    0,
+    (session.elapsedMs || 0) +
+      (session.paused ? 0 : now - (session.runningSince ?? session.startedAt)),
+  );
+}
+export function pauseSession(session, paused, now = Date.now()) {
+  if (Boolean(session.paused) === paused) return;
+  if (paused) {
+    session.elapsedMs = sessionElapsed(session, now);
+    session.restRemaining = Math.max(0, (session.restUntil || 0) - now);
+    session.restUntil = null;
+    session.runningSince = null;
+  } else {
+    session.runningSince = now;
+    session.restUntil = session.restRemaining
+      ? now + session.restRemaining
+      : null;
+    session.restRemaining = 0;
+  }
+  session.paused = paused;
 }
