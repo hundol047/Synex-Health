@@ -25,8 +25,18 @@ export default function CapturePage() {
   async function pick(file) {
     try {
       setBusy(true);
+      setConfirmed(false);
+      setSaved(false);
+      setNotice("");
       setPhoto(await photoData(file, 2400));
       setRaw("");
+      setForm({
+        weight: "",
+        skeletal_muscle_mass: "",
+        body_fat_percentage: "",
+        height: "",
+        measurement_date: today(),
+      });
       setConfirmed(false);
       setSaved(false);
       setNotice("사진을 확인한 뒤 수치 인식을 시작하세요.");
@@ -49,6 +59,7 @@ export default function CapturePage() {
         "사진과 인식된 수치를 비교해 주세요. 읽지 못한 항목만 직접 보완하면 됩니다.",
       );
       setConfirmed(false);
+      setSaved(false);
     } catch {
       setError(
         "사진을 인식하지 못했습니다. 선명하게 다시 찍거나 아래 수치를 보완해 주세요.",
@@ -95,7 +106,6 @@ export default function CapturePage() {
             <input
               type="file"
               accept="image/*"
-              capture="environment"
               disabled={busy}
               onChange={(e) => e.target.files[0] && pick(e.target.files[0])}
             />
@@ -123,54 +133,58 @@ export default function CapturePage() {
         </Card>
         <Card title="읽은 수치 확인">
           <form onSubmit={save}>
-            <Field label="측정일">
-              <input
-                type="date"
-                max={today()}
-                required
-                value={form.measurement_date}
-                onChange={(e) =>
-                  setForm({ ...form, measurement_date: e.target.value })
-                }
-              />
-            </Field>
-            {[
-              ["weight", "체중 (kg)", 20, 300],
-              ["skeletal_muscle_mass", "골격근량 (kg)", 1, 100],
-              ["body_fat_percentage", "체지방률 (%)", 0, 100],
-              ["height", "키 (cm)", 50, 250],
-            ].map(([key, label, min, max]) => (
-              <Field key={key} label={label}>
+            <fieldset disabled={busy} className="gym-form-fieldset">
+              <Field label="측정일">
                 <input
-                  type="number"
-                  step="0.1"
-                  min={min}
-                  max={max}
-                  required={["weight", "skeletal_muscle_mass"].includes(key)}
-                  value={form[key]}
+                  type="date"
+                  max={today()}
+                  required
+                  value={form.measurement_date}
                   onChange={(e) => {
-                    setForm({ ...form, [key]: e.target.value });
+                    setForm({ ...form, measurement_date: e.target.value });
                     setConfirmed(false);
                     setSaved(false);
                   }}
                 />
               </Field>
-            ))}
-            <label className="gym-check">
-              <input
-                type="checkbox"
-                checked={confirmed}
-                onChange={(e) => setConfirmed(e.target.checked)}
-              />
-              원본과 숫자·단위를 비교했습니다.
-            </label>
-            <button
-              className="gym-button"
-              disabled={busy || !confirmed || saved}
-            >
-              <Check size={16} />
-              확인한 수치 저장
-            </button>
+              {[
+                ["weight", "체중 (kg)", 20, 300],
+                ["skeletal_muscle_mass", "골격근량 (kg)", 1, 100],
+                ["body_fat_percentage", "체지방률 (%)", 0, 100],
+                ["height", "키 (cm)", 50, 250],
+              ].map(([key, label, min, max]) => (
+                <Field key={key} label={label}>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min={min}
+                    max={max}
+                    required={["weight", "skeletal_muscle_mass"].includes(key)}
+                    value={form[key]}
+                    onChange={(e) => {
+                      setForm({ ...form, [key]: e.target.value });
+                      setConfirmed(false);
+                      setSaved(false);
+                    }}
+                  />
+                </Field>
+              ))}
+              <label className="gym-check">
+                <input
+                  type="checkbox"
+                  checked={confirmed}
+                  onChange={(e) => setConfirmed(e.target.checked)}
+                />
+                원본과 숫자·단위를 비교했습니다.
+              </label>
+              <button
+                className="gym-button"
+                disabled={busy || !confirmed || saved}
+              >
+                <Check size={16} />
+                확인한 수치 저장
+              </button>
+            </fieldset>
           </form>
           <Notice error>{error}</Notice>
           <Notice>{notice}</Notice>

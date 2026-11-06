@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense } from "react";
+import React, { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import {
   Check,
@@ -11,7 +11,12 @@ import {
 } from "lucide-react";
 import { useGym } from "./GymContext.jsx";
 import { exercises } from "./store.js";
-import { sessionSummary, finishSession } from "./workflow.js";
+import {
+  sessionSummary,
+  finishSession,
+  sessionElapsed,
+  pauseSession,
+} from "./workflow.js";
 import { Card, PageHead, Field, Notice } from "./ui.jsx";
 const ExerciseMotion = lazy(
   () => import("../health/components/exercise/ExerciseMotion.jsx"),
@@ -21,6 +26,9 @@ const formatTime = (secs) =>
 export default function WorkoutSession() {
   const { state, update } = useGym();
   const session = state.self.session;
+  const finishPanel = useRef(null),
+    sessionId = session.id;
+  const [discarding, setDiscarding] = useState(false);
   const [now, setNow] = useState(Date.now()),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
@@ -31,6 +39,30 @@ export default function WorkoutSession() {
     const tick = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(tick);
   }, []);
+  useEffect(() => {
+    const pause = () =>
+      update((s) => {
+        if (s.self.session?.id === sessionId)
+          pauseSession(s.self.session, true);
+      }).catch(() => {});
+    const hide = () => {
+      if (document.hidden) pause();
+    };
+    document.addEventListener("visibilitychange", hide);
+    return () => {
+      document.removeEventListener("visibilitychange", hide);
+      pause();
+    };
+  }, [sessionId, update]);
+  useEffect(() => {
+    if (finishing || discarding)
+      requestAnimationFrame(() =>
+        finishPanel.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        }),
+      );
+  }, [finishing, discarding]);
   const e = session.exercises[session.index];
   const source = exercises.find((x) => x.id === e.id);
   const { done, total } = sessionSummary(session);
@@ -50,6 +82,7 @@ export default function WorkoutSession() {
   }
   async function toggle(index) {
     await change((s) => {
+      if (s.paused) pauseSession(s, false);
       const key = `${e.id}:${index}`;
       if (s.checked.includes(key)) {
         s.checked = s.checked.filter((x) => x !== key);
@@ -69,6 +102,17 @@ export default function WorkoutSession() {
       setBusy(false);
     }
   }
+  async function discard() {
+    try {
+      setBusy(true);
+      await update((s) => {
+        if (s.self.session?.id === session.id) s.self.session = null;
+      });
+    } catch (e) {
+      setError(e.message);
+      setBusy(false);
+    }
+  }
   function move(index) {
     setShowDemo(false);
     change((s) => {
@@ -83,12 +127,35 @@ export default function WorkoutSession() {
         있어요.
       </PageHead>
       <Notice error>{error}</Notice>
+      <div className="gym-session-tools">
+        <button
+          className="gym-button secondary small"
+          disabled={busy}
+          onClick={() => change((s) => pauseSession(s, !s.paused))}
+        >
+          {session.paused ? <Play size={16} /> : <Pause size={16} />}{" "}
+          {session.paused ? "운동 이어하기" : "잠깐 쉬기"}
+        </button>
+        <button
+          className="gym-quiet-button"
+          disabled={busy}
+          onClick={() => {
+            setDiscarding(true);
+            setFinishing(false);
+          }}
+        >
+          이 운동 취소
+        </button>
+      </div>
+      {session.paused && (
+        <Notice>
+          운동 시간이 일시정지되었습니다. 이어하기를 누르면 다시 시작합니다.
+        </Notice>
+      )}
       <div className="gym-session-summary">
         <span>
           <Timer size={17} />
-          {formatTime(
-            Math.max(0, Math.floor((now - session.startedAt) / 1000)),
-          )}
+          {formatTime(Math.floor(sessionElapsed(session, now) / 1000))}
         </span>
         <span>
           {done} / {total}세트
@@ -138,6 +205,7 @@ export default function WorkoutSession() {
               fallback={<p role="status">3D 동작을 준비하고 있어요…</p>}
             >
               <ExerciseMotion
+                paused={session.paused}
                 exercise={{
                   ...source,
                   exercise_name: source.name,
@@ -181,11 +249,13 @@ export default function WorkoutSession() {
           <Timer size={26} />
           <div>
             <strong>
-              {rest
-                ? formatTime(rest)
-                : session.restUntil
-                  ? "휴식 완료"
-                  : "나의 속도로, 충분히 쉬어가세요"}
+              {session.paused
+                ? "일시정지"
+                : rest
+                  ? formatTime(rest)
+                  : session.restUntil
+                    ? "휴식 완료"
+                    : "나의 속도로, 충분히 쉬어가세요"}
             </strong>
             <p>
               {rest
@@ -229,7 +299,10 @@ export default function WorkoutSession() {
             <button
               className="gym-button"
               disabled={!done || busy}
-              onClick={() => setFinishing(true)}
+              onClick={() => {
+                setDiscarding(false);
+                setFinishing(true);
+              }}
             >
               운동 마무리
               <Check size={16} />
@@ -265,7 +338,10 @@ export default function WorkoutSession() {
         </div>
         <button
           className="gym-button secondary"
-          onClick={() => setFinishing((x) => !x)}
+          onClick={() => {
+            setDiscarding(false);
+            setFinishing((x) => !x);
+          }}
           disabled={!done || busy}
         >
           여기까지 기록하고 마무리
@@ -274,6 +350,24 @@ export default function WorkoutSession() {
           저장된 상태로 홈으로 <ArrowUpRight size={15} />
         </Link>
       </Card>
+      <div ref={finishPanel} />
+      {discarding && (
+        <Card title="진행 중인 운동을 취소할까요?" className="gym-finish-card">
+          <p>
+            현재 체크한 {done}세트는 운동 기록으로 남지 않습니다. 이전에 저장한
+            기록은 유지됩니다.
+          </p>
+          <button className="gym-button" disabled={busy} onClick={discard}>
+            기록 없이 운동 취소
+          </button>
+          <button
+            className="gym-button secondary"
+            onClick={() => setDiscarding(false)}
+          >
+            계속 운동하기
+          </button>
+        </Card>
+      )}
       {finishing && (
         <Card title="오늘의 운동은 어땠나요?" className="gym-finish-card">
           <p>
