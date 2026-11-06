@@ -1,1 +1,20 @@
-export async function photoData(file,maxWidth=1200){if(!file||!file.type.startsWith('image/'))throw Error('이미지 파일을 선택하세요.');if(file.size>15*1024*1024)throw Error('15MB 이하의 사진을 선택하세요.');const url=URL.createObjectURL(file);try{const im=new Image();im.src=url;await im.decode();const k=Math.min(1,maxWidth/im.width,maxWidth/im.height);const canvas=document.createElement('canvas');canvas.width=Math.round(im.width*k);canvas.height=Math.round(im.height*k);canvas.getContext('2d').drawImage(im,0,0,canvas.width,canvas.height);return canvas.toDataURL('image/jpeg',.85);}finally{URL.revokeObjectURL(url)}}
+export async function photoData(file, maxWidth = 1200) {
+  if (!file || !file.type.startsWith("image/"))
+    throw Error("이미지 파일을 선택하세요.");
+  if (file.size > 15 * 1024 * 1024)
+    throw Error("15MB 이하의 사진을 선택하세요.");
+  const url = URL.createObjectURL(file);
+  try {
+    const im = new Image();
+    im.src = url;
+    await im.decode();
+    const k = Math.min(1, maxWidth / im.width, maxWidth / im.height);
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(im.width * k);
+    canvas.height = Math.round(im.height * k);
+    canvas.getContext("2d").drawImage(im, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", 0.85);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
