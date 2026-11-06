@@ -1,3 +1,4 @@
+import GymShell from '../../gym/GymShell.jsx';
 import {LOCAL_ONLY} from '../lib/localMode.js';
 import {BUILD_LABEL,UI_REVISION} from '../lib/buildInfo.js';
 import PendingWorkouts from './PendingWorkouts.jsx';
@@ -50,6 +51,8 @@ export default function Layout({ children }) {
 
   const nav = isAdmin ? [{to:'/health/admin',label:'관리자',icon:Users,end:true}] : isCounselor ? [{ to: '/health-center', label: '학생 관리', icon: Users, end: true }] : STUDENT_NAV.filter(item=>!LOCAL_ONLY||!['/health/agent','/health/subscription'].includes(item.to));
 
+  return <GymShell>{children}</GymShell>;
+  /* Legacy shell retained for reference.
   return (
     <div className={`health-shell ${auth.local?'device-personal':''} ${pathname==='/health/pose'?'health-shell-pose':''}`}>
       <header className="health-topbar">
@@ -77,5 +80,5 @@ export default function Layout({ children }) {
         ))}
       </nav>
     </div>
-  );
+  ); */
 }

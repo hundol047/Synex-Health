@@ -1,0 +1,12 @@
+import {describe,it,expect,vi} from 'vitest';
+vi.mock('../src/shared/lib/offline.js',()=>({loadLocalDocument:vi.fn(),saveLocalDocument:vi.fn()}));
+import {makePlan,weeklyPlan,validateAppointment,freshMember,parseTransfer,transferFor,applyTransfer,today,exercises} from '../src/gym/store.js';
+import {parseComposition} from '../src/gym/ocr.js';
+describe('gym plan and coach-member exchange',()=>{
+ it('reserves PT days and respects requested weekly frequency',()=>{const days=weeklyPlan(3,[2]);expect(days).toHaveLength(3);expect(days).toContain(2);expect(new Set(days).size).toBe(3);expect(()=>weeklyPlan(2,[0,2,4])).toThrow();});
+ it('rejects overlapping sessions and allows boundary at 60 minutes',()=>{expect(()=>validateAppointment([{id:'a',date:today(),time:'18:30'}],today(),'19:00')).toThrow();expect(()=>validateAppointment([{id:'a',date:today(),time:'18:00'}],today(),'19:00')).not.toThrow();});
+ it('connects a plan, merges member progress, preserves coach feedback and is idempotent',()=>{const member=freshMember('김회원');member.plan=makePlan(exercises.slice(0,2).map(e=>e.id),3,[]);const coach={coachId:'coach-1',members:[member]};const recipient={self:freshMember()};applyTransfer(recipient,parseTransfer(JSON.stringify(transferFor(coach,'coach',member))),'member');expect(recipient.self.plan.frequency).toBe(3);recipient.self.logs=[{id:'log-1',date:today(),name:'기본 루틴',effort:'적당했어요'}];const data=parseTransfer(JSON.stringify(transferFor(recipient,'member',recipient.self)));applyTransfer(coach,data,'coach');applyTransfer(coach,data,'coach');expect(coach.members[0].logs).toHaveLength(1);expect(()=>applyTransfer({coachId:'other',members:[member]},data,'coach')).toThrow();});
+ it('rejects another member plan after pairing',()=>{const self=freshMember();self.linkedCoach='a';expect(()=>applyTransfer({self},{kind:'plan',coachId:'a',memberId:'other'},'member')).toThrow();});
+ it('rejects malformed transfers and executable photo URLs',()=>{expect(()=>parseTransfer('{}')).toThrow();expect(()=>parseTransfer(JSON.stringify({format:'synex-gym-transfer',version:1,kind:'progress',memberId:'x',coachId:'y',name:'a',logs:[],meals:[{id:'m',note:'',date:today(),photo:'javascript:alert(1)'}]}))).toThrow();});
+ it('extracts labelled measurements without inventing missing values',()=>{expect(parseComposition('체중 (kg) 68.4\n골격근량 28.1\n체지방률 19.2\n신장 173')).toEqual({weight:'68.4',skeletal_muscle_mass:'28.1',body_fat_percentage:'19.2',height:'173'});expect(parseComposition('결과를 읽을 수 없음').weight).toBe('');});
+});

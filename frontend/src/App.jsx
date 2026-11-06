@@ -1,3 +1,5 @@
+import {GymProvider} from './gym/GymContext.jsx';
+import {COACH_BUILD} from './gym/store.js';
 import {LOCAL_ONLY} from './shared/lib/localMode.js';
 import React, { lazy, Suspense } from 'react';
 import { createBrowserRouter, createRoutesFromElements, RouterProvider, Outlet, Route, Navigate } from 'react-router-dom';
@@ -7,7 +9,17 @@ import Layout from './shared/components/Layout.jsx';
 const DiagnosticsPage = lazy(() => import('./health/pages/DiagnosticsPage.jsx'));
 const SubscriptionPage = lazy(() => import('./health/pages/SubscriptionPage.jsx'));
 const MonthlyReportPage = lazy(() => import('./health/pages/MonthlyReportPage.jsx'));
-const HomePage = lazy(() => import('./health/pages/HomePage.jsx'));
+const HomePage = lazy(() => import('./gym/MemberPages.jsx').then(m=>({default:m.MemberHome})));
+const MyPlan=lazy(()=>import('./gym/MemberPages.jsx').then(m=>({default:m.MyPlan})));
+const Coaching=lazy(()=>import('./gym/MemberPages.jsx').then(m=>({default:m.Coaching})));
+const Dashboard=lazy(()=>import('./gym/CoachPages.jsx').then(m=>({default:m.Dashboard})));
+const Members=lazy(()=>import('./gym/CoachPages.jsx').then(m=>({default:m.Members})));
+const PlanBuilder=lazy(()=>import('./gym/CoachPages.jsx').then(m=>({default:m.PlanBuilder})));
+const Schedule=lazy(()=>import('./gym/CoachPages.jsx').then(m=>({default:m.Schedule})));
+const Feedback=lazy(()=>import('./gym/CoachPages.jsx').then(m=>({default:m.Feedback})));
+const BenefitsPage=lazy(()=>import('./gym/BenefitsPage.jsx'));
+const SharingPage=lazy(()=>import('./gym/SharingPage.jsx'));
+const CapturePage=lazy(()=>import('./gym/CapturePage.jsx'));
 const BodyMapPage = lazy(() => import('./health/pages/BodyMapPage.jsx'));
 const ComparisonPage = lazy(() => import('./health/pages/ComparisonPage.jsx'));
 const RoutinePage = lazy(() => import('./health/pages/RoutinePage.jsx'));
@@ -30,11 +42,23 @@ const AdminPage = lazy(() => import('./health/pages/AdminPage.jsx'));
 const ConnectionsPage = lazy(() => import('./health/pages/ConnectionsPage.jsx'));
 
 function ServerFeature(){return <section className="card"><h1>서버 연결이 필요한 기능입니다</h1><p>개인용 안드로이드 모드에서는 학교 상담·AI 대화·구독 결제·원격 리포트를 사용하지 않습니다. 내 체성분, 3D 인체, 운동 안내와 기록은 이 폰에서 이용할 수 있습니다.</p></section>;}
-function AppShell(){return <><UnsavedChangesGuard/><Layout><Suspense fallback={<p role="status">화면을 불러오는 중입니다.</p>}><Outlet/></Suspense></Layout></>;}
+function AppShell(){return <><UnsavedChangesGuard/><GymProvider><Layout><Suspense fallback={<p role="status">화면을 불러오는 중입니다.</p>}><Outlet/></Suspense></Layout></GymProvider></>;}
 let router;
 export default function App(){
  if(!router)router=createBrowserRouter(createRoutesFromElements(<Route element={<AppShell/>}>
-          <Route path="/" element={<Navigate to="/health" replace />} />
+          <Route path="/" element={<Navigate to={COACH_BUILD?"/coach":"/health"} replace />} />
+          <Route path="/coach" element={<Dashboard/>}/>
+          <Route path="/coach/members" element={<Members/>}/>
+          <Route path="/coach/plan" element={<PlanBuilder/>}/>
+          <Route path="/coach/schedule" element={<Schedule/>}/>
+          <Route path="/coach/feedback" element={<Feedback/>}/>
+          <Route path="/coach/benefits" element={<BenefitsPage/>}/>
+          <Route path="/coach/sharing" element={<SharingPage/>}/>
+          <Route path="/health/my-plan" element={<MyPlan/>}/>
+          <Route path="/health/coaching" element={<Coaching/>}/>
+          <Route path="/health/benefits" element={<BenefitsPage/>}/>
+          <Route path="/health/sharing" element={<SharingPage/>}/>
+          <Route path="/health/capture" element={<CapturePage/>}/>
           <Route path="/health/diagnostics" element={LOCAL_ONLY?<ServerFeature/>:<DiagnosticsPage />} />
           <Route path="/health/subscription" element={LOCAL_ONLY?<ServerFeature/>:<SubscriptionPage />} />
           <Route path="/health/report" element={LOCAL_ONLY?<ServerFeature/>:<MonthlyReportPage />} />
@@ -53,7 +77,7 @@ export default function App(){
           <Route path="/health/agent" element={LOCAL_ONLY?<ServerFeature/>:<AgentChatPage />} />
           <Route path="/health/profile" element={<ProfilePage />} />
           <Route path="/health-center" element={LOCAL_ONLY?<ServerFeature/>:<CounselorDashboardPage />} />
-          <Route path="*" element={<Navigate to="/health" replace />} />
+          <Route path="*" element={<Navigate to={COACH_BUILD?"/coach":"/health"} replace />} />
  </Route>));
  return <RouterProvider router={router}/>;
 }
