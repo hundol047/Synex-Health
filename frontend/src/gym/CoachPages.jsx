@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   Plus,
@@ -18,6 +18,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { useGym } from "./GymContext.jsx";
+import useMemberSelection from "./useMemberSelection.js";
 import {
   registerDraftNavigation,
   hasDraftChangesForPath,
@@ -52,12 +53,6 @@ export function MemberSelect({ value, onChange }) {
 }
 function memberLink(route, id) {
   return `/coach/${route}?member=${encodeURIComponent(id)}`;
-}
-function useMemberId(state) {
-  const [params] = useSearchParams();
-  return useState(
-    params.get("member") || state.selected || state.members[0]?.id || "",
-  );
 }
 export function Dashboard() {
   const { state } = useGym();
@@ -228,7 +223,9 @@ export function Dashboard() {
 }
 export function Members() {
   const { state, update } = useGym();
-  const [selected, setSelected] = useMemberId(state);
+  const adding = useRef(false);
+  const [addBusy, setAddBusy] = useState(false);
+  const [selected, setSelected] = useMemberSelection();
   const [name, setName] = useState(""),
     [goal, setGoal] = useState(goals[0]),
     [query, setQuery] = useState(""),
@@ -241,6 +238,9 @@ export function Members() {
   );
   async function add(e) {
     e.preventDefault();
+    if (adding.current) return;
+    adding.current = true;
+    setAddBusy(true);
     try {
       const person = { ...freshMember(name.trim()), goal };
       if (!person.name) throw Error("회원 이름을 입력하세요.");
@@ -254,6 +254,9 @@ export function Members() {
       setError("");
     } catch (e) {
       setError(e.message);
+    } finally {
+      adding.current = false;
+      setAddBusy(false);
     }
   }
   async function save(e) {
@@ -331,7 +334,7 @@ export function Members() {
                   ))}
                 </select>
               </Field>
-              <button className="gym-button">
+              <button className="gym-button" disabled={addBusy}>
                 <Plus size={16} />
                 회원 등록
               </button>
@@ -479,7 +482,7 @@ export function Members() {
 }
 export function PlanBuilder() {
   const { state } = useGym();
-  const [id, setId] = useMemberId(state);
+  const [id, setId] = useMemberSelection();
   const m = state.members.find((m) => m.id === id);
   return (
     <>
@@ -586,6 +589,7 @@ function PlanEditor({ member }) {
   async function save() {
     try {
       setBusy(true);
+      if (!start) throw Error("계획 시작 주를 선택하세요.");
       const p = editablePlan(entries, count, member.appointments, start);
       await update((s) => {
         const m = s.members.find((x) => x.id === member.id);
@@ -627,6 +631,17 @@ function PlanEditor({ member }) {
       </div>
       <Notice error>{error}</Notice>
       <Notice>{message}</Notice>
+      {message && !dirty && (
+        <Link
+          className="gym-button secondary"
+          to={memberLink("sharing", member.id)}
+        >
+          저장한 계획 바로 공유 <ArrowUpRight size={16} />
+        </Link>
+      )}
+      <a className="gym-jump-link" href="#routine-editor">
+        선택한 운동 {entries.length}개 · 세트 편집으로 이동 ↓
+      </a>
       <div className="gym-studio-layout">
         <Card title="운동 라이브러리">
           <Field label="운동 이름 검색">
@@ -687,7 +702,9 @@ function PlanEditor({ member }) {
         <div>
           <Card>
             <div className="gym-section-head">
-              <h2>나의 루틴 구성</h2>
+              <h2 id="routine-editor" tabIndex={-1}>
+                나의 루틴 구성
+              </h2>
               <span className="gym-pill">{entries.length} / 12개</span>
             </div>
             <div className="gym-inline-fields">
@@ -845,7 +862,7 @@ function PlanEditor({ member }) {
 }
 export function Schedule() {
   const { state, update } = useGym();
-  const [id, setId] = useMemberId(state);
+  const [id, setId] = useMemberSelection();
   const [date, setDate] = useState(today()),
     [time, setTime] = useState("19:00"),
     [offset, setOffset] = useState(0),
@@ -1062,7 +1079,7 @@ export function Schedule() {
 }
 export function Feedback() {
   const { state, update } = useGym();
-  const [id, setId] = useMemberId(state),
+  const [id, setId] = useMemberSelection(),
     [text, setText] = useState({}),
     [filter, setFilter] = useState("pending"),
     [error, setError] = useState(""),
@@ -1070,15 +1087,44 @@ export function Feedback() {
     [busy, setBusy] = useState(null);
   const m = state.members.find((m) => m.id === id);
   const meals = m?.meals.filter((x) => filter === "all" || !x.feedback) || [];
+  const draftDirty =
+    m?.meals.some(
+      (meal) => text[meal.id] !== undefined && text[meal.id] !== meal.feedback,
+    ) || false;
+  useEffect(
+    () =>
+      registerDraftNavigation(
+        `feedback-${id}`,
+        draftDirty,
+        () =>
+          update((s) => {
+            const target = s.members.find((x) => x.id === id);
+            if (target)
+              for (const meal of target.meals)
+                if (text[meal.id] !== undefined)
+                  meal.feedbackDraft = text[meal.id];
+          }),
+        "작성 중인 피드백을 임시 저장하고 이동할까요?",
+        "/coach/feedback",
+      ),
+    [id, draftDirty, text, update],
+  );
   async function save(meal) {
     try {
       setBusy(meal.id);
-      const value = (text[meal.id] ?? meal.feedback ?? "").trim();
+      const value = (
+        text[meal.id] ??
+        meal.feedbackDraft ??
+        meal.feedback ??
+        ""
+      ).trim();
       if (!value) throw Error("피드백을 입력해 주세요.");
       await update((s) => {
-        s.members
+        const saved = s.members
           .find((x) => x.id === id)
-          .meals.find((x) => x.id === meal.id).feedback = value;
+          .meals.find((x) => x.id === meal.id);
+        saved.feedback = value;
+        delete saved.feedbackDraft;
       });
       setError("");
       setMessage("피드백을 저장했습니다. 계획 공유 파일에 함께 담깁니다.");
@@ -1098,7 +1144,12 @@ export function Feedback() {
       </PageHead>
       <MemberSelect
         value={id}
-        onChange={(v) => {
+        onChange={async (v) => {
+          if (draftDirty) {
+            if (!window.confirm("피드백을 임시 저장하고 회원을 바꿀까요?"))
+              return;
+            await flushDraftChanges("/coach/feedback");
+          }
           setId(v);
           setText({});
           setMessage("");
@@ -1142,7 +1193,9 @@ export function Feedback() {
               <Field label="트레이너 피드백">
                 <textarea
                   maxLength={600}
-                  value={text[meal.id] ?? meal.feedback ?? ""}
+                  value={
+                    text[meal.id] ?? meal.feedbackDraft ?? meal.feedback ?? ""
+                  }
                   onChange={(e) =>
                     setText({ ...text, [meal.id]: e.target.value })
                   }
