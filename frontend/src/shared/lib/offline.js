@@ -314,10 +314,10 @@ export async function listWorkoutDrafts(scopes=[]){
 }
 
 // Device-only health data has no cache expiry and is never part of the server outbox.
-export async function loadLocalDocument() {
+export async function loadLocalDocument(documentKey = 'device-document') {
  const ctx=active;if(!ctx?.key)throw Error(storageError||'기기 저장소를 먼저 열어 주세요.');
  return serial(async()=>{
-  const id=`${ctx.account}:device-document`;
+  const id=`${ctx.account}:${documentKey}`;
   const row=await transaction(['snapshots'],'readonly',(tx,done)=>{const q=tx.objectStore('snapshots').get(id);q.onsuccess=()=>done(q.result);});
   if(!row)return null;
   const bytes=await crypto.subtle.decrypt({name:'AES-GCM',iv:row.iv,additionalData:encode(id)},ctx.key,row.data);
@@ -325,10 +325,10 @@ export async function loadLocalDocument() {
   return JSON.parse(new TextDecoder().decode(bytes));
  });
 }
-export async function saveLocalDocument(value) {
+export async function saveLocalDocument(value, documentKey = 'device-document') {
  const ctx=active;if(!ctx?.key)throw Error(storageError||'기기에 저장할 수 없습니다.');
  return serial(async()=>{
-  const id=`${ctx.account}:device-document`,iv=crypto.getRandomValues(new Uint8Array(12));
+  const id=`${ctx.account}:${documentKey}`,iv=crypto.getRandomValues(new Uint8Array(12));
   const data=await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:encode(id)},ctx.key,encode(JSON.stringify(value)));
   await transaction(['keys','snapshots'],'readwrite',tx=>{
    const q=tx.objectStore('keys').get(ctx.account);q.onsuccess=()=>{

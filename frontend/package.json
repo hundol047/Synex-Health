@@ -26,9 +26,11 @@
     "@capacitor/browser": "^8.0.4",
     "@capacitor/core": "^8.5.2",
     "@capacitor/device": "^8.0.3",
+    "@capacitor/filesystem": "^8.1.5",
     "@capacitor/ios": "^8.5.2",
     "@capacitor/local-notifications": "^8.3.1",
     "@capacitor/push-notifications": "^8.1.2",
+    "@capacitor/share": "^8.0.3",
     "@capgo/capacitor-health": "^8.11.3",
     "@fontsource-variable/noto-sans-kr": "5.3.0",
     "@mediapipe/tasks-vision": "^1.0.1",
@@ -40,6 +42,7 @@
     "react-dom": "19.2.4",
     "react-router-dom": "^7.1.1",
     "recharts": "^2.15.0",
+    "tesseract.js": "^6.0.1",
     "three": "0.180.0"
   },
   "devDependencies": {
