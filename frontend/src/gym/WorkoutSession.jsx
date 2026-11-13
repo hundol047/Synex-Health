@@ -16,6 +16,8 @@ import {
   finishSession,
   sessionElapsed,
   pauseSession,
+  nextIncompleteSet,
+  checkSessionSet,
 } from "./workflow.js";
 import { Card, PageHead, Field, Notice } from "./ui.jsx";
 const ExerciseMotion = lazy(
@@ -66,6 +68,7 @@ export default function WorkoutSession() {
   const e = session.exercises[session.index];
   const source = exercises.find((x) => x.id === e.id);
   const { done, total } = sessionSummary(session);
+  const nextSet = nextIncompleteSet(session);
   const rest = Math.max(0, Math.ceil(((session.restUntil || 0) - now) / 1000));
   async function change(fn) {
     try {
@@ -81,17 +84,7 @@ export default function WorkoutSession() {
     }
   }
   async function toggle(index) {
-    await change((s) => {
-      if (s.paused) pauseSession(s, false);
-      const key = `${e.id}:${index}`;
-      if (s.checked.includes(key)) {
-        s.checked = s.checked.filter((x) => x !== key);
-        s.restUntil = null;
-      } else {
-        s.checked.push(key);
-        s.restUntil = Date.now() + (e.rest ?? 60) * 1000;
-      }
-    });
+    await change((s) => checkSessionSet(s, index));
   }
   async function finish() {
     try {
@@ -173,6 +166,48 @@ export default function WorkoutSession() {
         aria-valuenow={done}
       >
         <span style={{ width: `${(done / total) * 100}%` }} />
+      </div>
+      <div className="gym-workout-action">
+        <div>
+          <span>지금 할 운동</span>
+          <strong>{e.name}</strong>
+          <small>
+            {nextSet >= 0
+              ? `${nextSet + 1} / ${e.sets}세트 · ${e.reps}${e.dose === "duration" ? "초" : "회"}`
+              : "이 동작의 모든 세트를 기록했어요"}
+          </small>
+        </div>
+        {nextSet >= 0 ? (
+          <button
+            className="gym-button"
+            disabled={busy}
+            onClick={() => toggle(nextSet)}
+          >
+            <Check size={17} />
+            {nextSet + 1}세트 완료
+          </button>
+        ) : session.index < session.exercises.length - 1 ? (
+          <button
+            className="gym-button"
+            disabled={busy}
+            onClick={() => move(session.index + 1)}
+          >
+            다음 동작
+            <ChevronRight size={17} />
+          </button>
+        ) : (
+          <button
+            className="gym-button"
+            disabled={busy}
+            onClick={() => {
+              setDiscarding(false);
+              setFinishing(true);
+            }}
+          >
+            운동 마무리
+            <Check size={17} />
+          </button>
+        )}
       </div>
       <Card className="gym-session-card">
         <div className="gym-session-heading">

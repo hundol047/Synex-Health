@@ -25,6 +25,8 @@ import {
 } from "./workflow.js";
 import { PageHead, Card, Empty, Field, Notice } from "./ui.jsx";
 import { photoData } from "./photos.js";
+import WorkoutHistory from "./WorkoutHistory.jsx";
+import PlanPeriodNotice from "./PlanPeriodNotice.jsx";
 import WorkoutSession from "./WorkoutSession.jsx";
 import { HealthAPI } from "../shared/lib/api.js";
 import { useApiData } from "../health/lib/useApiData.js";
@@ -110,6 +112,7 @@ export function MemberHome() {
           </svg>
         </div>
       </section>
+      <PlanPeriodNotice plan={m.plan} />
       <Card className="gym-week-card">
         <div className="gym-section-head">
           <h2>이번 주, 나의 리듬</h2>
@@ -280,6 +283,7 @@ export function MyPlan() {
         트레이너가 구성한 동작을, 내 속도로 하나씩 수행하세요.
       </PageHead>
       <Notice error>{error}</Notice>
+      <PlanPeriodNotice plan={plan} />
       {!plan ? (
         <Card>
           <Empty>
@@ -385,32 +389,7 @@ export function MyPlan() {
           </Card>
         </>
       )}
-      <Card title="최근 나의 운동">
-        {m.logs.length ? (
-          m.logs.slice(0, 7).map((l) => (
-            <div className="gym-row" key={l.id}>
-              <span className="gym-avatar">
-                <Check size={17} />
-              </span>
-              <div>
-                <strong>{l.name}</strong>
-                <p>
-                  {l.date} · {l.effort}
-                </p>
-              </div>
-              <span className="gym-pill">
-                {l.completedSets !== undefined
-                  ? `${l.completedSets}/${l.totalSets}세트`
-                  : l.status === "partial"
-                    ? "부분 수행"
-                    : "완료"}
-              </span>
-            </div>
-          ))
-        ) : (
-          <Empty>첫 운동을 마치면 이곳에 기록이 쌓입니다.</Empty>
-        )}
-      </Card>
+      <WorkoutHistory member={m} />
     </>
   );
 }
