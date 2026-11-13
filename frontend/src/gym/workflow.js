@@ -22,7 +22,7 @@ export function weekStats(member, dates = weekDates()) {
     logs,
     completed,
     days: completed.size,
-    target: member.plan?.frequency || 0,
+    target: member.plan?.dates?.[0] === dates[0] ? member.plan.frequency : 0,
   };
 }
 export const upcoming = (member) =>
@@ -205,4 +205,68 @@ export function pauseSession(session, paused, now = Date.now()) {
     session.restRemaining = 0;
   }
   session.paused = paused;
+}
+
+export function planPeriod(plan, date = today()) {
+  if (!plan) return { kind: "none", label: "전달받은 계획 없음" };
+  const first = plan.dates[0],
+    last = plan.dates[6];
+  return {
+    kind: date < first ? "upcoming" : date > last ? "past" : "current",
+    label: `${first.slice(5).replace("-", ".")} — ${last.slice(5).replace("-", ".")}`,
+  };
+}
+export function saveRoutineTemplate(state, name, entries, count) {
+  const title = name.trim();
+  if (!title || title.length > 40)
+    throw Error("템플릿 이름을 1~40자로 입력하세요.");
+  editablePlan(entries, count, []);
+  const items = state.routineTemplates || [];
+  if (items.some((x) => x.name === title))
+    throw Error("다른 템플릿 이름을 입력하세요. 같은 이름이 이미 있습니다.");
+  if (items.length >= 20)
+    throw Error("템플릿은 최대 20개까지 저장할 수 있습니다.");
+  const template = {
+    id: crypto.randomUUID(),
+    name: title,
+    entries: structuredClone(entries),
+    count: Number(count),
+  };
+  state.routineTemplates = [template, ...items];
+  return template;
+}
+export function workoutHistory(member, anchor = today()) {
+  return [-3, -2, -1, 0].map((offset) => {
+    const dates = weekDates(anchor, offset),
+      stats = weekStats(member, dates);
+    return {
+      start: dates[0],
+      label: dates[0].slice(5).replace("-", "."),
+      days: stats.days,
+      sessions: stats.logs.length,
+    };
+  });
+}
+export function nextIncompleteSet(session) {
+  const e = session.exercises[session.index];
+  if (!e) return -1;
+  return (
+    Array.from({ length: e.sets }, (_, i) => i).find(
+      (i) => !session.checked.includes(`${e.id}:${i}`),
+    ) ?? -1
+  );
+}
+export function checkSessionSet(session, index, now = Date.now()) {
+  const e = session.exercises[session.index];
+  if (!e || !Number.isInteger(index) || index < 0 || index >= e.sets)
+    throw Error("운동 세트를 다시 확인해 주세요.");
+  if (session.paused) pauseSession(session, false, now);
+  const key = `${e.id}:${index}`;
+  if (session.checked.includes(key)) {
+    session.checked = session.checked.filter((x) => x !== key);
+    session.restUntil = null;
+  } else {
+    session.checked.push(key);
+    session.restUntil = now + (e.rest ?? 60) * 1000;
+  }
 }

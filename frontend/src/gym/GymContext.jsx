@@ -12,10 +12,20 @@ export function GymProvider({ children }) {
     [error, setError] = useState("");
   useEffect(() => {
     let active = true;
+    const accept = (s) => {
+      if (active)
+        setState((prev) =>
+          !prev || (s.revision || 0) >= (prev.revision || 0) ? s : prev,
+        );
+    };
+    const changed = (e) => {
+      if (e.detail) accept(e.detail);
+      else load();
+    };
     const load = () =>
       readGym()
         .then((s) => {
-          if (active) setState(s);
+          accept(s);
         })
         .catch((e) => {
           if (active) setError(e.message);
@@ -23,16 +33,20 @@ export function GymProvider({ children }) {
     ensureGym()
       .then(load)
       .catch((e) => setError(e.message));
-    window.addEventListener("synex-gym-change", load);
+    window.addEventListener("synex-gym-change", changed);
     return () => {
       active = false;
-      window.removeEventListener("synex-gym-change", load);
+      window.removeEventListener("synex-gym-change", changed);
     };
   }, []);
   const update = useCallback(async (fn) => {
     try {
       const s = await mutateGym(fn);
-      setState(structuredClone(s));
+      setState((prev) =>
+        !prev || (s.revision || 0) >= (prev.revision || 0)
+          ? structuredClone(s)
+          : prev,
+      );
       return s;
     } catch (e) {
       throw e;

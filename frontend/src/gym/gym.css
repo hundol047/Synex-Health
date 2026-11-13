@@ -2681,3 +2681,337 @@
 .gym-form-fieldset:disabled {
   opacity: 0.65;
 }
+/* 2.3: repeatable planning and clear everyday actions. */
+.gym-template-panel {
+  border: 1px solid #dce8e4;
+  border-radius: 16px;
+  background: #fff;
+  margin: 0 0 16px;
+  overflow: hidden;
+}
+.gym-template-panel > summary {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 18px 21px;
+  cursor: pointer;
+  color: #267464;
+  font-weight: 700;
+  font-size: 13px;
+  list-style: none;
+}
+.gym-template-panel > summary::-webkit-details-marker {
+  display: none;
+}
+.gym-template-panel summary > span:nth-child(2) {
+  flex: 1;
+}
+.gym-template-panel summary small {
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  color: #78928b;
+  margin-top: 4px;
+}
+.gym-template-panel[open] > summary {
+  border-bottom: 1px solid #e4ece8;
+  background: #f3f8f5;
+}
+.gym-template-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  padding: 22px;
+}
+.gym-template-body h3 {
+  font-size: 14px;
+  margin: 0 0 17px;
+}
+.gym-template-body .gym-field {
+  margin-bottom: 8px;
+}
+.gym-template-panel > .gym-notice {
+  margin: 0 22px 18px !important;
+}
+.gym-week-shortcuts {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 18px 0 23px;
+}
+.gym-week-shortcuts > span {
+  font-size: 12px;
+  color: #748a88;
+  margin-right: auto;
+}
+.gym-week-shortcuts button {
+  border: 1px solid #dbe6e3;
+  border-radius: 10px;
+  background: #fff;
+  color: #5a7d73;
+  padding: 10px 17px;
+  min-height: 44px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.gym-week-shortcuts button.active {
+  background: #e6f4eb;
+  border-color: #a5cdbb;
+  color: #1d765e;
+}
+.gym-week-shortcuts small {
+  margin-left: 6px;
+  font-size: 10px;
+}
+.gym-period-notice {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 18px 22px;
+  border: 1px solid #dce8e5;
+  border-radius: 14px;
+  background: #edf5f2;
+  margin-bottom: 24px;
+  color: #347c6a;
+}
+.gym-period-notice > svg {
+  flex-shrink: 0;
+}
+.gym-period-notice > div {
+  flex: 1;
+}
+.gym-period-notice strong {
+  font-size: 13px;
+}
+.gym-period-notice p {
+  font-size: 11px;
+  line-height: 1.8;
+  color: #66857c;
+  margin-top: 3px;
+}
+.gym-period-notice > a {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+  min-height: 40px;
+}
+.gym-period-notice.past {
+  background: #f6f2e9;
+  border-color: #e5dbc6;
+  color: #8b7041;
+}
+.gym-period-notice.past p {
+  color: #8b806d;
+}
+.gym-period-notice.upcoming {
+  background: #eff4fa;
+  border-color: #dbe5f0;
+  color: #567da2;
+}
+.gym-history-summary {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  padding: 23px;
+  border-radius: 14px;
+  background: #f4f8f7;
+  margin-bottom: 25px;
+}
+.gym-history-summary > div:first-child {
+  flex: 1;
+}
+.gym-history-summary > div > strong {
+  font-size: 38px;
+  line-height: 1;
+}
+.gym-history-summary > div > strong small {
+  font-size: 15px;
+  font-weight: 400;
+  margin-left: 7px;
+}
+.gym-history-summary p {
+  font-size: 11px;
+  margin: 10px 0 0;
+}
+.gym-history-bars {
+  display: flex;
+  gap: 22px;
+  align-items: end;
+  height: 110px;
+}
+.gym-history-bars > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  min-width: 30px;
+}
+.gym-history-bars > div > strong {
+  font-size: 10px;
+  color: #709288;
+}
+.gym-history-bars > div > div {
+  width: 21px;
+  height: 65px;
+  background: #e2ece8;
+  border-radius: 5px;
+  display: flex;
+  align-items: end;
+  overflow: hidden;
+}
+.gym-history-bars span {
+  display: block;
+  width: 100%;
+  background: #448e78;
+  min-height: 2px;
+  border-radius: 5px;
+}
+.gym-history-bars small {
+  font-size: 9px;
+  color: #92a69e;
+}
+.gym-pill.neutral {
+  background: #edf0f3;
+  color: #778b93 !important;
+}
+.gym-workout-action {
+  position: sticky;
+  top: 12px;
+  z-index: 24;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 15px 22px;
+  background: #123e47;
+  color: #fff;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px #123e471a;
+  margin-bottom: 22px;
+}
+.gym-workout-action > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.gym-workout-action span {
+  font-size: 9px;
+  color: #96c9bd;
+}
+.gym-workout-action strong {
+  font-size: 15px;
+}
+.gym-workout-action small {
+  font-size: 10px;
+  color: #adcfc6;
+}
+.gym-workout-action .gym-button {
+  margin: 0;
+  background: #c0ead4;
+  color: #1c5748 !important;
+  white-space: nowrap;
+}
+.gym-template-body .gym-quiet-button svg {
+  vertical-align: middle;
+  margin-right: 5px;
+}
+.gym-template-panel summary:focus-visible {
+  outline: 3px solid #77b8eb;
+  outline-offset: -3px;
+}
+@media (max-width: 760px) {
+  .gym-template-panel > summary {
+    padding: 17px 15px;
+    font-size: 12px;
+  }
+  .gym-template-panel summary small {
+    font-size: 9px;
+  }
+  .gym-template-body {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    padding: 20px;
+  }
+  .gym-template-body > div + div {
+    border-top: 1px solid #e1ebe5;
+    padding-top: 19px;
+  }
+  .gym-week-shortcuts {
+    gap: 7px;
+    flex-wrap: wrap;
+  }
+  .gym-week-shortcuts > span {
+    font-size: 11px;
+  }
+  .gym-week-shortcuts button {
+    padding: 10px 12px;
+    font-size: 11px;
+  }
+  .gym-week-shortcuts small {
+    font-size: 9px;
+  }
+  .gym-period-notice {
+    padding: 16px;
+    gap: 11px;
+    flex-wrap: wrap;
+  }
+  .gym-period-notice strong {
+    font-size: 12px;
+  }
+  .gym-period-notice p {
+    font-size: 10px;
+  }
+  .gym-period-notice > a {
+    margin-left: 31px;
+    min-height: 28px;
+  }
+  .gym-period-notice > div {
+    flex-basis: 75%;
+  }
+  .gym-history-summary {
+    padding: 18px 14px;
+    gap: 15px;
+  }
+  .gym-history-bars {
+    gap: 10px;
+  }
+  .gym-history-bars > div {
+    min-width: 24px;
+  }
+  .gym-history-bars > div > div {
+    width: 18px;
+  }
+  .gym-history-summary p {
+    font-size: 10px;
+  }
+  .gym-history-summary .gym-eyebrow {
+    font-size: 8px;
+    letter-spacing: 1px;
+  }
+  .gym-history-summary > div > strong {
+    font-size: 32px;
+  }
+  .gym-workout-action {
+    top: calc(67px + env(safe-area-inset-top));
+    padding: 13px 15px;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .gym-workout-action strong {
+    font-size: 13px;
+  }
+  .gym-workout-action small {
+    font-size: 9px;
+  }
+  .gym-workout-action .gym-button {
+    font-size: 12px;
+    padding: 12px 13px;
+  }
+  .gym-workout-action .gym-button svg {
+    width: 15px;
+  }
+}

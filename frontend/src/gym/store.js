@@ -36,8 +36,11 @@ export function mutateGym(fn) {
     .then(async () => {
       const state = await readGym();
       await fn(state);
+      state.revision = (state.revision || 0) + 1;
       await saveLocalDocument(state, "synex-gym-v1");
-      window.dispatchEvent(new Event("synex-gym-change"));
+      window.dispatchEvent(
+        new CustomEvent("synex-gym-change", { detail: structuredClone(state) }),
+      );
       return state;
     });
   queue = task;
