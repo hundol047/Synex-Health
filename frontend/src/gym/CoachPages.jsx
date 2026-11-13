@@ -18,6 +18,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { useGym } from "./GymContext.jsx";
+import RoutineTemplates from "./RoutineTemplates.jsx";
 import useMemberSelection from "./useMemberSelection.js";
 import {
   registerDraftNavigation,
@@ -544,6 +545,36 @@ function PlanEditor({ member }) {
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false),
     [dirty, setDirty] = useState(Boolean(member.planDraft));
+  const draftTimer = useRef(null),
+    draftGeneration = useRef(0);
+  const [draftStatus, setDraftStatus] = useState(
+    member.planDraft ? "임시 저장 복구됨" : "",
+  );
+  useEffect(() => {
+    const generation = ++draftGeneration.current;
+    clearTimeout(draftTimer.current);
+    if (!dirty || busy) return;
+    setDraftStatus("자동 저장 중…");
+    draftTimer.current = setTimeout(() => {
+      update((s) => {
+        if (generation === draftGeneration.current) {
+          const m = s.members.find((x) => x.id === member.id);
+          if (m) m.planDraft = { entries, count, start };
+        }
+      })
+        .then(() => {
+          if (generation === draftGeneration.current)
+            setDraftStatus("기기에 임시 저장됨");
+        })
+        .catch((e) => {
+          if (generation === draftGeneration.current) {
+            setDraftStatus("자동 저장 재시도 필요");
+            setError(e.message);
+          }
+        });
+    }, 450);
+    return () => clearTimeout(draftTimer.current);
+  }, [dirty, busy, entries, count, start, member.id, update]);
   useEffect(
     () =>
       registerDraftNavigation(
@@ -587,6 +618,8 @@ function PlanEditor({ member }) {
     });
   }
   async function save() {
+    clearTimeout(draftTimer.current);
+    draftGeneration.current++;
     try {
       setBusy(true);
       if (!start) throw Error("계획 시작 주를 선택하세요.");
@@ -598,6 +631,7 @@ function PlanEditor({ member }) {
         s.selected = member.id;
       });
       setDirty(false);
+      setDraftStatus("계획 저장 완료");
       setError("");
       setMessage("계획을 저장했습니다. 공유 센터에서 회원에게 전달하세요.");
     } catch (e) {
@@ -620,7 +654,7 @@ function PlanEditor({ member }) {
           <span className="gym-muted">
             {" "}
             {dirty
-              ? "변경한 내용을 저장해 주세요"
+              ? draftStatus || "변경한 내용을 저장해 주세요"
               : "저장된 루틴을 이어서 편집할 수 있어요"}
           </span>
         </div>
@@ -628,6 +662,36 @@ function PlanEditor({ member }) {
           <Check size={17} />
           {busy ? "저장 중…" : "계획 저장"}
         </button>
+      </div>
+      <RoutineTemplates
+        entries={entries}
+        count={count}
+        onApply={(rows, frequency) => {
+          edit(() => rows);
+          setCount(frequency);
+        }}
+      />
+      <div className="gym-week-shortcuts">
+        <span>계획 주 빠른 설정</span>
+        {[
+          [0, "이번 주"],
+          [1, "다음 주"],
+        ].map(([offset, label]) => (
+          <button
+            key={offset}
+            className={
+              weekDates(today(), offset)[0] === weekDates(start || today())[0]
+                ? "active"
+                : ""
+            }
+            onClick={() => {
+              setStart(weekDates(today(), offset)[0]);
+              setDirty(true);
+            }}
+          >
+            {label} <small>{weekDates(today(), offset)[0].slice(5)}</small>
+          </button>
+        ))}
       </div>
       <Notice error>{error}</Notice>
       <Notice>{message}</Notice>
