@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, lazy, Suspense } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   Check,
@@ -20,9 +20,8 @@ import {
   checkSessionSet,
 } from "./workflow.js";
 import { Card, PageHead, Field, Notice } from "./ui.jsx";
-const ExerciseMotion = lazy(
-  () => import("../health/components/exercise/ExerciseMotion.jsx"),
-);
+import WorkoutDemo from "./WorkoutDemo.jsx";
+import { guidedExercise, usesSeconds, doseValue } from "./prescription.js";
 const formatTime = (secs) =>
   `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
 export default function WorkoutSession() {
@@ -67,6 +66,7 @@ export default function WorkoutSession() {
   }, [finishing, discarding]);
   const e = session.exercises[session.index];
   const source = exercises.find((x) => x.id === e.id);
+  const demonstration = useMemo(() => guidedExercise(source, e), [source, e]);
   const { done, total } = sessionSummary(session);
   const nextSet = nextIncompleteSet(session);
   const rest = Math.max(0, Math.ceil(((session.restUntil || 0) - now) / 1000));
@@ -173,7 +173,7 @@ export default function WorkoutSession() {
           <strong>{e.name}</strong>
           <small>
             {nextSet >= 0
-              ? `${nextSet + 1} / ${e.sets}세트 · ${e.reps}${e.dose === "duration" ? "초" : "회"}`
+              ? `${nextSet + 1} / ${e.sets}세트 · ${doseValue(e.reps)}${usesSeconds(e.dose ?? source?.dose_type) ? "초" : "회"}`
               : "이 동작의 모든 세트를 기록했어요"}
           </small>
         </div>
@@ -220,37 +220,25 @@ export default function WorkoutSession() {
             </span>
             <h2>{e.name}</h2>
             <p>
-              {e.sets}세트 · {e.reps}
-              {e.dose === "duration" ? "초" : "회"} · 세트 사이 {e.rest ?? 60}초
+              {e.sets}세트 · {doseValue(e.reps)}
+              {usesSeconds(e.dose ?? source?.dose_type) ? "초" : "회"} · 세트 사이 {e.rest ?? 60}초
               휴식
             </p>
           </div>
         </div>
         <button
           className="gym-button secondary"
-          onClick={() => setShowDemo((x) => !x)}
+          disabled={!demonstration?.motion_id}
+          aria-haspopup="dialog"
+          onClick={() => setShowDemo(true)}
           aria-expanded={showDemo}
         >
           <Play size={17} />
-          {showDemo ? "3D 동작 접기" : "3D 동작 시범 보기"}
+          3D 동작 시범 보기
         </button>
-        {showDemo && source && (
-          <div className="gym-session-motion">
-            <Suspense
-              fallback={<p role="status">3D 동작을 준비하고 있어요…</p>}
-            >
-              <ExerciseMotion
-                paused={session.paused}
-                exercise={{
-                  ...source,
-                  exercise_name: source.name,
-                  exercise_id: source.id,
-                  sets: e.sets,
-                  reps: e.reps,
-                }}
-              />
-            </Suspense>
-          </div>
+        {showDemo && demonstration && (
+          <WorkoutDemo exercise={demonstration} entry={e} paused={session.paused}
+            resume={() => change(s => pauseSession(s, false))} onClose={() => setShowDemo(false)}/>
         )}
         <div
           className="gym-set-list"
@@ -269,8 +257,8 @@ export default function WorkoutSession() {
               >
                 <span>{i + 1}세트</span>
                 <strong>
-                  {e.reps}
-                  {e.dose === "duration" ? "초" : "회"}
+                  {doseValue(e.reps)}
+                  {usesSeconds(e.dose ?? source?.dose_type) ? "초" : "회"}
                 </strong>
                 <span className="gym-set-check">
                   {checked ? <Check size={18} /> : <span />}

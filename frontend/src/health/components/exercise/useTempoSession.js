@@ -29,7 +29,7 @@ export default function useTempoSession(exercises,{disabled=false}={}){
  },[state.status,disabled,plan,pause]);
  const segment=plan[state.index],frame=tempoFrame(segment,state.elapsed);
  function start(){if(disabled||document.hidden||!plan.length)return;setState(s=>s.status==='paused'?{...s,status:'running'}:{status:'running',index:0,elapsed:0});}
- function restChange(index,seconds){setRestOverrides(old=>({...old,[index]:Math.max(10,Math.min(120,seconds))}));}
+ function restChange(index,seconds){setRestOverrides(old=>({...old,[index]:exercises[index]?.coachRestSeconds!=null?Math.max(0,Math.min(300,seconds)):Math.max(10,Math.min(120,seconds))}));}
  return {state,segment,frame,plan,speed,setSpeed,pause,start,restChange,restOverrides,
   reset:()=>setState({status:'idle',index:0,elapsed:0}),
   skipRest:()=>setState(s=>plan[s.index]?.kind==='rest'?{status:s.index+1>=plan.length?'complete':s.status,index:s.index+1,elapsed:0}:s),

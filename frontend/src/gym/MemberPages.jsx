@@ -1,3 +1,4 @@
+import { usesSeconds, doseValue } from "./prescription.js";
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -339,8 +340,8 @@ export function MyPlan() {
                 <div>
                   <strong>{e.name}</strong>
                   <p>
-                    {e.sets}세트 · {e.reps}
-                    {e.dose === "duration" ? "초" : "회"} · 휴식 {e.rest ?? 60}
+                    {e.sets}세트 · {doseValue(e.reps)}
+                    {usesSeconds(e.dose) ? "초" : "회"} · 휴식 {e.rest ?? 60}
                     초
                   </p>
                 </div>

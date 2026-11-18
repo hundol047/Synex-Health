@@ -5,6 +5,7 @@ const positive=(value,fallback)=>Number.isFinite(Number(value))&&Number(value)>0
 const recovery=new Set(['hamstring_stretch','calf_stretch','chest_open','cat_cow','thoracic_rotation','ankle_pump','shoulder_roll','heel_slide']);
 const demanding=new Set(['full_pushup','pushup','lunge','reverse_lunge','side_lunge','single_bridge','barbell_squat','barbell_rdl','leg_press']);
 export function recommendedRest(exercise){
+ if(Number.isInteger(exercise.coachRestSeconds))return {seconds:clamp(exercise.coachRestSeconds,0,300),reason:"트레이너가 설정한 휴식"};
  const planned=Number(exercise.rest_seconds);
  if(exercise.rest_seconds!=null&&Number.isFinite(planned))return {seconds:clamp(Math.round(planned),10,120),reason:'내 루틴에 설정된 휴식'};
  const id=exercise.motion_id,guide=getMotionGuide(id);
@@ -18,20 +19,20 @@ export function tempoPrescription(exercise){
  const kind=exercise.dose_type==='hold'||guide?.kind==='hold'?'hold':exercise.dose_type==='duration'||guide?.kind==='cyclic'?'duration':'reps';
  const numbers=String(exercise.reps||'').match(/\d+/g)||[];
  const perSide=/각|쪽|좌우|each/i.test(String(exercise.reps));
- const reps=clamp(Number(numbers[0])||8,1,100)*(guide?.kind==='alternating'&&perSide?2:1);
+ const reps=clamp(Number(numbers[0])||8,1,exercise.coachRestSeconds!=null?999:100)*(guide?.kind==='alternating'&&perSide?2:1);
  const seconds=kind==='hold'?positive(exercise.hold_seconds,30):positive(exercise.duration_seconds,Number(String(exercise.duration||'').match(/([\d.]+)\s*분/)?.[1])*60||60);
- return {kind,reps,sets:clamp(Math.round(positive(exercise.sets,2)),1,20),seconds:clamp(seconds,5,3600),cycleMs:guide?.durationMs||7000,alternating:guide?.kind==='alternating',guide};
+ return {kind,reps,sets:clamp(Math.round(positive(exercise.sets,2)),1,20),seconds:clamp(seconds,exercise.coachRestSeconds!=null?1:5,3600),cycleMs:guide?.durationMs||7000,alternating:guide?.kind==='alternating',guide};
 }
 export function buildTempoPlan(exercises,{speed=1,restOverrides={}}={}){
  const segments=[];
  exercises.forEach((exercise,index)=>{
   const p=tempoPrescription(exercise),rate=clamp(positive(speed,1),.5,1.5);
   const cycleMs=p.cycleMs/rate,repMs=cycleMs/(p.alternating?2:1);
-  const restSeconds=clamp(positive(restOverrides[index],recommendedRest(exercise).seconds),10,120);
+  const restSeconds=restOverrides[index] ?? recommendedRest(exercise).seconds;
   segments.push({kind:'prepare',exerciseIndex:index,set:1,durationMs:5000});
   for(let set=1;set<=p.sets;set++){
    segments.push({kind:'work',exerciseIndex:index,set,durationMs:p.kind==='reps'?repMs*p.reps:p.seconds*1000,cycleMs,repMs,prescription:p});
-   segments.push({kind:'rest',exerciseIndex:index,set,durationMs:restSeconds*1000,final:set===p.sets,nextExerciseIndex:set===p.sets?index+1:index});
+   if(restSeconds>0)segments.push({kind:'rest',exerciseIndex:index,set,durationMs:restSeconds*1000,final:set===p.sets,nextExerciseIndex:set===p.sets?index+1:index});
   }
  });
  return segments;

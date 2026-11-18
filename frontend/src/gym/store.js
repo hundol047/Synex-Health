@@ -1,3 +1,4 @@
+import { catalogEntry } from "./prescription.js";
 import { loadLocalDocument, saveLocalDocument } from "../shared/lib/offline.js";
 import catalog from "../shared/lib/localCatalog.json";
 export const COACH_BUILD = import.meta.env.VITE_APP_AUDIENCE === "coach";
@@ -130,13 +131,7 @@ export function makePlan(ids, count, appointments, startDate) {
   const entries = ids.map((id) => {
     const e = exercises.find((e) => e.id === id);
     if (!e) throw Error("운동 정보를 다시 선택하세요.");
-    return {
-      id: e.id,
-      name: e.name,
-      sets: e.sets || 2,
-      reps: e.reps || "8–12",
-      dose: e.dose_type,
-    };
+    return catalogEntry(e);
   });
   return {
     id: uuid(),
@@ -254,7 +249,7 @@ function parseTransferData(raw) {
         if (!["string", "number"].includes(typeof e.reps))
           throw Error("운동 횟수 형식을 확인하세요.");
         limitedText(String(e.reps), 40);
-        if (e.dose !== undefined && !["duration", "reps"].includes(e.dose))
+        if (e.dose !== undefined && !["duration", "hold", "reps"].includes(e.dose))
           throw Error("운동 단위를 확인하세요.");
         if (
           e.rest !== undefined &&

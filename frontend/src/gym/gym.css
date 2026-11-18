@@ -3015,3 +3015,62 @@
     width: 15px;
   }
 }
+
+.gym-demo-dialog {
+  box-sizing: border-box;
+  width: min(100%, 900px);
+  max-width: 100%;
+  max-height: 94dvh;
+  padding: 0;
+  margin: auto;
+  border: 0;
+  border-radius: 20px;
+  background: #fff;
+  color: #15323a;
+  overscroll-behavior: contain;
+}
+.gym-demo-dialog::backdrop { background: rgb(10 32 39 / 68%); }
+.gym-demo-header {
+  position: sticky; top: 0; z-index: 3;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px; background: #fff; border-bottom: 1px solid #d8e5e2;
+}
+.gym-demo-header h2 { margin: 0; font-size: 1.25rem; }
+.gym-demo-header p { margin: 4px 0 0; color: #426064; font-size: .85rem; }
+.gym-demo-content { padding: 16px 20px 32px; }
+.gym-demo-dialog .motion-layout { display: block; }
+.gym-demo-dialog .motion-instructions { margin-top: 20px; }
+.gym-demo-dialog .motion-3d-canvas { height: clamp(230px, 47dvh, 560px) !important; }
+@media(max-width: 700px), (max-height: 520px) {
+  .gym-demo-dialog { height: 100dvh; max-height: 100dvh; border-radius: 0; }
+  .gym-demo-header { padding: max(10px, env(safe-area-inset-top)) 16px 10px; }
+  .gym-demo-content { padding: 10px 12px max(20px, env(safe-area-inset-bottom)); }
+}
+
+.gym-demo-dialog .gym-demo-content .exercise-motion-experience {
+  display: block; margin: 0; padding: 0; border: 0;
+}
+@media (orientation: landscape) and (max-height: 540px) and (min-width: 560px) {
+  .gym-demo-dialog { width: 100%; }
+  .gym-demo-header { padding-block: 6px; }
+  .gym-demo-header h2 { font-size: 1rem; }
+  .gym-demo-dialog .exercise-motion-experience .motion-viewer {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(235px, 1fr);
+    gap: 6px 14px; align-items: start;
+  }
+  .gym-demo-dialog .motion-viewer > * { grid-column: 1 / -1; min-width: 0; }
+  .gym-demo-dialog .motion-viewer > :is(.motion-3d-canvas, .motion-svg) {
+    grid-column: 1; grid-row: 1 / 6;
+    width: 100%; height: clamp(160px, calc(100dvh - 87px), 440px) !important;
+  }
+  .gym-demo-dialog .motion-viewer > :is(.motion-studio-heading, .motion-view-controls, .motion-playback-controls, .motion-current-phase, .motion-phase-cue) {
+    grid-column: 2; margin: 0;
+  }
+  .gym-demo-dialog .motion-viewer > .motion-studio-heading { grid-row: 1; }
+  .gym-demo-dialog .motion-viewer > .motion-view-controls { grid-row: 2; }
+  .gym-demo-dialog .motion-viewer > .motion-playback-controls { grid-row: 3; flex-wrap: wrap; }
+  .gym-demo-dialog .motion-viewer > .motion-current-phase { grid-row: 4; padding-top: 5px; }
+  .gym-demo-dialog .motion-viewer > .motion-phase-cue { grid-row: 5; }
+  .gym-demo-dialog .motion-viewer > .muted { display: none; }
+}

@@ -1,3 +1,4 @@
+import { usesSeconds } from "./prescription.js";
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
@@ -843,7 +844,7 @@ function PlanEditor({ member }) {
                   </Field>
                   <Field
                     label={
-                      e.dose === "duration"
+                      usesSeconds(e.dose)
                         ? `${e.name} 시간(초)`
                         : `${e.name} 횟수`
                     }

@@ -1,3 +1,4 @@
+import { catalogEntry, doseValue, usesSeconds } from "./prescription.js";
 import { exercises, makePlan, today, validDate } from "./store.js";
 export const DAYS = ["월", "화", "수", "목", "금", "토", "일"];
 export function dateKey(date) {
@@ -34,14 +35,7 @@ export const upcoming = (member) =>
 export function entryFor(id) {
   const e = exercises.find((x) => x.id === id);
   if (!e) throw Error("운동을 다시 선택해 주세요.");
-  return {
-    id: e.id,
-    name: e.name,
-    sets: e.sets || 2,
-    reps: e.dose_type === "duration" ? "30" : String(e.reps || "8–12"),
-    dose: e.dose_type,
-    rest: e.rest ?? 60,
-  };
+  return catalogEntry(e);
 }
 export function editablePlan(entries, count, appointments, start) {
   if (start && !validDate(start)) throw Error("계획 시작 날짜를 선택하세요.");
@@ -49,6 +43,7 @@ export function editablePlan(entries, count, appointments, start) {
     throw Error("운동을 1~12개 선택해 주세요.");
   if (new Set(entries.map((e) => e.id)).size !== entries.length)
     throw Error("같은 운동은 한 번만 추가해 주세요.");
+  entries = entries.map(e => usesSeconds(e.dose) ? {...e, reps: doseValue(e.reps)} : e);
   for (const e of entries) {
     if (
       !Number.isInteger(Number(e.sets)) ||
