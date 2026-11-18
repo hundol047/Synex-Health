@@ -29,6 +29,32 @@ export const MOTIONS = {
   march: {label:'앉아서 좌우 발 교대',view:'측면 개념도',prop:'seat',frames:[seated,pose(seated,{7:[207,181],8:[214,266]}),seated,pose(seated,{9:[188,192],10:[190,271]}),seated]},
 };
 
+// A press swings from above, a supported row from below. Place the hinge
+// on the perpendicular bisector so both prescribed end positions are on one arc.
+export function armMachinePivot(id, wrist) {
+  const [rest, peak] = MOTIONS[id].frames;
+  const [ax, ay] = rest[wrist], [bx, by] = peak[wrist];
+  const y = id === 'machine_chest_press' ? 48 : 251;
+  const x = (ax + bx) / 2 + (by - ay) * ((ay + by) / 2 - y) / (bx - ax);
+  return [x, y];
+}
+
+function followMachineArm(points, id, wrist, start, end, fraction) {
+  const [px, py] = armMachinePivot(id, wrist);
+  const angle = frame => Math.atan2(frame[wrist][1] - py, frame[wrist][0] - px);
+  const first = angle(start), delta = angle(end) - first;
+  const turn = first + Math.atan2(Math.sin(delta), Math.cos(delta)) * fraction;
+  const radius = Math.hypot(start[wrist][0] - px, start[wrist][1] - py);
+  const x = px + radius * Math.cos(turn), y = py + radius * Math.sin(turn);
+  points[wrist] = [x, y];
+  const [sx, sy] = points[1], dx = x - sx, dy = y - sy;
+  const reach = Math.hypot(dx, dy);
+  // Equal upper-arm and forearm lengths give two elbow solutions. The
+  // lower elbow is the one shown in the seated side view for both arms.
+  const height = Math.sqrt(Math.max(0, 56 * 56 - reach * reach / 4));
+  points[wrist - 1] = [(x + sx) / 2 - dy / reach * height, (y + sy) / 2 + dx / reach * height];
+}
+
 export function samplePose(id, progress) {
   const motion=MOTIONS[id];
   if (!motion) return null;
@@ -36,6 +62,9 @@ export function samplePose(id, progress) {
   const index=Math.floor(t), fraction=(1-Math.cos((t-index)*Math.PI))/2;
   const start=motion.frames[index], end=motion.frames[index+1];
  const points=start.map((p,i)=>p.map((v,j)=>v+(end[i][j]-v)*fraction));
+ if (id === 'machine_chest_press' || id === 'machine_row') {
+   for (const wrist of [4,6]) followMachineArm(points, id, wrist, start, end, fraction);
+ }
  if (id === 'leg_extension' || id === 'seated_leg_curl') {
    // A lever rotates about the knee. Linear ankle interpolation shortens the shin mid-rep.
    for (const [knee, ankle] of [[7,8],[9,10]]) {
@@ -124,7 +153,7 @@ const machineSeat=pose(seated,{3:[141,148],4:[164,180],5:[157,147],6:[181,177]})
 const extendedLegs=pose(machineSeat,{8:[294,210],10:[273,222]});
 add('leg_extension','무릎축 맞추기 / 천천히 펴기',[machineSeat,extendedLegs,machineSeat],'측면 개념도','seat');
 add('seated_leg_curl','허벅지 고정 / 뒤꿈치 당기기',[extendedLegs,pose(machineSeat,{8:[175,272],10:[156,280]}),extendedLegs],'측면 개념도','seat');
-const seatedFront=pose(stand,{0:[170,87],1:[170,127],2:[170,212],7:[142,242],8:[142,295],9:[198,242],10:[198,295]});
+const seatedFront=pose(stand,{0:[170,87],1:[170,127],2:[170,212],3:[131,160],4:[129,195],5:[209,160],6:[211,195],7:[142,242],8:[142,295],9:[198,242],10:[198,295]});
 add('machine_hip_abduction','골반 고정 / 다리 벌리기',[seatedFront,pose(seatedFront,{7:[109,242],8:[109,295],9:[231,242],10:[231,295]}),seatedFront],'정면 개념도','seat');
 const pushdownStart=pose(stand,{3:[186,156],4:[221,119],5:[199,166],6:[235,129]});
 add('cable_pushdown','팔꿈치 고정 / 아래로 밀기',[pushdownStart,pose(pushdownStart,{4:[205,205],6:[219,215]}),pushdownStart],'측면 개념도','high_cable');

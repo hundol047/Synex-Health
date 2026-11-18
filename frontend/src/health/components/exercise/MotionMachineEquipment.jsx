@@ -61,3 +61,63 @@ export function GrippingHand({wrist, elbow, far}) {
     <path d="M0 -3Q3 -5 6 -2M4 2l4 .5" fill="none" stroke={far ? '#9f705e' : '#b88068'} strokeWidth="1.1" strokeLinecap="round"/>
   </g>;
 }
+
+export function ArmLeverMachine({motionId, points, pivots}) {
+  const row = motionId === 'machine_row';
+  return <g data-machine={motionId} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M78 299h217m-156-3 10-89h54" fill="none" stroke="#6c8089" strokeWidth="7"/>
+    <path d="M128 205h63" stroke="#2e5056" strokeWidth="13"/>
+    {row ? <>
+      <path d="M250 296l-64-99-9-60" fill="none" stroke="#6c8089" strokeWidth="6"/>
+      <path data-support="chest" d="M173 127l-2 29" stroke="#375d60" strokeWidth="12"/>
+    </> : <>
+      <path d="M94 296V57q0-9 10-9h112" stroke="#657c85" strokeWidth="7" fill="none"/>
+      <path data-support="back" d="M136 116l-4 74" stroke="#375d60" strokeWidth="13"/>
+    </>}
+    {[6,4].map((wrist,i) => {
+      const pivot = pivots[i], [x,y] = points[wrist];
+      return <g key={wrist}>
+        {row && <path d={`M${pivot[0]-18} 297L${pivot}`} stroke="#738790" strokeWidth="7"/>}
+        <path d={`M${pivot}L${x} ${y}`} stroke={i ? '#58737d' : '#90a4a9'} strokeWidth="5.5"/>
+        <circle cx={pivot[0]} cy={pivot[1]} r="5.5" fill="#c9d9d8" stroke="#49656c" strokeWidth="2"/>
+        <g data-handle={wrist} transform={`translate(${x} ${y})`}>
+          <path d="M0 -9v18" stroke="#26494d" strokeWidth="7"/>
+          <path d="M0 -8v2m0 11v2" stroke="#72a89a" strokeWidth="4"/>
+        </g>
+      </g>;
+    })}
+  </g>;
+}
+
+export function HipAbductionMachine({points}) {
+  return <g data-machine="machine_hip_abduction" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M102 299h136m-81-5 5-66m21 66-5-66" stroke="#687e87" strokeWidth="7" fill="none"/>
+    <rect x="138" y="115" width="64" height="99" rx="14" fill="#3e6066" stroke="#2b464e" strokeWidth="3"/>
+    <rect x="131" y="213" width="78" height="14" rx="7" fill="#578079" stroke="#34535a" strokeWidth="2"/>
+    {[7,9].map((knee,i) => {
+      const side = i ? 1 : -1;
+      const [x,y] = points[knee], [ankle,footY] = points[knee + 1];
+      const padX = x + 13 * side;
+      const [handX,handY] = points[i ? 6 : 4];
+      return <g key={knee}>
+        <path d={`M${170 + side * 13} 237L${padX} ${y}v12L${ankle + side * 10} ${footY+9}`}
+          stroke="#6c838a" strokeWidth="5" fill="none"/>
+        <path d={`M${ankle-13} ${footY+10}h26`} stroke="#3c535b" strokeWidth="5"/>
+        <rect data-knee-pad={knee} x={padX-5} y={y-12} width="10" height="24" rx="5" fill="#568d83" stroke="#315653" strokeWidth="2"/>
+        <circle cx={170+side*13} cy="237" r="5" fill="#b0c8c8" stroke="#506973" strokeWidth="2"/>
+        <path d={`M${170+side*30} 222L${handX} ${handY}`} stroke="#687e87" strokeWidth="5"/>
+        <path d={`M${handX} ${handY-5}v12`} stroke="#324e54" strokeWidth="7"/>
+      </g>;
+    })}
+  </g>;
+}
+
+export function FrontalHead() {
+  return <>
+    <path d="M-16 -6Q-17 -20 0 -21Q18 -20 16 -4L14 9Q10 19 0 21Q-11 19 -14 9Z" fill="#dba687"/>
+    <path d="M-16 1Q-23 -19 -7 -23Q12 -30 18 -14L16 1L12 -10Q3 -6 -9 -12L-13 -6Z" fill="#322c2c"/>
+    <path d="M-10 -4q3-2 6 0m8 0q3-2 6 0" stroke="#543c35" strokeWidth="1.8" fill="none"/>
+    <g fill="#322c2c"><circle cx="-7" cy="0" r="1.6"/><circle cx="7" cy="0" r="1.6"/></g>
+    <path d="M0 1l-2 6h3m-6 5q5 3 10 0" fill="none" stroke="#ad765e" strokeWidth="1.3"/>
+  </>;
+}

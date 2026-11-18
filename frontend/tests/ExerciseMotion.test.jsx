@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { reportUnavailableRenderer } from '../src/health/components/exercise/exerciseDisplay.js';
 import MotionFigure from '../src/health/components/exercise/MotionFigure.jsx';
 import ExerciseMotion from '../src/health/components/exercise/ExerciseMotion.jsx';
-import { MOTIONS,samplePose } from '../src/health/components/exercise/motions.js';
+import { MOTIONS,armMachinePivot,samplePose } from '../src/health/components/exercise/motions.js';
 import { resolveBodyProfile } from '../src/health/components/body3d/bodyProfiles.js';
 
 vi.mock('../src/health/components/exercise/ExerciseMotion3D.jsx',()=>({default:({progress})=> <div data-testid="motion-render" data-progress={progress}>3D 시범</div>}));
@@ -51,6 +51,40 @@ describe('motion guidance',()=>{
       const grips=Array.from(container.querySelectorAll('[data-cable-grip]'),node=>
         ['cx','cy'].map(key=>Number(node.getAttribute(key))));
       expect(grips).toEqual([pose[4],pose[6]]);
+    }
+  });
+  it.each(['machine_chest_press','machine_row'])('maintains both arm lengths and the handle arcs during %s', id => {
+    const exercise={motion_id:id,exercise_name:id};
+    const distance=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+    const first=samplePose(id,0);
+    const {container,rerender}=render(<MotionFigure exercise={exercise}/>);
+    for(const phase of [0,.125,.25,.375,.5,.625,.75,.875,1]){
+      const p=samplePose(id,phase);
+      rerender(<MotionFigure exercise={exercise} progress={phase}/>);
+      for(const wrist of [4,6]){
+        const pivot=armMachinePivot(id,wrist);
+        const handle=container.querySelector(`[data-handle="${wrist}"]`);
+        expect(handle.getAttribute('transform')).toBe(`translate(${p[wrist][0]} ${p[wrist][1]})`);
+        expect(distance(p[wrist],pivot)).toBeCloseTo(distance(first[wrist],pivot),7);
+        expect(distance(p[1],p[wrist-1])).toBeCloseTo(56,7);
+        expect(distance(p[wrist-1],p[wrist])).toBeCloseTo(56,7);
+      }
+    }
+    expect(container.querySelector(id==='machine_row'?'[data-support="chest"]':'[data-support="back"]')).toBeTruthy();
+  });
+  it('follows both outer knees with the hip abduction pads while the seat and grips stay fixed', () => {
+    const id='machine_hip_abduction', exercise={motion_id:id,exercise_name:id};
+    const {container,rerender}=render(<MotionFigure exercise={exercise}/>);
+    const start=samplePose(id,0);
+    for(const phase of [0,.25,.5,.75,1]){
+      const p=samplePose(id,phase);
+      rerender(<MotionFigure exercise={exercise} progress={phase}/>);
+      for(const knee of [7,9]){
+        const pad=container.querySelector(`[data-knee-pad="${knee}"]`);
+        expect(Number(pad.getAttribute('x'))+5-p[knee][0]).toBeCloseTo(knee===7?-13:13);
+        expect(Number(pad.getAttribute('y'))+12).toBeCloseTo(p[knee][1]);
+      }
+      for(const anchor of [2,4,6])expect(p[anchor]).toEqual(start[anchor]);
     }
   });
   it('starts paused, supports scrub, playback, speed and reset',()=>{
