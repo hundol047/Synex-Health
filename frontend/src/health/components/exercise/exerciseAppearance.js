@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { athleteCoordinates, paintAthlete } from './athleteFinish.js';
 import { avatarGeometry } from '../body3d/appearance.js';
 
 const clamp = THREE.MathUtils.clamp;
@@ -40,10 +41,11 @@ export function exerciseAvatarGeometry(wear, stature = 1) {
       color.lerp(brow, .72 * gaussian(Math.abs(x), y, .034, 1.694, .020, .0035));
       color.lerp(brow, .24 * gaussian(Math.abs(x), y, .034, 1.677, .013, .003));
     }
-    const hairline = z > .095 ? 1.728 - .013 * Math.cos(x * 35) : 1.638;
+    const hairline = 1.633 + .082 * THREE.MathUtils.smoothstep(z, .034, .135) + .005 * Math.sin(x * 42);
     if (y > 1.54) color.lerp(hairColor, THREE.MathUtils.smoothstep(y, hairline, hairline + .018));
     color.toArray(colors, i * 3);
   }
+  geometry.setAttribute('athleteRest', new THREE.BufferAttribute(athleteCoordinates(), 3));
   geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
   const indices = [], groups = [[], [], [], [], []];
   const garmentIndex = { skin: 0, top: 1, bottom: 2, shoes: 3 };
@@ -54,7 +56,7 @@ export function exerciseAvatarGeometry(wear, stature = 1) {
       for (const index of face) { x += wear.positions[index * 3]; y += wear.positions[index * 3 + 1]; z += wear.positions[index * 3 + 2]; }
       x /= 3 * stature; y /= 3 * stature; z /= 3 * stature;
       const garment = exerciseGarmentAt(x, y, z, original);
-      const hairline = z > .095 ? 1.728 - .013 * Math.cos(x * 35) : 1.638;
+      const hairline = 1.633 + .082 * THREE.MathUtils.smoothstep(z, .034, .135) + .005 * Math.sin(x * 42);
       const material = garment === 'skin' && y > hairline + .012 ? 4 : garmentIndex[garment];
       groups[material].push(...face);
     }
@@ -123,6 +125,7 @@ export function exerciseMaterials() {
     new THREE.MeshStandardMaterial({ ...common, color: '#f7faff', roughness: .84 }),
     new THREE.MeshStandardMaterial({ ...common, vertexColors: true, roughness: .9, bumpMap: hair, bumpScale: .0009, envMapIntensity: .55 }),
   ];
+  paintAthlete(materials);
   let disposed = false;
   return { materials, dispose: () => {
     if (disposed) return;

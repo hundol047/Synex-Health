@@ -3,7 +3,13 @@ import {MOTIONS,samplePose} from './motions.js';
 export default function MotionFigure({exercise,progress=0,mirror=false}){
  const labelId=useId(),motion=MOTIONS[exercise.motion_id];if(!motion)return <span>동작 안내 준비 중</span>;
  const points=samplePose(exercise.motion_id,progress);
-  const bone=(a,b,color,width=15,key='')=><line key={key || `${a}-${b}`} x1={points[a][0]} y1={points[a][1]} x2={points[b][0]} y2={points[b][1]} stroke={color} strokeWidth={width} strokeLinecap="round"/>;
+  // Rounded, tapered contours rotate with each segment of the sampled pose.
+  const limb = (a,b,upper,lower,fill,key) => {
+    const [x,y]=points[a], dx=points[b][0]-x, dy=points[b][1]-y, len=Math.hypot(dx,dy);
+    return <path key={key} transform={`translate(${x} ${y}) rotate(${Math.atan2(dy,dx)*180/Math.PI})`}
+      d={`M0 ${-upper} Q${len*.35} ${-upper*1.13} ${len} ${-lower} A${lower} ${lower} 0 0 1 ${len} ${lower} Q${len*.4} ${upper*1.10} 0 ${upper} A${upper} ${upper} 0 0 1 0 ${-upper}Z`} fill={fill}/>;
+  };
+  const [hx,hy]=points[0];
  return <svg viewBox="0 0 360 330" role="img" aria-labelledby={labelId} className="motion-svg">
         <title id={labelId}>{exercise.exercise_name} 동작 시범</title>
         <ellipse cx="183" cy="308" rx="124" ry="9" fill="#dae5f3"/>
@@ -22,16 +28,21 @@ export default function MotionFigure({exercise,progress=0,mirror=false}){
           {motion.prop==='treadmill'&&<path d="M72 307H299M298 306V152H258" fill="none" stroke="#64748b" strokeWidth="8"/>}
           {motion.prop==='bike'&&<><circle cx="216" cy="266" r="27" fill="none" stroke="#94a3b8" strokeWidth="8"/><path d="M146 198V301H272M247 151V236L216 266" fill="none" stroke="#94a3b8" strokeWidth="8"/></>}
           {motion.prop==='elliptical'&&<path d="M72 307H298M118 286L100 134M226 286L243 134" fill="none" stroke="#94a3b8" strokeWidth="7"/>}
-          {[[1,5],[5,6],[2,9],[9,10]].map(([a,b])=>bone(a,b,'#9eb9da',14))}
-          {bone(1,2,'#2266b0',32)}
-          {bone(0,1,'#c69170',12)}
-          {[[1,3],[3,4]].map(([a,b])=>bone(a,b,'#4289d2',15))}
-          {[[2,7],[7,8]].map(([a,b])=>bone(a,b,'#244b79',19))}
-          {[3,7,9].map(i=><circle key={i} cx={points[i][0]} cy={points[i][1]} r="5" fill="#e8f2fd"/>)}
-          <circle cx={points[0][0]} cy={points[0][1]} r="21" fill="#d9ab89"/>
-          <path d={`M${points[0][0]-19} ${points[0][1]-6}q19 -30 39 0`} stroke="#24415f" strokeWidth="9" fill="none"/>
-          <circle cx={points[0][0]+9} cy={points[0][1]} r="2" fill="#24415f"/>
-          {[8,10].map(i=><path key={i} d={`M${points[i][0]-5} ${points[i][1]+2}h18`} stroke="#1a344f" strokeWidth="10" strokeLinecap="round"/>)}
+          {limb(1,5,9,6,'#aa7862')}{limb(5,6,6,4,'#b98770')}
+          {[[9,10,'#273c4a'],[7,8,'#405768']].map(([k,f,col])=><g key={k}>
+            {limb(2,k,14,9,col)}{limb(k,f,9,5,col)}
+            <path d={`M${points[f][0]-5} ${points[f][1]-5}q8 0 14 5l10 3q4 7 -4 7h-23q-3 -7 3 -15Z`} fill="#f3f7f3" stroke="#426064" strokeWidth="2"/>
+          </g>)}
+          {limb(0,1,7,9,'#c89276')}{limb(1,2,20,15,'#147d76')}
+          {limb(1,3,10,7,'#ce9779')}{limb(3,4,7,4.5,'#dca989')}
+          <circle cx={points[1][0]} cy={points[1][1]} r="12" fill="#146562"/>
+          <g transform={`translate(${hx} ${hy})`}>
+            <path d="M-15 -9Q-14 -22 2 -21Q18 -20 18 -6L21 2L17 4Q17 17 8 20Q-6 22 -13 10Z" fill="#dba687"/>
+            <path d="M-15 5Q-23 -9 -13 -20Q-2 -29 13 -19L18 -15Q14 -8 5 -10Q-4 -13 -8 -5L-9 4Z" fill="#322c2c"/>
+            <path d="M8 -5Q12 -7 16 -5" fill="none" stroke="#543c35" strokeWidth="2"/>
+            <ellipse cx="13" cy="-2" rx="1.8" ry="2" fill="#322c2c"/>
+            <path d="M11 10q3 1 6 -1" fill="none" stroke="#a3685f" strokeWidth="1.4"/>
+          </g>
           {['dumbbell','bench_dumbbell'].includes(motion.prop) && [4,6].map(i=><g key={i} transform={`translate(${points[i]})`}><path d="M-13 0H13" stroke="#344861" strokeWidth="5"/><path d="M-13 -8V8M13 -8V8" stroke="#344861" strokeWidth="7" strokeLinecap="round"/></g>)}
           {['barbell','bench_barbell'].includes(motion.prop)&&<path d={`M${points[4][0]-18} ${points[4][1]}L${points[6][0]+18} ${points[6][1]}`} stroke="#344861" strokeWidth="8"/>}
         </g>

@@ -152,14 +152,14 @@ export function bodyweightPoseJoints(id, progress, rest) {
       target = [joints[root][0] + side * .015 * h, joints[root][1] - (upper + lower) * .97, joints[root][2] + .015 * h];
       toward = [0, 0, 1];
     } else {
-      // Relaxed clasp in front of the sternum, rather than locked-out robot arms.
+      // Keep the hands at chest height with space between the fingertips.
       const counterbalance = id === 'squat' ? .13 * bend : .015 * bend;
-      target = [hip.x + side * .12 * h, joints[root][1] - .17 * h, joints[root][2] + .20 * h + counterbalance];
+      target = [hip.x + side * .132 * h, joints[root][1] - .17 * h, joints[root][2] + .20 * h + counterbalance];
       toward = [side * .5, -1, -.1];
     }
     [joints[elbow], joints[wrist]] = limb(joints[root], target, upper, lower, toward);
     const finger = index === 0 ? 17 : 18;
-    const handDirection = push || plank || bridge ? new THREE.Vector3(0, 0, 1) : hinge ? v(joints[wrist]).sub(v(joints[elbow])).normalize() : new THREE.Vector3(-side * .72, -.04, .69).normalize();
+    const handDirection = push || plank || bridge ? new THREE.Vector3(0, 0, 1) : hinge ? v(joints[wrist]).sub(v(joints[elbow])).normalize() : new THREE.Vector3(-side * .41, .14, .90).normalize();
     joints[finger] = v(joints[wrist]).addScaledVector(handDirection, length(wrist, finger)).toArray();
   }
   // Palm pronation cannot be inferred from a wrist-to-finger direction alone.

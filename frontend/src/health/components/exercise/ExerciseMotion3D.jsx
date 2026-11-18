@@ -3,7 +3,9 @@ import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, ContactShadows } from '@react-three/drei';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import Footwear, { footwearAnchors } from '../body3d/Footwear.jsx';
+import RunningShoes from "./RunningShoes.jsx";
+import { footwearAnchors } from '../body3d/Footwear.jsx';
+import { sculptTrainingKit } from './athleteFinish.js';
 import { exerciseAvatarGeometry, exerciseMaterials } from './exerciseAppearance.js';
 import ExerciseEquipment from './ExerciseEquipment.jsx';
 import { exerciseCameraPreset } from './exerciseCamera.js';
@@ -20,7 +22,7 @@ const PLANTED_FLOOR_MOTIONS = new Set(['full_pushup', 'push_up', 'plank', 'bridg
 const ORIGINAL_MOTIONS = new Set(['squat', 'lunge', 'side_lunge', 'full_pushup', 'push_up', 'plank', 'bridge', 'glute_bridge', 'hinge', 'hip_hinge']);
 // These hands are unsupported. Contact palms and equipment grips retain their
 // separately calibrated shapes.
-const RELAXED_HAND_MOTIONS = new Set(['walk', 'brisk_walk', 'standing_march', 'step_touch']);
+const RELAXED_HAND_MOTIONS = new Set(['walk', 'brisk_walk', 'standing_march', 'step_touch', 'squat', 'lunge', 'side_lunge']);
 
 export { exerciseCameraPreset } from './exerciseCamera.js';
 
@@ -56,7 +58,7 @@ function Athlete({ motion, progress, mirror, measurement, profile, compact }) {
     const base = personalizedVertices(measurement, profile);
     const scale = morphParameters(measurement, profile).heightScale;
     const neutral = personalizedVertices({ height: 178, weight: 70, body_fat_percentage: 20, skeletal_muscle_mass: 32 }, { gender: profile?.gender });
-    const weights = bindSurface(neutral), wear = sportswear(base, scale, profile?.gender);
+    const weights = bindSurface(neutral), wear = sculptTrainingKit(sportswear(base, scale, profile?.gender), scale);
     const flat = morphPositions(Float32Array.from(REST.flat()), measurement, profile);
     const rest = REST.map((_, i) => Array.from(flat.slice(i * 3, i * 3 + 3)));
     rest.handGripScale = calibrateGripScale(wear.positions, weights, rest);
@@ -98,7 +100,7 @@ function Athlete({ motion, progress, mirror, measurement, profile, compact }) {
         renderer.domElement.dataset.exerciseProgress = String(progress);
         renderer.domElement.dataset.exerciseVertices = String(model.geometry.attributes.position.count);
       }}/>
-      <Footwear anchors={shoes}/>
+      <RunningShoes anchors={shoes}/>
     </group>
     <ExerciseEquipment motion={motion} joints={joints} rest={model.rest} progress={progress} heightScale={model.scale}/>
   </group>;
