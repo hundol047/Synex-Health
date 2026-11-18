@@ -1198,11 +1198,16 @@ export function Feedback() {
   const [id, setId] = useMemberSelection(),
     [text, setText] = useState({}),
     [filter, setFilter] = useState("pending"),
+    [query, setQuery] = useState(""),
     [error, setError] = useState(""),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(null);
   const m = state.members.find((m) => m.id === id);
-  const meals = m?.meals.filter((x) => filter === "all" || !x.feedback) || [];
+  const search = query.trim().toLowerCase();
+  const meals = m?.meals.filter(meal =>
+    (filter === "all" || !meal.feedback)
+    && (!search || [meal.date, meal.note, meal.feedback].some(value => value?.toLowerCase().includes(search)))
+  ) || [];
   const draftDirty =
     m?.meals.some(
       (meal) => text[meal.id] !== undefined && text[meal.id] !== meal.feedback,
@@ -1268,6 +1273,7 @@ export function Feedback() {
           }
           setId(v);
           setText({});
+          setQuery("");
           setMessage("");
         }}
       />
@@ -1305,6 +1311,10 @@ export function Feedback() {
           </Link>
         </Card>
         <Card title={`식단 코칭 ${meals.length}건`}>
+          {Boolean(m?.meals.length) && <Field label="식단 기록 검색">
+            <input type="search" value={query} onChange={event => setQuery(event.target.value)}
+              placeholder="날짜, 회원 메모, 저장한 피드백" />
+          </Field>}
           <div className="gym-segment">
             {[
               ["pending", "답변 대기"],
@@ -1357,7 +1367,8 @@ export function Feedback() {
               </button>
             </article>
           ))}
-          {!meals.length && (
+          {!meals.length && search && <Empty>검색 결과가 없습니다. 날짜나 메모를 바꿔 보세요.</Empty>}
+          {!meals.length && !search && (
             <Empty>
               {filter === "pending"
                 ? "답변을 기다리는 식단이 없습니다."

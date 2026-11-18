@@ -288,7 +288,7 @@ function parseTransferData(raw) {
       if (!validDate(a.date) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(a.time))
         throw Error("PT 일정 형식 오류");
     });
-    if (!Array.isArray(v.feedback) || v.feedback.length > 100)
+    if (!Array.isArray(v.feedback))
       throw Error("피드백 형식 오류");
     v.feedback.forEach((f) => {
       limitedText(f.id, 80);
@@ -345,10 +345,9 @@ export function transferFor(state, role, member, plan = member.plan) {
       ? {
           plan,
           appointments: member.appointments,
-          feedback: member.meals.slice(0, 100).map((m) => ({
-            id: m.id,
-            feedback: m.feedback || "",
-          })),
+          feedback: member.meals
+            .filter(meal => meal.feedback)
+            .map(({ id, feedback }) => ({ id, feedback })),
         }
       : {
           logs: member.logs.slice(0, 500),
@@ -443,10 +442,10 @@ export function applyTransfer(state, v, role) {
     m.lastCoachShareAt = sharedAt;
     m.name = v.name;
     m.appointments = v.appointments;
-    m.meals = m.meals.map((x) => ({
-      ...x,
-      feedback:
-        v.feedback.find((y) => y.id === x.id)?.feedback || x.feedback || "",
+    const replies = new Map(v.feedback.map(reply => [reply.id, reply.feedback]));
+    m.meals = m.meals.map(meal => ({
+      ...meal,
+      feedback: replies.get(meal.id) || meal.feedback || "",
     }));
   }
 }

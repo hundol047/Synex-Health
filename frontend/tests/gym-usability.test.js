@@ -159,6 +159,26 @@ describe("gym usability regressions", () => {
     const raw = "한".repeat(Math.floor(MAX_TRANSFER_BYTES / 3) + 1);
     expect(() => parseTransfer(raw)).toThrow(/12MB/);
   });
+  it("returns every saved meal reply, including a comment on an older photo", () => {
+    const member = sample();
+    member.meals = Array.from({ length: 125 }, (_, index) => ({
+      id: `meal-${index}`,
+      feedback: index < 3 ? "" : `코칭 ${index}`,
+      feedbackDraft: "저장 전 메모",
+      photo: "local photo",
+    }));
+    const packet = transferFor({ coachId: "coach" }, "coach", member);
+    expect(packet.feedback).toHaveLength(122);
+    expect(packet.feedback.at(-1)).toEqual({ id: "meal-124", feedback: "코칭 124" });
+    const recipient = { self: { ...freshMember(), meals: member.meals.map(({ id }) => ({ id })) } };
+    const receive = file => applyTransfer(recipient, parseTransfer(JSON.stringify(file)), "member");
+    receive(packet);
+    receive(packet);
+    expect(recipient.self.meals.at(-1).feedback).toBe("코칭 124");
+    const olderFormat = { ...packet, feedback: [{ id: "meal-124", feedback: "" }] };
+    receive(olderFormat);
+    expect(recipient.self.meals.at(-1).feedback).toBe("코칭 124");
+  });
   it("reads earlier files without an export date and rejects malformed dates", () => {
     const member = sample();
     const legacy = transferFor({ coachId: "coach" }, "coach", member);
