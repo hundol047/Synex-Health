@@ -1199,10 +1199,18 @@ export function Feedback() {
     [text, setText] = useState({}),
     [filter, setFilter] = useState("pending"),
     [query, setQuery] = useState(""),
+    [workoutQuery, setWorkoutQuery] = useState(""),
+    [workoutLimit, setWorkoutLimit] = useState(7),
     [error, setError] = useState(""),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(null);
   const m = state.members.find((m) => m.id === id);
+  const workoutSearch = workoutQuery.trim().toLowerCase();
+  const workouts = m?.logs.filter(log => {
+    if (!workoutSearch) return true;
+    const fields = [log.date, log.name, log.effort, log.feedback, ...(log.exerciseResults || []).map(result => result.name)];
+    return fields.some(value => value?.toLowerCase().includes(workoutSearch));
+  }) || [];
   const search = query.trim().toLowerCase();
   const meals = m?.meals.filter(meal =>
     (filter === "all" || !meal.feedback)
@@ -1316,6 +1324,8 @@ export function Feedback() {
           setId(v);
           setText({});
           setQuery("");
+          setWorkoutQuery("");
+          setWorkoutLimit(7);
           setMessage("");
         }}
       />
@@ -1323,7 +1333,14 @@ export function Feedback() {
       <Notice>{message}</Notice>
       <div className="gym-two">
         <Card title="운동 피드백 살펴보기">
-          {m?.logs.map((l) => (
+          {m?.logs.length > 1 && <Field label="운동 기록 검색">
+            <input type="search" value={workoutQuery} placeholder="날짜, 운동 이름, 운동 후 느낌, 코멘트"
+              onChange={event => {
+                setWorkoutQuery(event.target.value);
+                setWorkoutLimit(7);
+              }}/>
+          </Field>}
+          {workouts.slice(0, workoutLimit).map((l) => (
             <div className="gym-row" key={l.id}>
               <span className="gym-avatar">
                 <Check size={17} />
@@ -1347,6 +1364,11 @@ export function Feedback() {
               </div>
             </div>
           ))}
+          {workouts.length > workoutLimit && <button className="gym-button secondary gym-full"
+            onClick={() => setWorkoutLimit(limit => limit + 7)}>
+            운동 기록 더 보기 ({workouts.length - workoutLimit}건)
+          </button>}
+          {workoutSearch && !workouts.length && <Empty>일치하는 운동 기록이 없습니다.</Empty>}
           {!m?.logs.length && (
             <Empty>
               회원의 기록을 가져오면 운동량과 부담을 확인할 수 있습니다.
