@@ -2,6 +2,7 @@ import React from 'react';
 import { describe,it,expect,vi } from 'vitest';
 import { render,screen,fireEvent,act } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
+import { reportUnavailableRenderer } from '../src/health/components/exercise/exerciseDisplay.js';
 import MotionFigure from '../src/health/components/exercise/MotionFigure.jsx';
 import ExerciseMotion from '../src/health/components/exercise/ExerciseMotion.jsx';
 import { MOTIONS,samplePose } from '../src/health/components/exercise/motions.js';
@@ -64,6 +65,28 @@ describe('motion guidance',()=>{
     fireEvent.click(screen.getByLabelText('처음 자세로'));
     expect(screen.getByLabelText('동작 구간').value).toBe('0');
     expect(screen.getByText('동작 재생')).toBeTruthy();
+    fireEvent.click(screen.getByText('3D 안내 보기'));
+  });
+  it('remembers an explicit 2D choice after closing a demonstration',()=>{
+    const view=id=><ExerciseMotion exercise={{motion_id:id,exercise_name:id}}/>;
+    const first=render(view('squat'));
+    fireEvent.click(screen.getByText('2D 안내 보기'));
+    first.unmount();
+    render(view('leg_press'));
+    expect(screen.getByRole('img',{name:'leg_press 동작 시범'})).toBeTruthy();
+    fireEvent.click(screen.getByText('3D 안내 보기'));
+    expect(screen.getByText('3D 시범')).toBeTruthy();
+  });
+  it('keeps a rendering failure temporary and allows an explicit retry on the next exercise',()=>{
+    const before=localStorage.getItem('synex-exercise-demo-dimension');
+    const first=render(<ExerciseMotion exercise={{motion_id:'squat',exercise_name:'스쿼트'}}/>);
+    act(()=>reportUnavailableRenderer());
+    first.unmount();
+    render(<ExerciseMotion exercise={{motion_id:'leg_press',exercise_name:'레그 프레스'}}/>);
+    expect(screen.getByRole('img',{name:'레그 프레스 동작 시범'})).toBeTruthy();
+    expect(localStorage.getItem('synex-exercise-demo-dimension')).toBe(before);
+    fireEvent.click(screen.getByText('3D 다시 시도'));
+    expect(screen.getByText('3D 시범')).toBeTruthy();
   });
   it('does not invent motion for unknown legacy exercises',()=>{
     render(<ExerciseMotion exercise={{motion_id:'unknown',exercise_name:'unknown'}}/>);

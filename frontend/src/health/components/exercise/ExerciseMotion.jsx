@@ -1,24 +1,21 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { Play, Pause, RotateCcw, FlipHorizontal2, Repeat2, Check, ChevronDown } from 'lucide-react';
-import ExerciseMotion3D from './ExerciseMotion3D.jsx';
 import { MOTIONS } from './motions.js';
 import { getMotionGuide, motionPhase } from './motionGuide.js';
+import { useExerciseDisplay, toggleExerciseDisplay, reportUnavailableRenderer } from './exerciseDisplay.js';
 import MotionFigure from './MotionFigure.jsx';
 import './exercise-experience.css';
 import useTempoSession from './useTempoSession.js';
 import TempoControls from './TempoControls.jsx';
+
+const ExerciseMotion3D = lazy(() => import('./ExerciseMotion3D.jsx'));
 
 export default function ExerciseMotion({ exercise, measurement, profile, paused=false, onReady, transportHost, playback:externalPlayback }) {
   const tempoExercises=useMemo(()=>[exercise],[exercise]);
   const tempo=useTempoSession(tempoExercises,{disabled:paused||externalPlayback!==undefined});
   const playback=externalPlayback!==undefined?externalPlayback:tempo.playback;
   const motion = MOTIONS[exercise.motion_id], guide = getMotionGuide(exercise.motion_id);
-  const [dimension, setDimension] = useState('3d');
-  const [fallbackUsed, setFallbackUsed] = useState(false);
-  const showFallback = useCallback(() => {
-    setFallbackUsed(true);
-    setDimension('2d');
-  }, []);
+  const dimension = useExerciseDisplay();
   const [loop, setLoop] = useState(true);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
@@ -32,7 +29,7 @@ export default function ExerciseMotion({ exercise, measurement, profile, paused=
     complete: ['시범 완료', '수행한 세트를 운동 화면에서 기록하세요.'],
   }[playback?.kind];
   const currentPhase = motionPhase(exercise.motion_id, progress);
-  useEffect(() => { setPlaying(false); setDimension('3d'); setFallbackUsed(false); phase.current = 0; setProgress(0); }, [exercise.motion_id]);
+  useEffect(() => { setPlaying(false); phase.current = 0; setProgress(0); }, [exercise.motion_id]);
   useEffect(() => { onReady?.(); }, [exercise.motion_id, onReady]);
   useEffect(() => { if (paused) setPlaying(false); }, [paused]);
   useEffect(() => { if (playback) setPlaying(false); }, [!!playback]);
@@ -75,7 +72,7 @@ export default function ExerciseMotion({ exercise, measurement, profile, paused=
   return <div className="motion-layout exercise-motion-experience">
     <div className="motion-viewer" ref={viewer}>
       <div className="motion-studio-heading"><div><span className="motion-studio-kicker">동작 가이드</span><strong>{dimension === '3d' ? '3D 동작 시범' : '2D 동작 시범'}</strong></div><span className="motion-studio-status"><i className={(playback?playback.running:playing) ? 'is-playing' : ''}/>{(playback?playback.running:playing) ? '재생 중' : '정지 화면'}</span></div>
-      {dimension === '3d' ? <ExerciseMotion3D motion={exercise.motion_id} progress={progress} mirror={mirror} measurement={measurement} profile={profile} defaultView={guide?.defaultView} onFallback={showFallback}/> : <MotionFigure exercise={exercise} progress={progress} mirror={mirror}/>}
+      {dimension === '3d' ? <Suspense fallback={<p role="status">운동 시범을 준비하고 있어요…</p>}><ExerciseMotion3D motion={exercise.motion_id} progress={progress} mirror={mirror} measurement={measurement} profile={profile} defaultView={guide?.defaultView} onFallback={reportUnavailableRenderer}/></Suspense> : <MotionFigure exercise={exercise} progress={progress} mirror={mirror}/>}
       {!playback&&<div className="motion-playback-controls">
         <button className="btn btn-primary" type="button" disabled={paused} onClick={playPause}>{playing ? <Pause size={17} fill="currentColor"/> : <Play size={17} fill="currentColor"/>}{playing ? '일시정지' : '동작 재생'}</button>
         <button className="motion-icon-control" aria-label="처음 자세로" title="처음 자세로" type="button" onClick={() => setPhase(0)}><RotateCcw size={18}/></button>
@@ -86,7 +83,7 @@ export default function ExerciseMotion({ exercise, measurement, profile, paused=
       <p className="motion-phase-cue">{stageMessage?.[1] || currentPhase?.cue || exercise.instructions?.[0]}</p>
       {!stageMessage && !!guide?.phases.length && <div className="motion-phase-steps" role="group" aria-label="동작 순서">{guide.phases.map((step, index) => <button type="button" disabled={!!playback} key={index} aria-label={`${step.label} 구간 보기`} aria-current={currentPhase?.index === index ? 'step' : undefined} onClick={() => selectStep(step)}><span>{index + 1}</span>{step.label}</button>)}</div>}
       {!playback&&<><div className="motion-scrubber"><input aria-label="동작 구간" aria-valuetext={`${Math.round(progress * 100)}% · ${currentPhase?.label || motion.label}`} type="range" min="0" max="100" value={Math.round(progress * 100)} style={{ '--motion-progress': `${Math.round(progress * 100)}%` }} onChange={e => setPhase(Number(e.target.value) / 100)}/><div><span>시작 자세</span><span>{Math.round(progress * 100)}%</span><span>한 주기</span></div></div>
-      <details className="motion-extra-controls"><summary>재생 설정<ChevronDown size={14}/></summary><div><label><input type="checkbox" checked={loop} onChange={e => setLoop(e.target.checked)}/><Repeat2 size={16}/> 반복 재생</label><button type="button" onClick={() => setDimension(d => d === '3d' ? '2d' : '3d')}>{dimension === '3d' ? '2D 안내 보기' : fallbackUsed ? '3D 다시 시도' : '3D 안내 보기'}</button></div></details></>}
+      <details className="motion-extra-controls"><summary>재생 설정<ChevronDown size={14}/></summary><div><label><input type="checkbox" checked={loop} onChange={e => setLoop(e.target.checked)}/><Repeat2 size={16}/> 반복 재생</label><button type="button" onClick={toggleExerciseDisplay}>{dimension === '3d' ? '2D 안내 보기' : dimension === 'fallback' ? '3D 다시 시도' : '3D 안내 보기'}</button></div></details></>}
       {externalPlayback===undefined&&<TempoControls session={tempo} exercises={tempoExercises} disabled={paused} transportHost={transportHost}/>}
     </div>
     <div className="motion-instructions">

@@ -71,6 +71,14 @@
 .pose-coach-page .bodyweight-demo-floor .bodyweight-demo-controls select{border-radius:7px;background:#fff}
 .pose-coach-page .bodyweight-demo-floor .motion-3d-canvas{grid-row:2;grid-column:1/-1;height:100%}
 .pose-coach-page .bodyweight-demo-floor .bodyweight-demo-loading{grid-row:2;grid-column:1/-1}
+.camera-coaching .bodyweight-demo-controls .demo-format-toggle,
+.pose-coach-page .coach-demo .bodyweight-demo-controls .demo-format-toggle{width:auto;min-width:44px;white-space:nowrap;padding-inline:8px}
+.camera-coaching .bodyweight-demo-stage>.motion-svg{flex:1;width:100%;height:100%;min-height:0;max-height:none}
+.pose-coach-page .bodyweight-demo-floor .motion-svg{grid-column:1/-1;grid-row:2}
+@media (orientation:portrait){
+  .pose-coach-page .bodyweight-demo-floor .motion-svg{grid-column:1;grid-row:1/-1}
+}
+.pose-coach-page .bodyweight-demo-floor[data-tempo-progress] .motion-svg{grid-column:1/-1;grid-row:1/-1}
 .pose-coach-page .bodyweight-demo-target{display:none}
 .pose-coach-page .bodyweight-demo-cue{flex-shrink:0;display:flex;align-items:stretch;gap:4px;margin:0;border:0;border-top:1px solid #dbe5f3;border-radius:0;background:#fff;padding:8px 13px;min-height:49px;line-height:1.4}
 .pose-coach-page .bodyweight-demo-cue strong{font-size:11px;font-weight:750;color:var(--coach-blue);letter-spacing:-.02em}

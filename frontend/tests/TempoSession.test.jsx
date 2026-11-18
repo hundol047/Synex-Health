@@ -67,7 +67,7 @@ describe('automatic guided timing',()=>{
  });
  it('uses externally timed progress in both instructor views',async()=>{
   const a=render(<ExerciseMotion exercise={squat} playback={{progress:.7,running:true}}/>);
-  expect(screen.getByTestId('avatar').dataset.progress).toBe('0.7');expect(screen.queryByLabelText('재생 속도')).toBeNull();a.unmount();
+  expect((await screen.findByTestId('avatar')).dataset.progress).toBe('0.7');expect(screen.queryByLabelText('재생 속도')).toBeNull();a.unmount();
   render(<BodyweightDemo exerciseId="squat" playback={{progress:.3,running:true}}/>);
   expect((await screen.findByTestId('avatar')).dataset.progress).toBe('0.3');expect(screen.queryByLabelText('운동 시범 속도')).toBeNull();
  });

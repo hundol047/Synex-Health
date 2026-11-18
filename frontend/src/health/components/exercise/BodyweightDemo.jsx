@@ -1,10 +1,13 @@
 import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
+import MotionFigure from './MotionFigure.jsx';
+import { useExerciseDisplay, toggleExerciseDisplay, reportUnavailableRenderer } from './exerciseDisplay.js';
 import { Pause, Play } from 'lucide-react';
 import { getBodyweightGuide, getBodyweightDemoPhase } from './bodyweightGuide.js';
 
 const ExerciseMotion3D = lazy(() => import('./ExerciseMotion3D.jsx'));
 
 export default function BodyweightDemo({ exerciseId, compact = true, paused = false, measurement, profile, playback }) {
+  const display = useExerciseDisplay();
   const guide = getBodyweightGuide(exerciseId);
   const reducedMotion = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const [playing, setPlaying] = useState(!reducedMotion);
@@ -47,8 +50,12 @@ export default function BodyweightDemo({ exerciseId, compact = true, paused = fa
       {!playback&&<div className="bodyweight-demo-controls motion-controls">
         <button type="button" className="btn btn-ghost" aria-label={playing ? '운동 시범 일시정지' : '운동 시범 재생'} aria-pressed={playing} disabled={paused} onClick={() => setPlaying(value => !value)}>{playing ? <Pause size={14} aria-hidden="true"/> : <Play size={14} aria-hidden="true"/>}</button>
         {!guide.hold&&<select aria-label="운동 시범 속도" value={speed} onChange={event => setSpeed(Number(event.target.value))}><option value={.5}>느리게</option><option value={.75}>보통</option><option value={1}>1×</option></select>}
+        <button type="button" className="btn btn-ghost demo-format-toggle" onClick={toggleExerciseDisplay}>
+          {display === '3d' ? '2D 보기' : display === 'fallback' ? '3D 다시 시도' : '3D 보기'}
+        </button>
       </div>}
-      <Suspense fallback={<p className="bodyweight-demo-loading" role="status">운동 시범 준비 중…</p>}><ExerciseMotion3D motion={guide.motionId} progress={progress} mirror={false} compact={compact} measurement={measurement} profile={profile} defaultView={guide.defaultView}/></Suspense>
+      {display === '3d' ? <Suspense fallback={<p className="bodyweight-demo-loading" role="status">운동 시범 준비 중…</p>}><ExerciseMotion3D motion={guide.motionId} progress={progress} mirror={false} compact={compact} measurement={measurement} profile={profile} defaultView={guide.defaultView} onFallback={reportUnavailableRenderer}/></Suspense>
+        : <MotionFigure exercise={{motion_id:guide.motionId, exercise_name:guide.label}} progress={progress}/>}
       <span className="bodyweight-demo-target">{guide.target}</span>
       {playback&&<div className="bodyweight-tempo-readout" aria-label="시범 타이밍"><strong>{playback.kind==='rest'?'휴식':playback.kind==='prepare'?'준비':playback.kind==='complete'?'완료':playback.rep?`${playback.rep}회`:'유지'}</strong><span>{playback.kind!=='complete'?`${playback.remaining}초`:''}{playback.side?` · ${playback.side}`:''}</span></div>}
     </div>

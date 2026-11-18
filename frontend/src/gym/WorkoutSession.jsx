@@ -22,6 +22,7 @@ import {
   checkSessionSet,
 } from "./workflow.js";
 import { Card, PageHead, Field, Notice } from "./ui.jsx";
+import { useExerciseDisplay } from "../health/components/exercise/exerciseDisplay.js";
 import WorkoutDemo from "./WorkoutDemo.jsx";
 import { guidedExercise, usesSeconds, doseValue } from "./prescription.js";
 import { HealthAPI } from "../shared/lib/api.js";
@@ -29,6 +30,7 @@ import { useApiData } from "../health/lib/useApiData.js";
 const formatTime = (secs) =>
   `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
 export default function WorkoutSession() {
+  const demoDisplay = useExerciseDisplay();
   const { state, update } = useGym();
   const session = state.self.session;
   const { data: measurement } = useApiData(HealthAPI.latestMeasurement);
@@ -267,7 +269,7 @@ export default function WorkoutSession() {
           aria-expanded={showDemo}
         >
           <Play size={17} />
-          3D 동작 시범 보기
+          {demoDisplay === "3d" ? "3D" : "2D"} 동작 시범 보기
         </button>
         {showDemo && demonstration && (
           <WorkoutDemo exercise={demonstration} entry={e} paused={session.paused}
