@@ -143,7 +143,7 @@ export function bodyweightPoseJoints(id, progress, rest) {
       const bodyLength = Math.sqrt(Math.max(0, (leg * .998) ** 2 - (rest[11][0] - rest[9][0]) ** 2)) + .04 * h;
       const rise = (.05 * h + (length(3, 4) + length(6, 7)) / 2 - ankles[index][1] - .005 * h) / (bodyLength + torsoLength);
       const shoulderZ = ankles[index][2] + (bodyLength + torsoLength) * Math.sqrt(1 - rise ** 2);
-      target = [rest[root][0], .05 * h, shoulderZ + lower];
+      target = [rest[root][0], .05 * h - (rest.plankWristDrop ?? 0), shoulderZ + lower];
       toward = [0, -1, 0];
     } else if (bridge) {
       target = [rest[root][0] + side * .045 * h, .047 * h, -.55 * h + (upper + lower) * .955];
@@ -164,6 +164,6 @@ export function bodyweightPoseJoints(id, progress, rest) {
   }
   // Palm pronation cannot be inferred from a wrist-to-finger direction alone.
   // Keep this authored roll on the pose so surface skinning matches the support.
-  if (push || bridge) joints.handRoll = [.90, -.90];
+  if (push || plank || bridge) joints.handRoll = [.90, -.90];
   return joints;
 }

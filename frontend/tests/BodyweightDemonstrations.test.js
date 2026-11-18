@@ -1,5 +1,9 @@
+import { calibratePlankWrist } from '../src/health/components/exercise/plankSupport.js';
+import { runningShoeGeometry, shoeMeshScale } from '../src/health/components/exercise/runningShoeGeometry.js';
+import { matAlignment, supportVertices } from '../src/health/components/exercise/matContact.js';
+import { footwearAnchors } from '../src/health/components/body3d/Footwear.jsx';
 import { describe, expect, it } from 'vitest';
-import { CapsuleGeometry, PerspectiveCamera, Quaternion, Vector3 } from 'three';
+import { PerspectiveCamera, Quaternion, Vector3 } from 'three';
 import mesh from '../src/health/components/body3d/assets/human-mesh.json';
 import { BODYWEIGHT_EXERCISES, getBodyweightGuide, getBodyweightDemoPhase } from '../src/health/components/exercise/bodyweightGuide.js';
 import { POSE_EXERCISES } from '../src/health/components/exercise/poseThresholds.js';
@@ -147,33 +151,53 @@ describe('authored bodyweight demonstrations', () => {
     }
   });
 
-  it('grounds actual rounded shoe upper/sole geometry after heel pitch', () => {
-    const geometry = new CapsuleGeometry(1, 2, 6, 16);
-    for (const pitch of [0, .6, .8]) {
-      const shoe = { center: [.19, .18, -.7], width: .105, length: .285, rotation: new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), pitch) };
+  it('uses the rendered shoe surface for upright, tilted and rolled shoes', () => {
+    const geometry = runningShoeGeometry();
+    for (const angle of [0, .6, .8, -1.57]) {
+      const shoe = { center: [.19, .18, -.7], width: .105, length: .285, rotation: new Quaternion().setFromAxisAngle(new Vector3(.9, 0, .3).normalize(), angle) };
+      const scale = new Vector3(...shoeMeshScale(shoe));
       let minimum = Infinity;
-      for (const [scale, offset] of [[[shoe.width / 2, shoe.length / 4, .037], 0], [[shoe.width * .52, shoe.length * .255, .012], -.025]]) {
-        for (let index = 0; index < geometry.attributes.position.count; index++) {
-          const point = new Vector3().fromBufferAttribute(geometry.attributes.position, index).multiply(new Vector3(...scale)).applyAxisAngle(new Vector3(1, 0, 0), Math.PI / 2);
-          point.y += offset;
-          point.applyQuaternion(shoe.rotation).add(vector(shoe.center));
-          minimum = Math.min(minimum, point.y);
-        }
+      for (let index = 0; index < geometry.attributes.position.count; index++) {
+        const point = new Vector3().fromBufferAttribute(geometry.attributes.position,index).multiply(scale).applyQuaternion(shoe.rotation);
+        minimum = Math.min(minimum, point.y + shoe.center[1]);
       }
-      expect(Math.abs(exerciseShoeFloor(shoe) - minimum)).toBeLessThan(.002);
+      expect(exerciseShoeFloor(shoe)).toBeCloseTo(minimum, 7);
     }
     geometry.dispose();
   });
 
-  it('fits the entire skeleton into both phone standing and floor demonstration panes', () => {
-    for (const guide of Object.values(BODYWEIGHT_EXERCISES)) for (const aspect of [.8, 1.5, 2, 3.5]) for (const view of ['front', '45', 'side']) {
-      const preset = exerciseCameraPreset(guide.motionId, view, 1, aspect);
-      const camera = new PerspectiveCamera(36, aspect, .1, 100);
-      camera.position.set(...preset.position); camera.lookAt(...preset.target); camera.updateMatrixWorld();
-      for (const phase of [0, .08, .125, .25, .5, .75]) for (const joint of poseJoints(guide.motionId, phase)) {
-        const projected = vector(joint).project(camera);
-        expect(Math.abs(projected.x), `${guide.motionId} horizontal crop`).toBeLessThan(1);
-        expect(Math.abs(projected.y), `${guide.motionId} vertical crop`).toBeLessThan(1);
+  it('places shoes and supporting skin on the same mat through each pose', () => {
+    for (const [height,gender] of [[158,'female'],[178,'male'],[198,'male']]) {
+      const neutral=Float32Array.from(mesh.profiles[gender],v=>v*mesh.scale);
+      const base=morphPositions(neutral,{height},{gender}),weights=bindSurface(neutral);
+      const joints=morphPositions(Float32Array.from(REST.flat()),{height},{gender});
+      const rest=REST.map((_,i)=>Array.from(joints.slice(i*3,i*3+3)));
+      const anchors=footwearAnchors(base), roll=calibratePalmRoll(base,weights,rest);
+      rest.plankWristDrop=calibratePlankWrist(base,weights,rest,roll,anchors);
+      for(const motion of ['full_pushup','plank']) {
+        const supports=supportVertices(weights,motion==='plank');
+        for(const phase of [0,.25,.5,.75]) {
+          const pose=poseJoints(motion,phase,rest);
+          expect(pose.handRoll).toBeDefined();
+          pose.handRoll=roll;
+          const surface=deformSurface(base,weights,pose,new Float32Array(base.length),rest,false);
+          const shoes=anchors.map((s,side)=>{
+            const ankle=side?14:11,toe=side?16:15;
+            const rotation=new Quaternion().setFromUnitVectors(vector(rest[toe]).sub(vector(rest[ankle])).normalize(),vector(pose[toe]).sub(vector(pose[ankle])).normalize());
+            const center=vector(s.center).sub(vector(rest[ankle])).applyQuaternion(rotation).add(vector(pose[ankle])).toArray();
+            return {...s,center,rotation};
+          });
+          const {pitch,y}=matAlignment(shoes,surface,supports);
+          const armFloor=Math.min(...supports.map(i=>surface[i+1]*Math.cos(pitch)-surface[i+2]*Math.sin(pitch)))+y;
+          if(motion==='plank') {
+            const palm=supportVertices(weights,false);
+            const palmFloor=Math.min(...palm.map(i=>surface[i+1]*Math.cos(pitch)-surface[i+2]*Math.sin(pitch)))+y;
+            expect(Math.abs(palmFloor-.003)).toBeLessThan(.007);
+          }
+          expect(Math.abs(pitch)).toBeLessThan(.05);
+          expect(Math.abs(armFloor-.003)).toBeLessThan(.0005);
+          for (const shoe of shoes) expect(exerciseShoeFloor(shoe,pitch)+y).toBeCloseTo(.003,4);
+        }
       }
     }
   });

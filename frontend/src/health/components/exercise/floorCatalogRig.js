@@ -151,7 +151,7 @@ function heelTouch(rest, t, h) {
     const upper = length(rest, hip, knee), lower = length(rest, knee, ankle);
     const target = vector(joints[hip]).add(new THREE.Vector3(0, upper * .985, lower * .96));
     // The rounded shoe's heel, rather than its ankle center, touches the mat.
-    if (side === active) target.lerp(new THREE.Vector3(joints[hip][0], .083 * h, joints[hip][2] + .57 * h), amount);
+    if (side === active) target.lerp(new THREE.Vector3(joints[hip][0], rest.heelContactY?.[side] ?? .083 * h, joints[hip][2] + .57 * h), amount);
     solveLimb(joints, rest, side, 'leg', target.toArray(), [0, 1, 0]);
     floorFoot(joints, rest, side, pitch(-Math.PI / 2));
   }

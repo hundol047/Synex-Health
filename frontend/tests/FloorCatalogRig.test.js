@@ -5,7 +5,7 @@ import { FLOOR_CATALOG_IDS, floorCatalogPose } from '../src/health/components/ex
 import { BONES, REST, bindSurface, deformSurface } from '../src/health/components/exercise/rig.js';
 import { morphPositions } from '../src/health/components/body3d/morph.js';
 import { footwearAnchors } from '../src/health/components/body3d/Footwear.jsx';
-import { exerciseShoeFloor } from '../src/health/components/exercise/ExerciseMotion3D.jsx';
+import { exerciseShoeFloor, heelContactTargets } from '../src/health/components/exercise/runningShoeGeometry.js';
 
 const v = point => new Vector3(...point);
 const angle = (a, b, c) => v(a).sub(v(b)).angleTo(v(c).sub(v(b))) * 180 / Math.PI;
@@ -103,16 +103,20 @@ describe('anatomical floor catalog demonstrations', () => {
     }
   });
 
-  it('lands the actual rounded shoe heel at the mat instead of leaving a hovering ankle target', () => {
-    const standard = Float32Array.from(mesh.profiles.male, (value, index) => (value + mesh.profiles.female[index]) * mesh.scale / 2);
-    const shoes = footwearAnchors(standard);
-    for (const [side, phase] of [[0, .25], [1, .75]]) {
-      const joints = floorCatalogPose('dead_bug', phase, REST), ankle = side === 0 ? 11 : 14;
-      const rotation = new Quaternion().fromArray(joints.boneRotations[side + 10]);
-      const center = v(shoes[side].center).sub(v(REST[ankle])).applyQuaternion(rotation).add(v(joints[ankle])).toArray();
-      const actualFloor = exerciseShoeFloor({ ...shoes[side], center, rotation });
-      expect(actualFloor).toBeGreaterThan(0);
-      expect(actualFloor).toBeLessThan(.006);
+  it('lands each athlete’s heel on the mat at full extension', () => {
+    for (const [height, gender] of [[158, 'female'], [178, 'male'], [198, 'male']]) {
+      const neutral = Float32Array.from(mesh.profiles[gender], value => value * mesh.scale);
+      const body = morphPositions(neutral, { height }, { gender });
+      const restPositions = morphPositions(Float32Array.from(REST.flat()), { height }, { gender });
+      const rest = REST.map((_, index) => Array.from(restPositions.slice(index * 3, index * 3 + 3)));
+      const shoes = footwearAnchors(body);
+      rest.heelContactY = heelContactTargets(shoes, rest);
+      for (const [side, phase] of [[0, .25], [1, .75]]) {
+        const joints = floorCatalogPose('dead_bug', phase, rest), ankle = side === 0 ? 11 : 14;
+        const rotation = new Quaternion().fromArray(joints.boneRotations[side + 10]);
+        const center = v(shoes[side].center).sub(v(rest[ankle])).applyQuaternion(rotation).add(v(joints[ankle])).toArray();
+        expect(exerciseShoeFloor({ ...shoes[side], center, rotation })).toBeCloseTo(.003, 4);
+      }
     }
   });
 

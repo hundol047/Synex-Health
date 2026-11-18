@@ -3,6 +3,9 @@ import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, ContactShadows } from '@react-three/drei';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { exerciseShoeFloor, heelContactTargets } from './runningShoeGeometry.js';
+import { calibratePlankWrist } from './plankSupport.js';
+import { supportVertices, matAlignment, posedShoes } from './matContact.js';
 import RunningShoes from "./RunningShoes.jsx";
 import { footwearAnchors } from '../body3d/Footwear.jsx';
 import { sculptTrainingKit } from './athleteFinish.js';
@@ -26,16 +29,7 @@ const RELAXED_HAND_MOTIONS = new Set(['walk', 'brisk_walk', 'standing_march', 's
 
 export { exerciseCameraPreset } from './exerciseCamera.js';
 
-// Support height of the rounded upper and sole, including a raised heel.
-// The old center-minus-height estimate incorrectly sank pitched shoes into the mat.
-export function exerciseShoeFloor(shoe) {
-  const rotation = shoe.rotation || new THREE.Quaternion();
-  const x = new THREE.Vector3(1, 0, 0).applyQuaternion(rotation).y;
-  const y = new THREE.Vector3(0, 1, 0).applyQuaternion(rotation).y;
-  const z = new THREE.Vector3(0, 0, 1).applyQuaternion(rotation).y;
-  const capsule = (width, depth, halfLength) => Math.abs(z) * halfLength + Math.hypot(width * x, depth * y, halfLength * z);
-  return Math.min(shoe.center[1] - capsule(shoe.width / 2, .037, shoe.length / 4), shoe.center[1] - .025 * y - capsule(shoe.width * .52, .012, shoe.length * .255));
-}
+export { exerciseShoeFloor } from './runningShoeGeometry.js';
 
 function SceneCamera({ motion, view, mirror, heightScale, controls }) {
   const { camera, size, invalidate } = useThree();
@@ -63,22 +57,25 @@ function Athlete({ motion, progress, mirror, measurement, profile, compact }) {
     const rest = REST.map((_, i) => Array.from(flat.slice(i * 3, i * 3 + 3)));
     rest.handGripScale = calibrateGripScale(wear.positions, weights, rest);
     rest.wallSupport = calibrateWallSupport(wear.positions, weights, rest);
-    return { base: wear.positions, weights, rest, scale, palmRoll: calibratePalmRoll(wear.positions, weights, rest), geometry: exerciseAvatarGeometry(wear, scale), appearance: exerciseMaterials(), shoes: footwearAnchors(base) };
+    const supports = { palms: supportVertices(weights, false), forearms: supportVertices(weights, true) };
+    const shoes = footwearAnchors(base);
+    rest.heelContactY = heelContactTargets(shoes, rest);
+    return { supports, base: wear.positions, weights, rest, scale, palmRoll: calibratePalmRoll(wear.positions, weights, rest), geometry: exerciseAvatarGeometry(wear, scale), appearance: exerciseMaterials(), shoes };
   }, [measurement, profile]);
+  const plank = motion === 'plank';
+  const poseRest = useMemo(() => {
+    if (!plank) return model.rest;
+    const plankWristDrop = calibratePlankWrist(model.base, model.weights, model.rest, model.palmRoll, model.shoes);
+    return Object.assign(model.rest.slice(), model.rest, {plankWristDrop});
+  }, [plank, model]);
   const joints = useMemo(() => {
-    const posed = poseJoints(motion, progress, model.rest);
+    const posed = poseJoints(motion, progress, poseRest);
     if (posed.handRoll && !posed.boneRotations?.[12]) posed.handRoll = model.palmRoll;
     return posed;
-  }, [motion, progress, model]);
+  }, [motion, progress, model, poseRest]);
   const grip = joints.equipment?.grip || (RELAXED_HAND_MOTIONS.has(motion) ? 'relaxed' : undefined);
   const skin = useMemo(() => gripSurface(model.base, model.weights, model.rest, grip), [model, grip]);
-  const shoes = useMemo(() => model.shoes.map((shoe, i) => {
-    const [ankle, toe] = i === 0 ? [11, 15] : [14, 16];
-    const origin = new THREE.Vector3(...model.rest[ankle]), destination = new THREE.Vector3(...joints[ankle]);
-    const authored = joints.boneRotations?.[i === 0 ? 10 : 11];
-    const rotation = authored ? new THREE.Quaternion().fromArray(authored).normalize() : new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(...model.rest[toe]).sub(origin).normalize(), new THREE.Vector3(...joints[toe]).sub(destination).normalize());
-    return { ...shoe, center: new THREE.Vector3(...shoe.center).sub(origin).applyQuaternion(rotation).add(destination).toArray(), rotation };
-  }), [model, joints]);
+  const shoes = useMemo(() => posedShoes(model.shoes, model.rest, joints), [model, joints]);
   useEffect(() => {
     const geometry = model.geometry;
     deformSurface(skin, model.weights, joints, geometry.attributes.position.array, model.rest, false);
@@ -86,10 +83,20 @@ function Athlete({ motion, progress, mirror, measurement, profile, compact }) {
     geometry.computeVertexNormals();
     geometry.computeBoundingSphere();
     geometry.computeBoundingBox();
-    // Floor poses keep the planted shoes at a fixed height. A moving head or
-    // hand vertex must never lift the entire athlete off the mat.
-    const shoeFloor = Math.min(...shoes.map(exerciseShoeFloor));
-    if (actor.current) actor.current.position.y = ORIGINAL_MOTIONS.has(motion) ? .003 - (PLANTED_FLOOR_MOTIONS.has(motion) ? shoeFloor : Math.min(geometry.boundingBox.min.y, shoeFloor)) : 0;
+    const actorGroup = actor.current;
+    if (actorGroup) {
+      actorGroup.rotation.x = 0;
+      actorGroup.position.y = 0;
+      if (motion === 'plank' || motion === 'full_pushup' || motion === 'push_up') {
+        const supports = motion === 'plank' ? model.supports.forearms : model.supports.palms;
+        const transform = matAlignment(shoes, geometry.attributes.position.array, supports);
+        actorGroup.rotation.x = transform.pitch;
+        actorGroup.position.y = transform.y;
+      } else if (ORIGINAL_MOTIONS.has(motion)) {
+        const shoeFloor = Math.min(...shoes.map(shoe => exerciseShoeFloor(shoe)));
+        actorGroup.position.y = .003 - (PLANTED_FLOOR_MOTIONS.has(motion) ? shoeFloor : Math.min(geometry.boundingBox.min.y, shoeFloor));
+      }
+    }
     invalidate();
   }, [model, skin, joints, shoes, motion, invalidate]);
   useEffect(() => () => { model.geometry.dispose(); model.appearance.dispose(); }, [model]);
