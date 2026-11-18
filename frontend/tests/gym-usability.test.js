@@ -9,6 +9,7 @@ import {
   freshMember,
   transferFor,
   parseTransfer,
+  applyTransfer,
 } from "../src/gym/store.js";
 import {
   entryFor,
@@ -58,6 +59,32 @@ describe("gym usability regressions", () => {
     m.session.checked = ["squat:0"];
     pauseSession(m.session, true, start + 120000);
     expect(finishSession(m, "적당했어요", start + 3600000).minutes).toBe(2);
+  });
+  it("returns the checked set numbers and prescription at workout time to the trainer", () => {
+    const member = freshMember("회원");
+    member.linkedCoach = "coach";
+    const squat = { ...entryFor("squat"), sets: 3, reps: "9", rest: 45 };
+    const plank = { ...entryFor("plank"), sets: 2, reps: "25", rest: 0 };
+    const plan = editablePlan([squat, plank], 3, []);
+    member.session = newSession(plan, plan.options[0]);
+    checkSessionSet(member.session, 2);
+    const log = finishSession(member, "힘들었어요");
+    expect(log.exerciseResults.map(r => [r.target, r.rest, r.completed])).toEqual([
+      ["9회", 45, [3]], ["25초", 0, []],
+    ]);
+    const packet = transferFor({}, "member", member);
+    const coach = { coachId: "coach", members: [{ ...freshMember(), id: member.id }] };
+    const imported = parseTransfer(JSON.stringify(packet));
+    applyTransfer(coach, imported, "coach");
+    const legacy = structuredClone(imported);
+    delete legacy.logs[0].exerciseResults;
+    applyTransfer(coach, parseTransfer(JSON.stringify(legacy)), "coach");
+    expect(coach.members[0].logs).toEqual([log]);
+    const bad = structuredClone(packet);
+    bad.logs[0].exerciseResults[0].completed = [3, 3];
+    expect(() => parseTransfer(JSON.stringify(bad))).toThrow();
+    bad.logs[0].exerciseResults[0].completed = [];
+    expect(() => parseTransfer(JSON.stringify(bad))).toThrow();
   });
   it("keeps rest on the selected exercise and clears a frozen rest when changing exercise", () => {
     const plan = editablePlan([entryFor("squat"), entryFor("plank")], 3, []);

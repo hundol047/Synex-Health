@@ -161,6 +161,25 @@ function limitedText(v, max = 200) {
     throw Error("공유 파일의 글자 수나 형식이 맞지 않습니다.");
   return v;
 }
+function validateExerciseResults(log) {
+  const rows = log.exerciseResults;
+  if (rows === undefined) return;
+  const invalid = () => { throw Error("동작별 세트 기록을 확인해 주세요."); };
+  if (!Array.isArray(rows) || !rows.length || rows.length > 20) invalid();
+  let planned = 0, done = 0;
+  for (const row of rows) {
+    limitedText(row.name, 80);
+    limitedText(row.target, 64);
+    if (!Number.isInteger(row.sets) || row.sets < 1 || row.sets > 20 ||
+        !Number.isInteger(row.rest) || row.rest < 0 || row.rest > 300 ||
+        !Array.isArray(row.completed) || row.completed.length > row.sets ||
+        new Set(row.completed).size !== row.completed.length ||
+        row.completed.some(n => !Number.isInteger(n) || n < 1 || n > row.sets)) invalid();
+    planned += row.sets;
+    done += row.completed.length;
+  }
+  if (planned !== log.totalSets || done !== log.completedSets) invalid();
+}
 export function parseTransfer(raw) {
   try {
     return parseTransferData(raw);
@@ -291,6 +310,7 @@ function parseTransferData(raw) {
           (!Number.isInteger(l[key]) || l[key] < 0 || l[key] > 100000)
         )
           throw Error("운동량 형식을 확인하세요.");
+      validateExerciseResults(l);
     });
     v.meals.forEach((m) => {
       limitedText(m.id, 80);
@@ -351,7 +371,15 @@ export function applyTransfer(state, v, role) {
     const merge = (old, rows) => [
       ...new Map([...old, ...rows].map((x) => [x.id, x])).values(),
     ];
-    m.logs = merge(m.logs, v.logs).sort((a, b) => b.date.localeCompare(a.date));
+    const stored = new Map(m.logs.map(log => [log.id, log]));
+    const incoming = v.logs.map(log => {
+      const previous = stored.get(log.id);
+      if (!log.exerciseResults && previous?.exerciseResults &&
+          log.completedSets === previous.completedSets && log.totalSets === previous.totalSets)
+        return { ...log, exerciseResults: previous.exerciseResults };
+      return log;
+    });
+    m.logs = merge(m.logs, incoming).sort((a, b) => b.date.localeCompare(a.date));
     m.meals = merge(
       m.meals,
       v.meals.map((x) => ({

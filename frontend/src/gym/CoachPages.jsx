@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useGym } from "./GymContext.jsx";
 import RoutineTemplates from "./RoutineTemplates.jsx";
+import ExerciseResults from "./ExerciseResults.jsx";
 import useMemberSelection from "./useMemberSelection.js";
 import {
   registerDraftNavigation,
@@ -1203,9 +1204,9 @@ export function Feedback() {
     <>
       <PageHead
         eyebrow="COACHING INBOX"
-        title="작은 피드백이, 꾸준함을 만듭니다."
+        title="회원의 운동·식단 기록"
       >
-        운동의 부담과 식단을 함께 보고 다음 코칭으로 이어가세요.
+        완료한 세트와 운동 후 느낌을 확인하고, 다음 루틴을 조정하세요.
       </PageHead>
       <MemberSelect
         value={id}
@@ -1222,23 +1223,53 @@ export function Feedback() {
       />
       <Notice error>{error}</Notice>
       <Notice>{message}</Notice>
-      <div className="gym-segment">
-        {[
-          ["pending", "답변 대기"],
-          ["all", "전체 기록"],
-        ].map(([v, l]) => (
-          <button
-            key={v}
-            aria-pressed={filter === v}
-            className={filter === v ? "active" : ""}
-            onClick={() => setFilter(v)}
-          >
-            {l}
-          </button>
-        ))}
-      </div>
       <div className="gym-two">
+        <Card title="운동 피드백 살펴보기">
+          {m?.logs.map((l) => (
+            <div className="gym-row" key={l.id}>
+              <span className="gym-avatar">
+                <Check size={17} />
+              </span>
+              <div>
+                <strong>{l.name}</strong>
+                <p>
+                  {l.date} · {l.effort}
+                </p>
+                <p>
+                  {l.completedSets !== undefined
+                    ? `${l.completedSets}/${l.totalSets}세트 수행`
+                    : "운동 기록"}
+                  {l.status === "partial" ? " · 부분 수행" : ""}
+                </p>
+                <ExerciseResults rows={l.exerciseResults}/>
+              </div>
+            </div>
+          ))}
+          {!m?.logs.length && (
+            <Empty>
+              회원의 기록을 가져오면 운동량과 부담을 확인할 수 있습니다.
+            </Empty>
+          )}
+          <Link className="gym-text-link" to={memberLink("plan", id)}>
+            기록을 보고 다음 루틴 조정 <ArrowUpRight size={15} />
+          </Link>
+        </Card>
         <Card title={`식단 코칭 ${meals.length}건`}>
+          <div className="gym-segment">
+            {[
+              ["pending", "답변 대기"],
+              ["all", "전체 기록"],
+            ].map(([v, l]) => (
+              <button
+                key={v}
+                aria-pressed={filter === v}
+                className={filter === v ? "active" : ""}
+                onClick={() => setFilter(v)}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
           {meals.map((meal) => (
             <article className="gym-meal" key={meal.id}>
               <div className="gym-section-head">
@@ -1287,35 +1318,6 @@ export function Feedback() {
               </Link>
             </Empty>
           )}
-        </Card>
-        <Card title="운동 피드백 살펴보기">
-          {m?.logs.map((l) => (
-            <div className="gym-row" key={l.id}>
-              <span className="gym-avatar">
-                <Check size={17} />
-              </span>
-              <div>
-                <strong>{l.name}</strong>
-                <p>
-                  {l.date} · {l.effort}
-                </p>
-                <p>
-                  {l.completedSets !== undefined
-                    ? `${l.completedSets}/${l.totalSets}세트 수행`
-                    : "운동 기록"}
-                  {l.status === "partial" ? " · 부분 수행" : ""}
-                </p>
-              </div>
-            </div>
-          ))}
-          {!m?.logs.length && (
-            <Empty>
-              회원의 기록을 가져오면 운동량과 부담을 확인할 수 있습니다.
-            </Empty>
-          )}
-          <Link className="gym-text-link" to={memberLink("plan", id)}>
-            기록을 보고 다음 루틴 조정 <ArrowUpRight size={15} />
-          </Link>
         </Card>
       </div>
     </>

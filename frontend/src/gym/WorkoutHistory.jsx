@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Check, ChevronDown, Activity } from "lucide-react";
 import { Card, Empty } from "./ui.jsx";
+import ExerciseResults from "./ExerciseResults.jsx";
 import { workoutHistory } from "./workflow.js";
 export default function WorkoutHistory({ member }) {
   const [filter, setFilter] = useState("all"),
@@ -77,6 +78,7 @@ export default function WorkoutHistory({ member }) {
                 : "수행 기록"}
               {l.minutes ? ` · 기록 시간 ${l.minutes}분` : ""}
             </p>
+            <ExerciseResults rows={l.exerciseResults}/>
           </div>
           <span
             className={"gym-pill " + (l.status === "partial" ? "neutral" : "")}

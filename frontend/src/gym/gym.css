@@ -2820,6 +2820,24 @@
   background: #f4f8f7;
   margin-bottom: 25px;
 }
+.gym-exercise-results summary {
+  cursor: pointer;
+  padding-block: 10px;
+  color: #166458;
+  font-size: 13px;
+  font-weight: 700;
+}
+.gym-exercise-results ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.gym-exercise-results li {
+  border-left: 2px solid #b6dbd1;
+  padding-left: 10px;
+  margin-bottom: 12px;
+  overflow-wrap: anywhere;
+}
 .gym-history-summary > div:first-child {
   flex: 1;
 }

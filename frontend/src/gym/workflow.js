@@ -171,6 +171,13 @@ export function finishSession(member, effort, now = Date.now()) {
     status: done === total ? "complete" : "partial",
     completedSets: done,
     totalSets: total,
+    exerciseResults: s.exercises.map(e => {
+      const dose = e.dose ?? exercises.find(item => item.id === e.id)?.dose_type;
+      const completed = Array.from({ length: e.sets }, (_, i) => i + 1)
+        .filter(number => s.checked.includes(`${e.id}:${number - 1}`));
+      return { name: e.name, sets: e.sets, completed, rest: e.rest ?? 60,
+        target: `${doseValue(e.reps)}${usesSeconds(dose) ? "초" : "회"}` };
+    }),
     minutes: Math.max(1, Math.round(sessionElapsed(s, now) / 60000)),
   };
   if (!member.logs.some((l) => l.id === s.id)) member.logs.unshift(log);
