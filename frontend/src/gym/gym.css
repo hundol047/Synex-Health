@@ -1404,11 +1404,24 @@
   border-color: #9ac9b8;
 }
 .gym-calendar-date {
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
   margin-bottom: 12px;
   gap: 3px;
+}
+.gym-calendar-date[aria-pressed="true"] {
+  background: #d8eee5;
+}
+.gym-calendar-date:disabled {
+  cursor: default;
 }
 .gym-calendar-date span {
   font-size: 10px;
@@ -1417,7 +1430,7 @@
 .gym-calendar-date strong {
   font-size: 22px;
 }
-.gym-calendar button {
+.gym-calendar button:not(.gym-calendar-date) {
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -1432,10 +1445,10 @@
   cursor: pointer;
   overflow-wrap: anywhere;
 }
-.gym-calendar button strong {
+.gym-calendar button:not(.gym-calendar-date) strong {
   font-size: 12px;
 }
-.gym-calendar button span {
+.gym-calendar button:not(.gym-calendar-date) span {
   font-size: 11px;
 }
 .gym-calendar small {
@@ -2218,7 +2231,7 @@
   .gym-calendar > div {
     min-height: 150px;
   }
-  .gym-calendar button {
+  .gym-calendar button:not(.gym-calendar-date) {
     padding: 9px 6px;
   }
   .gym-calendar-date strong {

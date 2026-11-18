@@ -936,13 +936,34 @@ export function Schedule() {
   const [id, setId] = useMemberSelection();
   const [date, setDate] = useState(today()),
     [time, setTime] = useState("19:00"),
-    [offset, setOffset] = useState(0),
+    [calendarDate, setCalendarDate] = useState(today),
     [editing, setEditing] = useState(null),
     [cancelId, setCancelId] = useState(null),
     [error, setError] = useState(""),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false);
-  const dates = weekDates(today(), offset);
+  const dateField = useRef(null);
+  const dates = weekDates(calendarDate);
+  function showWeek(anchor) {
+    setCalendarDate(anchor);
+    if (editing) return;
+    const firstAvailable = weekDates(anchor).find(day => day >= today());
+    setDate(anchor >= today() ? anchor : firstAvailable || "");
+  }
+  function moveWeek(offset) {
+    const weekday = dates.indexOf(calendarDate);
+    showWeek(weekDates(calendarDate, offset)[weekday]);
+  }
+  function openAppointment(appointment) {
+    setId(appointment.memberId);
+    setDate(appointment.date);
+    setTime(appointment.time);
+    setEditing(appointment.id);
+    setCalendarDate(appointment.date);
+    setError("");
+    setMessage("");
+    dateField.current?.focus();
+  }
   const rows = state.members
     .flatMap((m) =>
       m.appointments.map((a) => ({ ...a, memberId: m.id, name: m.name })),
@@ -962,6 +983,7 @@ export function Schedule() {
         if (m.plan) m.plan = reschedulePlan(m.plan, m.appointments);
       });
       setEditing(null);
+      setCalendarDate(date);
       setError("");
       setMessage(
         "PT 일정과 해당 주의 운동 계획을 저장했습니다. 회원에게 최신 계획을 공유하세요.",
@@ -980,7 +1002,10 @@ export function Schedule() {
         m.plan = reschedulePlan(m.plan, m.appointments);
       });
       setCancelId(null);
-      if (editing === a.id) setEditing(null);
+      if (editing === a.id) {
+        setEditing(null);
+        setCalendarDate(date || today());
+      }
       setMessage("PT 일정을 취소하고 운동일을 다시 배치했습니다.");
       setError("");
     } catch (e) {
@@ -1003,14 +1028,14 @@ export function Schedule() {
           <div className="gym-icon-actions">
             <button
               aria-label="이전 주"
-              onClick={() => setOffset((x) => x - 1)}
+              onClick={() => moveWeek(-1)}
             >
               <ChevronLeft size={18} />
             </button>
-            <button onClick={() => setOffset(0)}>이번 주</button>
+            <button onClick={() => showWeek(today())}>이번 주</button>
             <button
               aria-label="다음 주"
-              onClick={() => setOffset((x) => x + 1)}
+              onClick={() => moveWeek(1)}
             >
               <ChevronRight size={18} />
             </button>
@@ -1019,21 +1044,27 @@ export function Schedule() {
         <div className="gym-calendar">
           {dates.map((d, i) => (
             <div className={d === today() ? "today" : ""} key={d}>
-              <div className="gym-calendar-date">
+              <button
+                type="button"
+                className="gym-calendar-date"
+                disabled={d < today()}
+                aria-label={d + (editing ? " PT 날짜 변경" : " PT 등록")}
+                aria-pressed={d === date}
+                onClick={() => {
+                  setDate(d);
+                  setCalendarDate(d);
+                  dateField.current?.focus();
+                }}
+              >
                 <span>{DAYS[i]}</span>
                 <strong>{Number(d.slice(-2))}</strong>
-              </div>
+              </button>
               {rows
                 .filter((a) => a.date === d)
                 .map((a) => (
                   <button
                     key={a.id}
-                    onClick={() => {
-                      setId(a.memberId);
-                      setDate(a.date);
-                      setTime(a.time);
-                      setEditing(a.id);
-                    }}
+                    onClick={() => openAppointment(a)}
                   >
                     <strong>{a.time}</strong>
                     <span>{a.name}</span>
@@ -1051,12 +1082,14 @@ export function Schedule() {
               value={id}
               onChange={(v) => {
                 setId(v);
+                if (editing) setCalendarDate(date || today());
                 setEditing(null);
               }}
             />
             <div className="gym-inline-fields">
               <Field label="PT 날짜">
                 <input
+                  ref={dateField}
                   type="date"
                   min={today()}
                   required
@@ -1080,7 +1113,10 @@ export function Schedule() {
               <button
                 type="button"
                 className="gym-button secondary"
-                onClick={() => setEditing(null)}
+                onClick={() => {
+                  setEditing(null);
+                  setCalendarDate(date || today());
+                }}
               >
                 편집 닫기
               </button>
@@ -1104,12 +1140,7 @@ export function Schedule() {
                   </div>
                   <button
                     className="gym-button secondary small"
-                    onClick={() => {
-                      setId(a.memberId);
-                      setDate(a.date);
-                      setTime(a.time);
-                      setEditing(a.id);
-                    }}
+                    onClick={() => openAppointment(a)}
                   >
                     변경
                   </button>
