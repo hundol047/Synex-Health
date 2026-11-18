@@ -46,6 +46,17 @@ describe("trainer plan editing and member session continuity", () => {
       editablePlan([{ ...entryFor("squat"), reps: "abc" }], 3, []),
     ).toThrow();
   });
+  it("restores the trainer's weekly target after an extra PT day is cancelled", () => {
+    const plan = editablePlan([entryFor("plank")], 2, [], "2026-11-16");
+    const visits = plan.dates.slice(1, 4).map(date => ({date}));
+    const busyWeek = reschedulePlan(plan, visits);
+    expect(busyWeek.frequency).toBe(3);
+    const reduced = reschedulePlan(busyWeek, [visits[0], visits[0]]);
+    expect(reduced).toMatchObject({id: plan.id, ptDays: [1], frequency: 2, requestedFrequency: 2});
+    expect(reduced.days).toHaveLength(2);
+    expect(reduced.options).toEqual(plan.options);
+    expect(reschedulePlan(reduced, [{date: "2026-11-25"}]).ptDays).toEqual([]);
+  });
   it("snapshots session exercises so a later plan change cannot erase current progress", () => {
     const p = editablePlan([entryFor("squat")], 3, []);
     const s = newSession(p, p.options[0]);

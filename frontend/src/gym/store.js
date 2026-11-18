@@ -229,6 +229,8 @@ function parseTransferData(raw) {
       !Number.isInteger(p.frequency) ||
       p.frequency < 1 ||
       p.frequency > 7 ||
+      (p.requestedFrequency !== undefined && (!Number.isInteger(p.requestedFrequency) ||
+        p.requestedFrequency < 1 || p.requestedFrequency > p.frequency)) ||
       !Array.isArray(p.days) ||
       p.days.some((d) => !Number.isInteger(d) || d < 0 || d > 6) ||
       !Array.isArray(p.ptDays) ||
