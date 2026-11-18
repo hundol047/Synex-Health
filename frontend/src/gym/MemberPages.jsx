@@ -1,6 +1,6 @@
 import { usesSeconds, doseValue } from "./prescription.js";
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useRef, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
 import {
   ArrowUpRight,
   Camera,
@@ -431,6 +431,15 @@ export function MyPlan() {
 export function Coaching() {
   const { state, update } = useGym();
   const m = state.self;
+  const { hash } = useLocation();
+  const repliesRef = useRef(null);
+  const hasReplies = m.logs.some(log => log.feedback);
+  useEffect(() => {
+    if (hasReplies && hash === "#workout-feedback") {
+      repliesRef.current?.focus({ preventScroll: true });
+      repliesRef.current?.scrollIntoView({ block: "start" });
+    }
+  }, [hash, hasReplies]);
   const [photo, setPhoto] = useState(""),
     [note, setNote] = useState(""),
     [error, setError] = useState(""),
@@ -551,7 +560,9 @@ export function Coaching() {
           </p>
         </Card>
       </div>
-      {m.logs.some(log => log.feedback) && <WorkoutHistory member={m} repliesOnly/>}
+      {hasReplies && <div id="workout-feedback" ref={repliesRef} tabIndex={-1} aria-label="받은 운동 코멘트">
+        <WorkoutHistory member={m} repliesOnly/>
+      </div>}
       <div className="gym-section-head">
         <h2 className="gym-section-title">내 식단과 코칭</h2>
         <div className="gym-segment">

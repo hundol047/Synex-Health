@@ -232,7 +232,7 @@ export default function SharingPage() {
               }}
             />
           </Field>
-          {!coach && m?.logs.some(log => log.feedback) && <Link className="gym-text-link" to="/health/coaching">
+          {!coach && m?.logs.some(log => log.feedback) && <Link className="gym-text-link" to="/health/coaching#workout-feedback">
             받은 운동 코멘트 보기 →
           </Link>}
           {preview && (

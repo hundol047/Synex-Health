@@ -19,79 +19,81 @@ export default function WorkoutHistory({ member, repliesOnly = false }) {
   return (
     <Card title={repliesOnly ? "트레이너의 운동 코멘트" : "나의 운동 기록"}>
       {!repliesOnly && <>
-      <div className="gym-history-summary">
-        <div>
-          <span className="gym-eyebrow">LAST 4 WEEKS</span>
-          <strong>
-            {weeks.reduce((sum, w) => sum + w.days, 0)}
-            <small>일</small>
-          </strong>
-          <p>최근 4주 운동 완료일</p>
-        </div>
-        <div className="gym-history-bars" aria-label="주별 운동 완료일">
-          {weeks.map((w) => (
-            <div key={w.start}>
-              <strong>{w.days}일</strong>
-              <div>
-                <span style={{ height: `${(w.days / 7) * 100}%` }} />
+        <div className="gym-history-summary">
+          <div>
+            <span className="gym-eyebrow">LAST 4 WEEKS</span>
+            <strong>
+              {weeks.reduce((sum, w) => sum + w.days, 0)}
+              <small>일</small>
+            </strong>
+            <p>최근 4주 운동 완료일</p>
+          </div>
+          <div className="gym-history-bars" aria-label="주별 운동 완료일">
+            {weeks.map((w) => (
+              <div key={w.start}>
+                <strong>{w.days}일</strong>
+                <div>
+                  <span style={{ height: `${(w.days / 7) * 100}%` }} />
+                </div>
+                <small>{w.label}</small>
               </div>
-              <small>{w.label}</small>
-            </div>
+            ))}
+          </div>
+        </div>
+        <div className="gym-segment" aria-label="기록 필터">
+          {[
+            ["all", "전체"],
+            ["complete", "완료"],
+            ["partial", "부분 수행"],
+          ].map(([value, label]) => (
+            <button
+              key={value}
+              aria-pressed={filter === value}
+              className={filter === value ? "active" : ""}
+              onClick={() => {
+                setFilter(value);
+                setLimit(7);
+              }}
+            >
+              {label}
+            </button>
           ))}
         </div>
-      </div>
-      <div className="gym-segment" aria-label="기록 필터">
-        {[
-          ["all", "전체"],
-          ["complete", "완료"],
-          ["partial", "부분 수행"],
-        ].map(([value, label]) => (
-          <button
-            key={value}
-            aria-pressed={filter === value}
-            className={filter === value ? "active" : ""}
-            onClick={() => {
-              setFilter(value);
-              setLimit(7);
-            }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
       </>}
       {logs.slice(0, limit).map((l) => (
-        <div className="gym-row" key={l.id}>
-          <span className="gym-avatar">
-            {l.status === "partial" ? (
-              <Activity size={17} />
-            ) : (
-              <Check size={17} />
-            )}
-          </span>
-          <div>
-            <strong>{l.name}</strong>
-            <p>
-              {l.date} · {l.effort}
-            </p>
-            <p>
-              {l.completedSets !== undefined
-                ? `${l.completedSets}/${l.totalSets}세트 수행`
-                : "수행 기록"}
-              {l.minutes ? ` · 기록 시간 ${l.minutes}분` : ""}
-            </p>
-            <ExerciseResults rows={l.exerciseResults}/>
-            {l.feedback && <div className="gym-coach-reply answered">
-              <MessageCircle size={16}/>
-              <div><strong>트레이너 코멘트</strong><p>{l.feedback}</p></div>
-            </div>}
+        <article className="gym-history-entry" key={l.id}>
+          <div className="gym-row">
+            <span className="gym-avatar">
+              {l.status === "partial" ? (
+                <Activity size={17} />
+              ) : (
+                <Check size={17} />
+              )}
+            </span>
+            <div>
+              <strong>{l.name}</strong>
+              <p>
+                {l.date} · {l.effort}
+              </p>
+              <p>
+                {l.completedSets !== undefined
+                  ? `${l.completedSets}/${l.totalSets}세트 수행`
+                  : "수행 기록"}
+                {l.minutes ? ` · 기록 시간 ${l.minutes}분` : ""}
+              </p>
+              <ExerciseResults rows={l.exerciseResults}/>
+            </div>
+            <span
+              className={"gym-pill " + (l.status === "partial" ? "neutral" : "")}
+            >
+              {l.status === "partial" ? "부분 수행" : "완료"}
+            </span>
           </div>
-          <span
-            className={"gym-pill " + (l.status === "partial" ? "neutral" : "")}
-          >
-            {l.status === "partial" ? "부분 수행" : "완료"}
-          </span>
-        </div>
+          {l.feedback && <div className="gym-coach-reply answered">
+            <MessageCircle size={16}/>
+            <div><strong>트레이너 코멘트</strong><p>{l.feedback}</p></div>
+          </div>}
+        </article>
       ))}
       {!logs.length && (
         <Empty>

@@ -1,5 +1,5 @@
 import { usesSeconds } from "./prescription.js";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   Plus,
@@ -1210,28 +1210,50 @@ export function Feedback() {
   ) || [];
   const draftDirty = ["logs", "meals"].some(type => m?.[type].some(row => {
     const value = text[`${id}/${type}/${row.id}`];
-    return value !== undefined && value !== (row.feedbackDraft ?? row.feedback ?? "");
+    if (value === undefined) return false;
+    return row.feedbackDraft !== undefined ? value !== row.feedbackDraft : value.trim() !== (row.feedback || "");
   }));
-  useEffect(
-    () =>
-      registerDraftNavigation(
-        `feedback-${id}`,
-        draftDirty,
-        () => update(s => {
-          const member = s.members.find(item => item.id === id);
-          if (!member) return;
-          for (const type of ["logs", "meals"]) {
-            for (const row of member[type]) {
-              const value = text[`${id}/${type}/${row.id}`];
-              if (value !== undefined) row.feedbackDraft = value;
-            }
-          }
-        }),
-        "작성 중인 피드백을 임시 저장하고 이동할까요?",
-        "/coach/feedback",
-      ),
-    [id, draftDirty, text, update],
-  );
+  const persistDrafts = useCallback(async () => {
+    await update(s => {
+      const member = s.members.find(item => item.id === id);
+      if (!member) return;
+      for (const type of ["logs", "meals"]) {
+        for (const row of member[type]) {
+          const value = text[`${id}/${type}/${row.id}`];
+          if (value === undefined) continue;
+          if (value.trim() === (row.feedback || "")) delete row.feedbackDraft;
+          else row.feedbackDraft = value;
+        }
+      }
+    });
+    setText(current => {
+      const remaining = { ...current };
+      for (const [key, value] of Object.entries(text)) {
+        if (remaining[key] === value) delete remaining[key];
+      }
+      return remaining;
+    });
+  }, [id, text, update]);
+  useEffect(() => registerDraftNavigation(
+    `feedback-${id}`, draftDirty, persistDrafts,
+    "작성 중인 피드백을 임시 저장하고 이동할까요?", "/coach/feedback",
+  ), [id, draftDirty, persistDrafts]);
+  useEffect(() => {
+    if (!draftDirty || busy !== null) return;
+    const saveDraft = () => persistDrafts().catch(e => setError(e.message));
+    const timer = setTimeout(saveDraft, 750);
+    const onHide = () => {
+      if (document.hidden) {
+        clearTimeout(timer);
+        saveDraft();
+      }
+    };
+    document.addEventListener("visibilitychange", onHide);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onHide);
+    };
+  }, [draftDirty, busy, persistDrafts]);
   function editor(type, row) {
     const key = `${id}/${type}/${row.id}`;
     const workout = type === "logs";
@@ -1268,6 +1290,8 @@ export function Feedback() {
           onChange={event => setText({ ...text, [key]: event.target.value })}
           placeholder={workout ? "수행한 세트를 보고 다음 운동에서 해 볼 한 가지를 알려주세요." : "좋았던 점과 다음 식사에서 해 볼 한 가지를 알려주세요."}/>
       </Field>
+      {row.feedbackDraft !== undefined && value === row.feedbackDraft &&
+        <p className="gym-muted">이 기기에 임시 저장됨</p>}
       <button className="gym-button" disabled={busy !== null} onClick={save}>
         {busy === key ? "저장 중…" : workout ? "운동 코멘트 저장" : "피드백 저장"}
       </button>
