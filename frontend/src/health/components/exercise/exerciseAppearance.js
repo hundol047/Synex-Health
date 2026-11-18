@@ -22,12 +22,15 @@ export function exerciseGarmentAt(x, y, z, original = 'skin') {
 
 export function exerciseAvatarGeometry(wear, stature = 1) {
   const geometry = avatarGeometry(wear, stature);
+  // All profile meshes share vertex indices. Keep sleeve, hair and face
+  // boundaries on those vertices while personal measurements reshape them.
+  const rest = athleteCoordinates();
   const uv = new Float32Array(wear.positions.length / 3 * 2);
   const colors = geometry.attributes.color.array;
   const skin = new THREE.Color('#c4967b'), lip = new THREE.Color('#a36660'), brow = new THREE.Color('#594138');
   const cheek = new THREE.Color('#c78f79'), hairColor = new THREE.Color('#342820');
   for (let i = 0; i < wear.labels.length; i++) {
-    const x = wear.positions[i * 3] / stature, y = wear.positions[i * 3 + 1] / stature, z = wear.positions[i * 3 + 2] / stature;
+    const x = rest[i * 3], y = rest[i * 3 + 1], z = rest[i * 3 + 2];
     uv[i * 2] = Math.atan2(x, z - .035) / (2 * Math.PI) + .5;
     uv[i * 2 + 1] = y / 1.8;
     // A shared boundary vertex can belong to both skin and a shirt triangle.
@@ -45,7 +48,7 @@ export function exerciseAvatarGeometry(wear, stature = 1) {
     if (y > 1.54) color.lerp(hairColor, THREE.MathUtils.smoothstep(y, hairline, hairline + .018));
     color.toArray(colors, i * 3);
   }
-  geometry.setAttribute('athleteRest', new THREE.BufferAttribute(athleteCoordinates(), 3));
+  geometry.setAttribute('athleteRest', new THREE.BufferAttribute(rest, 3));
   geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
   const indices = [], groups = [[], [], [], [], []];
   const garmentIndex = { skin: 0, top: 1, bottom: 2, shoes: 3 };
@@ -53,8 +56,8 @@ export function exerciseAvatarGeometry(wear, stature = 1) {
     for (let i = 0; i < faces.length; i += 3) {
       const face = faces.slice(i, i + 3);
       let x = 0, y = 0, z = 0;
-      for (const index of face) { x += wear.positions[index * 3]; y += wear.positions[index * 3 + 1]; z += wear.positions[index * 3 + 2]; }
-      x /= 3 * stature; y /= 3 * stature; z /= 3 * stature;
+      for (const index of face) { x += rest[index * 3]; y += rest[index * 3 + 1]; z += rest[index * 3 + 2]; }
+      x /= 3; y /= 3; z /= 3;
       const garment = exerciseGarmentAt(x, y, z, original);
       const hairline = 1.633 + .082 * THREE.MathUtils.smoothstep(z, .034, .135) + .005 * Math.sin(x * 42);
       const material = garment === 'skin' && y > hairline + .012 ? 4 : garmentIndex[garment];

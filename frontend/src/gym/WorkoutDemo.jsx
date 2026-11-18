@@ -4,7 +4,7 @@ import { doseValue, usesSeconds } from "./prescription.js";
 
 const ExerciseMotion = lazy(() => import("../health/components/exercise/ExerciseMotion.jsx"));
 
-export default function WorkoutDemo({ exercise, entry, paused, resume, onClose }) {
+export default function WorkoutDemo({ exercise, entry, paused, resume, onClose, measurement, profile }) {
   const dialog = useRef(null);
   const [transportHost, setTransportHost] = useState(null);
   useEffect(() => {
@@ -31,7 +31,8 @@ export default function WorkoutDemo({ exercise, entry, paused, resume, onClose }
       <section className="gym-demo-content">
         {paused && <button className="gym-button secondary" onClick={resume}>운동 이어하기</button>}
         <Suspense fallback={<p role="status">운동 시범을 준비하고 있어요…</p>}>
-          <ExerciseMotion exercise={exercise} paused={paused} transportHost={transportHost}/>
+          <ExerciseMotion exercise={exercise} paused={paused} transportHost={transportHost}
+            measurement={measurement} profile={profile}/>
         </Suspense>
       </section>
     </dialog>

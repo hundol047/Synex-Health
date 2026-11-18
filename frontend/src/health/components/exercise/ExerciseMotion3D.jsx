@@ -226,11 +226,9 @@ export default function ExerciseMotion3D({ motion, progress, mirror, measurement
   const initialView = defaultView || (FLOOR_MOTIONS.test(motion) ? 'side' : '45');
   const [view, setView] = useState(initialView);
   useEffect(() => setView(initialView), [motion, initialView]);
-  // The instructor has a consistent demonstration build. Personal body
-  // composition remains on the separate mannequin; it must not move a
-  // machine's calibrated seat or make a supported palm float off the mat.
-  const m = measurement, p = profile;
-  const heightScale = morphParameters(m, p).heightScale;
+  const heightScale = morphParameters(measurement, profile).heightScale;
+  const profileApplied = profile?.height_cm > 0 || ['female', 'male'].includes(profile?.gender);
+  const bodyLabel = measurement ? '내 체성분을 반영한 시범' : profileApplied ? '내 프로필을 반영한 시범' : '표준 시범 체형';
   const fallback = <MotionFigure exercise={{ motion_id: motion, exercise_name: '운동' }} progress={progress} mirror={mirror}/>;
   if (available === null) return <p role="status">운동 시범을 준비하고 있어요…</p>;
   if (!available) return fallback;
@@ -239,10 +237,10 @@ export default function ExerciseMotion3D({ motion, progress, mirror, measurement
     <div ref={stage} className="motion-3d-canvas" style={{ height: compact ? undefined : 340, flex: compact ? '1 1 0' : undefined, minHeight: compact ? 0 : undefined, touchAction: 'none' }}>
       <SceneBoundary onFailure={() => setAvailable(false)}><Canvas shadows={!compact} dpr={[1, compact ? 1.5 : 2]} frameloop="demand" gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }} camera={{ position: [3, 1.5, 3], fov: 36 }} fallback={fallback} aria-label="운동복을 입은 3D 운동 시범">
         <SceneCamera motion={motion} view={view} mirror={mirror} heightScale={heightScale} controls={controls}/><Studio compact={compact} heightScale={heightScale} motion={motion}/>
-        <Athlete {...{ motion, progress, mirror, compact }} measurement={m} profile={p}/>
+        <Athlete {...{ motion, progress, mirror, compact, measurement, profile }}/>
         <OrbitControls ref={controls} enabled={view === 'free'} enablePan={false} minDistance={1.2 * heightScale} maxDistance={6 * heightScale} maxPolarAngle={Math.PI / 2 - .02}/>
       </Canvas></SceneBoundary>
     </div>
-    {!compact && <p className="muted">{measurement ? '나의 체형' : '표준 시범 체형'} · 자유 방향에서 드래그로 돌려 보세요.</p>}
+    {!compact && <p className="muted">{bodyLabel} · 자유 방향에서 드래그로 돌려 보세요.</p>}
   </>;
 }

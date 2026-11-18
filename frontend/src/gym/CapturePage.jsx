@@ -85,7 +85,7 @@ export default function CapturePage() {
         device_name: "사진 인식 후 사용자 확인",
       });
       setSaved(true);
-      setNotice("확인한 수치를 저장했습니다. 내 몸 화면에 반영됩니다.");
+      setNotice("수치를 저장했습니다. 내 몸 화면과 트레이너 루틴의 3D 시범에 반영됩니다.");
     } catch (e) {
       setError(e.message);
     } finally {

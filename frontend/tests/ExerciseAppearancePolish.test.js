@@ -42,6 +42,30 @@ describe('exercise athlete surface finish', () => {
     }
   });
 
+  it('keeps the shirt covering the same torso faces when the member’s measurements change', () => {
+    const torsoFaces = measurement => {
+      const scale = measurement.height / 178;
+      const wear = sportswear(personalizedVertices(measurement, { gender: 'female' }), scale, 'female');
+      const geometry = exerciseAvatarGeometry(wear, scale);
+      try {
+        const rest = geometry.getAttribute('athleteRest'), index = geometry.index.array;
+        const shirt = geometry.groups.find(group => group.materialIndex === 1);
+        const faces = new Set();
+        for (let i = shirt.start; i < shirt.start + shirt.count; i += 3) {
+          const triangle = [index[i], index[i + 1], index[i + 2]];
+          if (triangle.every(v => rest.getY(v) > .98 && rest.getY(v) < 1.32))
+            faces.add(triangle.join(','));
+        }
+        return faces;
+      } finally { geometry.dispose(); }
+    };
+    const lean = torsoFaces({height: 185, weight: 64, skeletal_muscle_mass: 24, body_fat_percentage: 20});
+    const broad = torsoFaces({height: 158, weight: 74, skeletal_muscle_mass: 23, body_fat_percentage: 36});
+    expect(lean.size).toBeGreaterThan(100);
+    expect(broad.size).toBe(lean.size);
+    expect([...lean].every(face => broad.has(face))).toBe(true);
+  });
+
   it('uses deterministic local maps within a small memory budget and releases every owned texture once', () => {
     const first = exerciseMaterials(), second = exerciseMaterials();
     const maps = texturesOf(first.materials), otherMaps = texturesOf(second.materials);

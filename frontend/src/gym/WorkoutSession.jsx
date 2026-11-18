@@ -24,11 +24,19 @@ import {
 import { Card, PageHead, Field, Notice } from "./ui.jsx";
 import WorkoutDemo from "./WorkoutDemo.jsx";
 import { guidedExercise, usesSeconds, doseValue } from "./prescription.js";
+import { HealthAPI } from "../shared/lib/api.js";
+import { useApiData } from "../health/lib/useApiData.js";
 const formatTime = (secs) =>
   `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
 export default function WorkoutSession() {
   const { state, update } = useGym();
   const session = state.self.session;
+  const { data: measurement } = useApiData(HealthAPI.latestMeasurement);
+  const { data: memberProfile } = useApiData(HealthAPI.getProfile);
+  const avatarProfile = useMemo(() => memberProfile ? {
+    height_cm: memberProfile.height,
+    gender: memberProfile.gender,
+  } : undefined, [memberProfile]);
   const finishPanel = useRef(null),
     sessionId = session.id;
   const [discarding, setDiscarding] = useState(false);
@@ -263,6 +271,7 @@ export default function WorkoutSession() {
         </button>
         {showDemo && demonstration && (
           <WorkoutDemo exercise={demonstration} entry={e} paused={session.paused}
+            measurement={measurement ?? undefined} profile={avatarProfile}
             resume={() => change(s => pauseSession(s, false))} onClose={() => setShowDemo(false)}/>
         )}
         <div
