@@ -1,5 +1,5 @@
 import { catalogEntry, doseValue, usesSeconds } from "./prescription.js";
-import { exercises, makePlan, today, validDate, scheduleWeek } from "./store.js";
+import { exercises, makePlan, today, validDate, scheduleWeek, savedPlans } from "./store.js";
 export const DAYS = ["월", "화", "수", "목", "금", "토", "일"];
 export function dateKey(date) {
   const d = new Date(date);
@@ -23,7 +23,7 @@ export function weekStats(member, dates = weekDates()) {
     logs,
     completed,
     days: completed.size,
-    target: member.plan?.dates?.[0] === dates[0] ? member.plan.frequency : 0,
+    target: savedPlans(member).find(plan => plan.dates?.[0] === dates[0])?.frequency ?? 0,
   };
 }
 export const upcoming = (member) =>

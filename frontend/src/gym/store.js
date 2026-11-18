@@ -367,6 +367,15 @@ export function transferFor(state, role, member) {
   }
   return packet;
 }
+// The most recent calendar week stays in plan so existing single-plan saves are readable.
+export function savedPlans(member) {
+  return member.plan ? [...(member.earlierPlans ?? []), member.plan] : [];
+}
+
+export function planForDay(plans, day) {
+  return plans.find(plan => plan.dates[6] >= day) ?? plans.at(-1);
+}
+
 export function applyTransfer(state, v, role) {
   if (role === "coach") {
     if (v.kind !== "progress" || v.coachId !== state.coachId)
@@ -400,18 +409,30 @@ export function applyTransfer(state, v, role) {
     const m = state.self;
     if (m.linkedCoach && (m.linkedCoach !== v.coachId || m.id !== v.memberId))
       throw Error("다른 회원의 계획입니다. 현재 연결을 먼저 확인하세요.");
-    const currentPlanTime = Date.parse(m.plan?.updatedAt);
+    const plans = savedPlans(m);
+    const week = v.plan.dates[0];
+    const previous = plans.find(plan => plan.dates[0] === week);
+    const currentPlanTime = Date.parse(previous?.updatedAt);
+    const lastSharedAt = m.lastCoachShareAt ?? m.plan?.updatedAt;
+    const weekShares = m.weekShareTimes ?? (m.plan ? { [m.plan.dates[0]]: lastSharedAt } : {});
+    const lastSnapshot = Date.parse(lastSharedAt);
     const incomingPlanTime = Date.parse(v.plan.updatedAt);
     const sharedAt = v.createdAt ?? v.plan.updatedAt;
     if (incomingPlanTime < currentPlanTime)
       throw Error("현재 계획보다 오래된 파일입니다. 최신 계획을 받아주세요.");
-    if (incomingPlanTime === currentPlanTime && Date.parse(sharedAt) < Date.parse(m.lastCoachShareAt))
+    if (incomingPlanTime === currentPlanTime && Date.parse(sharedAt) < Date.parse(weekShares[week]))
       throw Error("이미 받은 파일보다 더 오래된 공유 파일입니다. 최신 일정과 피드백을 유지했습니다.");
-    m.lastCoachShareAt = sharedAt;
+    const ordered = [...plans.filter(plan => plan.dates[0] !== week), v.plan]
+      .sort((a, b) => a.dates[0].localeCompare(b.dates[0]));
+    m.plan = ordered.pop();
+    m.earlierPlans = ordered;
+    m.weekShareTimes = { ...weekShares, [week]: sharedAt };
     m.id = v.memberId;
-    m.name = v.name;
     m.linkedCoach = v.coachId;
-    m.plan = v.plan;
+    // Appointments and feedback describe the whole member, even in a file for one week.
+    if (Date.parse(sharedAt) < lastSnapshot) return;
+    m.lastCoachShareAt = sharedAt;
+    m.name = v.name;
     m.appointments = v.appointments;
     m.meals = m.meals.map((x) => ({
       ...x,

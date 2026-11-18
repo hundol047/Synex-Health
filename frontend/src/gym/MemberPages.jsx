@@ -16,13 +16,15 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useGym } from "./GymContext.jsx";
-import { today } from "./store.js";
+import useLocalDay from "./useLocalDay.js";
+import { today, planForDay, savedPlans } from "./store.js";
 import {
   DAYS,
   weekDates,
   weekStats,
   upcoming,
   newSession,
+  planPeriod,
 } from "./workflow.js";
 import { PageHead, Card, Empty, Field, Notice } from "./ui.jsx";
 import { photoData } from "./photos.js";
@@ -34,12 +36,15 @@ import { useApiData } from "../health/lib/useApiData.js";
 export function MemberHome() {
   const { state } = useGym();
   const m = state.self;
-  const dates = weekDates();
+  const day = useLocalDay();
+  const plan = planForDay(savedPlans(m), day);
+  const future = plan?.dates[0] > day;
+  const dates = weekDates(day);
   const stats = weekStats(m, dates);
   const next = upcoming(m)[0];
   const feedback = m.meals.find((x) => x.feedback);
   const todayDone = m.logs.some(
-    (l) => l.date === today() && l.status !== "partial",
+    (l) => l.date === day && l.status !== "partial",
   );
   const { data: measure } = useApiData(() => HealthAPI.latestMeasurement(), []);
   return (
@@ -68,26 +73,26 @@ export function MemberHome() {
               ? "멈췄던 곳부터\n이어서 운동해요."
               : todayDone
                 ? "오늘도 해냈어요.\n나의 페이스를 지켜요."
-                : m.plan
-                  ? "오늘의 루틴,\n내 컨디션에 맞게."
+                : plan
+                  ? (future ? "다음 운동을\n미리 살펴보세요." : "오늘의 루틴,\n내 컨디션에 맞게.")
                   : "작은 시작이\n큰 변화를 만듭니다."}
           </h2>
           <p>
-            {m.plan
-              ? `${m.plan.options[0].exercises.length}개 동작 · 주 ${m.plan.frequency}회 트레이너 계획`
+            {plan
+              ? `${plan.options[0].exercises.length}개 동작 · 주 ${plan.frequency}회 트레이너 계획`
               : "결과지를 올리고, 나에게 맞는 운동을 시작하세요."}
           </p>
           <Link
             className="gym-button light"
-            to={m.plan || m.session ? "/health/my-plan" : "/health/capture"}
+            to={plan || m.session ? "/health/my-plan" : "/health/capture"}
           >
             <Play size={17} />
             {m.session
               ? "진행 중인 운동 이어서 하기"
               : todayDone
                 ? "오늘 기록 살펴보기"
-                : m.plan
-                  ? "오늘 운동 시작"
+                : plan
+                  ? (future ? "예정된 계획 미리보기" : "오늘 운동 시작")
                   : "내 몸부터 알아보기"}
           </Link>
         </div>
@@ -113,7 +118,7 @@ export function MemberHome() {
           </svg>
         </div>
       </section>
-      <PlanPeriodNotice plan={m.plan} />
+      <PlanPeriodNotice plan={plan} />
       <Card className="gym-week-card">
         <div className="gym-section-head">
           <h2>이번 주, 나의 리듬</h2>
@@ -126,7 +131,7 @@ export function MemberHome() {
             <div
               key={d}
               className={
-                (d === today() ? "today " : "") +
+                (d === day ? "today " : "") +
                 (stats.completed.has(d) ? "done" : "")
               }
             >
@@ -260,7 +265,13 @@ export function MyPlan() {
   const [selected, setSelected] = useState("standard"),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
-  const plan = m.plan;
+  const day = useLocalDay();
+  const plans = savedPlans(m);
+  const defaultPlan = planForDay(plans, day);
+  const [preview, setPreview] = useState(null);
+  const previewWeek = preview?.defaultWeek === defaultPlan?.dates[0] ? preview?.week : null;
+  const plan = plans.find(item => item.dates[0] === previewWeek) ?? defaultPlan;
+  const future = plan?.dates[0] > day;
   const option =
     plan?.options.find((o) => o.id === selected) || plan?.options[0];
   async function start() {
@@ -268,7 +279,15 @@ export function MyPlan() {
       setBusy(true);
       await update((s) => {
         if (s.self.session) return;
-        s.self.session = newSession(plan, option);
+        const latest = savedPlans(s.self);
+        const current = previewWeek
+          ? latest.find(item => item.dates[0] === previewWeek)
+          : planForDay(latest, today());
+        if (!current || current.id !== plan.id || current.updatedAt !== plan.updatedAt)
+          throw Error("운동 계획이 바뀌었어요. 새 처방을 확인하고 시작해 주세요.");
+        if (current.dates[0] > today())
+          throw Error(`${current.dates[0]}부터 시작할 수 있어요.`);
+        s.self.session = newSession(current, current.options.find(item => item.id === option.id));
       });
       setError("");
     } catch (e) {
@@ -284,6 +303,20 @@ export function MyPlan() {
         트레이너가 구성한 동작을, 내 속도로 하나씩 수행하세요.
       </PageHead>
       <Notice error>{error}</Notice>
+      {plans.length > 1 && (
+        <Field label="운동 계획 주 선택">
+          <select value={plan.dates[0]} onChange={event => {
+            setPreview({ week: event.target.value, defaultWeek: defaultPlan.dates[0] });
+            setError("");
+          }}>
+            {plans.map(item => {
+              const period = planPeriod(item, day);
+              const label = { current: "이번 주", upcoming: "예정", past: "지난 계획" }[period.kind];
+              return <option key={item.dates[0]} value={item.dates[0]}>{item.dates[0]} · {label}</option>;
+            })}
+          </select>
+        </Field>
+      )}
       <PlanPeriodNotice plan={plan} />
       {!plan ? (
         <Card>
@@ -360,10 +393,10 @@ export function MyPlan() {
             <button
               className="gym-button gym-full"
               onClick={start}
-              disabled={busy}
+              disabled={busy || future}
             >
               <Play size={18} />
-              {busy ? "준비 중…" : "이 루틴으로 운동 시작"}
+              {future ? `${plan.dates[0]}부터 시작` : busy ? "준비 중…" : "이 루틴으로 운동 시작"}
             </button>
           </Card>
           <Card title="계획된 주간 일정">

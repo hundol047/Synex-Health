@@ -191,7 +191,7 @@ export default function SharingPage() {
               </strong>
               <p>
                 {preview.kind === "plan"
-                  ? `주 ${preview.plan.frequency}회 · PT ${preview.appointments.length}건`
+                  ? `${preview.plan.dates[0]} 시작 주 · 주 ${preview.plan.frequency}회 · PT ${preview.appointments.length}건`
                   : `운동 ${preview.logs.length}건 · 식단 ${preview.meals.length}건`}
               </p>
               <p>이름과 공유한 사람을 확인한 뒤 가져오세요.</p>

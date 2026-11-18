@@ -10,6 +10,8 @@ import {
   transferFor,
   parseTransfer,
   applyTransfer,
+  savedPlans,
+  planForDay,
 } from "../src/gym/store.js";
 import {
   entryFor,
@@ -102,6 +104,34 @@ describe("gym usability regressions", () => {
     expect(() => receive(old)).toThrow(/더 오래된 공유 파일/);
     receive(latest);
     expect(recipient.self.meals).toEqual([{ id: "meal", feedback: "수정한 메모" }]);
+  });
+  it("keeps prescriptions by week without overwriting newer shared appointments or feedback", () => {
+    const member = sample();
+    const packet = (week, reps, time) => {
+      member.plan = editablePlan([{ ...entryFor("squat"), reps }], 3, [], week);
+      member.plan.updatedAt = time;
+      return structuredClone({ ...transferFor({ coachId: "coach" }, "coach", member), createdAt: time });
+    };
+    const first = packet("2026-11-16", "8", "2026-11-16T10:00:00Z");
+    member.appointments = [{ id:"pt", date:"2026-11-26", time:"15:00" }];
+    member.meals = [{ id:"meal", feedback:"최신 메모" }];
+    const next = packet("2026-11-23", "14", "2026-11-18T12:00:00Z");
+    const revised = packet("2026-11-16", "9", "2026-11-17T12:00:00Z");
+    revised.appointments = [];
+    revised.feedback = [{ id:"meal", feedback:"이전 메모" }];
+    const recipient = { self: { ...freshMember(), meals:[{ id:"meal" }] } };
+    const read = file => applyTransfer(recipient, parseTransfer(JSON.stringify(file)), "member");
+    read(next);
+    read(first);
+    read(first);
+    read(revised);
+    expect(() => read(first)).toThrow(/오래된/);
+    const plans = savedPlans(recipient.self);
+    expect(plans).toHaveLength(2);
+    expect(planForDay(plans, "2026-11-22").options[0].exercises[0].reps).toBe("9");
+    expect(planForDay(plans, "2026-11-23").options[0].exercises[0].reps).toBe("14");
+    expect(recipient.self.appointments).toEqual(next.appointments);
+    expect(recipient.self.meals[0].feedback).toBe("최신 메모");
   });
   it("reads earlier files without an export date and rejects malformed dates", () => {
     const member = sample();
