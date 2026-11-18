@@ -15,6 +15,9 @@ import {
   editablePlan,
   newSession,
   pauseSession,
+  checkSessionSet,
+  clearSessionRest,
+  moveSessionExercise,
   sessionElapsed,
   finishSession,
 } from "../src/gym/workflow.js";
@@ -55,6 +58,42 @@ describe("gym usability regressions", () => {
     m.session.checked = ["squat:0"];
     pauseSession(m.session, true, start + 120000);
     expect(finishSession(m, "적당했어요", start + 3600000).minutes).toBe(2);
+  });
+  it("keeps rest on the selected exercise and clears a frozen rest when changing exercise", () => {
+    const plan = editablePlan([entryFor("squat"), entryFor("plank")], 3, []);
+    const s = newSession(plan, plan.options[0]);
+    const start = s.startedAt;
+    s.exercises[0].rest = 90;
+    checkSessionSet(s, 0, start);
+    moveSessionExercise(s, 0);
+    expect(s.restUntil).toBe(start + 90000);
+    pauseSession(s, true, start + 10000);
+    moveSessionExercise(s, 0);
+    expect(s.restRemaining).toBe(80000);
+    moveSessionExercise(s, 1);
+    pauseSession(s, false, start + 60000);
+    expect(s.restUntil).toBeNull();
+    expect(s.checked).toEqual(["squat:0"]);
+  });
+  it("respects zero rest, supports older prescriptions, and can end a frozen rest", () => {
+    const m = sample();
+    const s = newSession(m.plan, m.plan.options[0]);
+    const start = s.startedAt;
+    delete s.exercises[0].rest;
+    checkSessionSet(s, 0, start);
+    expect(s.restUntil).toBe(start + 60000);
+    pauseSession(s, true, start + 2000);
+    clearSessionRest(s);
+    expect(s.paused).toBe(true);
+    pauseSession(s, false, start + 8000);
+    expect(s.restUntil).toBeNull();
+    s.exercises[0].rest = 0;
+    checkSessionSet(s, 1, start + 9000);
+    expect(s.restUntil).toBeNull();
+    pauseSession(s, true, start + 12000);
+    checkSessionSet(s, 1, start + 18000);
+    expect(s.paused).toBe(true);
+    expect(s.checked).toEqual(["squat:0"]);
   });
   it("rejects render-breaking objects and empty workout lists in imported plans", () => {
     const m = sample(),

@@ -2902,6 +2902,12 @@
   font-size: 9px;
   color: #96c9bd;
 }
+.gym-workout-action .gym-active-rest {
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #c0ead4;
+}
 .gym-workout-action strong {
   font-size: 15px;
 }

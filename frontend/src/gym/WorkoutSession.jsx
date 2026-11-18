@@ -16,6 +16,8 @@ import {
   finishSession,
   sessionElapsed,
   pauseSession,
+  clearSessionRest,
+  moveSessionExercise,
   nextIncompleteSet,
   checkSessionSet,
 } from "./workflow.js";
@@ -69,13 +71,30 @@ export default function WorkoutSession() {
   const demonstration = useMemo(() => guidedExercise(source, e), [source, e]);
   const { done, total } = sessionSummary(session);
   const nextSet = nextIncompleteSet(session);
-  const rest = Math.max(0, Math.ceil(((session.restUntil || 0) - now) / 1000));
+  const restSeconds = e.rest ?? 60;
+  const restMs = session.paused ? session.restRemaining || 0 : (session.restUntil || 0) - now;
+  const rest = Math.max(0, Math.min(restSeconds, Math.ceil(restMs / 1000)));
+  const nextAction = nextSet >= 0 ? `${nextSet + 1}세트를 시작하세요.` :
+    done === total ? "운동 기록을 저장하세요." : "다음 동작을 선택하세요.";
+  let restTitle = "세트 사이 휴식";
+  let restHint = `세트 완료를 누르면 ${restSeconds}초 휴식을 시작합니다.`;
+  if (rest > 0) {
+    restTitle = formatTime(rest);
+    restHint = session.paused ? "운동을 이어가면 남은 휴식도 계속됩니다." : "호흡을 정리하세요. 준비되면 휴식을 끝낼 수 있어요.";
+  } else if (restSeconds === 0) {
+    restTitle = "세트 사이 휴식 없음";
+    restHint = nextAction;
+  } else if (session.restUntil) {
+    restTitle = "휴식 완료";
+    restHint = nextAction;
+  }
   async function change(fn) {
     try {
       setBusy(true);
       await update((s) => {
         if (s.self.session?.id === session.id) fn(s.self.session);
       });
+      setNow(Date.now());
       setError("");
     } catch (e) {
       setError(e.message);
@@ -108,10 +127,7 @@ export default function WorkoutSession() {
   }
   function move(index) {
     setShowDemo(false);
-    change((s) => {
-      s.index = index;
-      s.restUntil = null;
-    });
+    if (index !== session.index) change((s) => moveSessionExercise(s, index));
   }
   return (
     <>
@@ -169,7 +185,7 @@ export default function WorkoutSession() {
       </div>
       <div className="gym-workout-action">
         <div>
-          <span>지금 할 운동</span>
+          <span className={rest ? "gym-active-rest" : undefined}>{rest ? `${session.paused ? "휴식 일시정지" : "휴식 중"} · ${formatTime(rest)}` : "지금 할 운동"}</span>
           <strong>{e.name}</strong>
           <small>
             {nextSet >= 0
@@ -177,7 +193,17 @@ export default function WorkoutSession() {
               : "이 동작의 모든 세트를 기록했어요"}
           </small>
         </div>
-        {nextSet >= 0 ? (
+        {session.paused && nextSet >= 0 ? (
+          <button className="gym-button" disabled={busy}
+            onClick={() => change((s) => pauseSession(s, false))}>
+            <Play size={17} />운동 이어하기
+          </button>
+        ) : rest > 0 && nextSet >= 0 ? (
+          <button className="gym-button" disabled={busy}
+            onClick={() => change(clearSessionRest)}>
+            <ChevronRight size={17} />휴식 건너뛰기
+          </button>
+        ) : nextSet >= 0 ? (
           <button
             className="gym-button"
             disabled={busy}
@@ -221,8 +247,7 @@ export default function WorkoutSession() {
             <h2>{e.name}</h2>
             <p>
               {e.sets}세트 · {doseValue(e.reps)}
-              {usesSeconds(e.dose ?? source?.dose_type) ? "초" : "회"} · 세트 사이 {e.rest ?? 60}초
-              휴식
+              {usesSeconds(e.dose ?? source?.dose_type) ? "초" : "회"} · {restSeconds ? `세트 사이 ${restSeconds}초 휴식` : "세트 사이 휴식 없음"}
             </p>
           </div>
         </div>
@@ -271,30 +296,14 @@ export default function WorkoutSession() {
         <div className={"gym-rest-panel " + (rest ? "running" : "")}>
           <Timer size={26} />
           <div>
-            <strong>
-              {session.paused
-                ? "일시정지"
-                : rest
-                  ? formatTime(rest)
-                  : session.restUntil
-                    ? "휴식 완료"
-                    : "나의 속도로, 충분히 쉬어가세요"}
-            </strong>
-            <p>
-              {rest
-                ? "호흡을 정리하고 다음 세트를 준비하세요."
-                : "휴식은 세트를 체크하면 시작됩니다."}
-            </p>
+            <strong>{restTitle}</strong>
+            <p>{restHint}</p>
           </div>
           {rest > 0 && (
             <button
               className="gym-button secondary small"
               disabled={busy}
-              onClick={() =>
-                change((s) => {
-                  s.restUntil = null;
-                })
-              }
+              onClick={() => change(clearSessionRest)}
             >
               휴식 종료
             </button>

@@ -185,6 +185,15 @@ export function sessionElapsed(session, now = Date.now()) {
       (session.paused ? 0 : now - (session.runningSince ?? session.startedAt)),
   );
 }
+export function clearSessionRest(session) {
+  session.restUntil = null;
+  session.restRemaining = 0;
+}
+export function moveSessionExercise(session, index) {
+  if (session.index === index || !session.exercises[index]) return;
+  clearSessionRest(session);
+  session.index = index;
+}
 export function pauseSession(session, paused, now = Date.now()) {
   if (Boolean(session.paused) === paused) return;
   if (paused) {
@@ -255,13 +264,14 @@ export function checkSessionSet(session, index, now = Date.now()) {
   const e = session.exercises[session.index];
   if (!e || !Number.isInteger(index) || index < 0 || index >= e.sets)
     throw Error("운동 세트를 다시 확인해 주세요.");
-  if (session.paused) pauseSession(session, false, now);
   const key = `${e.id}:${index}`;
   if (session.checked.includes(key)) {
     session.checked = session.checked.filter((x) => x !== key);
-    session.restUntil = null;
+    clearSessionRest(session);
   } else {
+    if (session.paused) pauseSession(session, false, now);
     session.checked.push(key);
-    session.restUntil = now + (e.rest ?? 60) * 1000;
+    const seconds = e.rest ?? 60;
+    session.restUntil = seconds > 0 ? now + seconds * 1000 : null;
   }
 }
