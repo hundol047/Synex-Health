@@ -34,6 +34,7 @@ export function equipmentCatalogPose(id, progress, rest) {
   const leg = [[9, 10, 11, 15], [12, 13, 14, 16]];
   const data = { type: id, scale: h };
   const point = (x, y, z) => [x * h, y * h, z * h];
+  const soleOffset = side => v(rest.soleOffsets?.[side] ?? point(0, -.10, .065));
   const setFrame = (hip, axis = [0, 1, 0], pelvisAxis = [0, 1, 0]) => {
     const direction = unit(axis);
     joints[0] = hip.slice();
@@ -171,9 +172,13 @@ export function equipmentCatalogPose(id, progress, rest) {
     data.back = { center: point(0, .69, -.57), angle: -.81 };
     for (let i = 0; i < 2; i++) setLeg(i, point(i === 0 ? .16 : -.16, .44 + .23 * e, .31 + .11 * e), [0, 1, .1], -.88);
     for (let i = 0; i < 2; i++) setArm(i, point(i === 0 ? .235 : -.235, .49, -.24), [i === 0 ? 1 : -1, -1, 0], [0, 0, 1]);
-    const feet = average(average(joints[11], joints[15]), average(joints[14], joints[16]));
-    const plateNormal = unit([0, .64, -.77]);
-    data.footplate = { center: v(feet).addScaledVector(plateNormal, -.085 * h).toArray(), normal: plateNormal.toArray() };
+    const rotation = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -.88);
+    const plateNormal = new THREE.Vector3(0, 1, 0).applyQuaternion(rotation);
+    const contacts = [11, 14].map((ankle, side) => {
+      joints.boneRotations[10 + side] = rotation.toArray();
+      return soleOffset(side).applyQuaternion(rotation).add(v(joints[ankle])).toArray();
+    });
+    data.footplate = { center: v(average(...contacts)).addScaledVector(plateNormal, -.03 * h).toArray(), normal: plateNormal.toArray() };
   } else if (id === 'stationary_cycle') {
     setFrame(point(0, .91, -.03), [0, Math.cos(.31), Math.sin(.31)]);
     data.seat = point(0, .70, -.03);
@@ -183,7 +188,7 @@ export function equipmentCatalogPose(id, progress, rest) {
       const phase = 2 * Math.PI * t + i * Math.PI;
       const pedal = point(i === 0 ? .14 : -.14, .40 + .18 * Math.cos(phase), .32 + .18 * Math.sin(phase));
       data.pedals.push(pedal);
-      setLeg(i, v(pedal).add(new THREE.Vector3(0, .055 * h, -.045 * h)).toArray(), [0, 0, 1], .09 * Math.sin(phase));
+      setLeg(i, v(pedal).sub(soleOffset(i)).toArray(), [0, 0, 1]);
       setArm(i, point(i === 0 ? .205 : -.205, 1.17, .49), [i === 0 ? .5 : -.5, -1, 0], [0, 0, 1]);
     }
   } else if (id === 'treadmill_walk' || id === 'elliptical') {
@@ -205,7 +210,7 @@ export function equipmentCatalogPose(id, progress, rest) {
       }
       setLeg(i, ankle, [0, 0, 1]);
       if (elliptical) {
-        data.pedals.push(v(ankle).add(new THREE.Vector3(0, -.060 * h, .045 * h)).toArray());
+        data.pedals.push(v(joints[leg[i][2]]).add(soleOffset(i)).toArray());
         setArm(i, point(side * .30, 1.30, .26 - .13 * Math.cos(phase)), [side * .5, -1, 0], [0, 1, 0]);
       } else {
         const swing = -.23 * Math.cos(phase);

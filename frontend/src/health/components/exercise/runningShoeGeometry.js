@@ -57,6 +57,14 @@ export function exerciseShoeFloor(shoe, pitch = 0) {
   return centerHeight + min;
 }
 
+export function soleSupportOffsets(shoes, rest) {
+  return shoes.map((shoe, side) => {
+    const ankle = rest[side ? 14 : 11];
+    return [shoe.center[0] - ankle[0], exerciseShoeFloor(shoe) - ankle[1],
+      shoe.center[2] + .12 * shoe.length - ankle[2]];
+  });
+}
+
 // Dead bug rolls the heel onto the mat with the foot rotated 90° from rest.
 // Solve the ankle target against this athlete's shoe rather than average height.
 export function heelContactTargets(shoes, rest) {

@@ -3,7 +3,7 @@ import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, ContactShadows } from '@react-three/drei';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import { exerciseShoeFloor, heelContactTargets } from './runningShoeGeometry.js';
+import { exerciseShoeFloor, heelContactTargets, soleSupportOffsets } from './runningShoeGeometry.js';
 import { calibratePlankWrist } from './plankSupport.js';
 import { supportVertices, matAlignment, posedShoes } from './matContact.js';
 import RunningShoes from "./RunningShoes.jsx";
@@ -59,6 +59,7 @@ function Athlete({ motion, progress, mirror, measurement, profile, compact }) {
     rest.wallSupport = calibrateWallSupport(wear.positions, weights, rest);
     const supports = { palms: supportVertices(weights, false), forearms: supportVertices(weights, true) };
     const shoes = footwearAnchors(base);
+    rest.soleOffsets = soleSupportOffsets(shoes, rest);
     rest.heelContactY = heelContactTargets(shoes, rest);
     return { supports, base: wear.positions, weights, rest, scale, palmRoll: calibratePalmRoll(wear.positions, weights, rest), geometry: exerciseAvatarGeometry(wear, scale), appearance: exerciseMaterials(), shoes };
   }, [measurement, profile]);
