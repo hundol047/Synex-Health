@@ -2,6 +2,7 @@ import React from 'react';
 import { describe,it,expect,vi } from 'vitest';
 import { render,screen,fireEvent,act } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
+import MotionFigure from '../src/health/components/exercise/MotionFigure.jsx';
 import ExerciseMotion from '../src/health/components/exercise/ExerciseMotion.jsx';
 import { MOTIONS,samplePose } from '../src/health/components/exercise/motions.js';
 import { resolveBodyProfile } from '../src/health/components/body3d/bodyProfiles.js';
@@ -18,6 +19,37 @@ describe('motion guidance',()=>{
       const a=samplePose(id,0), b=samplePose(id,.31);
       expect(a).not.toEqual(b);
       expect(b.flat().every(Number.isFinite)).toBe(true);
+    }
+  });
+  it.each(['leg_extension','seated_leg_curl'])('keeps %s knees fixed and the pad on the working side throughout a rep', id => {
+    const exercise={motion_id:id,exercise_name:id};
+    const {container,rerender}=render(<MotionFigure exercise={exercise}/>);
+    const rest=samplePose(id,0);
+    for(const phase of [0,.125,.25,.375,.5,.75,1]){
+      rerender(<MotionFigure exercise={exercise} progress={phase}/>);
+      const points=samplePose(id,phase);
+      for(const [knee,ankle] of [[7,8],[9,10]]){
+        const [x,y]=rest[knee];
+        expect(points[knee]).toEqual([x,y]);
+        const length=p=>Math.hypot(p[ankle][0]-x,p[ankle][1]-y);
+        expect(length(points)).toBeCloseTo(length(rest),8);
+      }
+      const [x,y]=points[7], dx=points[8][0]-x, dy=points[8][1]-y;
+      const roller=container.querySelector('[data-machine-roller]').getAttribute('transform');
+      const [rx,ry]=roller.slice(10,-1).split(' ').map(Number);
+      const side=((rx-x)*dy-(ry-y)*dx)/Math.hypot(dx,dy);
+      expect(side).toBeCloseTo(id==='leg_extension'?13:-13,8);
+    }
+  });
+  it.each(['lat_pulldown','cable_pushdown','cable_face_pull'])('connects both cable grips to the wrists during %s', id => {
+    const exercise={motion_id:id,exercise_name:id};
+    const {container,rerender}=render(<MotionFigure exercise={exercise}/>);
+    for(const phase of [0,.25,.5,.75,1]){
+      rerender(<MotionFigure exercise={exercise} progress={phase}/>);
+      const pose=samplePose(id,phase);
+      const grips=Array.from(container.querySelectorAll('[data-cable-grip]'),node=>
+        ['cx','cy'].map(key=>Number(node.getAttribute(key))));
+      expect(grips).toEqual([pose[4],pose[6]]);
     }
   });
   it('starts paused, supports scrub, playback, speed and reset',()=>{

@@ -34,7 +34,19 @@ export function samplePose(id, progress) {
   if (!motion) return null;
   const t=Math.max(0,Math.min(0.999999,progress))*(motion.frames.length-1);
   const index=Math.floor(t), fraction=(1-Math.cos((t-index)*Math.PI))/2;
-  return motion.frames[index].map((p,i)=>p.map((v,j)=>v+(motion.frames[index+1][i][j]-v)*fraction));
+  const start=motion.frames[index], end=motion.frames[index+1];
+ const points=start.map((p,i)=>p.map((v,j)=>v+(end[i][j]-v)*fraction));
+ if (id === 'leg_extension' || id === 'seated_leg_curl') {
+   // A lever rotates about the knee. Linear ankle interpolation shortens the shin mid-rep.
+   for (const [knee, ankle] of [[7,8],[9,10]]) {
+     const [x,y]=points[knee];
+     const angle = frame => Math.atan2(frame[ankle][1]-y, frame[ankle][0]-x);
+     const direction=angle(start)+(angle(end)-angle(start))*fraction;
+     const length=Math.hypot(seated[ankle][0]-seated[knee][0], seated[ankle][1]-seated[knee][1]);
+     points[ankle]=[x + length*Math.cos(direction), y + length*Math.sin(direction)];
+   }
+ }
+ return points;
 }
 
 // Additional authored demonstrations. These are schematic keyframes, never captured biomechanics.
@@ -108,9 +120,10 @@ add('cable_row','몸통 고정 / 배 쪽으로 당기기',[seatedRowStart,seated
 const legPressStart=pose(seated,{0:[100,151],1:[126,175],2:[178,237],7:[205,174],8:[260,192],9:[216,186],10:[274,204]});
 const legPressEnd=pose(legPressStart,{7:[227,184],8:[272,133],9:[239,195],10:[284,145]});
 add('leg_press','등·골반 지지 / 발판 밀기',[legPressStart,legPressEnd,legPressStart],'측면 개념도','leg_press');
-add('leg_extension','무릎축 맞추기 / 천천히 펴기',[seated,pose(seated,{8:[294,210],10:[273,222]}),seated],'측면 개념도','seat');
-const legCurlStart=pose(seated,{8:[285,213],10:[266,224]});
-add('seated_leg_curl','허벅지 고정 / 뒤꿈치 당기기',[legCurlStart,pose(seated,{8:[175,272],10:[156,280]}),legCurlStart],'측면 개념도','seat');
+const machineSeat=pose(seated,{3:[141,148],4:[164,180],5:[157,147],6:[181,177]});
+const extendedLegs=pose(machineSeat,{8:[294,210],10:[273,222]});
+add('leg_extension','무릎축 맞추기 / 천천히 펴기',[machineSeat,extendedLegs,machineSeat],'측면 개념도','seat');
+add('seated_leg_curl','허벅지 고정 / 뒤꿈치 당기기',[extendedLegs,pose(machineSeat,{8:[175,272],10:[156,280]}),extendedLegs],'측면 개념도','seat');
 const seatedFront=pose(stand,{0:[170,87],1:[170,127],2:[170,212],7:[142,242],8:[142,295],9:[198,242],10:[198,295]});
 add('machine_hip_abduction','골반 고정 / 다리 벌리기',[seatedFront,pose(seatedFront,{7:[109,242],8:[109,295],9:[231,242],10:[231,295]}),seatedFront],'정면 개념도','seat');
 const pushdownStart=pose(stand,{3:[186,156],4:[221,119],5:[199,166],6:[235,129]});
