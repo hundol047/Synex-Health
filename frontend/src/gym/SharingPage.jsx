@@ -3,12 +3,11 @@ import { useLocation, useSearchParams } from "react-router-dom";
 import { Download, Upload, Link2 } from "lucide-react";
 import { Capacitor } from "@capacitor/core";
 import { useGym } from "./GymContext.jsx";
-import { parseTransfer, applyTransfer, transferFor, savedPlans, lastEditedPlan } from "./store.js";
+import { MAX_TRANSFER_BYTES, parseTransfer, applyTransfer, transferFor, savedPlans, lastEditedPlan } from "./store.js";
 import useMemberSelection from "./useMemberSelection.js";
 import { MemberSelect } from "./CoachPages.jsx";
 import { PageHead, Card, Field, Notice } from "./ui.jsx";
-async function shareFile(data, name) {
-  const text = JSON.stringify(data, null, 2);
+async function shareFile(text, name) {
   if (Capacitor.isNativePlatform()) {
     const { Filesystem, Directory, Encoding } = await import(
       "@capacitor/filesystem"
@@ -60,8 +59,10 @@ export default function SharingPage() {
       if (coach && !m.plan) throw Error("운동 계획을 먼저 저장하세요.");
       if (!coach && !m.linkedCoach)
         throw Error("트레이너의 계획 파일을 먼저 가져오세요.");
+      const text = JSON.stringify(packet);
+      parseTransfer(text);
       await shareFile(
-        parseTransfer(JSON.stringify(packet)),
+        text,
         `Synex-${coach ? "plan-" + plan.dates[0] : "records"}-${m.id.slice(0, 8)}.json`,
       );
       setMessage("공유 파일을 준비했습니다. 받는 사람을 확인해 전달하세요.");
@@ -75,7 +76,7 @@ export default function SharingPage() {
   async function read(file) {
     setMessage("");
     try {
-      if (file.size > 12 * 1024 * 1024)
+      if (file.size > MAX_TRANSFER_BYTES)
         throw Error("12MB 이하 파일을 선택하세요.");
       const v = parseTransfer(await file.text());
       if (v.kind !== (coach ? "progress" : "plan"))

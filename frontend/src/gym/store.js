@@ -180,6 +180,8 @@ function validateExerciseResults(log) {
   }
   if (planned !== log.totalSets || done !== log.completedSets) invalid();
 }
+export const MAX_TRANSFER_BYTES = 12 * 1024 * 1024;
+
 export function parseTransfer(raw) {
   try {
     return parseTransferData(raw);
@@ -192,7 +194,7 @@ export function parseTransfer(raw) {
   }
 }
 function parseTransferData(raw) {
-  if (raw.length > 12 * 1024 * 1024)
+  if (raw.length > MAX_TRANSFER_BYTES || new TextEncoder().encode(raw).length > MAX_TRANSFER_BYTES)
     throw Error("12MB 이하의 공유 파일을 선택하세요.");
   let v;
   try {
@@ -214,8 +216,7 @@ function parseTransferData(raw) {
       !v.plan ||
       !Array.isArray(v.plan.options) ||
       v.plan.options.length !== 2 ||
-      !Array.isArray(v.appointments) ||
-      v.appointments.length > 100
+      !Array.isArray(v.appointments)
     )
       throw Error("운동 계획 형식이 올바르지 않습니다.");
     if (v.createdAt !== undefined &&

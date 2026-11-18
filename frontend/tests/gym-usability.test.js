@@ -4,6 +4,7 @@ vi.mock("../src/shared/lib/offline.js", () => ({
   saveLocalDocument: vi.fn(),
 }));
 import {
+  MAX_TRANSFER_BYTES,
   validDate,
   validateAppointment,
   freshMember,
@@ -132,6 +133,31 @@ describe("gym usability regressions", () => {
     expect(planForDay(plans, "2026-11-23").options[0].exercises[0].reps).toBe("14");
     expect(recipient.self.appointments).toEqual(next.appointments);
     expect(recipient.self.meals[0].feedback).toBe("최신 메모");
+  });
+  it("shares a full PT calendar and applies later reschedules and cancellations", () => {
+    const member = sample();
+    member.appointments = Array.from({ length: 130 }, (_, index) => {
+      const date = new Date(Date.UTC(2026, 0, index + 1)).toISOString().slice(0, 10);
+      return { id: `pt-${index}`, date, time: "19:00" };
+    });
+    const recipient = { self: freshMember() };
+    const receive = () => {
+      const raw = JSON.stringify(transferFor({ coachId: "coach" }, "coach", member));
+      applyTransfer(recipient, parseTransfer(raw), "member");
+    };
+    receive();
+    expect(recipient.self.appointments).toEqual(member.appointments);
+    member.appointments.pop();
+    member.appointments.at(-1).time = "16:30";
+    receive();
+    expect(recipient.self.appointments).toEqual(member.appointments);
+    member.appointments.at(-1).time = "26:00";
+    expect(receive).toThrow(/PT 일정/);
+    expect(recipient.self.appointments.at(-1).time).toBe("16:30");
+  });
+  it("applies the file limit to UTF-8 bytes", () => {
+    const raw = "한".repeat(Math.floor(MAX_TRANSFER_BYTES / 3) + 1);
+    expect(() => parseTransfer(raw)).toThrow(/12MB/);
   });
   it("reads earlier files without an export date and rejects malformed dates", () => {
     const member = sample();

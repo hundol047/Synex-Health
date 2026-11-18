@@ -19,6 +19,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { useGym } from "./GymContext.jsx";
+import AppointmentList from "./AppointmentList.jsx";
 import RoutineTemplates from "./RoutineTemplates.jsx";
 import ExerciseResults from "./ExerciseResults.jsx";
 import useMemberSelection from "./useMemberSelection.js";
@@ -954,6 +955,7 @@ export function Schedule() {
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false);
   const dateField = useRef(null);
+  const [listFocus, setListFocus] = useState(null);
   const dates = weekDates(calendarDate);
   function showWeek(anchor) {
     setCalendarDate(anchor);
@@ -970,6 +972,7 @@ export function Schedule() {
     setDate(appointment.date);
     setTime(appointment.time);
     setEditing(appointment.id);
+    setListFocus({ id: appointment.id });
     setCalendarDate(appointment.date);
     setError("");
     setMessage("");
@@ -985,17 +988,19 @@ export function Schedule() {
     try {
       setBusy(true);
       if (!id) throw Error("회원을 선택하세요.");
+      const appointmentId = editing || crypto.randomUUID();
       await update((s) => {
         const all = s.members.flatMap((m) => m.appointments);
         validateAppointment(all, date, time, editing);
         const m = s.members.find((m) => m.id === id);
         const previousDate = m.appointments.find(a => a.id === editing)?.date;
         m.appointments = m.appointments.filter((a) => a.id !== editing);
-        m.appointments.push({ id: editing || crypto.randomUUID(), date, time });
+        m.appointments.push({ id: appointmentId, date, time });
         rescheduleMemberWeeks(m, [previousDate, date]);
       });
       setEditing(null);
       setCalendarDate(date);
+      setListFocus({ id: appointmentId });
       setError("");
       setMessage(
         "PT 일정과 해당 주의 운동 계획을 저장했습니다. 회원에게 최신 계획을 공유하세요.",
@@ -1136,9 +1141,8 @@ export function Schedule() {
           </form>
         </Card>
         <Card title="등록한 PT">
-          {rows
-            .filter((a) => a.date >= today())
-            .map((a) => (
+          <AppointmentList rows={rows.filter(a => a.date >= today())} focus={listFocus} empty="등록한 다음 PT가 여기에 표시됩니다.">
+            {a => (
               <div className="gym-schedule-row" key={a.id}>
                 <div className="gym-row">
                   <span className="gym-avatar">
@@ -1182,10 +1186,8 @@ export function Schedule() {
                   </div>
                 )}
               </div>
-            ))}
-          {!rows.some((a) => a.date >= today()) && (
-            <Empty>등록한 다음 PT가 여기에 표시됩니다.</Empty>
-          )}
+            )}
+          </AppointmentList>
         </Card>
       </div>
     </>

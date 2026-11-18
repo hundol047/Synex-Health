@@ -29,6 +29,7 @@ import {
 import { PageHead, Card, Empty, Field, Notice } from "./ui.jsx";
 import { photoData } from "./photos.js";
 import WorkoutHistory from "./WorkoutHistory.jsx";
+import AppointmentList from "./AppointmentList.jsx";
 import PlanPeriodNotice from "./PlanPeriodNotice.jsx";
 import WorkoutSession from "./WorkoutSession.jsx";
 import { HealthAPI } from "../shared/lib/api.js";
@@ -521,7 +522,8 @@ export function Coaching() {
           </form>
         </Card>
         <Card title="나의 PT 일정">
-          {upcoming(m).map((a) => (
+          <AppointmentList rows={upcoming(m)} empty="최신 계획을 가져오면 예정된 PT가 표시됩니다.">
+            {a => (
             <div className="gym-appointment" key={a.id}>
               <div className="gym-appointment-time">
                 <strong>{a.time}</strong>
@@ -532,10 +534,8 @@ export function Coaching() {
                 <p>담당 트레이너와 60분</p>
               </div>
             </div>
-          ))}
-          {!upcoming(m).length && (
-            <Empty>최신 계획을 가져오면 예정된 PT가 표시됩니다.</Empty>
-          )}
+            )}
+          </AppointmentList>
           <Link to="/health/sharing" className="gym-button secondary">
             계획·피드백 가져오기 <ArrowUpRight size={15} />
           </Link>
