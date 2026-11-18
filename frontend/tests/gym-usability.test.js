@@ -23,6 +23,9 @@ import {
   checkSessionSet,
   clearSessionRest,
   moveSessionExercise,
+  nextCalendarChange,
+  appointmentStatus,
+  upcoming,
   nextIncompleteExercise,
   sessionElapsed,
   finishSession,
@@ -42,6 +45,21 @@ describe("gym usability regressions", () => {
     expect(() => validateAppointment([], "2026-11-06", "14:59")).toThrow();
     expect(() => validateAppointment([], "2026-11-06", "16:00")).not.toThrow();
     expect(() => validateAppointment([], "2026-11-06", "24:00")).toThrow();
+  });
+  it("updates PT sessions at their exact boundaries and retains ongoing classes across midnight", () => {
+    const at = stamp => new Date(stamp).getTime();
+    const evening = { date: "2026-11-18", time: "23:30" };
+    const following = { date: "2026-11-19", time: "00:30" };
+    const appointments = [evening, following];
+    expect(nextCalendarChange(appointments, at("2026-11-18T23:29"))).toBe(at("2026-11-18T23:30"));
+    expect(appointmentStatus(evening, at("2026-11-18T23:30"))).toBe("active");
+    expect(nextCalendarChange(appointments, at("2026-11-18T23:30"))).toBe(at("2026-11-19T00:00"));
+    expect(nextCalendarChange(appointments, at("2026-11-19T00:00"))).toBe(at("2026-11-19T00:30"));
+    const change = at("2026-11-19T00:30");
+    expect(appointmentStatus(evening, change)).toBe("ended");
+    expect(appointmentStatus(following, change)).toBe("active");
+    expect(upcoming({ appointments }, change)).toEqual([following]);
+    expect(nextCalendarChange([], change)).toBe(at("2026-11-20T00:00"));
   });
   it("stops workout and rest clocks during a pause and resumes without counting the gap", () => {
     const m = sample();

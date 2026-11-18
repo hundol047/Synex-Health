@@ -1,5 +1,5 @@
 import { usesSeconds } from "./prescription.js";
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   Plus,
@@ -22,6 +22,7 @@ import { useGym } from "./GymContext.jsx";
 import AppointmentList from "./AppointmentList.jsx";
 import RoutineTemplates from "./RoutineTemplates.jsx";
 import ExerciseResults from "./ExerciseResults.jsx";
+import { useCalendarClock } from "./useLocalDay.js";
 import useMemberSelection from "./useMemberSelection.js";
 import {
   registerDraftNavigation,
@@ -34,6 +35,8 @@ import {
   weekDates,
   weekStats,
   upcoming,
+  dateKey,
+  appointmentStatus,
   entryFor,
   editablePlan,
   rescheduleMemberWeeks,
@@ -58,17 +61,21 @@ export function MemberSelect({ value, onChange }) {
 function memberLink(route, id) {
   return `/coach/${route}?member=${encodeURIComponent(id)}`;
 }
+function pendingFeedback(member) {
+  return member.meals.filter(meal => !meal.feedback).length + member.logs.filter(log => !log.feedback).length;
+}
 export function Dashboard() {
   const { state } = useGym();
-  const dates = weekDates();
-  const appointments = state.members
-    .flatMap((m) =>
-      upcoming(m).map((a) => ({ ...a, name: m.name, memberId: m.id })),
-    )
-    .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
-  const todayPT = appointments.filter((a) => a.date === today());
+  const all = useMemo(() => state.members.flatMap(member =>
+    member.appointments.map(a => ({ ...a, name: member.name, memberId: member.id }))
+  ).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)), [state.members]);
+  const now = useCalendarClock(all);
+  const day = dateKey(now);
+  const dates = weekDates(day);
+  const appointments = all.filter(a => appointmentStatus(a, now) !== "ended");
+  const todayPT = all.filter(a => a.date === day);
   const pending = state.members.reduce(
-    (n, m) => n + m.meals.filter((x) => !x.feedback).length,
+    (n, m) => n + pendingFeedback(m),
     0,
   );
   const days = state.members.reduce((n, m) => n + weekStats(m, dates).days, 0);
@@ -88,7 +95,7 @@ export function Dashboard() {
           month: "long",
           day: "numeric",
           weekday: "long",
-        }).format(new Date())}{" "}
+        }).format(new Date(now))}{" "}
         · 회원의 변화가 시작되는 공간
       </PageHead>
       <div className="gym-stat-grid">
@@ -127,7 +134,7 @@ export function Dashboard() {
             appointments.slice(0, 4).map((a, i) => (
               <Link
                 className={"gym-appointment " + (!i ? "next" : "")}
-                to={memberLink("schedule", a.memberId)}
+                to={`${memberLink("schedule", a.memberId)}&appointment=${encodeURIComponent(a.id)}`}
                 key={a.id}
               >
                 <div className="gym-appointment-time">
@@ -136,7 +143,7 @@ export function Dashboard() {
                 </div>
                 <div>
                   <strong>{a.name}</strong>
-                  <p>퍼스널 트레이닝 · 60분</p>
+                  <p>{appointmentStatus(a, now) === "active" ? "수업 중" : "퍼스널 트레이닝"} · 60분</p>
                 </div>
                 <ChevronRight size={18} />
               </Link>
@@ -237,7 +244,9 @@ export function Members() {
     [message, setMessage] = useState("");
   const [edit, setEdit] = useState(null);
   const m = state.members.find((x) => x.id === selected);
-  const stats = m && weekStats(m);
+  const now = useCalendarClock(m?.appointments);
+  const next = m && upcoming(m, now)[0];
+  const stats = m && weekStats(m, weekDates(dateKey(now)));
   const filtered = state.members.filter((m) =>
     (m.name + m.goal).includes(query.trim()),
   );
@@ -419,7 +428,7 @@ export function Members() {
                   <span>이번 주 운동 목표</span>
                 </div>
                 <div>
-                  <strong>{m.meals.filter((x) => !x.feedback).length}</strong>
+                  <strong>{pendingFeedback(m)}</strong>
                   <span>피드백 대기</span>
                 </div>
               </div>
@@ -436,10 +445,10 @@ export function Members() {
                   </Link>
                 ))}
               </div>
-              <h3>다음 PT</h3>
-              {upcoming(m)[0] ? (
+              <h3>{next && appointmentStatus(next, now) === "active" ? "진행 중인 PT" : "다음 PT"}</h3>
+              {next ? (
                 <div className="gym-note">
-                  {upcoming(m)[0].date} · {upcoming(m)[0].time} · 60분
+                  {next.date} · {next.time} · 60분
                 </div>
               ) : (
                 <p>PT 일정을 등록하면 여기에 표시됩니다.</p>
@@ -944,18 +953,33 @@ function PlanEditor({ member }) {
   );
 }
 export function Schedule() {
+  const { state } = useGym();
+  const [params] = useSearchParams();
+  const memberId = params.get("member");
+  const appointmentId = params.get("appointment");
+  const member = state.members.find(item => item.id === memberId);
+  const appointment = member?.appointments.find(item => item.id === appointmentId);
+  return <ScheduleEditor key={JSON.stringify([memberId, appointmentId])}
+    initialAppointment={appointment} missingAppointment={Boolean(appointmentId && !appointment)}/>;
+}
+
+function ScheduleEditor({ initialAppointment, missingAppointment }) {
   const { state, update } = useGym();
   const [id, setId] = useMemberSelection();
-  const [date, setDate] = useState(today()),
-    [time, setTime] = useState("19:00"),
-    [calendarDate, setCalendarDate] = useState(today),
-    [editing, setEditing] = useState(null),
+  const [date, setDate] = useState(() => initialAppointment?.date ?? today()),
+    [time, setTime] = useState(initialAppointment?.time ?? "19:00"),
+    [calendarDate, setCalendarDate] = useState(() => initialAppointment?.date ?? today()),
+    [editing, setEditing] = useState(initialAppointment?.id ?? null),
     [cancelId, setCancelId] = useState(null),
-    [error, setError] = useState(""),
+    [error, setError] = useState(missingAppointment ? "선택한 수업이 현재 일정에 없습니다. 다른 수업을 선택하세요." : ""),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false);
   const dateField = useRef(null);
-  const [listFocus, setListFocus] = useState(null);
+  const [listFocus, setListFocus] = useState(() => initialAppointment ? { id: initialAppointment.id } : null);
+  const linkedId = initialAppointment?.id;
+  useEffect(() => {
+    if (linkedId) dateField.current?.focus();
+  }, [linkedId]);
   const dates = weekDates(calendarDate);
   function showWeek(anchor) {
     setCalendarDate(anchor);

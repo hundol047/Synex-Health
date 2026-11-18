@@ -1,16 +1,18 @@
 import { useEffect, useState } from "react";
-import { today } from "./store.js";
+import { dateKey, nextCalendarChange } from "./workflow.js";
 
-export default function useLocalDay() {
-  const [day, setDay] = useState(today);
+const emptyCalendar = [];
+
+export function useCalendarClock(appointments = emptyCalendar) {
+  const [now, setNow] = useState(Date.now);
   useEffect(() => {
     let timer;
     function refresh() {
       clearTimeout(timer);
-      setDay(today());
-      const midnight = new Date();
-      midnight.setHours(24, 0, 0, 0);
-      timer = setTimeout(refresh, Math.max(1, midnight.getTime() - Date.now()));
+      if (document.hidden) return;
+      const current = Date.now();
+      setNow(current);
+      timer = setTimeout(refresh, Math.max(1, nextCalendarChange(appointments, current) - current));
     }
     refresh();
     window.addEventListener("focus", refresh);
@@ -20,6 +22,10 @@ export default function useLocalDay() {
       window.removeEventListener("focus", refresh);
       document.removeEventListener("visibilitychange", refresh);
     };
-  }, []);
-  return day;
+  }, [appointments]);
+  return now;
+}
+
+export default function useLocalDay() {
+  return dateKey(useCalendarClock());
 }

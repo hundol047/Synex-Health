@@ -16,13 +16,15 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useGym } from "./GymContext.jsx";
-import useLocalDay from "./useLocalDay.js";
+import useLocalDay, { useCalendarClock } from "./useLocalDay.js";
 import { today, planForDay, savedPlans } from "./store.js";
 import {
   DAYS,
   weekDates,
   weekStats,
   upcoming,
+  dateKey,
+  appointmentStatus,
   newSession,
   planPeriod,
 } from "./workflow.js";
@@ -37,13 +39,17 @@ import { useApiData } from "../health/lib/useApiData.js";
 export function MemberHome() {
   const { state } = useGym();
   const m = state.self;
-  const day = useLocalDay();
+  const now = useCalendarClock(m.appointments);
+  const day = dateKey(now);
   const plan = planForDay(savedPlans(m), day);
   const future = plan?.dates[0] > day;
   const dates = weekDates(day);
   const stats = weekStats(m, dates);
-  const next = upcoming(m)[0];
-  const feedback = m.meals.find((x) => x.feedback);
+  const next = upcoming(m, now)[0];
+  const mealReply = m.meals.find(meal => meal.feedback);
+  const workoutReply = m.logs.find(log => log.feedback);
+  const showWorkoutReply = workoutReply && (!mealReply || workoutReply.date >= mealReply.date);
+  const feedback = showWorkoutReply ? workoutReply : mealReply;
   const todayDone = m.logs.some(
     (l) => l.date === day && l.status !== "partial",
   );
@@ -152,7 +158,7 @@ export function MemberHome() {
       <div className="gym-two">
         <Card>
           <div className="gym-section-head">
-            <h2>다음 PT</h2>
+            <h2>{next && appointmentStatus(next, now) === "active" ? "진행 중인 PT" : "다음 PT"}</h2>
             <CalendarDays size={20} />
           </div>
           {next ? (
@@ -206,12 +212,12 @@ export function MemberHome() {
         </Card>
       </div>
       {feedback && (
-        <Link to="/health/coaching" className="gym-feedback-banner">
+        <Link to={showWorkoutReply ? "/health/coaching#workout-feedback" : "/health/coaching"} className="gym-feedback-banner">
           <span className="gym-avatar">
             <MessageCircle size={21} />
           </span>
           <div>
-            <small>담당 트레이너의 피드백</small>
+            <small>{showWorkoutReply ? "담당 트레이너의 운동 코멘트" : "담당 트레이너의 식단 피드백"}</small>
             <p>{feedback.feedback}</p>
           </div>
           <ChevronRight size={19} />
@@ -431,6 +437,7 @@ export function MyPlan() {
 export function Coaching() {
   const { state, update } = useGym();
   const m = state.self;
+  const now = useCalendarClock(m.appointments);
   const { hash } = useLocation();
   const repliesRef = useRef(null);
   const hasReplies = m.logs.some(log => log.feedback);
@@ -538,7 +545,7 @@ export function Coaching() {
           </form>
         </Card>
         <Card title="나의 PT 일정">
-          <AppointmentList rows={upcoming(m)} empty="최신 계획을 가져오면 예정된 PT가 표시됩니다.">
+          <AppointmentList rows={upcoming(m, now)} empty="최신 계획을 가져오면 예정된 PT가 표시됩니다.">
             {a => (
             <div className="gym-appointment" key={a.id}>
               <div className="gym-appointment-time">
@@ -546,7 +553,7 @@ export function Coaching() {
                 <small>{a.date.slice(5)}</small>
               </div>
               <div>
-                <strong>퍼스널 트레이닝</strong>
+                <strong>{appointmentStatus(a, now) === "active" ? "PT 수업 중" : "퍼스널 트레이닝"}</strong>
                 <p>담당 트레이너와 60분</p>
               </div>
             </div>

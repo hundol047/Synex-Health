@@ -26,11 +26,30 @@ export function weekStats(member, dates = weekDates()) {
     target: savedPlans(member).find(plan => plan.dates?.[0] === dates[0])?.frequency ?? 0,
   };
 }
-export const upcoming = (member) =>
+const CLASS_DURATION_MS = 60 * 60 * 1000;
+const appointmentStart = appointment => new Date(appointment.date + "T" + appointment.time).getTime();
+
+export function appointmentStatus(appointment, now) {
+  const start = appointmentStart(appointment);
+  if (now < start) return "scheduled";
+  return now < start + CLASS_DURATION_MS ? "active" : "ended";
+}
+
+export function nextCalendarChange(appointments, now) {
+  const midnight = new Date(now);
+  midnight.setHours(24, 0, 0, 0);
+  let next = midnight.getTime();
+  for (const appointment of appointments) {
+    const start = appointmentStart(appointment);
+    const change = start > now ? start : start + CLASS_DURATION_MS;
+    if (change > now && change < next) next = change;
+  }
+  return next;
+}
+
+export const upcoming = (member, now = Date.now()) =>
   member.appointments
-    .filter(
-      (a) => new Date(a.date + "T" + a.time).getTime() + 3600000 > Date.now(),
-    )
+    .filter(appointment => appointmentStatus(appointment, now) !== "ended")
     .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
 export function entryFor(id) {
   const e = exercises.find((x) => x.id === id);
