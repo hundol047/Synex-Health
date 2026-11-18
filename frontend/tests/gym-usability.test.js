@@ -9,6 +9,7 @@ import {
   validateAppointment,
   freshMember,
   transferFor,
+  progressPackets,
   parseTransfer,
   applyTransfer,
   savedPlans,
@@ -258,6 +259,49 @@ describe("gym usability regressions", () => {
     expect(v.meals.length).toBeLessThan(m.meals.length);
     expect(m.meals).toHaveLength(12);
     expect(() => parseTransfer(JSON.stringify(v))).not.toThrow();
+  });
+  it("sends every meal and workout once across compatible files and can resend a chosen day", () => {
+    const member = freshMember("회원");
+    member.linkedCoach = "coach";
+    const dates = ["2026-11-17", "2026-11-16"];
+    member.logs = Array.from({ length: 501 }, (_, i) => ({
+      id: `log-${i}`, date: dates[Number(i === 500)], name: "운동", effort: "적당",
+    }));
+    member.meals = Array.from({ length: 101 }, (_, i) => ({
+      id: `meal-${i}`, date: dates[Number(i === 100)], note: "식단",
+      photo: "data:image/jpeg;base64,AA==", feedbackDraft: "초안",
+    }));
+    const packets = progressPackets(member);
+    expect(packets.map(p => [p.logs.length, p.meals.length])).toEqual([[500, 100], [1, 1]]);
+    expect(packets.flatMap(p => p.meals.map(m => m.id))).toEqual(member.meals.map(m => m.id));
+    const recipient = { coachId: "coach", members: [{ ...freshMember(), id: member.id }] };
+    for (const packet of [packets[1], packets[0], packets[1]]) {
+      const json = JSON.stringify(packet);
+      expect(json).not.toContain("초안");
+      applyTransfer(recipient, parseTransfer(json), "coach");
+    }
+    expect(recipient.members[0].meals).toHaveLength(101);
+    expect(recipient.members[0].logs).toHaveLength(501);
+    const [day] = progressPackets(member, dates[1]);
+    expect(day.meals.map(m => m.id)).toEqual(["meal-100"]);
+    expect(day.logs.map(l => l.id)).toEqual(["log-500"]);
+    expect(progressPackets(member, "2026-10-01")[0]).toMatchObject({ logs: [], meals: [] });
+  });
+  it("keeps large photo batches under 11 MiB and includes the final photo", () => {
+    const member = freshMember("회원");
+    member.linkedCoach = "coach";
+    member.meals = Array.from({ length: 12 }, (_, i) => ({
+      id: String(i), date: "2026-11-17", note: "김치".repeat(140),
+      photo: "data:image/jpeg;base64," + "A".repeat(1100000),
+    }));
+    const packets = progressPackets(member);
+    expect(packets.map(p => p.meals.length)).toEqual([10, 2]);
+    expect(packets.at(-1).meals.at(-1).id).toBe("11");
+    for (const p of packets) {
+      const json = JSON.stringify(p);
+      expect(new TextEncoder().encode(json).length).toBeLessThanOrEqual(11 * 1024 * 1024);
+      expect(() => parseTransfer(json)).not.toThrow();
+    }
   });
   it("rejects reversed repetition ranges", () => {
     expect(() =>

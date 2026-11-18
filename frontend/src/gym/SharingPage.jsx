@@ -3,7 +3,7 @@ import { useLocation, useSearchParams } from "react-router-dom";
 import { Download, Upload, Link2 } from "lucide-react";
 import { Capacitor } from "@capacitor/core";
 import { useGym } from "./GymContext.jsx";
-import { MAX_TRANSFER_BYTES, parseTransfer, applyTransfer, transferFor, savedPlans, lastEditedPlan } from "./store.js";
+import { MAX_TRANSFER_BYTES, parseTransfer, applyTransfer, transferFor, progressPackets, savedPlans, lastEditedPlan } from "./store.js";
 import useMemberSelection from "./useMemberSelection.js";
 import { MemberSelect } from "./CoachPages.jsx";
 import { PageHead, Card, Field, Notice } from "./ui.jsx";
@@ -48,10 +48,20 @@ export default function SharingPage() {
   const [week, setWeek] = useState("");
   const plans = coach && m ? savedPlans(m) : [];
   const plan = coach && m ? plans.find(item => item.dates[0] === week) ?? lastEditedPlan(m) : null;
-  const packet = useMemo(
-    () => (m ? transferFor(state, coach ? "coach" : "member", m, plan) : null),
-    [state, coach, m, plan],
-  );
+  const [day, setDay] = useState("");
+  const [batchIndex, setBatchIndex] = useState(0);
+  const packets = useMemo(() => {
+    if (!m) return [];
+    return coach ? [transferFor(state, "coach", m, plan)] : progressPackets(m, day);
+  }, [state, coach, m, plan, day]);
+  const page = Math.min(batchIndex, packets.length - 1);
+  const packet = packets[page];
+  const emptySelection = !coach && !packet?.logs.length && !packet?.meals.length;
+  function changeSelection() {
+    setMessage("");
+    setError("");
+    setConsent(false);
+  }
   async function send() {
     try {
       setBusy(true);
@@ -61,10 +71,9 @@ export default function SharingPage() {
         throw Error("트레이너의 계획 파일을 먼저 가져오세요.");
       const text = JSON.stringify(packet);
       parseTransfer(text);
-      await shareFile(
-        text,
-        `Synex-${coach ? "plan-" + plan.dates[0] : "records"}-${m.id.slice(0, 8)}.json`,
-      );
+      const tag = coach ? `plan-${plan.dates[0]}` : `records-${day || "all"}`;
+      const part = packets.length > 1 ? `-part-${page + 1}-of-${packets.length}` : "";
+      await shareFile(text, `Synex-${tag}-${m.id.slice(0, 8)}${part}.json`);
       setMessage("공유 파일을 준비했습니다. 받는 사람을 확인해 전달하세요.");
       setError("");
     } catch (e) {
@@ -155,6 +164,30 @@ export default function SharingPage() {
               ? "선택한 회원의 계획과 일정, 피드백만 포함됩니다."
               : "나의 운동 기록과 식단 사진이 포함됩니다."}
           </p>
+          {!coach && <Field label="공유할 기록 날짜">
+            <input type="date" value={day} onChange={event => {
+              setDay(event.target.value);
+              setBatchIndex(0);
+              changeSelection();
+            }} />
+          </Field>}
+          {!coach && (day
+            ? <button type="button" className="gym-button secondary small" onClick={() => {
+                setDay("");
+                setBatchIndex(0);
+                changeSelection();
+              }}>전체 날짜 보기</button>
+            : <p>전체 기록을 보내거나 원하는 날짜만 선택하세요.</p>)}
+          {packets.length > 1 && <Field label="보낼 기록 파일">
+            <select value={page} onChange={event => {
+              setBatchIndex(Number(event.target.value));
+              changeSelection();
+            }}>
+              {packets.map((item, index) => <option key={index} value={index}>
+                {index + 1}/{packets.length} · 운동 {item.logs.length}건 · 식단 {item.meals.length}건
+              </option>)}
+            </select>
+          </Field>}
           {packet && (
             <div className="gym-note">
               {coach
@@ -163,7 +196,9 @@ export default function SharingPage() {
               <br />
               {coach
                 ? "선택한 회원을 확인하고 공유하세요."
-                : "최근 기록부터 최대 11MB까지 보냅니다. 이전 기록은 기기에 남아 있습니다."}
+                : emptySelection ? "보낼 기록이 없습니다. 다른 날짜를 선택하거나 운동·식단을 기록하세요."
+                : packets.length > 1 ? "모든 기록을 보내려면 각 파일을 한 번씩 공유하세요. 트레이너는 어떤 순서로든 가져올 수 있습니다."
+                : "선택한 범위의 기록이 이 파일에 모두 포함됩니다."}
             </div>
           )}
           <label className="gym-check">
@@ -177,7 +212,7 @@ export default function SharingPage() {
           </label>
           <button
             className="gym-button"
-            disabled={!consent || busy}
+            disabled={!consent || busy || emptySelection}
             onClick={send}
           >
             <Download size={17} />

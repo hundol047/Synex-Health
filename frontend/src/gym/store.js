@@ -332,40 +332,64 @@ function parseTransferData(raw) {
   }
   return v;
 }
-export function transferFor(state, role, member, plan = member.plan) {
-  const packet = {
+function transferHeader(member, coachId, kind) {
+  return {
     format: "synex-gym-transfer",
     version: 1,
-    kind: role === "coach" ? "plan" : "progress",
-    coachId: role === "coach" ? state.coachId : member.linkedCoach,
+    kind,
+    coachId,
     memberId: member.id,
     name: member.name,
     createdAt: new Date().toISOString(),
-    ...(role === "coach"
-      ? {
-          plan,
-          appointments: member.appointments,
-          feedback: member.meals
-            .filter(meal => meal.feedback)
-            .map(({ id, feedback }) => ({ id, feedback })),
-        }
-      : {
-          logs: member.logs.slice(0, 500),
-          meals: member.meals.slice(0, 100).map(({ feedback, ...m }) => m),
-        }),
   };
-  if (role !== "coach") {
-    const photos = packet.meals;
-    packet.meals = [];
-    let bytes = new TextEncoder().encode(JSON.stringify(packet)).length;
-    for (const meal of photos) {
-      const size = new TextEncoder().encode(JSON.stringify(meal)).length + 1;
-      if (bytes + size > 11 * 1024 * 1024) break;
-      packet.meals.push(meal);
+}
+
+export function progressPackets(member, day = "") {
+  const header = transferHeader(member, member.linkedCoach, "progress");
+  const empty = () => ({ ...header, logs: [], meals: [] });
+  const encoder = new TextEncoder();
+  const jsonSize = value => encoder.encode(JSON.stringify(value)).length;
+  const baseSize = jsonSize(empty());
+  const logs = day ? member.logs.filter(log => log.date === day) : member.logs;
+  const meals = day ? member.meals.filter(meal => meal.date.slice(0, 10) === day) : member.meals;
+  const packets = [];
+  let logIndex = 0;
+  let mealIndex = 0;
+  do {
+    const packet = empty();
+    let bytes = baseSize;
+    while (logIndex < logs.length && packet.logs.length < 500) {
+      const log = logs[logIndex];
+      const size = jsonSize(log) + Number(packet.logs.length > 0);
+      if (bytes + size > 11 * 1024 * 1024 && packet.logs.length) break;
+      packet.logs.push(log);
       bytes += size;
+      logIndex++;
     }
-  }
-  return packet;
+    while (mealIndex < meals.length && packet.meals.length < 100) {
+      const { id, date, note, photo } = meals[mealIndex];
+      // Base64 photo data is ASCII. Measure the small JSON fields without copying the photo.
+      const size = jsonSize({ id, date, note, photo: "" }) + photo.length + Number(packet.meals.length > 0);
+      if (bytes + size > 11 * 1024 * 1024 && (packet.logs.length || packet.meals.length)) break;
+      packet.meals.push({ id, date, note, photo });
+      bytes += size;
+      mealIndex++;
+    }
+    packets.push(packet);
+  } while (logIndex < logs.length || mealIndex < meals.length);
+  return packets;
+}
+
+export function transferFor(state, role, member, plan = member.plan) {
+  if (role !== "coach") return progressPackets(member)[0];
+  return {
+    ...transferHeader(member, state.coachId, "plan"),
+    plan,
+    appointments: member.appointments,
+    feedback: member.meals
+      .filter(meal => meal.feedback)
+      .map(({ id, feedback }) => ({ id, feedback })),
+  };
 }
 // The most recent calendar week stays in plan so existing single-plan saves are readable.
 export function savedPlans(member) {
@@ -405,12 +429,13 @@ export function applyTransfer(state, v, role) {
       return log;
     });
     m.logs = merge(m.logs, incoming).sort((a, b) => b.date.localeCompare(a.date));
+    const savedMeals = new Map(m.meals.map(meal => [meal.id, meal]));
     m.meals = merge(
       m.meals,
       v.meals.map((x) => ({
         ...x,
-        feedback: m.meals.find((y) => y.id === x.id)?.feedback || "",
-        feedbackDraft: m.meals.find((y) => y.id === x.id)?.feedbackDraft,
+        feedback: savedMeals.get(x.id)?.feedback || "",
+        feedbackDraft: savedMeals.get(x.id)?.feedbackDraft,
       })),
     ).sort((a, b) => b.date.localeCompare(a.date));
     state.selected = m.id;
