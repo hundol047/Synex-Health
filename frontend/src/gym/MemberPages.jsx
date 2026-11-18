@@ -440,6 +440,8 @@ export function Coaching() {
   async function upload(file) {
     try {
       setBusy(true);
+      setMessage("");
+      setPhoto("");
       setPhoto(await photoData(file));
       setError("");
     } catch (e) {
@@ -498,7 +500,12 @@ export function Coaching() {
                 type="file"
                 accept="image/*"
                 aria-label="음식 사진 선택"
-                onChange={(e) => e.target.files[0] && upload(e.target.files[0])}
+                disabled={busy}
+                onChange={event => {
+                  const file = event.target.files[0];
+                  event.target.value = "";
+                  if (file) upload(file);
+                }}
               />
             </label>
             {photo && (

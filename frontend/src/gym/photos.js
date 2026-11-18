@@ -14,6 +14,8 @@ export async function photoData(file, maxWidth = 1200) {
     canvas.height = Math.round(im.height * k);
     canvas.getContext("2d").drawImage(im, 0, 0, canvas.width, canvas.height);
     return canvas.toDataURL("image/jpeg", 0.85);
+  } catch {
+    throw Error("사진을 열 수 없습니다. JPG 또는 PNG 사진을 다시 선택하세요.");
   } finally {
     URL.revokeObjectURL(url);
   }
