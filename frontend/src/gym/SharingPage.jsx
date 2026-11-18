@@ -3,7 +3,7 @@ import { useLocation, useSearchParams } from "react-router-dom";
 import { Download, Upload, Link2 } from "lucide-react";
 import { Capacitor } from "@capacitor/core";
 import { useGym } from "./GymContext.jsx";
-import { parseTransfer, applyTransfer, transferFor } from "./store.js";
+import { parseTransfer, applyTransfer, transferFor, savedPlans, lastEditedPlan } from "./store.js";
 import useMemberSelection from "./useMemberSelection.js";
 import { MemberSelect } from "./CoachPages.jsx";
 import { PageHead, Card, Field, Notice } from "./ui.jsx";
@@ -46,9 +46,12 @@ export default function SharingPage() {
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false);
   const m = coach ? state.members.find((m) => m.id === id) : state.self;
+  const [week, setWeek] = useState("");
+  const plans = coach && m ? savedPlans(m) : [];
+  const plan = coach && m ? plans.find(item => item.dates[0] === week) ?? lastEditedPlan(m) : null;
   const packet = useMemo(
-    () => (m ? transferFor(state, coach ? "coach" : "member", m) : null),
-    [state, coach, m],
+    () => (m ? transferFor(state, coach ? "coach" : "member", m, plan) : null),
+    [state, coach, m, plan],
   );
   async function send() {
     try {
@@ -59,7 +62,7 @@ export default function SharingPage() {
         throw Error("트레이너의 계획 파일을 먼저 가져오세요.");
       await shareFile(
         parseTransfer(JSON.stringify(packet)),
-        `Synex-${coach ? "plan" : "records"}-${m.id.slice(0, 8)}.json`,
+        `Synex-${coach ? "plan-" + plan.dates[0] : "records"}-${m.id.slice(0, 8)}.json`,
       );
       setMessage("공유 파일을 준비했습니다. 받는 사람을 확인해 전달하세요.");
       setError("");
@@ -130,11 +133,21 @@ export default function SharingPage() {
               value={id}
               onChange={(value) => {
                 setId(value);
+                setWeek("");
                 setConsent(false);
                 setMessage("");
               }}
             />
           )}
+          {plans.length > 1 && <Field label="공유할 계획 주">
+            <select value={plan.dates[0]} onChange={event => {
+              setWeek(event.target.value);
+              setConsent(false);
+              setMessage("");
+            }}>
+              {plans.map(item => <option key={item.dates[0]} value={item.dates[0]}>{item.dates[0]} 시작 주</option>)}
+            </select>
+          </Field>}
           <Notice error>{selectionError}</Notice>
           <p>
             {coach
@@ -144,7 +157,7 @@ export default function SharingPage() {
           {packet && (
             <div className="gym-note">
               {coach
-                ? `주 ${m.plan?.frequency || 0}회 · PT ${m.appointments.length}건`
+                ? `주 ${plan?.frequency || 0}회 · PT ${m.appointments.length}건`
                 : `운동 ${packet.logs.length}건 · 식단 ${packet.meals.length}건 포함`}
               <br />
               {coach

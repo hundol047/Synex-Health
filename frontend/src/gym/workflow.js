@@ -1,5 +1,5 @@
 import { catalogEntry, doseValue, usesSeconds } from "./prescription.js";
-import { exercises, makePlan, today, validDate, scheduleWeek, savedPlans } from "./store.js";
+import { exercises, makePlan, today, validDate, scheduleWeek, savedPlans, storeWeekPlan } from "./store.js";
 export const DAYS = ["월", "화", "수", "목", "금", "토", "일"];
 export function dateKey(date) {
   const d = new Date(date);
@@ -120,6 +120,13 @@ export function reschedulePlan(plan, appointments) {
     ...scheduleWeek(plan.dates, requestedFrequency, appointments),
     updatedAt: new Date().toISOString(),
   };
+}
+export function rescheduleMemberWeeks(member, changedDates) {
+  for (const plan of savedPlans(member)) {
+    if (changedDates.some(date => plan.dates.includes(date))) {
+      storeWeekPlan(member, reschedulePlan(plan, member.appointments));
+    }
+  }
 }
 export function newSession(plan, option) {
   return {

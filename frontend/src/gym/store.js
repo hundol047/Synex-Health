@@ -331,7 +331,7 @@ function parseTransferData(raw) {
   }
   return v;
 }
-export function transferFor(state, role, member) {
+export function transferFor(state, role, member, plan = member.plan) {
   const packet = {
     format: "synex-gym-transfer",
     version: 1,
@@ -342,7 +342,7 @@ export function transferFor(state, role, member) {
     createdAt: new Date().toISOString(),
     ...(role === "coach"
       ? {
-          plan: member.plan,
+          plan,
           appointments: member.appointments,
           feedback: member.meals.slice(0, 100).map((m) => ({
             id: m.id,
@@ -370,6 +370,17 @@ export function transferFor(state, role, member) {
 // The most recent calendar week stays in plan so existing single-plan saves are readable.
 export function savedPlans(member) {
   return member.plan ? [...(member.earlierPlans ?? []), member.plan] : [];
+}
+
+export function storeWeekPlan(member, plan) {
+  const ordered = [...savedPlans(member).filter(item => item.dates[0] !== plan.dates[0]), plan]
+    .sort((a, b) => a.dates[0].localeCompare(b.dates[0]));
+  member.plan = ordered.pop();
+  member.earlierPlans = ordered;
+}
+
+export function lastEditedPlan(member) {
+  return savedPlans(member).find(plan => plan.dates[0] === member.lastEditedWeek) ?? member.plan;
 }
 
 export function planForDay(plans, day) {
@@ -422,10 +433,7 @@ export function applyTransfer(state, v, role) {
       throw Error("현재 계획보다 오래된 파일입니다. 최신 계획을 받아주세요.");
     if (incomingPlanTime === currentPlanTime && Date.parse(sharedAt) < Date.parse(weekShares[week]))
       throw Error("이미 받은 파일보다 더 오래된 공유 파일입니다. 최신 일정과 피드백을 유지했습니다.");
-    const ordered = [...plans.filter(plan => plan.dates[0] !== week), v.plan]
-      .sort((a, b) => a.dates[0].localeCompare(b.dates[0]));
-    m.plan = ordered.pop();
-    m.earlierPlans = ordered;
+    storeWeekPlan(m, v.plan);
     m.weekShareTimes = { ...weekShares, [week]: sharedAt };
     m.id = v.memberId;
     m.linkedCoach = v.coachId;

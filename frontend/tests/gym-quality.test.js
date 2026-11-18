@@ -7,6 +7,7 @@ import {
   editablePlan,
   entryFor,
   reschedulePlan,
+  rescheduleMemberWeeks,
   newSession,
   finishSession,
   sessionSummary,
@@ -16,10 +17,26 @@ import {
 import {
   freshMember,
   weeklyPlan,
+  storeWeekPlan,
+  savedPlans,
   parseTransfer,
   transferFor,
 } from "../src/gym/store.js";
 describe("trainer plan editing and member session continuity", () => {
+  it("moves a PT between two saved weeks without mixing their prescriptions", () => {
+    const member = freshMember();
+    const visits = [{date: "2026-11-20"}];
+    const earlier = editablePlan([entryFor("squat")], 2, visits, "2026-11-16");
+    const later = editablePlan([entryFor("plank")], 4, visits, "2026-11-23");
+    storeWeekPlan(member, later);
+    storeWeekPlan(member, earlier);
+    member.appointments = [{date: "2026-11-24"}];
+    rescheduleMemberWeeks(member, ["2026-11-20", "2026-11-24"]);
+    expect(savedPlans(member).map(p => [p.id,p.frequency,p.ptDays])).toEqual([
+      [earlier.id,2,[]], [later.id,4,[1]],
+    ]);
+    expect(member.plan.options).toEqual(later.options);
+  });
   it("edits a prescription during an extra PT week without raising its usual training target", () => {
     const week = "2026-11-16";
     const appointments = [16, 17, 20, 21].map(day => ({ date: `2026-11-${day}` }));

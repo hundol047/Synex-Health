@@ -27,7 +27,7 @@ import {
   hasDraftChangesForPath,
   flushDraftChanges,
 } from "../shared/lib/draftNavigation.js";
-import { today, freshMember, exercises, validateAppointment } from "./store.js";
+import { today, freshMember, exercises, validateAppointment, savedPlans, storeWeekPlan, lastEditedPlan } from "./store.js";
 import {
   DAYS,
   weekDates,
@@ -35,7 +35,7 @@ import {
   upcoming,
   entryFor,
   editablePlan,
-  reschedulePlan,
+  rescheduleMemberWeeks,
 } from "./workflow.js";
 import { PageHead, Card, Field, Notice, Empty } from "./ui.jsx";
 const goals = ["체력 향상", "체중·건강 관리", "근력 향상", "운동 습관 만들기"];
@@ -208,9 +208,9 @@ export function Dashboard() {
                     ))}
                   </div>
                   <span className="gym-pill">
-                    {m.plan
-                      ? `${stats.days}일 / 주 ${m.plan.frequency}회`
-                      : "계획 준비"}
+                    {stats.target
+                      ? `${stats.days}일 / 주 ${stats.target}회`
+                      : "이번 주 계획 없음"}
                   </span>
                   <ChevronRight size={16} />
                 </Link>
@@ -236,6 +236,7 @@ export function Members() {
     [message, setMessage] = useState("");
   const [edit, setEdit] = useState(null);
   const m = state.members.find((x) => x.id === selected);
+  const stats = m && weekStats(m);
   const filtered = state.members.filter((m) =>
     (m.name + m.goal).includes(query.trim()),
   );
@@ -409,12 +410,12 @@ export function Members() {
               )}
               <div className="gym-detail-stats">
                 <div>
-                  <strong>{weekStats(m).days}</strong>
+                  <strong>{stats.days}</strong>
                   <span>이번 주 운동일</span>
                 </div>
                 <div>
-                  <strong>{m.plan?.frequency || "—"}</strong>
-                  <span>주간 운동 횟수</span>
+                  <strong>{stats.target || "—"}</strong>
+                  <span>이번 주 운동 목표</span>
                 </div>
                 <div>
                   <strong>{m.meals.filter((x) => !x.feedback).length}</strong>
@@ -526,18 +527,19 @@ export function PlanBuilder() {
 }
 function PlanEditor({ member }) {
   const { update } = useGym();
+  const saved = lastEditedPlan(member);
   const [query, setQuery] = useState(""),
     [category, setCategory] = useState("all"),
     [count, setCount] = useState(
-      member.planDraft?.count ?? member.plan?.requestedFrequency ?? member.plan?.frequency ?? 3,
+      member.planDraft?.count ?? saved?.requestedFrequency ?? saved?.frequency ?? 3,
     ),
     [start, setStart] = useState(
-      member.planDraft?.start || member.plan?.dates[0] || weekDates()[0],
+      member.planDraft?.start || saved?.dates[0] || weekDates()[0],
     );
   const [entries, setEntries] = useState(
     () =>
       member.planDraft?.entries ||
-      member.plan?.options[0].exercises.map((e) => ({
+      saved?.options[0].exercises.map((e) => ({
         ...e,
         rest: e.rest ?? 60,
       })) ||
@@ -604,6 +606,20 @@ function PlanEditor({ member }) {
           .includes(query.replaceAll(" ", "")),
     )
     .slice(0, 30);
+  function changeWeek(value) {
+    const stored = savedPlans(member).find(plan => plan.dates.includes(value));
+    if (stored && !stored.dates.includes(start)) {
+      const previous = savedPlans(member).find(plan => plan.dates.includes(start));
+      const changed = !previous || count !== (previous.requestedFrequency ?? previous.frequency)
+        || JSON.stringify(entries) !== JSON.stringify(previous.options[0].exercises);
+      if (dirty && changed && !window.confirm("작성 중인 변경을 닫고 선택한 주의 저장된 계획을 열까요?")) return;
+      setCount(stored.requestedFrequency ?? stored.frequency);
+      setEntries(stored.options[0].exercises.map(entry => ({ ...entry, rest: entry.rest ?? 60 })));
+    }
+    setStart(value);
+    setDirty(true);
+    setMessage("");
+  }
   function edit(fn) {
     setEntries(fn);
     setDirty(true);
@@ -628,7 +644,8 @@ function PlanEditor({ member }) {
       const p = editablePlan(entries, count, member.appointments, start);
       await update((s) => {
         const m = s.members.find((x) => x.id === member.id);
-        m.plan = p;
+        storeWeekPlan(m, p);
+        m.lastEditedWeek = p.dates[0];
         delete m.planDraft;
         s.selected = member.id;
       });
@@ -686,10 +703,7 @@ function PlanEditor({ member }) {
                 ? "active"
                 : ""
             }
-            onClick={() => {
-              setStart(weekDates(today(), offset)[0]);
-              setDirty(true);
-            }}
+            onClick={() => changeWeek(weekDates(today(), offset)[0])}
           >
             {label} <small>{weekDates(today(), offset)[0].slice(5)}</small>
           </button>
@@ -793,10 +807,7 @@ function PlanEditor({ member }) {
                 <input
                   type="date"
                   value={start}
-                  onChange={(e) => {
-                    setStart(e.target.value);
-                    setDirty(true);
-                  }}
+                  onChange={e => changeWeek(e.target.value)}
                   required
                 />
               </Field>
@@ -978,9 +989,10 @@ export function Schedule() {
         const all = s.members.flatMap((m) => m.appointments);
         validateAppointment(all, date, time, editing);
         const m = s.members.find((m) => m.id === id);
+        const previousDate = m.appointments.find(a => a.id === editing)?.date;
         m.appointments = m.appointments.filter((a) => a.id !== editing);
         m.appointments.push({ id: editing || crypto.randomUUID(), date, time });
-        if (m.plan) m.plan = reschedulePlan(m.plan, m.appointments);
+        rescheduleMemberWeeks(m, [previousDate, date]);
       });
       setEditing(null);
       setCalendarDate(date);
@@ -999,7 +1011,7 @@ export function Schedule() {
       await update((s) => {
         const m = s.members.find((x) => x.id === a.memberId);
         m.appointments = m.appointments.filter((x) => x.id !== a.id);
-        m.plan = reschedulePlan(m.plan, m.appointments);
+        rescheduleMemberWeeks(m, [a.date]);
       });
       setCancelId(null);
       if (editing === a.id) {
