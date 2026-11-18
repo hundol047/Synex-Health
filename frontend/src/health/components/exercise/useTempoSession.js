@@ -19,16 +19,19 @@ export default function useTempoSession(exercises,{disabled=false}={}){
    if(document.hidden||delta>1500){pause();return;}
    setState(s=>{
     if(s.status!=='running')return s;
-    const segment=plan[s.index];if(!segment)return {...s,status:'complete'};
-    const elapsed=s.elapsed+Math.max(0,delta);
-    if(elapsed>=segment.durationMs)return {status:s.index+1>=plan.length?'complete':'running',index:s.index+1,elapsed:0};
-    return {...s,elapsed};
+    // Keep the fraction of a tick that belongs to the next segment.
+    let index=s.index, elapsed=s.elapsed+Math.max(0,delta);
+    while(index<plan.length && elapsed>=plan[index].durationMs){
+     elapsed-=plan[index].durationMs;
+     index++;
+    }
+    return index===plan.length ? {status:'complete',index,elapsed:0} : {...s,index,elapsed};
    });
   },1000/24);
   return()=>clearInterval(timer);
  },[state.status,disabled,plan,pause]);
  const segment=plan[state.index],frame=tempoFrame(segment,state.elapsed);
- function start(){if(disabled||document.hidden||!plan.length)return;setState(s=>s.status==='paused'?{...s,status:'running'}:{status:'running',index:0,elapsed:0});}
+ function start(){if(disabled||document.hidden||!plan.length)return;setState(s=>s.status==='running'?s:s.status==='paused'?{...s,status:'running'}:{status:'running',index:0,elapsed:0});}
  function restChange(index,seconds){setRestOverrides(old=>({...old,[index]:exercises[index]?.coachRestSeconds!=null?Math.max(0,Math.min(300,seconds)):Math.max(10,Math.min(120,seconds))}));}
  return {state,segment,frame,plan,speed,setSpeed,pause,start,restChange,restOverrides,
   reset:()=>setState({status:'idle',index:0,elapsed:0}),

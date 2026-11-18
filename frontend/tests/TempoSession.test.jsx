@@ -38,6 +38,19 @@ describe('automatic guided timing',()=>{
   expect(result.current.segment).toMatchObject({kind:'prepare',exerciseIndex:1});
   act(()=>vi.advanceTimersByTime(22500));expect(result.current.state.status).toBe('complete');
  });
+ it('carries elapsed time across short sets when the display updates late',()=>{
+  vi.useFakeTimers();
+  let now=0;
+  vi.spyOn(performance,'now').mockImplementation(()=>now);
+  const items=[{motion_id:'plank',sets:2,hold_seconds:1,coachRestSeconds:0}];
+  const {result}=renderHook(()=>useTempoSession(items));
+  act(()=>result.current.start());
+  for(const time of [1300,2600,3900,5200,6400]){
+   now=time;act(()=>vi.advanceTimersByTime(50));
+  }
+  expect(result.current.segment).toMatchObject({kind:'work',set:2});
+  expect(result.current.state.elapsed).toBe(400);
+ });
  it('pauses without advancing while hidden, then resumes at the same position',()=>{
   vi.useFakeTimers();const exercises=[squat];const {result}=renderHook(()=>useTempoSession(exercises));
   act(()=>result.current.start());act(()=>vi.advanceTimersByTime(6000));

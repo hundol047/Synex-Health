@@ -179,17 +179,49 @@ function StudioEnvironment() {
   return null;
 }
 
+// Probe once before React Three Fiber configures its renderer asynchronously.
+// Release the probe context immediately on phones with a small context budget.
+let supports3D;
+function canRenderAthlete() {
+  if (supports3D !== true) {
+    try {
+      const probe = document.createElement('canvas').getContext('webgl2', { powerPreference: 'low-power' });
+      supports3D = Boolean(probe);
+      probe?.getExtension('WEBGL_lose_context')?.loseContext();
+    } catch {
+      supports3D = false;
+    }
+  }
+  return supports3D;
+}
+
 class SceneBoundary extends React.Component {
   state = { failed: false };
   static getDerivedStateFromError() { return { failed: true }; }
-  componentDidUpdate(previous) {
-    if (this.state.failed && previous.motion !== this.props.motion) this.setState({ failed: false });
-  }
-  render() { return this.state.failed ? this.props.fallback : this.props.children; }
+  componentDidCatch() { this.props.onFailure(); }
+  render() { return this.state.failed ? null : this.props.children; }
 }
 
-export default function ExerciseMotion3D({ motion, progress, mirror, measurement, profile, compact = false, defaultView }) {
+export default function ExerciseMotion3D({ motion, progress, mirror, measurement, profile, compact = false, defaultView, onFallback }) {
   const controls = useRef();
+  const [available, setAvailable] = useState(null);
+  const stage = useRef(null);
+  useEffect(() => { setAvailable(canRenderAthlete()); }, []);
+  useEffect(() => {
+    if (available === false) onFallback?.();
+    const node = stage.current;
+    if (!available || !node) return;
+    const lost = () => {
+      supports3D = undefined;
+      setAvailable(false);
+    };
+    node.addEventListener('webglcontextlost', lost, true);
+    node.addEventListener('webglcontextcreationerror', lost, true);
+    return () => {
+      node.removeEventListener('webglcontextlost', lost, true);
+      node.removeEventListener('webglcontextcreationerror', lost, true);
+    };
+  }, [available, onFallback]);
   const initialView = defaultView || (FLOOR_MOTIONS.test(motion) ? 'side' : '45');
   const [view, setView] = useState(initialView);
   useEffect(() => setView(initialView), [motion, initialView]);
@@ -199,10 +231,12 @@ export default function ExerciseMotion3D({ motion, progress, mirror, measurement
   const m = measurement, p = profile;
   const heightScale = morphParameters(m, p).heightScale;
   const fallback = <MotionFigure exercise={{ motion_id: motion, exercise_name: '운동' }} progress={progress} mirror={mirror}/>;
+  if (available === null) return <p role="status">운동 시범을 준비하고 있어요…</p>;
+  if (!available) return fallback;
   return <>
     <div className="motion-controls motion-view-controls">{compact ? <select aria-label="운동 시범 방향" value={view} onChange={event => setView(event.target.value)}><option value="front">정면</option><option value="45">45°</option><option value="side">측면</option></select> : [['front', '정면'], ['45', '45°'], ['side', '측면'], ['back', '후면'], ['free', '자유']].map(([id, label]) => <button key={id} type="button" className="btn btn-ghost" aria-label={`${label} 운동 시범 보기`} aria-pressed={view === id} onClick={() => setView(id)}>{label}</button>)}</div>
-    <div className="motion-3d-canvas" style={{ height: compact ? undefined : 340, flex: compact ? '1 1 0' : undefined, minHeight: compact ? 0 : undefined, touchAction: 'none' }}>
-      <SceneBoundary motion={motion} fallback={fallback}><Canvas shadows={!compact} dpr={[1, compact ? 1.5 : 2]} frameloop="demand" gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }} camera={{ position: [3, 1.5, 3], fov: 36 }} fallback={fallback} aria-label="운동복을 입은 3D 운동 시범">
+    <div ref={stage} className="motion-3d-canvas" style={{ height: compact ? undefined : 340, flex: compact ? '1 1 0' : undefined, minHeight: compact ? 0 : undefined, touchAction: 'none' }}>
+      <SceneBoundary onFailure={() => setAvailable(false)}><Canvas shadows={!compact} dpr={[1, compact ? 1.5 : 2]} frameloop="demand" gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }} camera={{ position: [3, 1.5, 3], fov: 36 }} fallback={fallback} aria-label="운동복을 입은 3D 운동 시범">
         <SceneCamera motion={motion} view={view} mirror={mirror} heightScale={heightScale} controls={controls}/><Studio compact={compact} heightScale={heightScale} motion={motion}/>
         <Athlete {...{ motion, progress, mirror, compact }} measurement={m} profile={p}/>
         <OrbitControls ref={controls} enabled={view === 'free'} enablePan={false} minDistance={1.2 * heightScale} maxDistance={6 * heightScale} maxPolarAngle={Math.PI / 2 - .02}/>

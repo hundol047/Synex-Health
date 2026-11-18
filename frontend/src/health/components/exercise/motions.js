@@ -41,12 +41,14 @@ export function samplePose(id, progress) {
 const lunge=pose(stand,{0:[170,95],1:[170,135],2:[171,216],7:[122,244],8:[110,294],9:[226,264],10:[257,294]});
 const overhead=pose(stand,{3:[121,88],4:[120,38],5:[219,88],6:[220,38]});
 const armsOut=pose(stand,{3:[117,107],4:[69,108],5:[223,107],6:[271,108]});
-const plank=[[57,187],[90,205],[197,225],[103,243],[121,279],[116,244],[140,279],[247,255],[298,291],[256,251],[311,285]];
+// Side view: elbows sit under shoulders, both forearms lie along the mat,
+ // and the heels stay raised above the toe support.
+const plank=[[74,214],[108,223],[198,246],[106,287],[59,289],[116,282],[70,284],[249,260],[298,273],[259,257],[310,269]];
 const add=(id,label,frames,view='정면 개념도',prop)=>{MOTIONS[id]={label,frames,view,prop};};
 add('lunge','한 발 뒤로 / 돌아오기',[stand,lunge,stand]);
 add('shoulder_press','위로 밀기 / 내리기',[pose(stand,{3:[118,112],4:[118,68],5:[222,112],6:[222,68]}),overhead,pose(stand,{3:[118,112],4:[118,68],5:[222,112],6:[222,68]})],'정면 개념도','dumbbell');
 add('lateral_raise','옆으로 들기 / 내리기',[stand,armsOut,stand],'정면 개념도','dumbbell');
-add('plank','몸통 유지 / 편안히 호흡',[plank,pose(plank,{2:[197,222]}),plank],'측면 개념도','mat');
+add('plank','몸통 유지 / 편안히 호흡',[plank,pose(plank,{1:[108,221],2:[198,245]}),plank],'측면 개념도','mat');
 add('step_touch','옆으로 딛기 / 모으기',[stand,pose(stand,{7:[113,242],8:[95,294]}),stand,pose(stand,{9:[220,242],10:[243,294]}),stand]);
 add('standing_march','한 발 들기 / 교대',[stand,pose(stand,{7:[137,201],8:[137,259]}),stand,pose(stand,{9:[210,201],10:[210,259]}),stand]);
 add('hip_abduction','옆으로 다리 들기 / 내리기',[stand,pose(stand,{7:[117,230],8:[84,277]}),stand,pose(stand,{9:[227,230],10:[260,277]}),stand]);
