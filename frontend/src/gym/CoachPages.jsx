@@ -529,7 +529,7 @@ function PlanEditor({ member }) {
   const [query, setQuery] = useState(""),
     [category, setCategory] = useState("all"),
     [count, setCount] = useState(
-      member.planDraft?.count || member.plan?.frequency || 3,
+      member.planDraft?.count ?? member.plan?.requestedFrequency ?? member.plan?.frequency ?? 3,
     ),
     [start, setStart] = useState(
       member.planDraft?.start || member.plan?.dates[0] || weekDates()[0],
@@ -782,7 +782,7 @@ function PlanEditor({ member }) {
                     setDirty(true);
                   }}
                 >
-                  {[2, 3, 4, 5, 6, 7].map((n) => (
+                  {[1, 2, 3, 4, 5, 6, 7].map((n) => (
                     <option key={n} value={n}>
                       주 {n}회
                     </option>
@@ -801,6 +801,11 @@ function PlanEditor({ member }) {
                 />
               </Field>
             </div>
+            {preview && preview.frequency > count && (
+              <p className="gym-note" role="status">
+                기본 목표는 주 {count}회입니다. 이번 주는 PT가 {preview.ptDays.length}일 있어 총 {preview.frequency}일로 배치합니다.
+              </p>
+            )}
             {entries.map((e, i) => (
               <article className="gym-plan-entry" key={e.id}>
                 <div className="gym-section-head">

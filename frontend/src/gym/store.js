@@ -106,6 +106,12 @@ export function weeklyPlan(count, ptDays = []) {
   }
   return selected.sort((a, b) => a - b);
 }
+export function scheduleWeek(dates, requestedFrequency, appointments) {
+  const booked = new Set(appointments.map(appointment => appointment.date));
+  const ptDays = dates.flatMap((date, index) => booked.has(date) ? [index] : []);
+  const frequency = Math.max(requestedFrequency, ptDays.length);
+  return { requestedFrequency, frequency, ptDays, days: weeklyPlan(frequency, ptDays) };
+}
 export function makePlan(ids, count, appointments, startDate) {
   if (!Number.isInteger(Number(count)) || count < 1 || count > 7)
     throw Error("주간 운동 횟수는 1~7회로 선택하세요.");
@@ -124,10 +130,6 @@ export function makePlan(ids, count, appointments, startDate) {
     d.setDate(start.getDate() + i);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   });
-  const ptDays = dates.flatMap((d, i) =>
-    appointments.some((a) => a.date === d) ? [i] : [],
-  );
-  const days = weeklyPlan(Number(count), ptDays);
   const entries = ids.map((id) => {
     const e = exercises.find((e) => e.id === id);
     if (!e) throw Error("운동 정보를 다시 선택하세요.");
@@ -136,10 +138,8 @@ export function makePlan(ids, count, appointments, startDate) {
   return {
     id: uuid(),
     updatedAt: new Date().toISOString(),
-    frequency: Number(count),
     dates,
-    days,
-    ptDays,
+    ...scheduleWeek(dates, Number(count), appointments),
     options: [
       {
         id: "standard",

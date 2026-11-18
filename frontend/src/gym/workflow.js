@@ -1,5 +1,5 @@
 import { catalogEntry, doseValue, usesSeconds } from "./prescription.js";
-import { exercises, makePlan, today, validDate, weeklyPlan } from "./store.js";
+import { exercises, makePlan, today, validDate, scheduleWeek } from "./store.js";
 export const DAYS = ["월", "화", "수", "목", "금", "토", "일"];
 export function dateKey(date) {
   const d = new Date(date);
@@ -115,11 +115,11 @@ export function editablePlan(entries, count, appointments, start) {
 export function reschedulePlan(plan, appointments) {
   if (!plan) return null;
   const requestedFrequency = plan.requestedFrequency ?? plan.frequency;
-  const scheduledDates = new Set(appointments.map(a => a.date));
-  const ptDays = plan.dates.flatMap((date, index) => scheduledDates.has(date) ? [index] : []);
-  const frequency = Math.max(requestedFrequency, ptDays.length);
-  return { ...plan, updatedAt: new Date().toISOString(), requestedFrequency,
-    frequency, ptDays, days: weeklyPlan(frequency, ptDays) };
+  return {
+    ...plan,
+    ...scheduleWeek(plan.dates, requestedFrequency, appointments),
+    updatedAt: new Date().toISOString(),
+  };
 }
 export function newSession(plan, option) {
   return {

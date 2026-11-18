@@ -20,6 +20,19 @@ import {
   transferFor,
 } from "../src/gym/store.js";
 describe("trainer plan editing and member session continuity", () => {
+  it("edits a prescription during an extra PT week without raising its usual training target", () => {
+    const week = "2026-11-16";
+    const appointments = [16, 17, 20, 21].map(day => ({ date: `2026-11-${day}` }));
+    const initial = editablePlan([entryFor("squat")], 3, appointments, week);
+    expect(initial).toMatchObject({ requestedFrequency: 3, frequency: 4, ptDays: [0, 1, 4, 5] });
+    const edits = initial.options[0].exercises.map(e => ({ ...e, reps: "12" }));
+    const edited = editablePlan(edits, initial.requestedFrequency, appointments, week);
+    const reduced = reschedulePlan(edited, appointments.slice(1));
+    expect(reduced).toMatchObject({ requestedFrequency: 3, frequency: 3, days: [1, 4, 5] });
+    expect(reduced.options.every(option => option.exercises[0].reps === "12")).toBe(true);
+    const lighterWeek = editablePlan(edits, 1, appointments, "2026-11-23");
+    expect(lighterWeek).toMatchObject({ requestedFrequency: 1, frequency: 1, ptDays: [] });
+  });
   it("preserves customized dose and order while rescheduling PT", () => {
     const rows = [
       { ...entryFor("squat"), sets: 4, reps: "10", rest: 90 },
