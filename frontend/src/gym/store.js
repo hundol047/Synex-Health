@@ -218,6 +218,9 @@ function parseTransferData(raw) {
       v.appointments.length > 100
     )
       throw Error("운동 계획 형식이 올바르지 않습니다.");
+    if (v.createdAt !== undefined &&
+        (typeof v.createdAt !== "string" || !Number.isFinite(Date.parse(v.createdAt))))
+      throw Error("공유 파일의 생성일을 확인하세요.");
     const p = v.plan;
     limitedText(p.id, 80);
     if (
@@ -397,8 +400,14 @@ export function applyTransfer(state, v, role) {
     const m = state.self;
     if (m.linkedCoach && (m.linkedCoach !== v.coachId || m.id !== v.memberId))
       throw Error("다른 회원의 계획입니다. 현재 연결을 먼저 확인하세요.");
-    if (m.plan?.updatedAt && v.plan.updatedAt < m.plan.updatedAt)
+    const currentPlanTime = Date.parse(m.plan?.updatedAt);
+    const incomingPlanTime = Date.parse(v.plan.updatedAt);
+    const sharedAt = v.createdAt ?? v.plan.updatedAt;
+    if (incomingPlanTime < currentPlanTime)
       throw Error("현재 계획보다 오래된 파일입니다. 최신 계획을 받아주세요.");
+    if (incomingPlanTime === currentPlanTime && Date.parse(sharedAt) < Date.parse(m.lastCoachShareAt))
+      throw Error("이미 받은 파일보다 더 오래된 공유 파일입니다. 최신 일정과 피드백을 유지했습니다.");
+    m.lastCoachShareAt = sharedAt;
     m.id = v.memberId;
     m.name = v.name;
     m.linkedCoach = v.coachId;

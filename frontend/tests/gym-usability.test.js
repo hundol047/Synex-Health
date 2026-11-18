@@ -86,6 +86,32 @@ describe("gym usability regressions", () => {
     bad.logs[0].exerciseResults[0].completed = [];
     expect(() => parseTransfer(JSON.stringify(bad))).toThrow();
   });
+  it("keeps the latest coaching feedback when earlier exports of the same plan arrive later", () => {
+    const member = sample();
+    member.meals.push({ id: "meal", feedback: "첫 메모" });
+    const coach = { coachId: "coach" };
+    const old = structuredClone(transferFor(coach, "coach", member));
+    old.createdAt = "2026-11-18T16:00:00+09:00";
+    member.meals[0].feedback = "수정한 메모";
+    const latest = transferFor(coach, "coach", member);
+    latest.createdAt = "2026-11-18T07:30:00Z";
+    const recipient = { self: { ...freshMember(), meals: [{ id: "meal" }] } };
+    const receive = packet => applyTransfer(recipient, parseTransfer(JSON.stringify(packet)), "member");
+    receive(old);
+    receive(latest);
+    expect(() => receive(old)).toThrow(/더 오래된 공유 파일/);
+    receive(latest);
+    expect(recipient.self.meals).toEqual([{ id: "meal", feedback: "수정한 메모" }]);
+  });
+  it("reads earlier files without an export date and rejects malformed dates", () => {
+    const member = sample();
+    const legacy = transferFor({ coachId: "coach" }, "coach", member);
+    delete legacy.createdAt;
+    const recipient = { self: freshMember() };
+    applyTransfer(recipient, parseTransfer(JSON.stringify(legacy)), "member");
+    expect(recipient.self.plan).toEqual(member.plan);
+    expect(() => parseTransfer(JSON.stringify({ ...legacy, createdAt: "invalid" }))).toThrow(/생성일/);
+  });
   it("keeps rest on the selected exercise and clears a frozen rest when changing exercise", () => {
     const plan = editablePlan([entryFor("squat"), entryFor("plank")], 3, []);
     const s = newSession(plan, plan.options[0]);

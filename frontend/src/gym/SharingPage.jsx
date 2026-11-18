@@ -70,6 +70,7 @@ export default function SharingPage() {
     }
   }
   async function read(file) {
+    setMessage("");
     try {
       if (file.size > 12 * 1024 * 1024)
         throw Error("12MB 이하 파일을 선택하세요.");
