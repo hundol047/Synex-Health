@@ -23,6 +23,7 @@ import {
   checkSessionSet,
   clearSessionRest,
   moveSessionExercise,
+  nextIncompleteExercise,
   sessionElapsed,
   finishSession,
 } from "../src/gym/workflow.js";
@@ -204,6 +205,41 @@ describe("gym usability regressions", () => {
     pauseSession(s, false, start + 60000);
     expect(s.restUntil).toBeNull();
     expect(s.checked).toEqual(["squat:0"]);
+  });
+  it("finds skipped sets across the end of a plan and ends rest after the final set", () => {
+    const plan = editablePlan([entryFor("squat"), entryFor("plank")], 3, []);
+    const s = newSession(plan, plan.options[0]);
+    s.exercises.forEach(e => { e.sets = 1; e.rest = 90; });
+    moveSessionExercise(s, 1);
+    checkSessionSet(s, 0, s.startedAt);
+    expect(s.restUntil).toBe(s.startedAt + 90000);
+    expect(nextIncompleteExercise(s)).toBe(0);
+    moveSessionExercise(s, 0);
+    checkSessionSet(s, 0);
+    expect(nextIncompleteExercise(s)).toBe(-1);
+    expect(s.restUntil).toBeNull();
+    expect(s.restRemaining).toBe(0);
+    checkSessionSet(s, 0);
+    moveSessionExercise(s, 1);
+    expect(nextIncompleteExercise(s)).toBe(0);
+    const member = { session: s, logs: [] };
+    expect(finishSession(member, "적당했어요").status).toBe("partial");
+  });
+  it("stops time on the last checked set and counts only resumed work after an undo", () => {
+    const m = sample();
+    const s = newSession(m.plan, m.plan.options[0]);
+    s.exercises[0].sets = 1;
+    m.session = s;
+    const start = s.runningSince = s.startedAt;
+    checkSessionSet(s, 0, start + 70000);
+    expect(sessionElapsed(s, start + 300000)).toBe(70000);
+    pauseSession(s, true, start + 300000);
+    checkSessionSet(s, 0, start + 350000);
+    expect(sessionElapsed(s, start + 380000)).toBe(70000);
+    pauseSession(s, false, start + 390000);
+    checkSessionSet(s, 0, start + 420000);
+    expect(sessionElapsed(s, start + 700000)).toBe(100000);
+    expect(finishSession(m, "적당했어요", start + 800000).minutes).toBe(2);
   });
   it("respects zero rest, supports older prescriptions, and can end a frozen rest", () => {
     const m = sample();

@@ -189,7 +189,7 @@ export function sessionElapsed(session, now = Date.now()) {
   return Math.max(
     0,
     (session.elapsedMs || 0) +
-      (session.paused ? 0 : now - (session.runningSince ?? session.startedAt)),
+      (session.paused || session.completedAt != null ? 0 : now - (session.runningSince ?? session.startedAt)),
   );
 }
 export function clearSessionRest(session) {
@@ -258,14 +258,21 @@ export function workoutHistory(member, anchor = today()) {
     };
   });
 }
-export function nextIncompleteSet(session) {
-  const e = session.exercises[session.index];
+export function nextIncompleteSet(session, exerciseIndex = session.index) {
+  const e = session.exercises[exerciseIndex];
   if (!e) return -1;
   return (
     Array.from({ length: e.sets }, (_, i) => i).find(
       (i) => !session.checked.includes(`${e.id}:${i}`),
     ) ?? -1
   );
+}
+export function nextIncompleteExercise(session) {
+  for (let step = 1; step < session.exercises.length; step++) {
+    const index = (session.index + step) % session.exercises.length;
+    if (nextIncompleteSet(session, index) >= 0) return index;
+  }
+  return -1;
 }
 export function checkSessionSet(session, index, now = Date.now()) {
   const e = session.exercises[session.index];
@@ -274,10 +281,22 @@ export function checkSessionSet(session, index, now = Date.now()) {
   const key = `${e.id}:${index}`;
   if (session.checked.includes(key)) {
     session.checked = session.checked.filter((x) => x !== key);
+    if (session.completedAt != null) {
+      delete session.completedAt;
+      session.runningSince = session.paused ? null : now;
+    }
     clearSessionRest(session);
   } else {
     if (session.paused) pauseSession(session, false, now);
     session.checked.push(key);
+    const { done, total } = sessionSummary(session);
+    if (done === total) {
+      session.elapsedMs = sessionElapsed(session, now);
+      session.runningSince = null;
+      session.completedAt = now;
+      clearSessionRest(session);
+      return;
+    }
     const seconds = e.rest ?? 60;
     session.restUntil = seconds > 0 ? now + seconds * 1000 : null;
   }

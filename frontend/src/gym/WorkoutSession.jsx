@@ -19,6 +19,7 @@ import {
   clearSessionRest,
   moveSessionExercise,
   nextIncompleteSet,
+  nextIncompleteExercise,
   checkSessionSet,
 } from "./workflow.js";
 import { Card, PageHead, Field, Notice } from "./ui.jsx";
@@ -49,9 +50,10 @@ export default function WorkoutSession() {
     [finishing, setFinishing] = useState(false),
     [effort, setEffort] = useState("적당했어요");
   useEffect(() => {
+    if (session.paused || session.completedAt != null) return;
     const tick = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(tick);
-  }, []);
+  }, [session.paused, session.completedAt]);
   useEffect(() => {
     const pause = () =>
       update((s) => {
@@ -81,14 +83,19 @@ export default function WorkoutSession() {
   const demonstration = useMemo(() => guidedExercise(source, e), [source, e]);
   const { done, total } = sessionSummary(session);
   const nextSet = nextIncompleteSet(session);
+  const allDone = done === total;
+  const nextExercise = nextSet < 0 && !allDone ? nextIncompleteExercise(session) : -1;
   const restSeconds = e.rest ?? 60;
   const restMs = session.paused ? session.restRemaining || 0 : (session.restUntil || 0) - now;
-  const rest = Math.max(0, Math.min(restSeconds, Math.ceil(restMs / 1000)));
+  const rest = allDone ? 0 : Math.max(0, Math.min(restSeconds, Math.ceil(restMs / 1000)));
   const nextAction = nextSet >= 0 ? `${nextSet + 1}세트를 시작하세요.` :
-    done === total ? "운동 기록을 저장하세요." : "다음 동작을 선택하세요.";
+    nextExercise >= 0 ? `다음 운동은 ${session.exercises[nextExercise].name}입니다.` : "운동 기록을 저장하세요.";
   let restTitle = "세트 사이 휴식";
   let restHint = `세트 완료를 누르면 ${restSeconds}초 휴식을 시작합니다.`;
-  if (rest > 0) {
+  if (allDone) {
+    restTitle = "모든 세트 완료";
+    restHint = "운동을 마무리하고 오늘의 기록을 저장하세요.";
+  } else if (rest > 0) {
     restTitle = formatTime(rest);
     restHint = session.paused ? "운동을 이어가면 남은 휴식도 계속됩니다." : "호흡을 정리하세요. 준비되면 휴식을 끝낼 수 있어요.";
   } else if (restSeconds === 0) {
@@ -147,14 +154,14 @@ export default function WorkoutSession() {
       </PageHead>
       <Notice error>{error}</Notice>
       <div className="gym-session-tools">
-        <button
+        {!allDone && <button
           className="gym-button secondary small"
           disabled={busy}
           onClick={() => change((s) => pauseSession(s, !s.paused))}
         >
           {session.paused ? <Play size={16} /> : <Pause size={16} />}{" "}
           {session.paused ? "운동 이어하기" : "잠깐 쉬기"}
-        </button>
+        </button>}
         <button
           className="gym-quiet-button"
           disabled={busy}
@@ -166,7 +173,7 @@ export default function WorkoutSession() {
           이 운동 취소
         </button>
       </div>
-      {session.paused && (
+      {session.paused && !allDone && (
         <Notice>
           운동 시간이 일시정지되었습니다. 이어하기를 누르면 다시 시작합니다.
         </Notice>
@@ -195,12 +202,12 @@ export default function WorkoutSession() {
       </div>
       <div className="gym-workout-action">
         <div>
-          <span className={rest ? "gym-active-rest" : undefined}>{rest ? `${session.paused ? "휴식 일시정지" : "휴식 중"} · ${formatTime(rest)}` : "지금 할 운동"}</span>
+          <span className={rest ? "gym-active-rest" : undefined}>{rest ? `${session.paused ? "휴식 일시정지" : "휴식 중"} · ${formatTime(rest)}` : allDone ? "모든 세트 완료" : "지금 할 운동"}</span>
           <strong>{e.name}</strong>
           <small>
             {nextSet >= 0
               ? `${nextSet + 1} / ${e.sets}세트 · ${doseValue(e.reps)}${usesSeconds(e.dose ?? source?.dose_type) ? "초" : "회"}`
-              : "이 동작의 모든 세트를 기록했어요"}
+              : nextAction}
           </small>
         </div>
         {session.paused && nextSet >= 0 ? (
@@ -222,13 +229,13 @@ export default function WorkoutSession() {
             <Check size={17} />
             {nextSet + 1}세트 완료
           </button>
-        ) : session.index < session.exercises.length - 1 ? (
+        ) : nextExercise >= 0 ? (
           <button
             className="gym-button"
             disabled={busy}
-            onClick={() => move(session.index + 1)}
+            onClick={() => move(nextExercise)}
           >
-            다음 동작
+            다음 미완료 동작
             <ChevronRight size={17} />
           </button>
         ) : (
