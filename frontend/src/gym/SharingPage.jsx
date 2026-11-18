@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { Download, Upload, Link2 } from "lucide-react";
 import { Capacitor } from "@capacitor/core";
 import { useGym } from "./GymContext.jsx";
@@ -191,7 +191,7 @@ export default function SharingPage() {
           {packet && (
             <div className="gym-note">
               {coach
-                ? `주 ${plan?.frequency || 0}회 · PT ${m.appointments.length}건 · 피드백 ${packet.feedback.length}건`
+                ? `주 ${plan?.frequency || 0}회 · PT ${m.appointments.length}건 · 운동 코멘트 ${packet.workoutFeedback.length}건 · 식단 피드백 ${packet.feedback.length}건`
                 : `운동 ${packet.logs.length}건 · 식단 ${packet.meals.length}건 포함`}
               <br />
               {coach
@@ -232,6 +232,9 @@ export default function SharingPage() {
               }}
             />
           </Field>
+          {!coach && m?.logs.some(log => log.feedback) && <Link className="gym-text-link" to="/health/coaching">
+            받은 운동 코멘트 보기 →
+          </Link>}
           {preview && (
             <div className="gym-import-preview">
               <strong>
@@ -240,7 +243,7 @@ export default function SharingPage() {
               </strong>
               <p>
                 {preview.kind === "plan"
-                  ? `${preview.plan.dates[0]} 시작 주 · 주 ${preview.plan.frequency}회 · PT ${preview.appointments.length}건 · 피드백 ${preview.feedback.filter(reply => reply.feedback).length}건`
+                  ? `${preview.plan.dates[0]} 시작 주 · 주 ${preview.plan.frequency}회 · PT ${preview.appointments.length}건 · 운동 코멘트 ${preview.workoutFeedback?.length || 0}건 · 식단 피드백 ${preview.feedback.filter(reply => reply.feedback).length}건`
                   : `운동 ${preview.logs.length}건 · 식단 ${preview.meals.length}건`}
               </p>
               <p>이름과 공유한 사람을 확인한 뒤 가져오세요.</p>

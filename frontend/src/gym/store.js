@@ -288,12 +288,15 @@ function parseTransferData(raw) {
       if (!validDate(a.date) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(a.time))
         throw Error("PT 일정 형식 오류");
     });
-    if (!Array.isArray(v.feedback))
-      throw Error("피드백 형식 오류");
-    v.feedback.forEach((f) => {
-      limitedText(f.id, 80);
-      limitedText(f.feedback, 600);
-    });
+    function validateReplies(replies) {
+      if (!Array.isArray(replies)) throw Error("피드백 형식 오류");
+      for (const reply of replies) {
+        limitedText(reply.id, 80);
+        limitedText(reply.feedback, 600);
+      }
+    }
+    validateReplies(v.feedback);
+    if (v.workoutFeedback !== undefined) validateReplies(v.workoutFeedback);
   } else {
     if (
       !Array.isArray(v.logs) ||
@@ -359,7 +362,7 @@ export function progressPackets(member, day = "") {
     const packet = empty();
     let bytes = baseSize;
     while (logIndex < logs.length && packet.logs.length < 500) {
-      const log = logs[logIndex];
+      const { feedback, feedbackDraft, ...log } = logs[logIndex];
       const size = jsonSize(log) + Number(packet.logs.length > 0);
       if (bytes + size > 11 * 1024 * 1024 && packet.logs.length) break;
       packet.logs.push(log);
@@ -380,15 +383,18 @@ export function progressPackets(member, day = "") {
   return packets;
 }
 
+function savedReplies(rows) {
+  return rows.filter(row => row.feedback).map(({ id, feedback }) => ({ id, feedback }));
+}
+
 export function transferFor(state, role, member, plan = member.plan) {
   if (role !== "coach") return progressPackets(member)[0];
   return {
     ...transferHeader(member, state.coachId, "plan"),
     plan,
     appointments: member.appointments,
-    feedback: member.meals
-      .filter(meal => meal.feedback)
-      .map(({ id, feedback }) => ({ id, feedback })),
+    feedback: savedReplies(member.meals),
+    workoutFeedback: savedReplies(member.logs),
   };
 }
 // The most recent calendar week stays in plan so existing single-plan saves are readable.
@@ -421,8 +427,10 @@ export function applyTransfer(state, v, role) {
       ...new Map([...old, ...rows].map((x) => [x.id, x])).values(),
     ];
     const stored = new Map(m.logs.map(log => [log.id, log]));
-    const incoming = v.logs.map(log => {
+    const incoming = v.logs.map(({ feedback, feedbackDraft, ...log }) => {
       const previous = stored.get(log.id);
+      if (previous?.feedback) log.feedback = previous.feedback;
+      if (previous?.feedbackDraft !== undefined) log.feedbackDraft = previous.feedbackDraft;
       if (!log.exerciseResults && previous?.exerciseResults &&
           log.completedSets === previous.completedSets && log.totalSets === previous.totalSets)
         return { ...log, exerciseResults: previous.exerciseResults };
@@ -467,6 +475,10 @@ export function applyTransfer(state, v, role) {
     m.lastCoachShareAt = sharedAt;
     m.name = v.name;
     m.appointments = v.appointments;
+    if (v.workoutFeedback?.length) {
+      const replies = new Map(v.workoutFeedback.map(reply => [reply.id, reply.feedback]));
+      m.logs = m.logs.map(log => replies.get(log.id) ? { ...log, feedback: replies.get(log.id) } : log);
+    }
     const replies = new Map(v.feedback.map(reply => [reply.id, reply.feedback]));
     m.meals = m.meals.map(meal => ({
       ...meal,

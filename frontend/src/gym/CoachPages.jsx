@@ -1208,52 +1208,70 @@ export function Feedback() {
     (filter === "all" || !meal.feedback)
     && (!search || [meal.date, meal.note, meal.feedback].some(value => value?.toLowerCase().includes(search)))
   ) || [];
-  const draftDirty =
-    m?.meals.some(
-      (meal) => text[meal.id] !== undefined && text[meal.id] !== meal.feedback,
-    ) || false;
+  const draftDirty = ["logs", "meals"].some(type => m?.[type].some(row => {
+    const value = text[`${id}/${type}/${row.id}`];
+    return value !== undefined && value !== (row.feedbackDraft ?? row.feedback ?? "");
+  }));
   useEffect(
     () =>
       registerDraftNavigation(
         `feedback-${id}`,
         draftDirty,
-        () =>
-          update((s) => {
-            const target = s.members.find((x) => x.id === id);
-            if (target)
-              for (const meal of target.meals)
-                if (text[meal.id] !== undefined)
-                  meal.feedbackDraft = text[meal.id];
-          }),
+        () => update(s => {
+          const member = s.members.find(item => item.id === id);
+          if (!member) return;
+          for (const type of ["logs", "meals"]) {
+            for (const row of member[type]) {
+              const value = text[`${id}/${type}/${row.id}`];
+              if (value !== undefined) row.feedbackDraft = value;
+            }
+          }
+        }),
         "작성 중인 피드백을 임시 저장하고 이동할까요?",
         "/coach/feedback",
       ),
     [id, draftDirty, text, update],
   );
-  async function save(meal) {
-    try {
-      setBusy(meal.id);
-      const value = (
-        text[meal.id] ??
-        meal.feedbackDraft ??
-        meal.feedback ??
-        ""
-      ).trim();
-      if (!value) throw Error("피드백을 입력해 주세요.");
-      await update((s) => {
-        const saved = s.members
-          .find((x) => x.id === id)
-          .meals.find((x) => x.id === meal.id);
-        saved.feedback = value;
-        delete saved.feedbackDraft;
-      });
-      setError("");
-      setMessage("피드백을 저장했습니다. 계획 공유 파일에 함께 담깁니다.");
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setBusy(null);
+  function editor(type, row) {
+    const key = `${id}/${type}/${row.id}`;
+    const workout = type === "logs";
+    const label = workout ? "운동 코멘트" : "트레이너 피드백";
+    const value = text[key] ?? row.feedbackDraft ?? row.feedback ?? "";
+    async function save() {
+      try {
+        setBusy(key);
+        const reply = value.trim();
+        if (!reply) throw Error("피드백을 입력해 주세요.");
+        await update(s => {
+          const member = s.members.find(item => item.id === id);
+          const saved = member?.[type].find(item => item.id === row.id);
+          if (!saved) throw Error("기록을 다시 선택하세요.");
+          saved.feedback = reply;
+          delete saved.feedbackDraft;
+        });
+        setText(drafts => {
+          const remaining = { ...drafts };
+          delete remaining[key];
+          return remaining;
+        });
+        setError("");
+        setMessage("피드백을 저장했습니다. 계획 공유 파일에 함께 담깁니다.");
+      } catch (e) {
+        setError(e.message);
+      } finally {
+        setBusy(null);
+      }
     }
+    return <>
+      <Field label={label}>
+        <textarea maxLength={600} value={value} disabled={busy === key}
+          onChange={event => setText({ ...text, [key]: event.target.value })}
+          placeholder={workout ? "수행한 세트를 보고 다음 운동에서 해 볼 한 가지를 알려주세요." : "좋았던 점과 다음 식사에서 해 볼 한 가지를 알려주세요."}/>
+      </Field>
+      <button className="gym-button" disabled={busy !== null} onClick={save}>
+        {busy === key ? "저장 중…" : workout ? "운동 코멘트 저장" : "피드백 저장"}
+      </button>
+    </>;
   }
   return (
     <>
@@ -1298,6 +1316,10 @@ export function Feedback() {
                   {l.status === "partial" ? " · 부분 수행" : ""}
                 </p>
                 <ExerciseResults rows={l.exerciseResults}/>
+                <details className="gym-workout-feedback">
+                  <summary>{l.feedbackDraft != null ? "운동 코멘트 이어 쓰기" : l.feedback ? "운동 코멘트 확인·수정" : "운동 코멘트 작성"}</summary>
+                  {editor("logs", l)}
+                </details>
               </div>
             </div>
           ))}
@@ -1346,25 +1368,7 @@ export function Feedback() {
               <p>
                 {meal.date} · {meal.note || "사진으로 남긴 식단"}
               </p>
-              <Field label="트레이너 피드백">
-                <textarea
-                  maxLength={600}
-                  value={
-                    text[meal.id] ?? meal.feedbackDraft ?? meal.feedback ?? ""
-                  }
-                  onChange={(e) =>
-                    setText({ ...text, [meal.id]: e.target.value })
-                  }
-                  placeholder="좋았던 점과 다음 식사에서 해 볼 한 가지를 알려주세요."
-                />
-              </Field>
-              <button
-                className="gym-button"
-                disabled={busy === meal.id}
-                onClick={() => save(meal)}
-              >
-                {busy === meal.id ? "저장 중…" : "피드백 저장"}
-              </button>
+              {editor("meals", meal)}
             </article>
           ))}
           {!meals.length && search && <Empty>검색 결과가 없습니다. 날짜나 메모를 바꿔 보세요.</Empty>}

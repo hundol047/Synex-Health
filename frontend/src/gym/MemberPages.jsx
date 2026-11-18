@@ -551,6 +551,7 @@ export function Coaching() {
           </p>
         </Card>
       </div>
+      {m.logs.some(log => log.feedback) && <WorkoutHistory member={m} repliesOnly/>}
       <div className="gym-section-head">
         <h2 className="gym-section-title">내 식단과 코칭</h2>
         <div className="gym-segment">

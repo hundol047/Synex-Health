@@ -1,23 +1,24 @@
 import React, { useState } from "react";
-import { Check, ChevronDown, Activity } from "lucide-react";
+import { Check, ChevronDown, Activity, MessageCircle } from "lucide-react";
 import { Card, Empty } from "./ui.jsx";
 import ExerciseResults from "./ExerciseResults.jsx";
 import { workoutHistory } from "./workflow.js";
-export default function WorkoutHistory({ member }) {
+export default function WorkoutHistory({ member, repliesOnly = false }) {
   const [filter, setFilter] = useState("all"),
     [limit, setLimit] = useState(7);
-  const weeks = workoutHistory(member);
+  const weeks = repliesOnly ? [] : workoutHistory(member);
   const logs = [...member.logs]
     .sort((a, b) => b.date.localeCompare(a.date))
     .filter(
       (l) =>
-        filter === "all" ||
+        repliesOnly ? Boolean(l.feedback) : filter === "all" ||
         (filter === "partial"
           ? l.status === "partial"
           : l.status !== "partial"),
     );
   return (
-    <Card title="나의 운동 기록">
+    <Card title={repliesOnly ? "트레이너의 운동 코멘트" : "나의 운동 기록"}>
+      {!repliesOnly && <>
       <div className="gym-history-summary">
         <div>
           <span className="gym-eyebrow">LAST 4 WEEKS</span>
@@ -58,6 +59,7 @@ export default function WorkoutHistory({ member }) {
           </button>
         ))}
       </div>
+      </>}
       {logs.slice(0, limit).map((l) => (
         <div className="gym-row" key={l.id}>
           <span className="gym-avatar">
@@ -79,6 +81,10 @@ export default function WorkoutHistory({ member }) {
               {l.minutes ? ` · 기록 시간 ${l.minutes}분` : ""}
             </p>
             <ExerciseResults rows={l.exerciseResults}/>
+            {l.feedback && <div className="gym-coach-reply answered">
+              <MessageCircle size={16}/>
+              <div><strong>트레이너 코멘트</strong><p>{l.feedback}</p></div>
+            </div>}
           </div>
           <span
             className={"gym-pill " + (l.status === "partial" ? "neutral" : "")}
