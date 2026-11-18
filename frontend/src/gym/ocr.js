@@ -32,6 +32,9 @@ export async function recognizeComposition(photo, onProgress) {
     workerPath: "/ocr/worker.min.js",
     corePath: "/ocr",
     langPath: "/ocr",
+    // Android strips .gz suffixes during packaging. Use the same stable asset
+    // name on both platforms; Tesseract detects compressed bytes by signature.
+    gzip: false,
     workerBlobURL: false,
     logger: (m) => {
       if (m.status === "recognizing text")

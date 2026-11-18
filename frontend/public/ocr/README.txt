@@ -1,5 +1,5 @@
 Tesseract.js / Tesseract.js-core: Apache-2.0 (included licenses).
-Language model files kor.traineddata.gz and eng.traineddata.gz:
+Language models kor.traineddata and eng.traineddata contain the original gzip bytes from:
 https://tessdata.projectnaptha.com/4.0.0/kor.traineddata.gz
 https://tessdata.projectnaptha.com/4.0.0/eng.traineddata.gz
 Models are derived from Tesseract tessdata (Apache-2.0).
