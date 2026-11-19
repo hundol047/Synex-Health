@@ -10,6 +10,7 @@ const DiagnosticsPage = lazy(() => import('./health/pages/DiagnosticsPage.jsx'))
 const SubscriptionPage = lazy(() => import('./health/pages/SubscriptionPage.jsx'));
 const MonthlyReportPage = lazy(() => import('./health/pages/MonthlyReportPage.jsx'));
 const HomePage = lazy(() => import('./gym/MemberPages.jsx').then(m=>({default:m.MemberHome})));
+const WeightTrendPage = lazy(() => import('./gym/WeightTrendPage.jsx'));
 const MyPlan=lazy(()=>import('./gym/MemberPages.jsx').then(m=>({default:m.MyPlan})));
 const Coaching=lazy(()=>import('./gym/MemberPages.jsx').then(m=>({default:m.Coaching})));
 const Dashboard=lazy(()=>import('./gym/CoachPages.jsx').then(m=>({default:m.Dashboard})));
@@ -71,6 +72,7 @@ export default function App(){
           <Route path="/health/admin" element={LOCAL_ONLY?<ServerFeature/>:<AdminPage />} />
           <Route path="/health/connections" element={<ConnectionsPage />} />
           <Route path="/health" element={<HomePage />} />
+          <Route path="/health/weight-trend" element={<WeightTrendPage />} />
           <Route path="/health/body" element={<BodyMapPage />} />
           <Route path="/health/comparison" element={<ComparisonPage />} />
           <Route path="/health/routine" element={<RoutinePage />} />

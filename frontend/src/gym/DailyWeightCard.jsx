@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import { TrendingUp } from "lucide-react";
 import { useGym } from "./GymContext.jsx";
 import { Card, Field, Notice } from "./ui.jsx";
 import { saveDailyWeight } from "./store.js";
@@ -58,6 +60,9 @@ export default function DailyWeightCard({ day }) {
           {saved == null ? "체중 저장" : "체중 수정"}
         </button>
       </form>
+      <Link className="gym-text-link gym-weight-chart-link" to="/health/weight-trend">
+        <TrendingUp size={18} /> 체중 변화 그래프 보기
+      </Link>
       <Notice error>{error}</Notice>
       <Notice>{message}</Notice>
       {dates.length > 0 && (
