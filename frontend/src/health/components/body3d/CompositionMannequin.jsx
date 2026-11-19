@@ -19,7 +19,7 @@ export default function CompositionMannequin({comparisonData,height=540}){
  const missing=[['height','키'],['weight','체중'],['body_fat_percentage','체지방률'],['skeletal_muscle_mass','골격근량']].filter(([k])=>!Number.isFinite(k==='height'?m?.height||profile.height_cm:m?.[k])).map(([,label])=>label);
  const referenceMissing=[...(!['male','female'].includes(profile.gender)?['성별']:[]),...(ageAt(profile.birth_date,m?.measurement_date)==null?['생년월일']:[]),...missing];
  const age=ageAt(profile.birth_date,m?.measurement_date),outsideStudyAge=age!=null&&(age<18||age>88),referenceNeedsInput=referenceMissing.length>0&&!outsideStudyAge;
- if(!m)return <p>인바디 결과지의 수치를 입력하면 내 마네킹이 만들어집니다. <Link to="/health/profile">측정값 입력하기</Link></p>;
+ if(!m)return <p>인바디 결과지의 수치를 입력하면 내 마네킹이 만들어집니다. <Link className="btn btn-primary" to="/health/profile">측정값 입력하기</Link></p>;
  return <div className="composition-mannequin" aria-label="내 체성분 마네킹">
   <div className="mannequin-heading"><div><span className="mannequin-eyebrow">MY BODY</span><h3>수치로 그린 내 몸</h3><p className="muted">{m.measurement_date} 측정 · 반투명 3D</p></div><Link className="btn btn-secondary" to="/health/profile">인바디 수치 입력</Link></div>
   <div className="mannequin-stats">{[['키',m.height||profile.height_cm,'cm'],['체중',m.weight,'kg'],['체지방률',m.body_fat_percentage,'%'],['골격근량',m.skeletal_muscle_mass,'kg'],...(Number.isFinite(m.bone_mass)?[['추정 골량',m.bone_mass,'kg']]:[]),...(Number.isFinite(m.mineral_mass)?[['무기질량',m.mineral_mass,'kg']]:[])].map(([name,value,unit])=><div key={name}><span>{name}</span><strong>{format(value)} <small>{unit}</small></strong></div>)}</div>
