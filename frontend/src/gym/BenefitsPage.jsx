@@ -7,6 +7,7 @@ import {
   CalendarCheck,
   Wallet,
 } from "lucide-react";
+import BenefitAssistant from "./BenefitAssistant.jsx";
 import { useGym } from "./GymContext.jsx";
 import { PageHead, Card, Field, Notice } from "./ui.jsx";
 const official = "https://www.nhis.or.kr/nhis/healthin/healthIncvInt.do";
@@ -66,7 +67,7 @@ export default function BenefitsPage() {
             확정
           </small>
         </Card>
-        <Card title="시넥스에서 시작하는 간편인증">
+        {!coach ? <BenefitAssistant type={type}/> : <Card title="시넥스에서 시작하는 간편인증">
           <span className="gym-pill">인증 서비스 연동 준비 중</span>
           <p>
             인증 → 대상 조회 → 참여 신청 → 진행 상황 확인을 하나의 흐름으로
@@ -103,7 +104,7 @@ export default function BenefitsPage() {
           >
             현재 공단 공식 참여 안내 보기 <ArrowUpRight size={15} />
           </a>
-        </Card>
+        </Card>}
       </div>
       <Card title="참여 이후, 이렇게 이어집니다">
         <div className="gym-policy-steps">

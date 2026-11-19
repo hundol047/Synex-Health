@@ -17,6 +17,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         registerPlugin(FacilityAddressPlugin.class);
+        registerPlugin(BenefitPdfPlugin.class);
         registerPlugin(VideoRecordingPlugin.class);
         registerPlugin(WorkoutSpeechPlugin.class);
         super.onCreate(savedInstanceState);
