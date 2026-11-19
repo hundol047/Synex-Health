@@ -3267,3 +3267,7 @@
 .gym-prep-summary { padding: 14px; background: #eff5fc; border-radius: 12px; margin-bottom: 14px; }
 .gym-prep-summary p { margin: 6px 0; }
 .gym-weight-trend .gym-week-weight-title { margin: 22px 0 0; }
+
+.gym-question-form summary { cursor: pointer; padding: 14px 0; }
+.gym-workout-question { background: #eff5fc; border-left: 3px solid #3975ba; padding: 10px 14px; margin: 12px 0; border-radius: 4px; }
+.gym-workout-question p, .gym-answer-text { white-space: pre-wrap; overflow-wrap: anywhere; }

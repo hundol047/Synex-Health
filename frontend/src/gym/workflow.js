@@ -175,7 +175,7 @@ export function sessionSummary(session) {
     done: keys.filter((k) => session.checked.includes(k)).length,
   };
 }
-export function finishSession(member, effort, now = Date.now()) {
+export function finishSession(member, effort, now = Date.now(), question) {
   const s = member.session;
   if (!s) throw Error("진행 중인 운동이 없습니다.");
   const { total, done } = sessionSummary(s);
@@ -199,6 +199,12 @@ export function finishSession(member, effort, now = Date.now()) {
     }),
     minutes: Math.max(1, Math.round(sessionElapsed(s, now) / 60000)),
   };
+  const text = question?.text?.trim();
+  if (text) {
+    if (text.length > 400 || (question.exerciseId && !s.exercises.some(e => e.id === question.exerciseId)))
+      throw Error("질문을 400자 이내로 작성하고 이번 운동의 동작을 선택하세요.");
+    log.question = { text, exerciseId: question.exerciseId || "" };
+  }
   if (!member.logs.some((l) => l.id === s.id)) member.logs.unshift(log);
   member.session = null;
   return log;

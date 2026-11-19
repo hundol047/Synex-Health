@@ -328,6 +328,12 @@ function parseTransferData(raw) {
       limitedText(l.date, 10);
       limitedText(l.name, 80);
       limitedText(l.effort, 20);
+      if (l.question !== undefined) {
+        const question = l.question;
+        if (!question || !limitedText(question.text, 400).trim() ||
+            (question.exerciseId !== "" && !exercises.some(e => e.id === question.exerciseId)))
+          throw Error("회원 질문과 운동 이름을 확인하세요.");
+      }
       if (!validDate(l.date)) throw Error("운동 기록 날짜를 확인하세요.");
       if (l.status !== undefined && !["partial", "complete"].includes(l.status))
         throw Error("운동 완료 상태를 확인하세요.");
@@ -456,6 +462,7 @@ export function applyTransfer(state, v, role) {
     const stored = new Map(m.logs.map(log => [log.id, log]));
     const incoming = v.logs.map(({ feedback, feedbackDraft, ...log }) => {
       const previous = stored.get(log.id);
+      if (!log.question && previous?.question) log.question = previous.question;
       if (previous?.feedback) log.feedback = previous.feedback;
       if (previous?.feedbackDraft !== undefined) log.feedbackDraft = previous.feedbackDraft;
       if (!log.exerciseResults && previous?.exerciseResults &&

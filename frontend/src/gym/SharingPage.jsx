@@ -3,7 +3,7 @@ import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { Download, Upload, Link2 } from "lucide-react";
 import { Capacitor } from "@capacitor/core";
 import { useGym } from "./GymContext.jsx";
-import { MAX_TRANSFER_BYTES, parseTransfer, applyTransfer, transferFor, progressPackets, savedPlans, lastEditedPlan } from "./store.js";
+import { MAX_TRANSFER_BYTES, validDate, parseTransfer, applyTransfer, transferFor, progressPackets, savedPlans, lastEditedPlan } from "./store.js";
 import useMemberSelection from "./useMemberSelection.js";
 import { MemberSelect } from "./CoachPages.jsx";
 import { PageHead, Card, Field, Notice, MemberCode } from "./ui.jsx";
@@ -55,7 +55,8 @@ export default function SharingPage() {
   const [week, setWeek] = useState("");
   const plans = coach && m ? savedPlans(m) : [];
   const plan = coach && m ? plans.find(item => item.dates[0] === week) ?? lastEditedPlan(m) : null;
-  const [day, setDay] = useState("");
+  const [params] = useSearchParams();
+  const [day, setDay] = useState(() => validDate(params.get("date")) ? params.get("date") : "");
   const [end, setEnd] = useState("");
   const [weights, setWeights] = useState(false);
   const [batchIndex, setBatchIndex] = useState(0);
@@ -176,7 +177,7 @@ export default function SharingPage() {
           <p>
             {coach
               ? "선택한 회원의 계획과 일정, 피드백만 포함됩니다."
-              : "나의 운동 기록과 식단 사진이 포함됩니다."}
+              : "선택한 날짜의 운동 기록, 코치에게 남긴 질문, 식단 사진이 포함됩니다."}
           </p>
           {!coach && <Field label="공유할 기록 날짜">
             <input type="date" value={day} onChange={event => {

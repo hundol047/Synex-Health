@@ -1,3 +1,5 @@
+import WorkoutQuestion from "./WorkoutQuestion.jsx";
+import { Link } from "react-router-dom";
 import React, { useState } from "react";
 import { Check, ChevronDown, Activity, MessageCircle } from "lucide-react";
 import { Card, Empty } from "./ui.jsx";
@@ -89,6 +91,11 @@ export default function WorkoutHistory({ member, repliesOnly = false }) {
               {l.status === "partial" ? "부분 수행" : "완료"}
             </span>
           </div>
+          <WorkoutQuestion question={l.question}/>
+          {l.question && !l.feedback && <Link className="gym-text-link" to={member.linkedCoach
+            ? "/health/sharing?date=" + encodeURIComponent(l.date) : "/health/sharing#import"}>
+            {member.linkedCoach ? "이 날짜의 기록 공유하기" : "코치 계획 연결하기"}
+          </Link>}
           {l.feedback && <div className="gym-coach-reply answered">
             <MessageCircle size={16}/>
             <div><strong>트레이너 코멘트</strong><p>{l.feedback}</p></div>

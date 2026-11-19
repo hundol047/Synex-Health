@@ -22,6 +22,7 @@ import { useGym } from "./GymContext.jsx";
 import PtPrepSummary from "./PtPrepSummary.jsx";
 import AppointmentList from "./AppointmentList.jsx";
 import RoutineTemplates from "./RoutineTemplates.jsx";
+import WorkoutQuestion from "./WorkoutQuestion.jsx";
 import ExerciseResults from "./ExerciseResults.jsx";
 import { useCalendarClock } from "./useLocalDay.js";
 import useMemberSelection from "./useMemberSelection.js";
@@ -1221,6 +1222,8 @@ function ScheduleEditor({ initialAppointment, missingAppointment }) {
   );
 }
 export function Feedback() {
+  const [params] = useSearchParams();
+  const [onlyQuestions, setOnlyQuestions] = useState(params.get("questions") === "pending");
   const { state, update } = useGym();
   const [id, setId] = useMemberSelection(),
     [text, setText] = useState({}),
@@ -1233,9 +1236,11 @@ export function Feedback() {
     [busy, setBusy] = useState(null);
   const m = state.members.find((m) => m.id === id);
   const workoutSearch = workoutQuery.trim().toLowerCase();
+  const waiting = m?.logs.filter(log => log.question && !log.feedback).length || 0;
   const workouts = m?.logs.filter(log => {
+    if (onlyQuestions && (!log.question || log.feedback)) return false;
     if (!workoutSearch) return true;
-    const fields = [log.date, log.name, log.effort, log.feedback, ...(log.exerciseResults || []).map(result => result.name)];
+    const fields = [log.date, log.name, log.effort, log.feedback, log.question?.text, ...(log.exerciseResults || []).map(result => result.name)];
     return fields.some(value => value?.toLowerCase().includes(workoutSearch));
   }) || [];
   const search = query.trim().toLowerCase();
@@ -1351,6 +1356,7 @@ export function Feedback() {
           setId(v);
           setText({});
           setQuery("");
+          setOnlyQuestions(false);
           setWorkoutQuery("");
           setWorkoutLimit(7);
           setMessage("");
@@ -1358,8 +1364,14 @@ export function Feedback() {
       />
       <Notice error>{error}</Notice>
       <Notice>{message}</Notice>
+      {message && <Link className="gym-text-link" to={memberLink("sharing", id)}>저장한 피드백 공유하기</Link>}
       <div className="gym-two">
         <Card title="운동 피드백 살펴보기">
+          {(waiting > 0 || onlyQuestions) && <label className="gym-check">
+            <input type="checkbox" checked={onlyQuestions} onChange={e => { setOnlyQuestions(e.target.checked); setWorkoutLimit(7); }}/>
+            답변할 운동 질문만 보기 ({waiting}건)
+          </label>}
+          {onlyQuestions && !waiting && <p>답변할 운동 질문이 없습니다.</p>}
           {m?.logs.length > 1 && <Field label="운동 기록 검색">
             <input type="search" value={workoutQuery} placeholder="날짜, 운동 이름, 운동 후 느낌, 코멘트"
               onChange={event => {
@@ -1384,8 +1396,9 @@ export function Feedback() {
                   {l.status === "partial" ? " · 부분 수행" : ""}
                 </p>
                 <ExerciseResults rows={l.exerciseResults}/>
+                <WorkoutQuestion question={l.question}/>
                 <details className="gym-workout-feedback">
-                  <summary>{l.feedbackDraft != null ? "운동 코멘트 이어 쓰기" : l.feedback ? "운동 코멘트 확인·수정" : "운동 코멘트 작성"}</summary>
+                  <summary>{l.feedbackDraft != null ? "운동 코멘트 이어 쓰기" : l.feedback ? "운동 코멘트 확인·수정" : l.question ? "질문에 답변 작성" : "운동 코멘트 작성"}</summary>
                   {editor("logs", l)}
                 </details>
               </div>

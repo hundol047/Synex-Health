@@ -48,6 +48,8 @@ export default function WorkoutSession() {
     [busy, setBusy] = useState(false),
     [showDemo, setShowDemo] = useState(false),
     [finishing, setFinishing] = useState(false),
+    [questionText, setQuestionText] = useState(session.questionDraft?.text ?? ""),
+    [questionExercise, setQuestionExercise] = useState(session.questionDraft?.exerciseId ?? ""),
     [effort, setEffort] = useState("적당했어요");
   useEffect(() => {
     if (session.paused || session.completedAt != null) return;
@@ -122,10 +124,21 @@ export default function WorkoutSession() {
   async function toggle(index) {
     await change((s) => checkSessionSet(s, index));
   }
+  function saveQuestionDraft(text, exerciseId) {
+    update(s => {
+      const active = s.self.session;
+      if (active?.id !== sessionId) return;
+      if (text || exerciseId) active.questionDraft = { text, exerciseId };
+      else delete active.questionDraft;
+    }).catch(e => setError(e.message));
+  }
   async function finish() {
     try {
       setBusy(true);
-      await update((s) => finishSession(s.self, effort));
+      await update(s => {
+        if (s.self.session?.id !== sessionId) throw Error("현재 운동 기록을 다시 확인하세요.");
+        finishSession(s.self, effort, Date.now(), { text: questionText, exerciseId: questionExercise });
+      });
     } catch (e) {
       setError(e.message);
       setBusy(false);
@@ -433,6 +446,24 @@ export default function WorkoutSession() {
               <option>통증으로 중단했어요</option>
             </select>
           </Field>
+          <details className="gym-question-form" open={session.questionDraft ? true : undefined}>
+            <summary>코치에게 질문 남기기 (선택)</summary>
+            <Field label="질문할 동작">
+              <select value={questionExercise} onChange={event => {
+                setQuestionExercise(event.target.value);
+                saveQuestionDraft(questionText, event.target.value);
+              }}>
+                <option value="">운동 전체</option>
+                {session.exercises.map(ex => <option key={ex.id} value={ex.id}>{ex.name}</option>)}
+              </select>
+            </Field>
+            <Field label="코치에게 물어볼 내용">
+              <textarea maxLength={400} value={questionText} onChange={event => setQuestionText(event.target.value)}
+                onBlur={() => saveQuestionDraft(questionText, questionExercise)}
+                placeholder="예: 의자에서 일어날 때 발을 어디에 두면 좋을까요?" />
+            </Field>
+            <p className="gym-muted">질문은 운동 기록과 함께 저장됩니다. 기록 파일을 공유하면 코치가 확인할 수 있어요.</p>
+          </details>
           <button className="gym-button" onClick={finish} disabled={busy}>
             {busy ? "저장 중…" : "운동 기록 저장"}
           </button>

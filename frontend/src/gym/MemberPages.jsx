@@ -32,6 +32,7 @@ import {
 import { PageHead, Card, Empty, Field, Notice } from "./ui.jsx";
 import { photoData } from "./photos.js";
 import DailyWeightCard from "./DailyWeightCard.jsx";
+import WorkoutQuestion from "./WorkoutQuestion.jsx";
 import WorkoutHistory from "./WorkoutHistory.jsx";
 import AppointmentList from "./AppointmentList.jsx";
 import PlanPeriodNotice from "./PlanPeriodNotice.jsx";
@@ -323,12 +324,18 @@ export function MyPlan() {
     finally { setBusy(false); }
   }
   if (m.session) return <WorkoutSession />;
+  const answered = m.logs.find(log => log.question && log.feedback);
   return (
     <>
       <PageHead eyebrow="MY ROUTINE" title="오늘의 컨디션에 맞게 골라요.">
         {plan ? "트레이너가 구성한 동작을, 내 속도로 하나씩 수행하세요." : "루틴을 고르면 동작별 시범을 보며 운동할 수 있어요."}
       </PageHead>
       <Notice error>{error}</Notice>
+      {answered && <Card title="운동 전 확인할 코치 답변">
+        <p className="gym-muted">{answered.date} · {answered.name}</p>
+        <WorkoutQuestion question={answered.question}/>
+        <strong>코치 답변</strong><p className="gym-answer-text">{answered.feedback}</p>
+      </Card>}
       {plans.length > 1 && (
         <Field label="운동 계획 주 선택">
           <select value={plan.dates[0]} onChange={event => {

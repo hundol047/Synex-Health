@@ -424,3 +424,26 @@ it("counts actual weigh-in days in local Monday weeks before comparing averages"
   });
   expect(weekWeightSummary(weights, "2027-01-06").difference).toBe(-2);
 });
+
+it("keeps a question on its workout across older files and returns the coach reply to that record", () => {
+  const person = sample();
+  const coach = { coachId: "coach", members: [person] };
+  const member = { self: freshMember() };
+  const planFile = () => parseTransfer(JSON.stringify(transferFor(coach, "coach", person)));
+  applyTransfer(member, planFile(), "member");
+  member.self.session = newSession(person.plan, person.plan.options[0]);
+  checkSessionSet(member.self.session, 0);
+  expect(() => finishSession(member.self, "적당했어요", Date.now(), { text: "질문", exerciseId: "walk" })).toThrow();
+  finishSession(member.self, "적당했어요", Date.now(), { text: "  발 간격은요?  ", exerciseId: "squat" });
+  const file = parseTransfer(JSON.stringify(progressPackets(member.self)[0]));
+  applyTransfer(coach, file, "coach");
+  person.logs[0].feedback = "다음 수업에서 함께 확인해요.";
+  const oldFile = structuredClone(file);
+  delete oldFile.logs[0].question;
+  applyTransfer(coach, oldFile, "coach");
+  expect(person.logs[0].question).toEqual({ text: "발 간격은요?", exerciseId: "squat" });
+  applyTransfer(member, planFile(), "member");
+  expect(member.self.logs[0].feedback).toBe(person.logs[0].feedback);
+  file.logs[0].question.text = "가".repeat(401);
+  expect(() => parseTransfer(JSON.stringify(file))).toThrow();
+});
