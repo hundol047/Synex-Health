@@ -1,9 +1,11 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useGym } from "./GymContext.jsx";
 import useLocalDay from "./useLocalDay.js";
 import { Card } from "./ui.jsx";
+
+import { weekWeightSummary } from "./weeklyWeights.js";
 
 const periods = [[7, "7일"], [30, "30일"], [0, "전체"]];
 const dayMs = 86400000;
@@ -12,11 +14,16 @@ const dayNumber = date => Date.parse(date + "T00:00:00Z") / dayMs;
 const isoDay = n => new Date(n * dayMs).toISOString().slice(0, 10);
 const axisDate = n => isoDay(n).slice(5).replace("-", "/");
 
-export default function WeightTrendPage() {
+export default function WeightTrendPage({ coach = false }) {
   const { state } = useGym();
-  const today = dayNumber(useLocalDay());
+  const [params] = useSearchParams();
+  const member = coach ? state.members.find(item => item.id === params.get("member")) : state.self;
+  const day = useLocalDay();
+  const today = dayNumber(day);
+  const weights = member?.dailyWeights ?? {};
+  const weekly = weekWeightSummary(weights, day);
   const [days, setDays] = useState(30);
-  const records = Object.entries(state.self.dailyWeights ?? {})
+  const records = Object.entries(weights)
     .map(([date, kg]) => ({ date, day: dayNumber(date), kg }))
     .filter(row => row.day <= today && (!days || row.day > today - days))
     .sort((a, b) => a.day - b.day);
@@ -27,8 +34,9 @@ export default function WeightTrendPage() {
   const start = days ? today - days + 1 : Math.min(first?.day ?? today, end - 1);
   const ticks = [...new Set([start, Math.round((start + end) / 2), end])];
 
+  if (!member) return <Link className="gym-button" to="/coach/members">회원을 선택하세요</Link>;
   return <>
-    <div className="gym-page-head"><h1>체중 변화</h1></div>
+    <div className="gym-page-head"><h1>{coach ? member.name + " · 공유 체중 변화" : "체중 변화"}</h1></div>
     <Card className="gym-weight-trend">
       <div className="gym-weight-periods" role="group" aria-label="조회 기간">
         {periods.map(([span, label]) => (
@@ -65,7 +73,17 @@ export default function WeightTrendPage() {
           </li>)}</ul>
         </details>
       </> : <p className="gym-empty">이 기간에 기록한 체중이 없습니다.</p>}
-      <Link className="gym-text-link gym-weight-chart-link" to="/health">오늘 화면에서 체중 기록하기</Link>
+      <h2 className="gym-week-weight-title">주간 평균 체중</h2>
+      <div className="gym-weight-figures">
+        {[[weekly.current, "이번 주"], [weekly.previous, "지난주"]].map(([week, label]) =>
+          <div key={label}><span>{label} · {week.count}일 기록</span>
+            <strong>{week.mean === null ? "—" : week.mean.toFixed(1) + " kg"}</strong></div>)}
+      </div>
+      <p>{weekly.difference === null ? "두 주 모두 3일 이상 기록하면 주간 평균 변화를 표시합니다."
+        : "지난주 평균 대비 " + (weekly.difference > 0 ? "+" : "") + weekly.difference.toFixed(1) + " kg"}</p>
+      <Link className="gym-text-link gym-weight-chart-link" to={coach ? "/coach/members?member=" + encodeURIComponent(member.id) : "/health"}>
+        {coach ? "회원 요약으로 돌아가기" : "오늘 화면에서 체중 기록하기"}
+      </Link>
     </Card>
   </>;
 }

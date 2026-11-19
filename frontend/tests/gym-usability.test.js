@@ -30,6 +30,7 @@ import {
   sessionElapsed,
   finishSession,
 } from "../src/gym/workflow.js";
+import { weekWeightSummary } from "../src/gym/weeklyWeights.js";
 afterEach(() => vi.useRealTimers());
 const sample = () => {
   const m = freshMember("검증");
@@ -395,4 +396,31 @@ describe("gym usability regressions", () => {
       editablePlan([{ ...entryFor("squat"), reps: "12-8" }], 3, []),
     ).toThrow();
   });
+});
+
+describe("optional shared weight history", () => {
+  it("scopes dates and consent, validates rows and preserves newer corrections on retries", () => {
+    const source = { ...sample(), linkedCoach: "coach", dailyWeights: {
+      "2026-11-16": 69, "2026-11-18": 68.5, "2026-11-19": 68.2,
+    } };
+    const receiver = { coachId: "coach", members: [{ ...freshMember(), id: source.id }, freshMember("다른 회원")] };
+    const packed = (include = false) => parseTransfer(JSON.stringify(progressPackets(source, "2026-11-16", "2026-11-18", include)[0]));
+    expect(packed()).not.toHaveProperty("weights");
+    const older = { ...packed(true), createdAt: "2026-11-19T00:00:00Z" };
+    source.dailyWeights["2026-11-18"] = 68.4;
+    const recent = { ...packed(true), createdAt: "2026-11-19T00:10:00Z" };
+    for (const packet of [recent, older, recent, packed()]) applyTransfer(receiver, packet, "coach");
+    expect(receiver.members[0].dailyWeights).toEqual({ "2026-11-16": 69, "2026-11-18": 68.4 });
+    expect(receiver.members[1].dailyWeights).toBeUndefined();
+    expect(() => parseTransfer(JSON.stringify({ ...recent, weights: [{ date: "2026-11-31", kg: 68 }] }))).toThrow();
+  });
+});
+
+it("counts actual weigh-in days in local Monday weeks before comparing averages", () => {
+  const weights = { "2026-12-28": 70, "2026-12-29": 71, "2027-01-03": 72,
+    "2027-01-04": 68, "2027-01-05": 69, "2027-01-06": 70 };
+  expect(weekWeightSummary(weights, "2027-01-05")).toEqual({
+    current: { count: 2, mean: 68.5 }, previous: { count: 3, mean: 71 }, difference: null,
+  });
+  expect(weekWeightSummary(weights, "2027-01-06").difference).toBe(-2);
 });

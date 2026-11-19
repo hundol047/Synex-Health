@@ -26,6 +26,7 @@ import {
   dateKey,
   appointmentStatus,
   newSession,
+  entryFor,
   planPeriod,
 } from "./workflow.js";
 import { PageHead, Card, Empty, Field, Notice } from "./ui.jsx";
@@ -54,6 +55,7 @@ export function MemberHome() {
   const todayDone = m.logs.some(
     (l) => l.date === day && l.status !== "partial",
   );
+  const firstWorkout = !plan && !m.session;
   const { data: measure } = useApiData(() => HealthAPI.latestMeasurement(), []);
   return (
     <>
@@ -83,26 +85,25 @@ export function MemberHome() {
                 ? "오늘도 해냈어요.\n나의 페이스를 지켜요."
                 : plan
                   ? (future ? "다음 운동을\n미리 살펴보세요." : "오늘의 루틴,\n내 컨디션에 맞게.")
-                  : "작은 시작이\n큰 변화를 만듭니다."}
+                  : "오늘 할 운동을\n골라 보세요."}
           </h2>
           <p>
             {plan
               ? `${plan.options[0].exercises.length}개 동작 · 주 ${plan.frequency}회 트레이너 계획`
-              : "결과지를 올리고, 나에게 맞는 운동을 시작하세요."}
+              : "코치가 보낸 계획을 열거나 직접 루틴을 골라 시작하세요."}
           </p>
           <Link
             className="gym-button light"
-            to={plan || m.session ? "/health/my-plan" : "/health/capture"}
+            to={firstWorkout ? "/health/sharing#import" : "/health/my-plan"}
           >
             <Play size={17} />
-            {m.session
+            {firstWorkout ? "받은 계획 열기" : m.session
               ? "진행 중인 운동 이어서 하기"
               : todayDone
                 ? "오늘 기록 살펴보기"
-                : plan
-                  ? (future ? "예정된 계획 미리보기" : "오늘 운동 시작")
-                  : "내 몸부터 알아보기"}
+                : future ? "예정된 계획 미리보기" : "오늘 운동 시작"}
           </Link>
+          {firstWorkout && <Link className="gym-button light" to="/health/my-plan">내 루틴 직접 고르기</Link>}
         </div>
         <div
           className="gym-week-orbit"
@@ -268,6 +269,10 @@ export function MemberHome() {
     </>
   );
 }
+const starterRoutines = [
+  { id: "chair", name: "의자로 시작하기", movements: ["march", "sit_stand", "scapular"] },
+  { id: "standing", name: "서서 하는 맨몸 운동", movements: ["standing_march", "step_touch", "wall_push"] },
+];
 export function MyPlan() {
   const { state, update } = useGym();
   const m = state.self;
@@ -305,11 +310,23 @@ export function MyPlan() {
       setBusy(false);
     }
   }
+  async function startPersonal(routine) {
+    setBusy(true);
+    setError("");
+    try {
+      await update(s => {
+        if (s.self.session) return;
+        const exercises = routine.movements.map(id => ({ ...entryFor(id), sets: 1 }));
+        s.self.session = newSession({ id: "personal" }, { ...routine, exercises });
+      });
+    } catch (e) { setError(e.message); }
+    finally { setBusy(false); }
+  }
   if (m.session) return <WorkoutSession />;
   return (
     <>
       <PageHead eyebrow="MY ROUTINE" title="오늘의 컨디션에 맞게 골라요.">
-        트레이너가 구성한 동작을, 내 속도로 하나씩 수행하세요.
+        {plan ? "트레이너가 구성한 동작을, 내 속도로 하나씩 수행하세요." : "루틴을 고르면 동작별 시범을 보며 운동할 수 있어요."}
       </PageHead>
       <Notice error>{error}</Notice>
       {plans.length > 1 && (
@@ -329,12 +346,13 @@ export function MyPlan() {
       <PlanPeriodNotice plan={plan} />
       {!plan ? (
         <Card>
-          <Empty>
-            <Dumbbell size={32} />
-            <br />
-            아직 전달받은 운동 계획이 없어요.
-          </Empty>
-          <Link className="gym-button" to="/health/sharing">
+          <h2>내 루틴 직접 고르기</h2>
+          {starterRoutines.map(routine => <div key={routine.id} className="gym-starter-routine">
+            <h3>{routine.name}</h3>
+            <p>{routine.movements.map(id => entryFor(id).name).join(" · ")} / 각 1세트</p>
+            <button className="gym-button" disabled={busy} onClick={() => startPersonal(routine)}>{routine.name} 시작</button>
+          </div>)}
+          <Link className="gym-button secondary" to="/health/sharing#import">
             트레이너 계획 가져오기 <ArrowUpRight size={16} />
           </Link>
           <Link className="gym-button secondary" to="/health/routine">

@@ -19,6 +19,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { useGym } from "./GymContext.jsx";
+import PtPrepSummary from "./PtPrepSummary.jsx";
 import AppointmentList from "./AppointmentList.jsx";
 import RoutineTemplates from "./RoutineTemplates.jsx";
 import ExerciseResults from "./ExerciseResults.jsx";
@@ -433,6 +434,7 @@ export function Members() {
                   <span>피드백 대기</span>
                 </div>
               </div>
+              <PtPrepSummary member={m} now={now} />
               <div className="gym-shortcuts">
                 {[
                   ["plan", Dumbbell, "루틴 편집"],

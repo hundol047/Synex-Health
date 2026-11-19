@@ -315,6 +315,14 @@ function parseTransferData(raw) {
       v.meals.length > 100
     )
       throw Error("기록 개수를 확인해 주세요.");
+    if (v.weights !== undefined) {
+      if (!Array.isArray(v.weights) || v.weights.length > 500 ||
+          !Number.isFinite(Date.parse(v.createdAt)) ||
+          v.weights.some(row => !validDate(row?.date) || !Number.isFinite(row.kg) ||
+            row.kg < 20 || row.kg > 300 || !Number.isInteger(row.kg * 10)) ||
+          new Set(v.weights.map(row => row.date)).size !== v.weights.length)
+        throw Error("공유 체중 기록의 날짜와 수치를 확인하세요.");
+    }
     v.logs.forEach((l) => {
       limitedText(l.id, 80);
       limitedText(l.date, 10);
@@ -357,20 +365,29 @@ function transferHeader(member, coachId, kind) {
   };
 }
 
-export function progressPackets(member, day = "") {
+export function progressPackets(member, day = "", end = day, includeWeights = false) {
   const header = transferHeader(member, member.linkedCoach, "progress");
   const empty = () => ({ ...header, logs: [], meals: [] });
   const encoder = new TextEncoder();
   const jsonSize = value => encoder.encode(JSON.stringify(value)).length;
   const baseSize = jsonSize(empty());
-  const logs = day ? member.logs.filter(log => log.date === day) : member.logs;
-  const meals = day ? member.meals.filter(meal => meal.date.slice(0, 10) === day) : member.meals;
+  const inRange = date => !day || (date >= day && date <= (end || day));
+  const logs = member.logs.filter(log => inRange(log.date));
+  const meals = member.meals.filter(meal => inRange(meal.date.slice(0, 10)));
+  const weights = includeWeights ? Object.entries(member.dailyWeights ?? {})
+    .filter(([date]) => inRange(date)).map(([date, kg]) => ({ date, kg })) : [];
+  let weightIndex = 0;
   const packets = [];
   let logIndex = 0;
   let mealIndex = 0;
   do {
     const packet = empty();
     let bytes = baseSize;
+    if (weightIndex < weights.length) {
+      packet.weights = weights.slice(weightIndex, weightIndex + 500);
+      weightIndex += packet.weights.length;
+      bytes += jsonSize(packet.weights) + 12;
+    }
     while (logIndex < logs.length && packet.logs.length < 500) {
       const { feedback, feedbackDraft, ...log } = logs[logIndex];
       const size = jsonSize(log) + Number(packet.logs.length > 0);
@@ -389,7 +406,7 @@ export function progressPackets(member, day = "") {
       mealIndex++;
     }
     packets.push(packet);
-  } while (logIndex < logs.length || mealIndex < meals.length);
+  } while (logIndex < logs.length || mealIndex < meals.length || weightIndex < weights.length);
   return packets;
 }
 
@@ -456,6 +473,15 @@ export function applyTransfer(state, v, role) {
         feedbackDraft: savedMeals.get(x.id)?.feedbackDraft,
       })),
     ).sort((a, b) => b.date.localeCompare(a.date));
+    if (v.weights?.length) {
+      m.dailyWeights ??= {};
+      m.weightShareTimes ??= {};
+      for (const { date, kg } of v.weights) {
+        if (Date.parse(m.weightShareTimes[date]) > Date.parse(v.createdAt)) continue;
+        m.dailyWeights[date] = kg;
+        m.weightShareTimes[date] = v.createdAt;
+      }
+    }
     state.selected = m.id;
   } else {
     if (v.kind !== "plan")

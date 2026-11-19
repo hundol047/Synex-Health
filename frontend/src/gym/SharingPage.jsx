@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { Download, Upload, Link2 } from "lucide-react";
 import { Capacitor } from "@capacitor/core";
@@ -37,7 +37,14 @@ async function shareFile(text, name) {
 }
 export default function SharingPage() {
   const { state, update } = useGym();
-  const coach = useLocation().pathname.startsWith("/coach");
+  const location = useLocation();
+  const coach = location.pathname.startsWith("/coach");
+  useEffect(() => {
+    if (location.hash === "#import") {
+      const frame = requestAnimationFrame(() => document.getElementById("import")?.focus());
+      return () => cancelAnimationFrame(frame);
+    }
+  }, [location.hash]);
   const [id, setId, selectionError] = useMemberSelection();
   const [consent, setConsent] = useState(false),
     [preview, setPreview] = useState(null),
@@ -49,14 +56,16 @@ export default function SharingPage() {
   const plans = coach && m ? savedPlans(m) : [];
   const plan = coach && m ? plans.find(item => item.dates[0] === week) ?? lastEditedPlan(m) : null;
   const [day, setDay] = useState("");
+  const [end, setEnd] = useState("");
+  const [weights, setWeights] = useState(false);
   const [batchIndex, setBatchIndex] = useState(0);
   const packets = useMemo(() => {
     if (!m) return [];
-    return coach ? [transferFor(state, "coach", m, plan)] : progressPackets(m, day);
-  }, [state, coach, m, plan, day]);
+    return coach ? [transferFor(state, "coach", m, plan)] : progressPackets(m, day, end, weights);
+  }, [state, coach, m, plan, day, end, weights]);
   const page = Math.min(batchIndex, packets.length - 1);
   const packet = packets[page];
-  const emptySelection = !coach && !packet?.logs.length && !packet?.meals.length;
+  const emptySelection = !coach && !packet?.logs.length && !packet?.meals.length && !packet?.weights?.length;
   function changeSelection() {
     setMessage("");
     setError("");
@@ -109,7 +118,7 @@ export default function SharingPage() {
       );
       setPreview(null);
       setError("");
-      setMessage("가져왔습니다. 운동·PT 일정·피드백 화면에서 확인하세요.");
+      setMessage(coach ? "가져왔습니다. 회원 관리에서 PT 준비 요약을 확인하세요." : "가져왔습니다. 내 운동에서 받은 계획을 시작하세요.");
     } catch (e) {
       setError(e.message);
     } finally {
@@ -137,7 +146,7 @@ export default function SharingPage() {
         사용합니다.
       </div>
       <div className="gym-two">
-        <Card title={coach ? "계획·PT·피드백 보내기" : "운동·식단 기록 보내기"}>
+        <Card title={coach ? "계획·PT·피드백 보내기" : "회원 기록 보내기"}>
           {coach && (
             <MemberSelect
               value={id}
@@ -172,24 +181,35 @@ export default function SharingPage() {
           {!coach && <Field label="공유할 기록 날짜">
             <input type="date" value={day} onChange={event => {
               setDay(event.target.value);
+              setEnd("");
               setBatchIndex(0);
               changeSelection();
             }} />
           </Field>}
+          {!coach && day && <Field label="마지막 날짜 (여러 날 공유할 때)">
+            <input type="date" min={day} value={end} onChange={e => {
+              setEnd(e.target.value); setBatchIndex(0); changeSelection();
+            }} />
+          </Field>}
+          {!coach && <label className="gym-check"><input type="checkbox" checked={weights}
+            onChange={e => { setWeights(e.target.checked); setBatchIndex(0); changeSelection(); }} />
+            선택한 기간의 체중도 코치에게 공유
+          </label>}
           {!coach && (day
             ? <button type="button" className="gym-button secondary small" onClick={() => {
                 setDay("");
+                setEnd("");
                 setBatchIndex(0);
                 changeSelection();
               }}>전체 날짜 보기</button>
-            : <p>전체 기록을 보내거나 원하는 날짜만 선택하세요.</p>)}
+            : <p>전체 기록을 보내거나 원하는 기간을 선택하세요.</p>)}
           {packets.length > 1 && <Field label="보낼 기록 파일">
             <select value={page} onChange={event => {
               setBatchIndex(Number(event.target.value));
               changeSelection();
             }}>
               {packets.map((item, index) => <option key={index} value={index}>
-                {index + 1}/{packets.length} · 운동 {item.logs.length}건 · 식단 {item.meals.length}건
+                {index + 1}/{packets.length} · 운동 {item.logs.length}건 · 식단 {item.meals.length}건 · 체중 {item.weights?.length || 0}일
               </option>)}
             </select>
           </Field>}
@@ -197,7 +217,7 @@ export default function SharingPage() {
             <div className="gym-note">
               {coach
                 ? `주 ${plan?.frequency || 0}회 · PT ${m.appointments.length}건 · 운동 코멘트 ${packet.workoutFeedback.length}건 · 식단 피드백 ${packet.feedback.length}건`
-                : `운동 ${packet.logs.length}건 · 식단 ${packet.meals.length}건 포함`}
+                : `운동 ${packet.logs.length}건 · 식단 ${packet.meals.length}건 · 체중 ${packet.weights?.length || 0}일 포함`}
               <br />
               {coach
                 ? "선택한 회원을 확인하고 공유하세요."
@@ -227,7 +247,7 @@ export default function SharingPage() {
         <Card title={coach ? "회원 기록 가져오기" : "트레이너 계획 가져오기"}>
           <Field label="Synex 공유 파일 (.json)">
             <input
-              type="file"
+              id="import" type="file"
               accept=".json,application/json"
               disabled={busy}
               onChange={(e) => {
@@ -250,7 +270,7 @@ export default function SharingPage() {
               <p>
                 {preview.kind === "plan"
                   ? `${preview.plan.dates[0]} 시작 주 · 주 ${preview.plan.frequency}회 · PT ${preview.appointments.length}건 · 운동 코멘트 ${preview.workoutFeedback?.length || 0}건 · 식단 피드백 ${preview.feedback.filter(reply => reply.feedback).length}건`
-                  : `운동 ${preview.logs.length}건 · 식단 ${preview.meals.length}건`}
+                  : `운동 ${preview.logs.length}건 · 식단 ${preview.meals.length}건 · 체중 ${preview.weights?.length || 0}일`}
               </p>
               <p>이름과 공유한 사람을 확인한 뒤 가져오세요.</p>
               <button className="gym-button" disabled={busy} onClick={accept}>
@@ -263,6 +283,9 @@ export default function SharingPage() {
       </div>
       <Notice error>{error}</Notice>
       <Notice>{message}</Notice>
+      {message.startsWith("가져왔습니다") && <Link className="gym-button" to={coach ? "/coach/members?member=" + encodeURIComponent(state.selected) : "/health/my-plan"}>
+        {coach ? "회원 PT 준비 요약 보기" : "받은 운동 계획 열기"}
+      </Link>}
       <Card title="공유 순서">
         <ol className="gym-howto">
           <li>트레이너가 회원 등록 후 운동 계획과 PT 일정을 저장합니다.</li>

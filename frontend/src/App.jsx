@@ -54,6 +54,7 @@ export default function App(){
           <Route path="/coach/plan" element={<PlanBuilder/>}/>
           <Route path="/coach/schedule" element={<Schedule/>}/>
           <Route path="/coach/feedback" element={<Feedback/>}/>
+          <Route path="/coach/weight-trend" element={<WeightTrendPage coach />} />
           <Route path="/coach/benefits" element={<BenefitsPage/>}/>
           <Route path="/coach/sharing" element={<SharingPage/>}/>
           <Route path="/health/my-plan" element={<MyPlan/>}/>
