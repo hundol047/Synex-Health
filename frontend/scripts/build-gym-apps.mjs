@@ -4,7 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const out =
   process.env.SYNEX_GYM_OUTPUT ||
-  path.resolve(root, "../../work/athlete_270");
+  path.resolve(root, "../../work/blue_271");
 fs.mkdirSync(out, { recursive: true });
 const configPath = path.join(root, "capacitor.config.json"),
   stringsPath = path.join(root, "android/app/src/main/res/values/strings.xml");
@@ -22,8 +22,8 @@ const base = {
   VITE_LOCAL_ONLY: "true",
   VITE_RELEASE_BUILD: "false",
   VITE_API_BASE: "",
-  SYNEX_VERSION_CODE: process.env.SYNEX_VERSION_CODE || "2026111804",
-  SYNEX_VERSION_NAME: process.env.SYNEX_VERSION_NAME || "2.7.0-gym",
+  SYNEX_VERSION_CODE: process.env.SYNEX_VERSION_CODE || "2026111901",
+  SYNEX_VERSION_NAME: process.env.SYNEX_VERSION_NAME || "2.7.1-gym",
 };
 const gradleArgs = ["assembleDebug", "--no-daemon"];
 const proxy = process.env.HTTPS_PROXY || process.env.https_proxy;

@@ -1,9 +1,9 @@
 .gym-shell {
-  --gym-ink: #14343d;
-  --gym-teal: #0b8276;
-  --gym-muted: #6c8187;
-  --gym-line: #e2eae9;
-  --gym-bg: #f3f6f5;
+  --gym-ink: #142a43;
+  --gym-accent: #205eb4;
+  --gym-muted: #536883;
+  --gym-line: #d9e2ef;
+  --gym-bg: #f3f6fb;
   color: var(--gym-ink);
   background: var(--gym-bg);
   min-height: 100vh;
@@ -27,8 +27,8 @@
   position: fixed;
   inset: 0 auto 0 0;
   width: 230px;
-  background: #12343b;
-  color: #dce9e7;
+  background: #15375c;
+  color: #d9e2ef;
   padding: 34px 22px;
   display: flex;
   flex-direction: column;
@@ -46,12 +46,12 @@
   display: block;
   font-size: 8px;
   letter-spacing: 1.7px;
-  color: #a4c5c3;
+  color: #94a5bb;
   margin-top: 5px;
 }
 .gym-brand-mark {
-  background: #9edbcd;
-  color: #14343d;
+  background: #a9caf2;
+  color: #15375c;
   width: 34px;
   height: 36px;
   border-radius: 11px;
@@ -60,7 +60,7 @@
   font-size: 22px;
 }
 .gym-space-label {
-  color: #799f9f;
+  color: #536883;
   font-size: 11px;
   margin: 45px 10px 15px;
   letter-spacing: 1px;
@@ -76,17 +76,17 @@
   padding: 13px;
   border-radius: 10px;
   font-size: 14px;
-  color: #b7cfce;
+  color: #94a5bb;
 }
 .gym-sidebar nav a.active {
-  background: #25504f;
-  color: #b7f5df;
+  background: #194676;
+  color: #c6ddfa;
   font-weight: 750;
 }
 .gym-side-bottom {
   margin-top: auto;
   font-size: 11px;
-  color: #9bb6b5;
+  color: #657892;
 }
 .gym-side-bottom a {
   display: flex;
@@ -98,7 +98,7 @@
   display: inline-block;
   width: 6px;
   height: 6px;
-  background: #8cd6ba;
+  background: #77a5dc;
   border-radius: 50%;
   margin-right: 8px;
 }
@@ -134,7 +134,7 @@
   font-size: 10px;
   font-weight: 750;
   letter-spacing: 1.8px;
-  color: #0e8b7a;
+  color: #194f8d;
   margin-bottom: 10px;
 }
 .gym-page-head h1 {
@@ -153,7 +153,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: var(--gym-teal);
+  background: var(--gym-accent);
   color: white !important;
   border: 0;
   border-radius: 10px;
@@ -173,12 +173,12 @@
   cursor: not-allowed;
 }
 .gym-button.secondary {
-  background: #e8f2ef;
-  color: #167864 !important;
+  background: #deebfb;
+  color: #194f8d !important;
 }
 .gym-button.light {
   background: #fff;
-  color: #126f63 !important;
+  color: #194f8d !important;
 }
 .gym-button.small {
   padding: 8px 13px;
@@ -189,7 +189,7 @@
 .gym-shell input:focus-visible,
 .gym-shell select:focus-visible,
 .gym-shell textarea:focus-visible {
-  outline: 3px solid #77b8eb;
+  outline: 3px solid #77a5dc;
   outline-offset: 3px;
 }
 .gym-card {
@@ -199,7 +199,7 @@
   border-radius: 17px;
   margin-bottom: 24px;
   min-width: 0;
-  box-shadow: 0 3px 8px #12343b03;
+  box-shadow: 0 3px 8px #15375c03;
 }
 .gym-card h2 {
   font-size: 18px;
@@ -227,7 +227,7 @@
   display: flex;
   gap: 8px;
   align-items: center;
-  color: #7a8f93;
+  color: #536883;
   font-size: 12px;
 }
 .gym-stat {
@@ -256,7 +256,7 @@
   gap: 14px;
   min-height: 76px;
   padding: 14px 0;
-  border-bottom: 1px solid #edf1f0;
+  border-bottom: 1px solid #e5ebf4;
 }
 .gym-row:last-child {
   border: 0;
@@ -278,9 +278,9 @@
   height: 39px;
   display: inline-grid;
   place-items: center;
-  background: #edf5f2;
+  background: #eaf2fd;
   border-radius: 12px;
-  color: #3c897a;
+  color: var(--gym-accent);
   font-size: 14px;
   font-weight: 700;
 }
@@ -289,15 +289,15 @@
   align-items: center;
   gap: 6px;
   white-space: nowrap;
-  background: #e8f4ee;
-  color: #2a8470 !important;
+  background: #eaf2fd;
+  color: #1859a4 !important;
   padding: 6px 10px;
   font-size: 10px;
   border-radius: 7px;
   font-weight: 650;
 }
 .gym-dark {
-  background: #153e43;
+  background: #15375c;
   border: 0;
   color: #fff;
 }
@@ -307,17 +307,17 @@
   margin: 25px 0;
 }
 .gym-dark p {
-  color: #bdd0ce;
+  color: #94a5bb;
 }
 .gym-dark .gym-eyebrow {
-  color: #a4ddcd;
+  color: #a9caf2;
 }
 .gym-dark .gym-note {
-  background: #254d50;
-  color: #c9dcd8;
+  background: #194676;
+  color: #c3cede;
 }
 .gym-dark small {
-  color: #b5ccc8;
+  color: #94a5bb;
 }
 .gym-text-link {
   display: inline-flex;
@@ -325,7 +325,7 @@
   gap: 6px;
   font-size: 12px;
   font-weight: 650;
-  color: #0b8276 !important;
+  color: #194f8d !important;
   margin-top: 14px;
 }
 .gym-field {
@@ -333,20 +333,20 @@
   flex-direction: column;
   gap: 8px;
   font-size: 12px;
-  color: #526e73;
+  color: #405672;
   margin: 0 0 19px;
   max-width: 100%;
 }
 .gym-field input,
 .gym-field select,
 .gym-field textarea {
-  border: 1px solid #dce7e5;
-  background: #f9fbfa;
+  border: 1px solid #d9e2ef;
+  background: #f7f9fc;
   border-radius: 9px;
   padding: 12px 13px;
   width: 100%;
   min-width: 0;
-  color: #173e44;
+  color: #15375c;
   font-family: inherit;
   font-size: 14px;
   min-height: 45px;
@@ -357,13 +357,13 @@
 }
 .gym-empty {
   text-align: center;
-  background: #f7faf9;
-  border: 1px dashed #dce7e3;
+  background: #f1f5fa;
+  border: 1px dashed #d9e2ef;
   border-radius: 12px;
   padding: 30px 18px;
   font-size: 13px;
   line-height: 1.9;
-  color: #78908e;
+  color: #536883;
 }
 .gym-exercise-list {
   display: grid;
@@ -380,7 +380,7 @@
   text-align: left;
   background: transparent;
   border: 0;
-  border-bottom: 1px solid #edf2f1;
+  border-bottom: 1px solid #e5ebf4;
   color: inherit;
   cursor: pointer;
 }
@@ -393,12 +393,12 @@
 }
 .gym-exercise small {
   display: block;
-  color: #91a29f;
+  color: #657892;
   font-size: 10px;
   margin-top: 3px;
 }
 .gym-exercise.chosen {
-  color: #087e6d;
+  color: #194f8d;
 }
 .gym-tags {
   display: flex;
@@ -408,19 +408,19 @@
 }
 .gym-tags button {
   border: 0;
-  background: #eaf4ef;
-  color: #237964;
+  background: #eaf2fd;
+  color: #1859a4;
   border-radius: 6px;
   padding: 7px 10px;
   cursor: pointer;
   font-size: 12px;
 }
 .gym-note {
-  background: #eaf3f1;
+  background: #eaf2fd;
   border-radius: 9px;
   padding: 15px 17px;
   font-size: 12px;
-  color: #537d77;
+  color: #405672;
   margin: 18px 0;
   line-height: 1.8;
 }
@@ -435,29 +435,29 @@
   margin: 20px 0;
 }
 .gym-week > div {
-  background: #f3f6f5;
-  border: 1px solid #e8eeec;
+  background: #f1f5fa;
+  border: 1px solid #e5ebf4;
   border-radius: 8px;
   padding: 15px 5px;
   text-align: center;
 }
 .gym-week .active {
-  background: #e4f3e9;
-  border-color: #d1e9db;
-  color: #318368;
+  background: #deebfb;
+  border-color: #c6ddfa;
+  color: #1859a4;
 }
 .gym-week small {
   display: block;
   font-size: 10px;
-  color: #849792;
+  color: #536883;
   margin-bottom: 13px;
 }
 .gym-week strong {
   font-size: 12px;
 }
 .gym-notice {
-  background: #e6f3ef !important;
-  color: #157e65 !important;
+  background: #deebfb !important;
+  color: #194f8d !important;
   border-radius: 8px;
   padding: 14px !important;
   margin: 18px 0 !important;
@@ -471,7 +471,7 @@
   display: none;
 }
 .gym-member-hero {
-  background: linear-gradient(115deg, #0d716c, #19434c);
+  background: linear-gradient(115deg, #164b86, #102a4b);
   color: white;
   padding: 32px;
   border-radius: 20px;
@@ -486,7 +486,7 @@
   margin: 18px 0;
 }
 .gym-member-hero p {
-  color: #b9dbd5;
+  color: #a9caf2;
   font-size: 13px;
   margin-bottom: 10px;
   position: relative;
@@ -498,7 +498,7 @@
 }
 .gym-member-hero .gym-pill {
   background: #ffffff20;
-  color: #d3f6e8 !important;
+  color: #deebfb !important;
 }
 .gym-hero-orbit {
   position: absolute;
@@ -512,11 +512,11 @@
   height: 220px;
   display: grid;
   place-items: center;
-  color: #b5e1d939;
+  color: #a9caf239;
 }
 .gym-date {
   font-size: 30px;
-  color: #248b79;
+  color: #1859a4;
 }
 .gym-feature-grid {
   display: grid;
@@ -529,16 +529,16 @@
   border: 1px solid var(--gym-line);
   border-radius: 15px;
   padding: 24px;
-  color: #087b70;
+  color: #194f8d;
 }
 .gym-feature-grid h3 {
   font-size: 17px;
   margin: 20px 0 8px;
-  color: #163c43;
+  color: #15375c;
 }
 .gym-feature-grid p {
   font-size: 12px;
-  color: #819692;
+  color: #536883;
   margin-bottom: 16px;
 }
 .gym-choice-grid {
@@ -554,11 +554,11 @@
   padding: 23px;
   text-align: left;
   cursor: pointer;
-  color: #173e44;
+  color: #15375c;
 }
 .gym-option.active {
-  border: 2px solid #0c8b76;
-  background: #edf8f2;
+  border: 2px solid #194f8d;
+  background: #eaf2fd;
   padding: 22px;
 }
 .gym-option strong {
@@ -568,7 +568,7 @@
 }
 .gym-option p {
   font-size: 12px;
-  color: #6a8880;
+  color: #536883;
 }
 .gym-benefit-tabs {
   display: flex;
@@ -578,16 +578,16 @@
 .gym-benefit-tabs button {
   border: 1px solid var(--gym-line);
   background: white;
-  color: #66877f;
+  color: #536883;
   padding: 11px 17px;
   border-radius: 8px;
   cursor: pointer;
   font-weight: 650;
 }
 .gym-benefit-tabs .active {
-  background: #167d6b;
+  background: #194f8d;
   color: white;
-  border-color: #167d6b;
+  border-color: #194f8d;
 }
 .gym-points {
   font-size: 52px;
@@ -609,7 +609,7 @@
 .gym-policy-steps small {
   display: block;
   margin-top: 14px;
-  color: #8aa29a;
+  color: #536883;
 }
 .gym-policy-steps h3 {
   font-size: 15px;
@@ -630,13 +630,13 @@
   width: 18px;
   height: 18px;
   flex-shrink: 0;
-  accent-color: #12806d;
+  accent-color: #194f8d;
   margin-top: 2px;
 }
 .gym-auth-panel,
 .gym-import-preview {
-  background: #f3f7f6;
-  border: 1px solid #dce9e4;
+  background: #f1f5fa;
+  border: 1px solid #d9e2ef;
   padding: 18px;
   border-radius: 12px;
   margin-top: 18px;
@@ -644,7 +644,7 @@
 .gym-howto {
   padding-left: 22px;
   font-size: 14px;
-  color: #56766e;
+  color: #405672;
   line-height: 2.3;
 }
 .gym-meals-grid {
@@ -667,14 +667,14 @@
 }
 .gym-photo-empty {
   height: 230px;
-  border: 1px dashed #c9dfd5;
+  border: 1px dashed #c3cede;
   border-radius: 14px;
-  background: #f0f7f3;
+  background: #eaf2fd;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  color: #629c87;
+  color: #536883;
   padding: 25px;
 }
 .gym-meal {
@@ -684,7 +684,7 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   font-size: 12px;
-  color: #63796f;
+  color: #536883;
 }
 .gym-shell .health-home {
   max-width: none;
@@ -817,11 +817,11 @@
     align-items: center;
     gap: 5px;
     font-size: 10px;
-    color: #8c9b98;
+    color: #536883;
     padding: 3px 5px;
   }
   .gym-mobile-nav a.active {
-    color: #0b8276;
+    color: #194f8d;
     font-weight: 750;
   }
   .gym-feature-grid {
@@ -927,16 +927,11 @@
 }
 /* Coach & Member studio v2 */
 .gym-shell {
-  --gym-bg: #f4f6f8;
-  --gym-ink: #163340;
-  --gym-muted: #6d7f88;
-  --gym-teal: #087d76;
-  --gym-line: #e3e9ed;
   background: var(--gym-bg);
   font-feature-settings: "tnum";
 }
 .gym-sidebar {
-  background: #102d39;
+  background: #15375c;
   width: 240px;
   padding: 30px 21px;
 }
@@ -947,9 +942,9 @@
   border: 1px solid transparent;
 }
 .gym-sidebar nav a.active {
-  background: #1a4650;
-  border-color: #315c63;
-  color: #a9ecda;
+  background: #194676;
+  border-color: #194f8d;
+  color: #a9caf2;
 }
 .gym-top {
   background: #fbfcfd;
@@ -965,7 +960,7 @@
 }
 .gym-card {
   border-radius: 20px;
-  box-shadow: 0 6px 25px #183c4c04;
+  box-shadow: 0 6px 25px #15375c04;
   padding: 26px;
 }
 .gym-section-head {
@@ -987,7 +982,7 @@
 }
 .gym-stat-foot {
   font-size: 10px;
-  color: #8a9ba3;
+  color: #657892;
   display: block;
   margin-top: 12px;
 }
@@ -1009,16 +1004,16 @@
   bottom: -32px;
   width: 90px;
   height: 90px;
-  border: 13px solid #f3f7f8;
+  border: 13px solid #f3f7fd;
   border-radius: 50%;
   pointer-events: none;
 }
 .gym-stat-grid .gym-card:first-child {
-  background: #eaf5f1;
-  border-color: #dcebe5;
+  background: #eaf2fd;
+  border-color: #deebfb;
 }
 .gym-stat-grid .gym-card:first-child:after {
-  border-color: #dfefea;
+  border-color: #deebfb;
 }
 .gym-dashboard-layout {
   display: grid;
@@ -1035,7 +1030,7 @@
   min-width: 0;
 }
 .gym-appointment.next {
-  background: #eff6f7;
+  background: #eaf2fd;
   border: 0;
   margin-bottom: 8px;
 }
@@ -1052,7 +1047,7 @@
 .gym-appointment-time {
   display: flex;
   flex-direction: column;
-  border-right: 2px solid #86b8b0;
+  border-right: 2px solid #77a5dc;
   padding-right: 16px;
 }
 .gym-appointment-time strong {
@@ -1066,7 +1061,7 @@
 .gym-action-hero {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #123a46, #086c66);
+  background: linear-gradient(135deg, #102a4b, #205eb4);
   padding: 32px;
 }
 .gym-action-hero h2 {
@@ -1079,7 +1074,7 @@
 .gym-action-hero p {
   position: relative;
   z-index: 1;
-  color: #b8d6d2;
+  color: #a9caf2;
 }
 .gym-action-hero .gym-button {
   position: relative;
@@ -1120,12 +1115,12 @@
   width: 25px;
   height: 25px;
   border-radius: 50%;
-  background: #f0f4f5;
-  color: #93a3a7;
+  background: #f1f5fa;
+  color: #657892;
   font-size: 9px;
 }
 .gym-mini-week > span.done {
-  background: #0b877a;
+  background: #194f8d;
   color: white;
 }
 .gym-member-layout {
@@ -1154,8 +1149,8 @@
   cursor: pointer;
 }
 .gym-member-item.selected {
-  background: #edf7f2;
-  border-color: #badbd0;
+  background: #eaf2fd;
+  border-color: #a9caf2;
 }
 .gym-member-item > span:nth-child(2) {
   flex: 1;
@@ -1195,12 +1190,12 @@
   height: 66px;
   font-size: 27px;
   border-radius: 22px;
-  background: #e3f0eb;
+  background: #deebfb;
 }
 .gym-detail-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  background: #f5f8fa;
+  background: #f3f7fd;
   border-radius: 14px;
   padding: 24px 8px;
   margin: 20px 0;
@@ -1229,8 +1224,8 @@
   margin-bottom: 28px;
 }
 .gym-shortcuts > a {
-  background: #edf6f4;
-  color: #0a7b70;
+  background: #eaf2fd;
+  color: #194f8d;
   padding: 15px;
   border-radius: 11px;
   display: flex;
@@ -1242,7 +1237,7 @@
 }
 .gym-edit-panel {
   padding: 22px;
-  background: #f6f9fa;
+  background: #f3f7fd;
   border-radius: 14px;
   margin-bottom: 20px;
 }
@@ -1251,8 +1246,8 @@
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  background: #e6f0ed;
-  border: 1px solid #d8e6e1;
+  background: #e5ebf4;
+  border: 1px solid #d9e2ef;
   border-radius: 12px;
   padding: 10px 20px;
   margin-bottom: 22px;
@@ -1270,7 +1265,7 @@
 .gym-segment {
   display: flex;
   align-items: center;
-  background: #eaf0f2;
+  background: #e5ebf4;
   border-radius: 10px;
   padding: 4px;
   gap: 4px;
@@ -1280,7 +1275,7 @@
 .gym-segment button {
   border: 0;
   background: transparent;
-  color: #6a7e86;
+  color: #536883;
   border-radius: 7px;
   padding: 9px 16px;
   font-size: 12px;
@@ -1290,8 +1285,8 @@
 }
 .gym-segment button.active {
   background: white;
-  color: #087b71;
-  box-shadow: 0 2px 6px #14333e10;
+  color: #194f8d;
+  box-shadow: 0 2px 6px #15375c10;
 }
 .gym-section-head .gym-segment {
   margin: 0;
@@ -1302,8 +1297,8 @@
   gap: 16px;
 }
 .gym-plan-entry {
-  background: #f8fafb;
-  border: 1px solid #e7edef;
+  background: #f3f7fd;
+  border: 1px solid #e5ebf4;
   border-radius: 12px;
   padding: 18px;
   margin-top: 12px;
@@ -1315,7 +1310,7 @@
 }
 .gym-entry-title > span {
   font-size: 12px;
-  color: #79a49b;
+  color: #536883;
 }
 .gym-entry-title strong {
   font-size: 14px;
@@ -1327,9 +1322,9 @@
 }
 .gym-icon-actions button,
 .gym-icon-button {
-  border: 1px solid #e0e8eb;
+  border: 1px solid #d9e2ef;
   background: #fff;
-  color: #53737a;
+  color: #405672;
   border-radius: 7px;
   min-width: 33px;
   min-height: 33px;
@@ -1367,8 +1362,8 @@
   gap: 15px;
 }
 .gym-plan-preview > div {
-  background: #edf5f2;
-  border: 1px solid #dceae4;
+  background: #eaf2fd;
+  border: 1px solid #d9e2ef;
   border-radius: 13px;
   padding: 18px;
   display: flex;
@@ -1377,7 +1372,7 @@
 }
 .gym-plan-preview strong {
   font-size: 22px;
-  color: #167d6d;
+  color: #194f8d;
 }
 .gym-plan-preview span {
   font-size: 12px;
@@ -1394,14 +1389,14 @@
 }
 .gym-calendar > div {
   min-height: 160px;
-  border: 1px solid #e5ebee;
-  background: #fafcfd;
+  border: 1px solid #e5ebf4;
+  background: #f3f7fd;
   border-radius: 12px;
   padding: 12px 8px;
 }
 .gym-calendar > div.today {
-  background: #eff7f3;
-  border-color: #9ac9b8;
+  background: #eaf2fd;
+  border-color: #77a5dc;
 }
 .gym-calendar-date {
   width: 100%;
@@ -1418,14 +1413,14 @@
   gap: 3px;
 }
 .gym-calendar-date[aria-pressed="true"] {
-  background: #d8eee5;
+  background: #deebfb;
 }
 .gym-calendar-date:disabled {
   cursor: default;
 }
 .gym-calendar-date span {
   font-size: 10px;
-  color: #7a9095;
+  color: #536883;
 }
 .gym-calendar-date strong {
   font-size: 22px;
@@ -1435,10 +1430,10 @@
   flex-direction: column;
   width: 100%;
   border: 0;
-  border-left: 3px solid #339b86;
+  border-left: 3px solid var(--gym-accent);
   border-radius: 5px;
-  background: #dff0e9;
-  color: #216b5c;
+  background: #deebfb;
+  color: #194f8d;
   padding: 10px 6px;
   text-align: left;
   margin-bottom: 7px;
@@ -1454,7 +1449,7 @@
 .gym-calendar small {
   display: block;
   text-align: center;
-  color: #a1afb4;
+  color: #657892;
   font-size: 10px;
 }
 .gym-schedule-row {
@@ -1466,7 +1461,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  background: linear-gradient(125deg, #123c49, #167767);
+  background: linear-gradient(125deg, #102a4b, #205eb4);
   padding: 36px 40px;
   border-radius: 25px;
   color: white;
@@ -1481,11 +1476,11 @@
   margin: 16px 0;
 }
 .gym-today-hero p {
-  color: #bddbd4;
+  color: #a9caf2;
   font-size: 13px;
 }
 .gym-today-hero .gym-eyebrow {
-  color: #a7dbc8;
+  color: #a9caf2;
 }
 .gym-today-hero .gym-button {
   margin-top: 22px;
@@ -1516,7 +1511,7 @@
 }
 .gym-week-orbit span {
   font-size: 12px;
-  color: #bbd8d3;
+  color: #a9caf2;
   margin-top: 10px;
 }
 .gym-week-orbit svg {
@@ -1530,7 +1525,7 @@
   stroke-width: 3;
 }
 .gym-week-orbit circle:last-child {
-  stroke: #a6e3c3;
+  stroke: #a9caf2;
   stroke-linecap: round;
   stroke-width: 4;
 }
@@ -1547,7 +1542,7 @@
 }
 .gym-week-track small {
   font-size: 11px;
-  color: #85969e;
+  color: #536883;
 }
 .gym-week-track span {
   display: grid;
@@ -1556,14 +1551,14 @@
   height: 38px;
   border-radius: 50%;
   font-size: 14px;
-  background: #f3f6f7;
+  background: #f1f5fa;
 }
 .gym-week-track .today span {
-  border: 1px solid #28927d;
-  color: #087e6c;
+  border: 1px solid var(--gym-accent);
+  color: #194f8d;
 }
 .gym-week-track .done span {
-  background: #198974;
+  background: #1859a4;
   color: #fff;
 }
 .gym-week-track i {
@@ -1573,7 +1568,7 @@
   border-radius: 50%;
 }
 .gym-week-track .today i {
-  background: #13826e;
+  background: #194f8d;
 }
 .gym-body-metrics {
   display: flex;
@@ -1600,9 +1595,9 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  border: 1px solid #dcebe5;
+  border: 1px solid #deebfb;
   border-radius: 15px;
-  background: #eaf4ee;
+  background: #eaf2fd;
   padding: 20px;
   margin-bottom: 24px;
 }
@@ -1612,7 +1607,7 @@
 }
 .gym-feedback-banner small {
   font-size: 10px;
-  color: #508576;
+  color: #536883;
 }
 .gym-feedback-banner p {
   font-size: 13px;
@@ -1631,7 +1626,7 @@
   position: absolute;
   top: 27px;
   right: 22px;
-  color: #8ba2a9;
+  color: #657892;
 }
 .gym-feature-icon {
   display: grid;
@@ -1639,8 +1634,8 @@
   width: 47px;
   height: 47px;
   border-radius: 14px;
-  background: #ecf5f1;
-  color: #228677;
+  background: #eaf2fd;
+  color: #1859a4;
 }
 .gym-feature-grid h3 {
   margin-top: 18px;
@@ -1649,7 +1644,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #60867b;
+  color: #536883;
   font-size: 12px;
 }
 .gym-option-top svg:last-child {
@@ -1662,7 +1657,7 @@
   display: block;
   margin-top: 14px;
   font-size: 10px;
-  color: #74938b;
+  color: #536883;
 }
 .gym-full {
   width: 100%;
@@ -1676,11 +1671,11 @@
   flex-direction: column;
   gap: 10px;
   padding: 34px 15px;
-  border: 1px dashed #b1d0c7;
-  background: #f2f8f5;
+  border: 1px dashed #94a5bb;
+  background: #f3f7fd;
   border-radius: 14px;
   margin-bottom: 20px;
-  color: #328575;
+  color: #1859a4;
   cursor: pointer;
 }
 .gym-photo-picker strong {
@@ -1688,7 +1683,7 @@
 }
 .gym-photo-picker span {
   font-size: 11px;
-  color: #7b9890;
+  color: #536883;
 }
 .gym-photo-picker input {
   position: absolute;
@@ -1699,7 +1694,7 @@
   height: 100%;
 }
 .gym-photo-picker:focus-within {
-  outline: 3px solid #77b8eb;
+  outline: 3px solid #77a5dc;
   outline-offset: 3px;
 }
 .gym-feed-card {
@@ -1716,15 +1711,15 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  background: #f3f6f7;
+  background: #f1f5fa;
   border-radius: 11px;
   padding: 15px;
   margin-top: 15px;
-  color: #799097;
+  color: #536883;
 }
 .gym-coach-reply.answered {
-  background: #eaf5ef;
-  color: #287c66;
+  background: #eaf2fd;
+  color: #1859a4;
 }
 .gym-coach-reply > svg {
   flex-shrink: 0;
@@ -1743,11 +1738,11 @@
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  background: #e8f0f0;
+  background: #e5ebf4;
   padding: 17px 22px;
   border-radius: 12px;
   font-size: 13px;
-  color: #426d6c;
+  color: #405672;
 }
 .gym-session-summary > span {
   display: flex;
@@ -1757,14 +1752,14 @@
 .gym-progress-track {
   height: 5px;
   border-radius: 5px;
-  background: #dce9e5;
+  background: #d9e2ef;
   margin: 15px 0 24px;
   overflow: hidden;
 }
 .gym-progress-track > span {
   height: 100%;
   display: block;
-  background: #198c73;
+  background: #1859a4;
   transition: width 0.25s;
 }
 .gym-session-heading {
@@ -1774,7 +1769,7 @@
 }
 .gym-session-number {
   font-size: 49px;
-  color: #cbded6;
+  color: #c3cede;
   letter-spacing: -2px;
   font-weight: 800;
 }
@@ -1798,11 +1793,11 @@
   display: flex;
   align-items: center;
   gap: 17px;
-  border: 1px solid #e0e8e8;
+  border: 1px solid #d9e2ef;
   border-radius: 12px;
-  background: #f9fbfb;
+  background: #f7f9fc;
   padding: 18px;
-  color: #536e75;
+  color: #405672;
   text-align: left;
   cursor: pointer;
 }
@@ -1822,28 +1817,28 @@
   place-items: center;
   width: 27px;
   height: 27px;
-  border: 1.5px solid #c9d7d5;
+  border: 1.5px solid #c3cede;
   border-radius: 50%;
   background: white;
 }
 .gym-set-list button.complete {
-  border-color: #badace;
-  background: #eef7f1;
-  color: #267a62;
+  border-color: #a9caf2;
+  background: #eaf2fd;
+  color: #1859a4;
 }
 .gym-set-list .complete .gym-set-check {
-  background: #208c70;
-  border-color: #208c70;
+  background: #1859a4;
+  border-color: #1859a4;
   color: white;
 }
 .gym-rest-panel {
   display: flex;
   align-items: center;
   gap: 16px;
-  background: #f0f4f6;
+  background: #f1f5fa;
   border-radius: 14px;
   padding: 21px;
-  color: #6e8991;
+  color: #536883;
 }
 .gym-rest-panel > div {
   flex: 1;
@@ -1856,7 +1851,7 @@
   margin: 5px 0 0;
 }
 .gym-rest-panel.running {
-  background: #133f48;
+  background: #15375c;
   color: white;
 }
 .gym-rest-panel.running strong {
@@ -1864,7 +1859,7 @@
   line-height: 1;
 }
 .gym-rest-panel.running p {
-  color: #b5d1cf;
+  color: #94a5bb;
 }
 .gym-session-navigation {
   display: flex;
@@ -1883,14 +1878,14 @@
   border: 1px solid transparent;
   border-radius: 8px;
   padding: 14px;
-  background: #f7f9fa;
+  background: #f1f5fa;
   color: var(--gym-ink);
   text-align: left;
   cursor: pointer;
 }
 .gym-session-exercises > button.active {
-  border-color: #aacfc0;
-  background: #edf6f1;
+  border-color: #a9caf2;
+  background: #eaf2fd;
 }
 .gym-session-exercises > button > span {
   flex: 1;
@@ -1900,8 +1895,8 @@
   color: var(--gym-muted);
 }
 .gym-finish-card {
-  border-color: #8fc7b4;
-  background: #f6fbf8;
+  border-color: #77a5dc;
+  background: #f3f7fd;
 }
 .gym-session-motion {
   margin-top: 15px;
@@ -1924,8 +1919,8 @@
   letter-spacing: -0.3px;
 }
 .gym-top-brand > span {
-  background: #123d45;
-  color: #d4f6e7;
+  background: #15375c;
+  color: #deebfb;
   width: 26px;
   height: 28px;
   display: grid;
@@ -1958,14 +1953,14 @@
 }
 .gym-share-progress > span {
   flex: 1;
-  border-top: 3px solid #d9e6e1;
+  border-top: 3px solid #d9e2ef;
   padding: 10px;
   font-size: 12px;
-  color: #8aa39a;
+  color: #657892;
 }
 .gym-share-progress > span.done {
-  border-color: #298c70;
-  color: #298c70;
+  border-color: #1859a4;
+  color: #1859a4;
 }
 @media (max-width: 1150px) {
   .gym-sidebar {
@@ -2410,7 +2405,7 @@
     padding: 9px 4px;
   }
   .gym-mobile-nav {
-    box-shadow: 0 -5px 25px #17344106;
+    box-shadow: 0 -5px 25px #15375c06;
     background: #ffffffed;
     backdrop-filter: blur(12px);
   }
@@ -2426,7 +2421,7 @@
     top: 0;
     height: 3px;
     width: 25px;
-    background: #138374;
+    background: #194f8d;
     border-radius: 0 0 4px 4px;
   }
 }
@@ -2466,10 +2461,10 @@
   min-width: 44px;
   min-height: 44px;
   padding: 9px;
-  border: 1px solid #dce7e7;
+  border: 1px solid #d9e2ef;
   border-radius: 12px;
   background: #fff;
-  color: #22545b;
+  color: #194676;
   cursor: pointer;
 }
 .gym-menu-sheet {
@@ -2479,12 +2474,12 @@
   width: min(560px, calc(100vw - 28px));
   max-height: 85dvh;
   overflow: auto;
-  background: #f8fafb;
-  color: #163340;
-  box-shadow: 0 25px 80px #052a3740;
+  background: #f3f7fd;
+  color: #15375c;
+  box-shadow: 0 25px 80px #11294740;
 }
 .gym-menu-sheet::backdrop {
-  background: #0a28377a;
+  background: #1129477a;
   backdrop-filter: blur(4px);
 }
 .gym-sheet-heading {
@@ -2512,7 +2507,7 @@
   gap: 10px;
   min-height: 64px;
   background: white;
-  border: 1px solid #e1eaea;
+  border: 1px solid #d9e2ef;
   border-radius: 12px;
   padding: 12px;
   font-size: 12px;
@@ -2533,8 +2528,8 @@
   margin-top: 20px;
 }
 .gym-menu-sheet nav > a.active {
-  border-color: #9ecfbd;
-  background: #edf7f1;
+  border-color: #a9caf2;
+  background: #eaf2fd;
 }
 .gym-session-tools {
   display: flex;
@@ -2548,7 +2543,7 @@
   border: 0;
   text-decoration: underline;
   text-underline-offset: 4px;
-  color: #687f87;
+  color: #536883;
   font-size: 12px;
   cursor: pointer;
   min-height: 44px;
@@ -2576,9 +2571,9 @@
   position: sticky;
   top: 10px;
   z-index: 25;
-  background: #e6f0edf5;
+  background: #e5ebf4f5;
   backdrop-filter: blur(10px);
-  box-shadow: 0 5px 16px #153f3c09;
+  box-shadow: 0 5px 16px #15375c09;
 }
 .gym-icon-actions button,
 .gym-icon-button {
@@ -2646,12 +2641,12 @@
   }
   .gym-jump-link {
     display: block;
-    border: 1px solid #d7e5e0;
+    border: 1px solid #d9e2ef;
     border-radius: 10px;
     padding: 13px 15px;
     margin-bottom: 18px;
     background: #fff;
-    color: #167e6a !important;
+    color: #194f8d !important;
     font-size: 12px;
     font-weight: 650;
     text-align: center;
@@ -2696,7 +2691,7 @@
 }
 /* 2.3: repeatable planning and clear everyday actions. */
 .gym-template-panel {
-  border: 1px solid #dce8e4;
+  border: 1px solid #d9e2ef;
   border-radius: 16px;
   background: #fff;
   margin: 0 0 16px;
@@ -2708,7 +2703,7 @@
   align-items: center;
   padding: 18px 21px;
   cursor: pointer;
-  color: #267464;
+  color: #1859a4;
   font-weight: 700;
   font-size: 13px;
   list-style: none;
@@ -2723,12 +2718,12 @@
   display: block;
   font-size: 10px;
   font-weight: 400;
-  color: #78928b;
+  color: #536883;
   margin-top: 4px;
 }
 .gym-template-panel[open] > summary {
-  border-bottom: 1px solid #e4ece8;
-  background: #f3f8f5;
+  border-bottom: 1px solid #d9e2ef;
+  background: #f3f7fd;
 }
 .gym-template-body {
   display: grid;
@@ -2754,23 +2749,23 @@
 }
 .gym-week-shortcuts > span {
   font-size: 12px;
-  color: #748a88;
+  color: #536883;
   margin-right: auto;
 }
 .gym-week-shortcuts button {
-  border: 1px solid #dbe6e3;
+  border: 1px solid #d9e2ef;
   border-radius: 10px;
   background: #fff;
-  color: #5a7d73;
+  color: #536883;
   padding: 10px 17px;
   min-height: 44px;
   font-size: 12px;
   cursor: pointer;
 }
 .gym-week-shortcuts button.active {
-  background: #e6f4eb;
-  border-color: #a5cdbb;
-  color: #1d765e;
+  background: #deebfb;
+  border-color: #a9caf2;
+  color: #194f8d;
 }
 .gym-week-shortcuts small {
   margin-left: 6px;
@@ -2781,11 +2776,11 @@
   align-items: center;
   gap: 13px;
   padding: 18px 22px;
-  border: 1px solid #dce8e5;
+  border: 1px solid #d9e2ef;
   border-radius: 14px;
-  background: #edf5f2;
+  background: #eaf2fd;
   margin-bottom: 24px;
-  color: #347c6a;
+  color: #1859a4;
 }
 .gym-period-notice > svg {
   flex-shrink: 0;
@@ -2799,7 +2794,7 @@
 .gym-period-notice p {
   font-size: 11px;
   line-height: 1.8;
-  color: #66857c;
+  color: #536883;
   margin-top: 3px;
 }
 .gym-period-notice > a {
@@ -2830,13 +2825,13 @@
   gap: 40px;
   padding: 23px;
   border-radius: 14px;
-  background: #f4f8f7;
+  background: #f1f5fa;
   margin-bottom: 25px;
 }
 .gym-exercise-results summary {
   cursor: pointer;
   padding-block: 10px;
-  color: #166458;
+  color: #194676;
   font-size: 13px;
   font-weight: 700;
 }
@@ -2846,7 +2841,7 @@
   margin: 0;
 }
 .gym-exercise-results li {
-  border-left: 2px solid #b6dbd1;
+  border-left: 2px solid #a9caf2;
   padding-left: 10px;
   margin-bottom: 12px;
   overflow-wrap: anywhere;
@@ -2882,12 +2877,12 @@
 }
 .gym-history-bars > div > strong {
   font-size: 10px;
-  color: #709288;
+  color: #536883;
 }
 .gym-history-bars > div > div {
   width: 21px;
   height: 65px;
-  background: #e2ece8;
+  background: #d9e2ef;
   border-radius: 5px;
   display: flex;
   align-items: end;
@@ -2896,17 +2891,17 @@
 .gym-history-bars span {
   display: block;
   width: 100%;
-  background: #448e78;
+  background: var(--gym-accent);
   min-height: 2px;
   border-radius: 5px;
 }
 .gym-history-bars small {
   font-size: 9px;
-  color: #92a69e;
+  color: #657892;
 }
 .gym-pill.neutral {
   background: #edf0f3;
-  color: #778b93 !important;
+  color: #536883 !important;
 }
 .gym-workout-action {
   position: sticky;
@@ -2917,10 +2912,10 @@
   justify-content: space-between;
   gap: 16px;
   padding: 15px 22px;
-  background: #123e47;
+  background: #15375c;
   color: #fff;
   border-radius: 14px;
-  box-shadow: 0 8px 24px #123e471a;
+  box-shadow: 0 8px 24px #15375c1a;
   margin-bottom: 22px;
 }
 .gym-workout-action > div {
@@ -2931,25 +2926,25 @@
 }
 .gym-workout-action span {
   font-size: 9px;
-  color: #96c9bd;
+  color: #77a5dc;
 }
 .gym-workout-action .gym-active-rest {
   font-size: 12px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: #c0ead4;
+  color: #c6ddfa;
 }
 .gym-workout-action strong {
   font-size: 15px;
 }
 .gym-workout-action small {
   font-size: 10px;
-  color: #adcfc6;
+  color: #a9caf2;
 }
 .gym-workout-action .gym-button {
   margin: 0;
-  background: #c0ead4;
-  color: #1c5748 !important;
+  background: #c6ddfa;
+  color: #194676 !important;
   white-space: nowrap;
 }
 .gym-template-body .gym-quiet-button svg {
@@ -2957,7 +2952,7 @@
   margin-right: 5px;
 }
 .gym-template-panel summary:focus-visible {
-  outline: 3px solid #77b8eb;
+  outline: 3px solid #77a5dc;
   outline-offset: -3px;
 }
 @media (max-width: 760px) {
@@ -2974,7 +2969,7 @@
     padding: 20px;
   }
   .gym-template-body > div + div {
-    border-top: 1px solid #e1ebe5;
+    border-top: 1px solid #d9e2ef;
     padding-top: 19px;
   }
   .gym-week-shortcuts {
@@ -3063,17 +3058,17 @@
   border: 0;
   border-radius: 20px;
   background: #fff;
-  color: #15323a;
+  color: #15375c;
   overscroll-behavior: contain;
 }
-.gym-demo-dialog::backdrop { background: rgb(10 32 39 / 68%); }
+.gym-demo-dialog::backdrop { background: rgb(12 28 52 / 68%); }
 .gym-demo-header {
   position: sticky; top: 0; z-index: 3;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 20px; background: #fff; border-bottom: 1px solid #d8e5e2;
+  padding: 14px 20px; background: #fff; border-bottom: 1px solid #d9e2ef;
 }
 .gym-demo-header h2 { margin: 0; font-size: 1.25rem; }
-.gym-demo-header p { margin: 4px 0 0; color: #426064; font-size: .85rem; }
+.gym-demo-header p { margin: 4px 0 0; color: #405672; font-size: .85rem; }
 .gym-demo-content { padding: 16px 20px 32px; }
 .gym-demo-dialog .motion-layout { display: block; }
 .gym-demo-dialog .motion-instructions { margin-top: 20px; }
@@ -3123,12 +3118,12 @@
 .gym-demo-transport .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   min-height: 44px; padding: 8px 14px; white-space: nowrap; border-radius: 11px;
-  color: white; background: #11665d; border: 1px solid #11665d; font-weight: 700;
+  color: white; background: #194676; border: 1px solid #194676; font-weight: 700;
 }
 .gym-demo-transport .btn:focus-visible { outline: 3px solid #306ab2; outline-offset: 2px; }
 .gym-demo-clock { display: grid; gap: 1px; font-variant-numeric: tabular-nums; }
-.gym-demo-clock strong { font-size: 1.1rem; color: #154d4a; }
-.gym-demo-clock small { font-size: .75rem; color: #486569; }
+.gym-demo-clock strong { font-size: 1.1rem; color: #15375c; }
+.gym-demo-clock small { font-size: .75rem; color: #405672; }
 @media (max-width: 550px) {
   .gym-demo-header { grid-template-columns: minmax(0,1fr) auto; }
   .gym-demo-header .gym-menu-button { grid-column: 2; }
@@ -3136,7 +3131,7 @@
   .gym-demo-transport .btn { flex: 1; }
 }
 .gym-demo-transport .btn + .btn {
-  background: #eef6f3; border-color: #b2cfc6; color: #17584f;
+  background: #eaf2fd; border-color: #94a5bb; color: #194676;
 }
 @media(max-width: 370px) {
   .gym-demo-transport { gap: 5px; }
@@ -3150,7 +3145,7 @@
   padding: 10px 0;
   min-height: 44px;
   cursor: pointer;
-  color: var(--gym-teal);
+  color: var(--gym-accent);
   font-size: 14px;
   font-weight: 650;
 }
@@ -3172,3 +3167,29 @@
 #workout-feedback {
   scroll-margin-top: 76px;
 }
+
+.gym-member-code {
+  display: grid;
+  gap: 3px;
+}
+.gym-member-code code {
+  width: fit-content;
+  max-width: 100%;
+  color: var(--gym-ink);
+  font: 600 .8rem/1.5 ui-monospace, monospace;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.gym-facilities {
+  list-style: none;
+  padding: 0;
+}
+.gym-facility {
+  padding: 16px 0;
+  border-top: 1px solid var(--gym-line);
+}
+.gym-facility h3, .gym-facility p { margin: 0 0 6px; }
+.gym-facility small { color: var(--gym-muted); }
+.gym-facility > div { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.gym-facility .gym-text-link { min-height: 44px; margin-top: 0; }

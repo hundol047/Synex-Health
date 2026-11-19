@@ -15,6 +15,7 @@ import {
   X,
   ChevronLeft,
   Camera,
+  MapPin,
   Shield,
 } from "lucide-react";
 import ScreenBoundary from "./ScreenBoundary.jsx";
@@ -44,6 +45,7 @@ export default function GymShell({ children }) {
     ? coachLinks
     : [
         ...memberLinks,
+        ["/health/facilities", "내 주변 지원 시설", MapPin],
         ["/health/capture", "결과지 사진 인식", Camera],
         ["/health/library", "3D 운동 시범", Dumbbell],
         ["/health/comparison", "지난 측정과 비교", PersonStanding],

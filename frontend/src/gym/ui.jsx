@@ -33,3 +33,12 @@ export const Notice = ({ children, error = false }) =>
       {children}
     </p>
   ) : null;
+
+export function MemberCode({ id }) {
+  return (
+    <p className="gym-member-code">
+      <span>회원 코드</span>
+      <code>{id}</code>
+    </p>
+  );
+}

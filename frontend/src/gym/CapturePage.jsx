@@ -28,7 +28,7 @@ export default function CapturePage() {
       setConfirmed(false);
       setSaved(false);
       setNotice("");
-      setPhoto(await photoData(file, 2400));
+      setPhoto("");
       setRaw("");
       setForm({
         weight: "",
@@ -37,8 +37,7 @@ export default function CapturePage() {
         height: "",
         measurement_date: today(),
       });
-      setConfirmed(false);
-      setSaved(false);
+      setPhoto(await photoData(file, 2400));
       setNotice("사진을 확인한 뒤 수치 인식을 시작하세요.");
       setError("");
     } catch (e) {
@@ -56,7 +55,9 @@ export default function CapturePage() {
       setRaw(r.text);
       setForm((f) => ({ ...f, ...r.values }));
       setNotice(
-        "사진과 인식된 수치를 비교해 주세요. 읽지 못한 항목만 직접 보완하면 됩니다.",
+        Object.values(r.values).some(Boolean)
+          ? "사진과 인식된 수치를 비교해 주세요. 읽지 못한 항목만 직접 보완하면 됩니다."
+          : "측정 수치를 찾지 못했습니다. 항목 이름과 숫자가 선명한 사진을 선택하거나 수치를 입력해 주세요.",
       );
       setConfirmed(false);
       setSaved(false);

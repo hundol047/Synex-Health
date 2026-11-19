@@ -41,7 +41,7 @@ import {
   editablePlan,
   rescheduleMemberWeeks,
 } from "./workflow.js";
-import { PageHead, Card, Field, Notice, Empty } from "./ui.jsx";
+import { PageHead, Card, Field, Notice, Empty, MemberCode } from "./ui.jsx";
 const goals = ["체력 향상", "체중·건강 관리", "근력 향상", "운동 습관 만들기"];
 export function MemberSelect({ value, onChange }) {
   const { state } = useGym();
@@ -374,6 +374,7 @@ export function Members() {
                   정보 수정
                 </button>
               </div>
+              <MemberCode id={m.id} />
               {edit && (
                 <form className="gym-edit-panel" onSubmit={save}>
                   <Field label="이름 수정">

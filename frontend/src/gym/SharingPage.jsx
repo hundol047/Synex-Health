@@ -6,7 +6,7 @@ import { useGym } from "./GymContext.jsx";
 import { MAX_TRANSFER_BYTES, parseTransfer, applyTransfer, transferFor, progressPackets, savedPlans, lastEditedPlan } from "./store.js";
 import useMemberSelection from "./useMemberSelection.js";
 import { MemberSelect } from "./CoachPages.jsx";
-import { PageHead, Card, Field, Notice } from "./ui.jsx";
+import { PageHead, Card, Field, Notice, MemberCode } from "./ui.jsx";
 async function shareFile(text, name) {
   if (Capacitor.isNativePlatform()) {
     const { Filesystem, Directory, Encoding } = await import(
@@ -149,6 +149,11 @@ export default function SharingPage() {
               }}
             />
           )}
+          {m && (coach || m.linkedCoach) ? (
+            <MemberCode id={m.id} />
+          ) : !coach && (
+            <p>트레이너의 계획 파일을 가져오면 내 회원 코드가 표시됩니다.</p>
+          )}
           {plans.length > 1 && <Field label="공유할 계획 주">
             <select value={plan.dates[0]} onChange={event => {
               setWeek(event.target.value);
@@ -237,6 +242,7 @@ export default function SharingPage() {
           </Link>}
           {preview && (
             <div className="gym-import-preview">
+              <MemberCode id={preview.memberId} />
               <strong>
                 {preview.name}님의{" "}
                 {preview.kind === "plan" ? "운동 계획" : "실천 기록"}

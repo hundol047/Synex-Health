@@ -27,6 +27,7 @@ export default function BenefitsPage() {
         국민건강보험공단 건강생활실천지원금 · 나에게 맞는 참여 경로를
         확인하세요.
       </PageHead>
+      {!coach && <Link className="gym-button secondary" to="/health/facilities">내 주변 지원 시설 찾기 <ArrowUpRight size={16}/></Link>}
       <div className="gym-benefit-tabs" role="group" aria-label="지원금 유형">
         <button
           className={prevent ? "active" : ""}

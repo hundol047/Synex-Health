@@ -17,6 +17,7 @@ const Members=lazy(()=>import('./gym/CoachPages.jsx').then(m=>({default:m.Member
 const PlanBuilder=lazy(()=>import('./gym/CoachPages.jsx').then(m=>({default:m.PlanBuilder})));
 const Schedule=lazy(()=>import('./gym/CoachPages.jsx').then(m=>({default:m.Schedule})));
 const Feedback=lazy(()=>import('./gym/CoachPages.jsx').then(m=>({default:m.Feedback})));
+const NearbyFacilities = lazy(() => import('./gym/NearbyFacilities.jsx'));
 const BenefitsPage=lazy(()=>import('./gym/BenefitsPage.jsx'));
 const SharingPage=lazy(()=>import('./gym/SharingPage.jsx'));
 const CapturePage=lazy(()=>import('./gym/CapturePage.jsx'));
@@ -56,6 +57,7 @@ export default function App(){
           <Route path="/coach/sharing" element={<SharingPage/>}/>
           <Route path="/health/my-plan" element={<MyPlan/>}/>
           <Route path="/health/coaching" element={<Coaching/>}/>
+          <Route path="/health/facilities" element={<NearbyFacilities/>}/>
           <Route path="/health/benefits" element={<BenefitsPage/>}/>
           <Route path="/health/sharing" element={<SharingPage/>}/>
           <Route path="/health/capture" element={<CapturePage/>}/>
