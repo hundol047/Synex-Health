@@ -1,5 +1,5 @@
 import { catalogEntry, doseValue, usesSeconds } from "./prescription.js";
-import { exercises, makePlan, today, validDate, scheduleWeek, savedPlans, storeWeekPlan } from "./store.js";
+import { exercises, makePlan, today, validDate, stopReasons, scheduleWeek, savedPlans, storeWeekPlan } from "./store.js";
 export const DAYS = ["월", "화", "수", "목", "금", "토", "일"];
 export function dateKey(date) {
   const d = new Date(date);
@@ -175,11 +175,14 @@ export function sessionSummary(session) {
     done: keys.filter((k) => session.checked.includes(k)).length,
   };
 }
-export function finishSession(member, effort, now = Date.now(), question) {
+export function finishSession(member, effort, now = Date.now(), question, stoppedAtId) {
   const s = member.session;
   if (!s) throw Error("진행 중인 운동이 없습니다.");
   const { total, done } = sessionSummary(s);
-  if (!done) throw Error("수행한 세트를 1개 이상 체크해 주세요.");
+  const stoppedExercise = stoppedAtId && s.exercises.find(exercise => exercise.id === stoppedAtId);
+  if (stoppedAtId && (!stoppedExercise || !stopReasons.includes(effort) || done === total))
+    throw Error("중단한 동작과 이유를 선택하세요.");
+  if (!done && !stoppedExercise) throw Error("수행한 세트를 1개 이상 체크해 주세요.");
   const log = {
     id: s.id,
     date: s.date,
@@ -197,7 +200,8 @@ export function finishSession(member, effort, now = Date.now(), question) {
       return { name: e.name, sets: e.sets, completed, rest: e.rest ?? 60,
         target: `${doseValue(e.reps)}${usesSeconds(dose) ? "초" : "회"}` };
     }),
-    minutes: Math.max(1, Math.round(sessionElapsed(s, now) / 60000)),
+    minutes: Math.max(done ? 1 : 0, Math.round(sessionElapsed(s, now) / 60000)),
+    ...(stoppedExercise ? { stoppedAtExercise: stoppedExercise.name } : {}),
   };
   const text = question?.text?.trim();
   if (text) {

@@ -470,7 +470,7 @@ export function Members() {
                     </p>
                   </div>
                   <span className="gym-pill">
-                    {l.status === "partial" ? "부분 수행" : "완료"}
+                    {l.stoppedAtExercise ? "중단 기록" : l.status === "partial" ? "부분 수행" : "완료"}
                   </span>
                 </div>
               ))}
@@ -1395,6 +1395,7 @@ export function Feedback() {
                     : "운동 기록"}
                   {l.status === "partial" ? " · 부분 수행" : ""}
                 </p>
+                {l.stoppedAtExercise && <p>중단한 동작 · {l.stoppedAtExercise}</p>}
                 <ExerciseResults rows={l.exerciseResults}/>
                 <WorkoutQuestion question={l.question}/>
                 <details className="gym-workout-feedback">

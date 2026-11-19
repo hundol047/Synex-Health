@@ -3,6 +3,7 @@ import { loadLocalDocument, saveLocalDocument } from "../shared/lib/offline.js";
 import catalog from "../shared/lib/localCatalog.json";
 export const COACH_BUILD = import.meta.env.VITE_APP_AUDIENCE === "coach";
 export const exercises = catalog.filter((e) => e.auto_recommend !== false);
+export const stopReasons = ["통증으로 중단했어요", "피로해서 중단했어요", "시간이 부족했어요", "기구를 이용하기 어려웠어요", "다른 이유로 중단했어요"];
 export const today = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -343,6 +344,12 @@ function parseTransferData(raw) {
           (!Number.isInteger(l[key]) || l[key] < 0 || l[key] > 100000)
         )
           throw Error("운동량 형식을 확인하세요.");
+      if (l.stoppedAtExercise !== undefined &&
+          (l.status !== "partial" || !stopReasons.includes(l.effort) ||
+           typeof l.stoppedAtExercise !== "string" || !l.stoppedAtExercise.trim() ||
+           !l.exerciseResults?.some(row => row.name === l.stoppedAtExercise) ||
+           !(l.completedSets < l.totalSets)))
+        throw Error("운동 중단 기록의 동작과 사유를 확인하세요.");
       validateExerciseResults(l);
     });
     v.meals.forEach((m) => {
@@ -462,6 +469,11 @@ export function applyTransfer(state, v, role) {
     const stored = new Map(m.logs.map(log => [log.id, log]));
     const incoming = v.logs.map(({ feedback, feedbackDraft, ...log }) => {
       const previous = stored.get(log.id);
+      if (!log.stoppedAtExercise && previous?.stoppedAtExercise && log.status === "partial" &&
+          log.completedSets === previous.completedSets && log.totalSets === previous.totalSets) {
+        log.stoppedAtExercise = previous.stoppedAtExercise;
+        log.effort = previous.effort;
+      }
       if (!log.question && previous?.question) log.question = previous.question;
       if (previous?.feedback) log.feedback = previous.feedback;
       if (previous?.feedbackDraft !== undefined) log.feedbackDraft = previous.feedbackDraft;

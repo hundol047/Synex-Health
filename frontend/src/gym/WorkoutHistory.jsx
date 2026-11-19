@@ -83,16 +83,17 @@ export default function WorkoutHistory({ member, repliesOnly = false }) {
                   : "수행 기록"}
                 {l.minutes ? ` · 기록 시간 ${l.minutes}분` : ""}
               </p>
+              {l.stoppedAtExercise && <p>중단한 동작 · {l.stoppedAtExercise}</p>}
               <ExerciseResults rows={l.exerciseResults}/>
             </div>
             <span
               className={"gym-pill " + (l.status === "partial" ? "neutral" : "")}
             >
-              {l.status === "partial" ? "부분 수행" : "완료"}
+              {l.stoppedAtExercise ? "중단 기록" : l.status === "partial" ? "부분 수행" : "완료"}
             </span>
           </div>
           <WorkoutQuestion question={l.question}/>
-          {l.question && !l.feedback && <Link className="gym-text-link" to={member.linkedCoach
+          {(l.question || l.stoppedAtExercise) && !l.feedback && <Link className="gym-text-link" to={member.linkedCoach
             ? "/health/sharing?date=" + encodeURIComponent(l.date) : "/health/sharing#import"}>
             {member.linkedCoach ? "이 날짜의 기록 공유하기" : "코치 계획 연결하기"}
           </Link>}

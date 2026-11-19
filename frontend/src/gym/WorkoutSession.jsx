@@ -10,7 +10,7 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { useGym } from "./GymContext.jsx";
-import { exercises } from "./store.js";
+import { exercises, stopReasons } from "./store.js";
 import {
   sessionSummary,
   finishSession,
@@ -48,6 +48,8 @@ export default function WorkoutSession() {
     [busy, setBusy] = useState(false),
     [showDemo, setShowDemo] = useState(false),
     [finishing, setFinishing] = useState(false),
+    [stopReason, setStopReason] = useState(""),
+    [stopExercise, setStopExercise] = useState(""),
     [questionText, setQuestionText] = useState(session.questionDraft?.text ?? ""),
     [questionExercise, setQuestionExercise] = useState(session.questionDraft?.exerciseId ?? ""),
     [effort, setEffort] = useState("적당했어요");
@@ -137,7 +139,9 @@ export default function WorkoutSession() {
       setBusy(true);
       await update(s => {
         if (s.self.session?.id !== sessionId) throw Error("현재 운동 기록을 다시 확인하세요.");
-        finishSession(s.self, effort, Date.now(), { text: questionText, exerciseId: questionExercise });
+        const stopped = finishing === "stop";
+        finishSession(s.self, stopped ? stopReason : effort, Date.now(),
+          { text: questionText, exerciseId: questionExercise }, stopped ? stopExercise : undefined);
       });
     } catch (e) {
       setError(e.message);
@@ -175,6 +179,13 @@ export default function WorkoutSession() {
           {session.paused ? <Play size={16} /> : <Pause size={16} />}{" "}
           {session.paused ? "운동 이어하기" : "잠깐 쉬기"}
         </button>}
+        {!allDone && <button className="gym-button secondary small" disabled={busy}
+          onClick={() => {
+            setDiscarding(false);
+            setStopExercise(e.id);
+            setFinishing("stop");
+            change(s => pauseSession(s, true));
+          }}>중단 사유 기록</button>}
         <button
           className="gym-quiet-button"
           disabled={busy}
@@ -432,20 +443,32 @@ export default function WorkoutSession() {
         </Card>
       )}
       {finishing && (
-        <Card title="오늘의 운동은 어땠나요?" className="gym-finish-card">
+        <Card title={finishing === "stop" ? "어느 동작에서 멈췄나요?" : "오늘의 운동은 어땠나요?"} className="gym-finish-card">
           <p>
             {done === total
               ? "모든 세트를 수행했어요. 오늘도 수고했어요!"
               : `${total}세트 중 ${done}세트를 수행했어요. 수행한 만큼 부분 기록으로 남깁니다.`}
           </p>
-          <Field label="운동 후 느낌">
+          {finishing === "stop" ? <>
+            <Field label="중단한 동작">
+              <select value={stopExercise} onChange={event => setStopExercise(event.target.value)}>
+                {session.exercises.map(ex => <option key={ex.id} value={ex.id}>{ex.name}</option>)}
+              </select>
+            </Field>
+            <Field label="중단 이유">
+              <select value={stopReason} onChange={event => setStopReason(event.target.value)}>
+                <option value="">이유를 선택하세요</option>
+                {stopReasons.map(reason => <option key={reason}>{reason}</option>)}
+              </select>
+            </Field>
+          </> : <Field label="운동 후 느낌">
             <select value={effort} onChange={(e) => setEffort(e.target.value)}>
               <option>적당했어요</option>
               <option>가벼웠어요</option>
               <option>힘들었어요</option>
               <option>통증으로 중단했어요</option>
             </select>
-          </Field>
+          </Field>}
           <details className="gym-question-form" open={session.questionDraft ? true : undefined}>
             <summary>코치에게 질문 남기기 (선택)</summary>
             <Field label="질문할 동작">
@@ -464,13 +487,16 @@ export default function WorkoutSession() {
             </Field>
             <p className="gym-muted">질문은 운동 기록과 함께 저장됩니다. 기록 파일을 공유하면 코치가 확인할 수 있어요.</p>
           </details>
-          <button className="gym-button" onClick={finish} disabled={busy}>
-            {busy ? "저장 중…" : "운동 기록 저장"}
+          <button className="gym-button" onClick={finish} disabled={busy || (finishing === "stop" && (!stopReason || allDone))}>
+            {busy ? "저장 중…" : finishing === "stop" ? "중단 기록 저장" : "운동 기록 저장"}
           </button>
           <button
             className="gym-button secondary"
             disabled={busy}
-            onClick={() => setFinishing(false)}
+            onClick={() => {
+              setFinishing(false);
+              if (finishing === "stop") change(s => pauseSession(s, false));
+            }}
           >
             운동 계속하기
           </button>

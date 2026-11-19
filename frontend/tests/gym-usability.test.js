@@ -447,3 +447,22 @@ it("keeps a question on its workout across older files and returns the coach rep
   file.logs[0].question.text = "가".repeat(401);
   expect(() => parseTransfer(JSON.stringify(file))).toThrow();
 });
+
+it("shares a first-set interruption without counting a completed set or day", () => {
+  const member = sample();
+  member.session = newSession(member.plan, member.plan.options[0]);
+  const id = member.session.exercises[0].id;
+  const start = member.session.startedAt;
+  expect(() => finishSession(member, "적당했어요", start)).toThrow();
+  expect(() => finishSession(member, "", start, null, id)).toThrow();
+  const row = finishSession(member, "통증으로 중단했어요", start, null, id);
+  expect(row).toMatchObject({ stoppedAtExercise: "맨몸 스쿼트", status: "partial", completedSets: 0, minutes: 0 });
+  member.linkedCoach = "coach";
+  const packet = parseTransfer(JSON.stringify(progressPackets(member)[0]));
+  const coach = { coachId: "coach", members: [{ ...freshMember(), id: member.id }] };
+  applyTransfer(coach, packet, "coach");
+  expect(coach.members[0].logs[0]).toMatchObject(row);
+  const invalid = structuredClone(packet);
+  invalid.logs[0].stoppedAtExercise = "없는 동작";
+  expect(() => parseTransfer(JSON.stringify(invalid))).toThrow();
+});
