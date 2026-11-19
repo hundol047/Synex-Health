@@ -3196,3 +3196,38 @@
 .gym-facility small { color: var(--gym-muted); }
 .gym-facility > div { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .gym-facility .gym-text-link { min-height: 44px; margin-top: 0; }
+
+.gym-weight-card form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+}
+.gym-weight-card .gym-field {
+  flex: 1 1 130px;
+  min-width: 0;
+  margin: 0;
+}
+.gym-weight-card input { width: 100%; min-width: 0; }
+.gym-weight-card .gym-button { margin: 0; }
+.gym-weight-card details { margin-top: 14px; }
+.gym-weight-card summary { padding: 10px 0; cursor: pointer; }
+.gym-weight-card ul {
+  list-style: none;
+  padding: 0;
+  max-height: 16rem;
+  overflow: auto;
+}
+.gym-weight-card li button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  border-bottom: 1px solid var(--gym-line);
+  background: transparent;
+  color: var(--gym-ink);
+  font: inherit;
+  cursor: pointer;
+}

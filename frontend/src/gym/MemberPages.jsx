@@ -30,6 +30,7 @@ import {
 } from "./workflow.js";
 import { PageHead, Card, Empty, Field, Notice } from "./ui.jsx";
 import { photoData } from "./photos.js";
+import DailyWeightCard from "./DailyWeightCard.jsx";
 import WorkoutHistory from "./WorkoutHistory.jsx";
 import AppointmentList from "./AppointmentList.jsx";
 import PlanPeriodNotice from "./PlanPeriodNotice.jsx";
@@ -125,6 +126,7 @@ export function MemberHome() {
           </svg>
         </div>
       </section>
+      <DailyWeightCard key={m.id + day} day={day} />
       <PlanPeriodNotice plan={plan} />
       <Card className="gym-week-card">
         <div className="gym-section-head">
@@ -189,7 +191,7 @@ export function MemberHome() {
                   {measure.weight}
                   <small>kg</small>
                 </strong>
-                <span>체중</span>
+                <span>체성분 측정 체중</span>
               </div>
               <div>
                 <strong>

@@ -61,6 +61,16 @@ export function validDate(value) {
     d.getDate() === Number(value.slice(8))
   );
 }
+export function saveDailyWeight(member, date, value) {
+  if (!validDate(date) || date > today())
+    throw Error("오늘 또는 지난 날짜를 선택해 주세요.");
+  const kg = Number(value);
+  if (!Number.isFinite(kg) || kg < 20 || kg > 300 || !Number.isInteger(kg * 10))
+    throw Error("체중은 20~300 kg 범위에서 소수점 한 자리까지 입력해 주세요.");
+  member.dailyWeights ??= {};
+  member.dailyWeights[date] = kg;
+}
+
 export function validateAppointment(rows, date, time, id) {
   if (!validDate(date) || !/^\d{2}:\d{2}$/.test(time))
     throw Error("PT 날짜와 시간을 선택하세요.");
