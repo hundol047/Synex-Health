@@ -9,7 +9,7 @@ const SEGMENT_FIELDS=[['lean_mass_kg','근육 분석 값 (kg)','예: 2.7'],['lea
 const localDate=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
 export default function MeasurementEntry(){
   const [form,setForm]=useState({measurement_date:localDate()});
-  useEffect(()=>{if(window.location.hash==='#segment-measurements')document.getElementById('segment-measurements')?.scrollIntoView?.({block:'center'});},[]);
+  useEffect(()=>{const hash=window.location.hash;if(hash==='#segment-measurements')document.getElementById('segment-measurements')?.scrollIntoView?.({block:'center'});else if(hash==='#measurement-entry')document.getElementById('measurement-entry')?.scrollIntoView?.({block:'start'});},[]);
   const [segments,setSegments]=useState({});
   const [saving,setSaving]=useState(false),[error,setError]=useState(null),[saved,setSaved]=useState(false);
   async function submit(e){
@@ -22,7 +22,7 @@ export default function MeasurementEntry(){
       await HealthAPI.createMeasurement(payload);setSaved(true);
     }catch(err){setError(err);}finally{setSaving(false);}
   }
-  return <Card title="체성분 측정값 등록">
+  return <Card id="measurement-entry" title="체성분 측정값 등록">
     <p className="muted">인바디 결과지를 보며 같은 이름의 값을 옮겨 적으세요. 체중과 전신 근육량은 필수이며, 결과지에 없는 선택 항목은 비워두세요.</p>
     <form onSubmit={submit}>
       <h3 className="measurement-section-title">전신 근육량과 체지방</h3>

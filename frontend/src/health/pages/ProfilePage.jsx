@@ -132,10 +132,11 @@ export default function ProfilePage() {
     <>
 <Link className="btn btn-secondary" to="/health/character">내 운동 캐릭터 꾸미기</Link>
 
+      <nav className="section-jump" aria-label="프로필 바로가기">{[['measurement-entry','체성분 입력'],['profile-info','내 정보'],['profile-goals','운동 목표'],['profile-safety','안전 문진']].map(([id,label])=><button type="button" key={id} className="section-jump-chip" onClick={()=>document.getElementById(id)?.scrollIntoView?.({behavior:'smooth',block:'start'})}>{label}</button>)}</nav>
       <section className="card"><h2>나의 건강 메뉴</h2><div className="membership-actions"><Link className="btn btn-ghost" to="/health/goals">목표</Link>{!LOCAL_ONLY&&<Link className="btn btn-ghost" to="/health/subscription">멤버십</Link>}<Link className="btn btn-ghost" to="/health/library">운동 라이브러리</Link><Link className="btn btn-ghost" to="/health/pose">운동 카메라 코치</Link><Link className="btn btn-ghost" to="/health/connections">학교·기기·알림 연결</Link><Link className="btn btn-ghost" to="/health/privacy">개인정보 관리</Link></div><div className="membership-actions"><Link className="btn btn-ghost" to="/health/workout">운동 기록</Link><Link className="btn btn-ghost" to="/health/progress">변화 추적</Link><Link className="btn btn-ghost" to="/health/comparison">측정 비교</Link>{!LOCAL_ONLY&&<Link className="btn btn-ghost" to="/health/agent">AI 코치</Link>}{!LOCAL_ONLY&&<Link className="btn btn-ghost" to="/health/report">월별 리포트</Link>}</div></section>
       <SchoolSelector profile={profile.data} onSaved={profile.reload}/>
       <MeasurementEntry />
-      <div onChangeCapture={()=>{setDirty(true);setSaved(false);}}><fieldset disabled={saving} style={{border:0,padding:0,minWidth:0}}><Card title="내 정보">
+      <div onChangeCapture={()=>{setDirty(true);setSaved(false);}}><fieldset disabled={saving} style={{border:0,padding:0,minWidth:0}}><Card id="profile-info" title="내 정보">
         <div className="profile-grid">
           <div>
             <label className="field-label">이름</label>
@@ -156,7 +157,7 @@ export default function ProfilePage() {
         </div>
       </Card>
 
-      <Card title="운동 목표 및 환경">
+      <Card id="profile-goals" title="운동 목표 및 환경">
         <div className="profile-grid">
           <div>
             <label className="field-label" htmlFor="goal-select">운동 목표</label>
@@ -211,7 +212,7 @@ export default function ProfilePage() {
         </div>
       </Card>
 
-      <Card title="안전 문진">
+      <Card id="profile-safety" title="안전 문진">
         <Disclaimer>
           아래 항목 중 하나라도 해당하면 AI가 자동으로 운동 루틴을 생성하지 않으며, 건강센터 또는 의료 전문가와의 상담을 먼저 안내합니다.
         </Disclaimer>

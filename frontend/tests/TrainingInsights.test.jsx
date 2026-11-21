@@ -76,9 +76,10 @@ describe('TrainingProgress insights UI', () => {
     const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     mockFetch({ '/api/workouts': [log(iso, 'sit_stand', '의자 앉았다 일어나기', [set(8, 10)])] });
     render(<MemoryRouter><TrainingProgress measurement={{ measurement_date: iso, segments: [{ segment: 'LEFT_LEG', lean_reference_percent: 85 }] }} /></MemoryRouter>);
-    expect(await screen.findByText('개인 최고 기록')).toBeTruthy();
-    expect(screen.getByText(/10 kg × 8회/)).toBeTruthy();
-    expect(screen.getByText('측정 결과 ↔ 실제 훈련량')).toBeTruthy();
+    expect(await screen.findByRole('heading',{name:'개인 최고 기록'})).toBeTruthy();
+    expect(screen.getByRole('list',{name:/운동별 최고 입력 기록/}).textContent).toContain('10 kg × 8회');
+    expect(screen.getByText('이번 주 운동한 날')).toBeTruthy();
+    expect(screen.getByRole('heading',{name:'측정 결과 ↔ 실제 훈련량'})).toBeTruthy();
     expect(screen.getByText(/85%/)).toBeTruthy();
   });
 });

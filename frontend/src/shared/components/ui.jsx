@@ -1,8 +1,8 @@
 import React from 'react';
 
-export function Card({ title, action, children, className = '' }) {
+export function Card({ title, action, children, className = '', id }) {
   return (
-    <section className={`card ${className}`}>
+    <section id={id} className={`card ${className}`}>
       {title && (
         <div className="card-title-row">
           <h2>{title}</h2>

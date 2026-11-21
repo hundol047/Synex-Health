@@ -74,7 +74,17 @@ export default function RoutinePage() {
         </Card>
       )}
 
-      {genError && !safetyBlocked && genError.status !== 422 && <ErrorState message={genError.message} onRetry={generate} />}
+      {genError && genError.status === 404 && (
+        <Card>
+          <EmptyState
+            title="체성분을 먼저 입력해 주세요"
+            description="결과지의 체중과 골격근량 두 가지만 입력하면 내 몸에 맞춘 운동 계획을 바로 만들 수 있어요."
+            action={<Link className="btn btn-primary" to="/health/profile#measurement-entry">체성분 입력하기</Link>}
+          />
+        </Card>
+      )}
+
+      {genError && !safetyBlocked && ![404, 422].includes(genError.status) && <ErrorState message={genError.message} onRetry={generate} />}
 
       {!latest && !safetyBlocked && !genError && (
         <Card>
@@ -93,6 +103,7 @@ export default function RoutinePage() {
         >
           {latest.needs_review && <p role="alert" className="motion-cautions">{latest.review_reason}</p>}
           <p className="muted">{latest.summary}</p>
+          {latest.starter && <div className="starter-plan-note" role="note"><span>측정값 없이 만든 시작 계획이에요. 체성분을 입력하면 더 잘 맞는 계획으로 바꿀 수 있어요.</span><Link className="btn btn-secondary" to="/health/profile#measurement-entry">체성분 입력하기</Link></div>}
           {latest.input_snapshot && <div className="plan-stats">
             {[["체중",latest.input_snapshot.weight_kg,"kg"],["골격근량",latest.input_snapshot.muscle_kg,"kg"],
               ["체지방률",latest.input_snapshot.body_fat_percent,"%"],["회당 가능 시간",latest.input_snapshot.profile?.minutes_per_session,"분"]]
