@@ -32,6 +32,7 @@ export default function ProgressPage() {
   const period = PERIODS.find((p) => p.id === periodId) || PERIODS[4];
 
   const all = progress.data?.measurements || [];
+  const latestMeasurement=all.reduce((a,m)=>!a||m.measurement_date>a.measurement_date?m:a,null);
   const average=progress.data?.average_comparison;
   const reference=average?.groups.find(g=>g.id===average.selected_group_id);
   const [referenceMetric,setReferenceMetric]=useState('skeletal_muscle_mass');
@@ -63,7 +64,7 @@ export default function ProgressPage() {
 
   if (all.length === 0) {
     return (
-      <><TrainingProgress/><Card>
+      <><TrainingProgress measurement={null}/><Card>
         <EmptyState title="변화 추적 데이터가 없어요" description="측정 기록이 2건 이상 쌓이면 변화 그래프를 확인할 수 있어요." />
       </Card></>
     );
@@ -73,7 +74,7 @@ export default function ProgressPage() {
   const summary=chartData.length<2?'선택 기간에 비교할 두 측정이 없습니다.':[['weight','체중','kg'],['muscle','골격근량','kg'],['fatPercent','체지방률','%p']].filter(([k])=>first[k]!=null&&last[k]!=null).map(([k,label,unit])=>`${label} ${(last[k]-first[k]).toFixed(2)}${unit}`).join(' · ');
   return (
     <>
-      <TrainingProgress/>
+      <TrainingProgress measurement={latestMeasurement}/>
       <Card title="내 측정값 / 비교군 평균"><label>비교 항목<select value={referenceMetric} onChange={e=>setReferenceMetric(e.target.value)}><option value="skeletal_muscle_mass">전체 골격근량</option>{Object.entries(SEGMENT_LABEL_KO).map(([id,label])=><option value={id} key={id}>{label} 제지방량</option>)}</select></label>
        <p className="muted">현재 측정에 선택된 비교군을 모든 시점에 동일하게 표시합니다. 당시의 연령·체격 조건에 맞춘 과거 평균이 아닙니다.</p>
        {referenceMean!=null?<><div style={{height:240}}><ResponsiveContainer><LineChart data={averageData}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="date"/><YAxis unit="kg"/><Tooltip/><Legend/><Line dataKey="mine" name="My Muscle · 내 측정" stroke="#1462ed" strokeWidth={2}/><ReferenceLine y={referenceMean} stroke="#57616e" strokeDasharray="6 4" ifOverflow="extendDomain" label={`Average ${referenceMean} kg`}/></LineChart></ResponsiveContainer></div><p>점선: 비교군 평균 {referenceMean} kg</p></>:<p>해당 항목의 비교군 평균이 없습니다.</p>}
